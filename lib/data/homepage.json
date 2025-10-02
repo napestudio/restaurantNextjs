@@ -1,0 +1,12 @@
+{
+  "navbar": {
+    "logo": "Restaurans",
+    "loginButton": "Sign In"
+  },
+  "hero": {
+    "title": "Experience Culinary Excellence",
+    "subtitle": "Discover the finest dining experience with our carefully curated menu and exceptional service",
+    "ctaButton": "Make a Reservation",
+    "secondaryButton": "View Menu"
+  }
+}

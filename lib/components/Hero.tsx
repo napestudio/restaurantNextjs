@@ -1,0 +1,44 @@
+import Link from "next/link";
+
+interface HeroProps {
+  title: string;
+  subtitle: string;
+  ctaButton: string;
+  secondaryButton: string;
+}
+
+export default function Hero({
+  title,
+  subtitle,
+  ctaButton,
+  secondaryButton,
+}: HeroProps) {
+  return (
+    <div className="relative bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+        <div className="text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+            {title}
+          </h1>
+          <p className="mt-6 max-w-2xl mx-auto text-xl text-gray-500">
+            {subtitle}
+          </p>
+          <div className="mt-10 flex justify-center gap-4">
+            <Link
+              href="/reservations"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              {ctaButton}
+            </Link>
+            <Link
+              href="/menu"
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              {secondaryButton}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
