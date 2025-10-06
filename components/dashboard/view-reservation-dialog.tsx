@@ -104,6 +104,25 @@ export function ViewReservationDialog({
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">
+                  Dietary Restrictions
+                </h3>
+                <p className="text-sm bg-orange-50 p-3 rounded-md border border-orange-200">
+                  {reservation.dietaryRestrictions || "None"}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">
+                  Accessibility Needs
+                </h3>
+                <p className="text-sm bg-blue-50 p-3 rounded-md border border-blue-200">
+                  {reservation.accessibilityNeeds || "None"}
+                </p>
+              </div>
+            </div>
+
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-1">
                 Special Requests / Notes

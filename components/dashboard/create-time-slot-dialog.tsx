@@ -29,12 +29,14 @@ interface CreateTimeSlotDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (slot: NewSlot) => void;
+  isPending?: boolean;
 }
 
 export function CreateTimeSlotDialog({
   open,
   onOpenChange,
   onCreate,
+  isPending = false,
 }: CreateTimeSlotDialogProps) {
   const [newSlot, setNewSlot] = useState<NewSlot>({
     timeFrom: "",
@@ -232,14 +234,19 @@ export function CreateTimeSlotDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleCreate}
             className="bg-red-600 hover:bg-red-700"
+            disabled={isPending}
           >
-            Create Time Slot
+            {isPending ? "Creating..." : "Create Time Slot"}
           </Button>
         </DialogFooter>
       </DialogContent>

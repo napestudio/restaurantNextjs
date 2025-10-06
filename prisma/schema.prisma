@@ -137,20 +137,24 @@ model Table {
 }
 
 model Reservation {
-  id             String             @id @default(cuid())
-  branch         Branch             @relation(fields: [branchId], references: [id])
-  branchId       String
-  customerName   String
-  customerEmail  String
-  date           DateTime
-  people         Int
-  timeSlot       TimeSlot?          @relation(fields: [timeSlotId], references: [id])
-  timeSlotId     String?
-  status         ReservationStatus  @default(PENDING)
-  createdAt      DateTime           @default(now())
-  createdBy      String?
-  updatedBy      String?
-  tables         ReservationTable[]
+  id                   String             @id @default(cuid())
+  branch               Branch             @relation(fields: [branchId], references: [id])
+  branchId             String
+  customerName         String
+  customerEmail        String
+  customerPhone        String?
+  date                 DateTime
+  people               Int
+  timeSlot             TimeSlot?          @relation(fields: [timeSlotId], references: [id])
+  timeSlotId           String?
+  status               ReservationStatus  @default(PENDING)
+  dietaryRestrictions  String?
+  accessibilityNeeds   String?
+  notes                String?
+  createdAt            DateTime           @default(now())
+  createdBy            String?
+  updatedBy            String?
+  tables               ReservationTable[]
 }
 
 model ReservationTable {
@@ -162,12 +166,18 @@ model ReservationTable {
 }
 
 model TimeSlot {
-  id         String   @id @default(cuid())
-  label      String
-  startTime  DateTime
-  endTime    DateTime
-  branch     Branch   @relation(fields: [branchId], references: [id])
-  branchId   String
+  id             String        @id @default(cuid())
+  startTime      DateTime      @db.Time // PostgreSQL TIME type
+  endTime        DateTime      @db.Time // PostgreSQL TIME type
+  daysOfWeek     String[]      // Array of day names: ["monday", "tuesday", etc.]
+  pricePerPerson Decimal?      @default(0) // Optional price per person, 0 for free
+  notes          String?       // Optional notes/description
+  isActive       Boolean       @default(true)
+  branch         Branch        @relation(fields: [branchId], references: [id])
+  branchId       String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
   reservations Reservation[]
 }
 

@@ -30,6 +30,8 @@ interface NewReservation {
   date: string;
   time: string;
   guests: string;
+  dietaryRestrictions: string;
+  accessibilityNeeds: string;
   notes: string;
   status: string;
 }
@@ -54,6 +56,8 @@ export function CreateReservationDialog({
     date: "",
     time: "",
     guests: "",
+    dietaryRestrictions: "",
+    accessibilityNeeds: "",
     notes: "",
     status: "confirmed",
   });
@@ -91,6 +95,8 @@ export function CreateReservationDialog({
         date: "",
         time: "",
         guests: "",
+        dietaryRestrictions: "",
+        accessibilityNeeds: "",
         notes: "",
         status: "confirmed",
       });
@@ -255,6 +261,42 @@ export function CreateReservationDialog({
           </div>
 
           <div>
+            <Label htmlFor="new-dietary">Dietary Restrictions (Optional)</Label>
+            <Input
+              id="new-dietary"
+              value={newReservation.dietaryRestrictions}
+              onChange={(e) =>
+                setNewReservation((prev) => ({
+                  ...prev,
+                  dietaryRestrictions: e.target.value,
+                }))
+              }
+              placeholder="e.g., Vegetarian, Celiac, Lactose intolerant, Vegan"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              List any allergies or dietary restrictions
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="new-accessibility">Accessibility Needs (Optional)</Label>
+            <Input
+              id="new-accessibility"
+              value={newReservation.accessibilityNeeds}
+              onChange={(e) =>
+                setNewReservation((prev) => ({
+                  ...prev,
+                  accessibilityNeeds: e.target.value,
+                }))
+              }
+              placeholder="e.g., Wheelchair accessible, Ground floor preferred"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Help us prepare the best seating arrangement
+            </p>
+          </div>
+
+          <div>
             <Label htmlFor="new-status">Status</Label>
             <Select
               value={newReservation.status}
@@ -273,7 +315,7 @@ export function CreateReservationDialog({
           </div>
 
           <div>
-            <Label htmlFor="new-notes">Special Requests / Notes</Label>
+            <Label htmlFor="new-notes">Special Requests / Notes (Optional)</Label>
             <Textarea
               id="new-notes"
               value={newReservation.notes}
@@ -283,7 +325,7 @@ export function CreateReservationDialog({
                   notes: e.target.value,
                 }))
               }
-              placeholder="Dietary restrictions, special occasions, etc."
+              placeholder="Special occasions, seating preferences, etc."
               rows={3}
             />
           </div>

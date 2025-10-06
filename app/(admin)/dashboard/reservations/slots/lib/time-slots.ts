@@ -1,6 +1,6 @@
 // Time slot types
 export interface TimeSlot {
-  id: number;
+  id: string;
   timeFrom: string;
   timeTo: string;
   days: string[];
@@ -22,7 +22,7 @@ export const DAYS = [
 // Mock initial data
 export const initialTimeSlots: TimeSlot[] = [
   {
-    id: 1,
+    id: "1",
     timeFrom: "11:00",
     timeTo: "11:30",
     days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
@@ -30,7 +30,7 @@ export const initialTimeSlots: TimeSlot[] = [
     notes: "Weekday lunch service",
   },
   {
-    id: 2,
+    id: "2",
     timeFrom: "12:00",
     timeTo: "13:00",
     days: [
@@ -46,7 +46,7 @@ export const initialTimeSlots: TimeSlot[] = [
     notes: "Peak lunch hour - all days",
   },
   {
-    id: 3,
+    id: "3",
     timeFrom: "19:00",
     timeTo: "20:00",
     days: ["friday", "saturday"],
@@ -54,7 +54,7 @@ export const initialTimeSlots: TimeSlot[] = [
     notes: "Weekend peak dinner - premium pricing",
   },
   {
-    id: 4,
+    id: "4",
     timeFrom: "18:00",
     timeTo: "19:00",
     days: [
@@ -70,7 +70,7 @@ export const initialTimeSlots: TimeSlot[] = [
     notes: "Early dinner - all days free",
   },
   {
-    id: 5,
+    id: "5",
     timeFrom: "20:00",
     timeTo: "21:00",
     days: ["friday", "saturday", "sunday"],

@@ -188,10 +188,14 @@ exports.Prisma.ReservationScalarFieldEnum = {
   branchId: 'branchId',
   customerName: 'customerName',
   customerEmail: 'customerEmail',
+  customerPhone: 'customerPhone',
   date: 'date',
   people: 'people',
   timeSlotId: 'timeSlotId',
   status: 'status',
+  dietaryRestrictions: 'dietaryRestrictions',
+  accessibilityNeeds: 'accessibilityNeeds',
+  notes: 'notes',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedBy: 'updatedBy'
@@ -205,10 +209,15 @@ exports.Prisma.ReservationTableScalarFieldEnum = {
 
 exports.Prisma.TimeSlotScalarFieldEnum = {
   id: 'id',
-  label: 'label',
   startTime: 'startTime',
   endTime: 'endTime',
-  branchId: 'branchId'
+  daysOfWeek: 'daysOfWeek',
+  pricePerPerson: 'pricePerPerson',
+  notes: 'notes',
+  isActive: 'isActive',
+  branchId: 'branchId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.CategoryScalarFieldEnum = {

@@ -11,11 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Plus, Trash2, Calendar } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
-import { formatTime, getDayBadges } from "@/app/(admin)/dashboard/reservations/slots/lib/utils";
+import {
+  formatTime,
+  getDayBadges,
+} from "@/app/(admin)/dashboard/reservations/slots/lib/utils";
 
 interface TimeSlotsTableProps {
   timeSlots: TimeSlot[];
-  onDelete: (slotId: number) => void;
+  onDelete: (slotId: string) => void;
   onCreateClick: () => void;
 }
 
@@ -78,6 +81,7 @@ export function TimeSlotsTable({
                           {formatTime(slot.timeTo)}
                         </span>
                       </div>
+
                       {slot.price > 0 ? (
                         <Badge variant="default" className="bg-green-600">
                           ${slot.price}/person

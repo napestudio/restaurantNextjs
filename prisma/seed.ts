@@ -281,23 +281,70 @@ async function main() {
 
   // Create Time Slots
   const timeSlots = [
-    { label: "Lunch - 12:00 PM", startTime: "12:00", endTime: "14:00" },
-    { label: "Lunch - 2:00 PM", startTime: "14:00", endTime: "16:00" },
-    { label: "Dinner - 6:00 PM", startTime: "18:00", endTime: "20:00" },
-    { label: "Dinner - 8:00 PM", startTime: "20:00", endTime: "22:00" },
+    {
+      startTime: "11:00",
+      endTime: "11:30",
+      daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      pricePerPerson: 0,
+      notes: "Weekday lunch service",
+    },
+    {
+      startTime: "12:00",
+      endTime: "13:00",
+      daysOfWeek: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
+      pricePerPerson: 0,
+      notes: "Peak lunch hour - all days",
+    },
+    {
+      startTime: "19:00",
+      endTime: "20:00",
+      daysOfWeek: ["friday", "saturday"],
+      pricePerPerson: 25,
+      notes: "Weekend peak dinner - premium pricing",
+    },
+    {
+      startTime: "18:00",
+      endTime: "19:00",
+      daysOfWeek: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
+      pricePerPerson: 0,
+      notes: "Early dinner - all days free",
+    },
+    {
+      startTime: "20:00",
+      endTime: "21:00",
+      daysOfWeek: ["friday", "saturday", "sunday"],
+      pricePerPerson: 15,
+      notes: "Weekend late dinner",
+    },
   ];
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use reference date for time-only values
+  const referenceDate = new Date("1970-01-01");
 
   for (const slot of timeSlots) {
     const [startHour, startMin] = slot.startTime.split(":").map(Number);
     const [endHour, endMin] = slot.endTime.split(":").map(Number);
 
-    const startTime = new Date(today);
+    const startTime = new Date(referenceDate);
     startTime.setHours(startHour, startMin);
 
-    const endTime = new Date(today);
+    const endTime = new Date(referenceDate);
     endTime.setHours(endHour, endMin);
 
     await prisma.timeSlot.upsert({
@@ -307,9 +354,12 @@ async function main() {
       update: {},
       create: {
         id: `slot-${branch.id}-${slot.startTime}`,
-        label: slot.label,
         startTime,
         endTime,
+        daysOfWeek: slot.daysOfWeek,
+        pricePerPerson: slot.pricePerPerson,
+        notes: slot.notes,
+        isActive: true,
         branchId: branch.id,
       },
     });

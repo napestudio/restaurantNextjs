@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
+import { createTimeSlot, deleteTimeSlot } from "@/actions/TimeSlot";
 import { StatsOverview } from "./stats-overview";
 import { TimeSlotsTable } from "./time-slots-table";
 import { CreateTimeSlotDialog } from "./create-time-slot-dialog";
@@ -11,43 +13,72 @@ import { DeleteTimeSlotDialog } from "./delete-time-slot-dialog";
 
 interface TimeSlotsManagerProps {
   initialTimeSlots: TimeSlot[];
+  branchId: string;
 }
 
-export function TimeSlotsManager({ initialTimeSlots }: TimeSlotsManagerProps) {
-  const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
+export function TimeSlotsManager({
+  initialTimeSlots,
+  branchId,
+}: TimeSlotsManagerProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [slotToDelete, setSlotToDelete] = useState<number | null>(null);
+  const [slotToDelete, setSlotToDelete] = useState<{
+    id: string;
+    dbId?: string;
+  } | null>(null);
 
-  const handleCreate = (newSlot: {
+  const handleCreate = async (newSlot: {
     timeFrom: string;
     timeTo: string;
     days: string[];
     price: string;
     notes: string;
   }) => {
-    const newTimeSlot: TimeSlot = {
-      id: Math.max(0, ...timeSlots.map((s) => s.id)) + 1,
-      timeFrom: newSlot.timeFrom,
-      timeTo: newSlot.timeTo,
-      days: newSlot.days,
-      price: newSlot.price ? Number.parseFloat(newSlot.price) : 0,
-      notes: newSlot.notes,
-    };
-    setTimeSlots((prev) => [...prev, newTimeSlot]);
-    setCreateDialogOpen(false);
+    startTransition(async () => {
+      const result = await createTimeSlot({
+        branchId,
+        startTime: newSlot.timeFrom,
+        endTime: newSlot.timeTo,
+        daysOfWeek: newSlot.days,
+        pricePerPerson: newSlot.price ? parseFloat(newSlot.price) : 0,
+        notes: newSlot.notes,
+      });
+
+      if (result.success) {
+        setCreateDialogOpen(false);
+        router.refresh();
+      } else {
+        // TODO: Show error toast/notification
+        console.error("Failed to create time slot:", result.error);
+      }
+    });
   };
 
-  const handleDeleteClick = (slotId: number) => {
-    setSlotToDelete(slotId);
+  const handleDeleteClick = (slotId: string) => {
+    // Find the slot to get its database ID
+    const slot = initialTimeSlots.find((s) => s.id === slotId);
+    setSlotToDelete({ id: slotId, dbId: slot?.id });
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (slotToDelete) {
-      setTimeSlots((prev) => prev.filter((s) => s.id !== slotToDelete));
-      setDeleteDialogOpen(false);
-      setSlotToDelete(null);
+  const handleDeleteConfirm = async () => {
+    if (slotToDelete?.dbId) {
+      console.log("hay id", slotToDelete?.dbId);
+      startTransition(async () => {
+        console.log("el id es", slotToDelete?.dbId);
+        const result = await deleteTimeSlot(slotToDelete.dbId!, true); // soft delete
+
+        if (result.success) {
+          setDeleteDialogOpen(false);
+          setSlotToDelete(null);
+          router.refresh();
+        } else {
+          // TODO: Show error toast/notification
+          console.error("Failed to delete time slot:", result.error);
+        }
+      });
     }
   };
 
@@ -65,6 +96,7 @@ export function TimeSlotsManager({ initialTimeSlots }: TimeSlotsManagerProps) {
         <Button
           onClick={() => setCreateDialogOpen(true)}
           className="bg-red-600 hover:bg-red-700"
+          disabled={isPending}
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Time Slot
@@ -72,11 +104,11 @@ export function TimeSlotsManager({ initialTimeSlots }: TimeSlotsManagerProps) {
       </div>
 
       <div className="mb-8">
-        <StatsOverview timeSlots={timeSlots} />
+        <StatsOverview timeSlots={initialTimeSlots} />
       </div>
 
       <TimeSlotsTable
-        timeSlots={timeSlots}
+        timeSlots={initialTimeSlots}
         onDelete={handleDeleteClick}
         onCreateClick={() => setCreateDialogOpen(true)}
       />
@@ -85,12 +117,14 @@ export function TimeSlotsManager({ initialTimeSlots }: TimeSlotsManagerProps) {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onCreate={handleCreate}
+        isPending={isPending}
       />
 
       <DeleteTimeSlotDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDeleteConfirm}
+        isPending={isPending}
       />
     </>
   );

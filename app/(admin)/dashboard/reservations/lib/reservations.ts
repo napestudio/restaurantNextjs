@@ -8,6 +8,8 @@ export interface Reservation {
   time: string;
   guests: number;
   status: string;
+  dietaryRestrictions?: string;
+  accessibilityNeeds?: string;
   notes: string;
   createdAt: string;
 }
@@ -79,7 +81,9 @@ export const initialReservations: Reservation[] = [
     time: "6:00 PM",
     guests: 8,
     status: "pending",
-    notes: "Group dinner, dietary restrictions: 2 vegetarian, 1 gluten-free",
+    dietaryRestrictions: "2 vegetarian, 1 gluten-free",
+    accessibilityNeeds: "Wheelchair accessible table needed",
+    notes: "Group dinner",
     createdAt: "2024-01-14",
   },
 ];

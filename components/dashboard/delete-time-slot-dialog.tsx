@@ -15,12 +15,14 @@ interface DeleteTimeSlotDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  isPending?: boolean;
 }
 
 export function DeleteTimeSlotDialog({
   open,
   onOpenChange,
   onConfirm,
+  isPending = false,
 }: DeleteTimeSlotDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -33,12 +35,13 @@ export function DeleteTimeSlotDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700"
+            disabled={isPending}
           >
-            Delete
+            {isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

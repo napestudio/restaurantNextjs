@@ -10560,10 +10560,14 @@ export namespace Prisma {
     branchId: string | null
     customerName: string | null
     customerEmail: string | null
+    customerPhone: string | null
     date: Date | null
     people: number | null
     timeSlotId: string | null
     status: $Enums.ReservationStatus | null
+    dietaryRestrictions: string | null
+    accessibilityNeeds: string | null
+    notes: string | null
     createdAt: Date | null
     createdBy: string | null
     updatedBy: string | null
@@ -10574,10 +10578,14 @@ export namespace Prisma {
     branchId: string | null
     customerName: string | null
     customerEmail: string | null
+    customerPhone: string | null
     date: Date | null
     people: number | null
     timeSlotId: string | null
     status: $Enums.ReservationStatus | null
+    dietaryRestrictions: string | null
+    accessibilityNeeds: string | null
+    notes: string | null
     createdAt: Date | null
     createdBy: string | null
     updatedBy: string | null
@@ -10588,10 +10596,14 @@ export namespace Prisma {
     branchId: number
     customerName: number
     customerEmail: number
+    customerPhone: number
     date: number
     people: number
     timeSlotId: number
     status: number
+    dietaryRestrictions: number
+    accessibilityNeeds: number
+    notes: number
     createdAt: number
     createdBy: number
     updatedBy: number
@@ -10612,10 +10624,14 @@ export namespace Prisma {
     branchId?: true
     customerName?: true
     customerEmail?: true
+    customerPhone?: true
     date?: true
     people?: true
     timeSlotId?: true
     status?: true
+    dietaryRestrictions?: true
+    accessibilityNeeds?: true
+    notes?: true
     createdAt?: true
     createdBy?: true
     updatedBy?: true
@@ -10626,10 +10642,14 @@ export namespace Prisma {
     branchId?: true
     customerName?: true
     customerEmail?: true
+    customerPhone?: true
     date?: true
     people?: true
     timeSlotId?: true
     status?: true
+    dietaryRestrictions?: true
+    accessibilityNeeds?: true
+    notes?: true
     createdAt?: true
     createdBy?: true
     updatedBy?: true
@@ -10640,10 +10660,14 @@ export namespace Prisma {
     branchId?: true
     customerName?: true
     customerEmail?: true
+    customerPhone?: true
     date?: true
     people?: true
     timeSlotId?: true
     status?: true
+    dietaryRestrictions?: true
+    accessibilityNeeds?: true
+    notes?: true
     createdAt?: true
     createdBy?: true
     updatedBy?: true
@@ -10741,10 +10765,14 @@ export namespace Prisma {
     branchId: string
     customerName: string
     customerEmail: string
+    customerPhone: string | null
     date: Date
     people: number
     timeSlotId: string | null
     status: $Enums.ReservationStatus
+    dietaryRestrictions: string | null
+    accessibilityNeeds: string | null
+    notes: string | null
     createdAt: Date
     createdBy: string | null
     updatedBy: string | null
@@ -10774,10 +10802,14 @@ export namespace Prisma {
     branchId?: boolean
     customerName?: boolean
     customerEmail?: boolean
+    customerPhone?: boolean
     date?: boolean
     people?: boolean
     timeSlotId?: boolean
     status?: boolean
+    dietaryRestrictions?: boolean
+    accessibilityNeeds?: boolean
+    notes?: boolean
     createdAt?: boolean
     createdBy?: boolean
     updatedBy?: boolean
@@ -10792,10 +10824,14 @@ export namespace Prisma {
     branchId?: boolean
     customerName?: boolean
     customerEmail?: boolean
+    customerPhone?: boolean
     date?: boolean
     people?: boolean
     timeSlotId?: boolean
     status?: boolean
+    dietaryRestrictions?: boolean
+    accessibilityNeeds?: boolean
+    notes?: boolean
     createdAt?: boolean
     createdBy?: boolean
     updatedBy?: boolean
@@ -10808,10 +10844,14 @@ export namespace Prisma {
     branchId?: boolean
     customerName?: boolean
     customerEmail?: boolean
+    customerPhone?: boolean
     date?: boolean
     people?: boolean
     timeSlotId?: boolean
     status?: boolean
+    dietaryRestrictions?: boolean
+    accessibilityNeeds?: boolean
+    notes?: boolean
     createdAt?: boolean
     createdBy?: boolean
     updatedBy?: boolean
@@ -10824,16 +10864,20 @@ export namespace Prisma {
     branchId?: boolean
     customerName?: boolean
     customerEmail?: boolean
+    customerPhone?: boolean
     date?: boolean
     people?: boolean
     timeSlotId?: boolean
     status?: boolean
+    dietaryRestrictions?: boolean
+    accessibilityNeeds?: boolean
+    notes?: boolean
     createdAt?: boolean
     createdBy?: boolean
     updatedBy?: boolean
   }
 
-  export type ReservationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "branchId" | "customerName" | "customerEmail" | "date" | "people" | "timeSlotId" | "status" | "createdAt" | "createdBy" | "updatedBy", ExtArgs["result"]["reservation"]>
+  export type ReservationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "branchId" | "customerName" | "customerEmail" | "customerPhone" | "date" | "people" | "timeSlotId" | "status" | "dietaryRestrictions" | "accessibilityNeeds" | "notes" | "createdAt" | "createdBy" | "updatedBy", ExtArgs["result"]["reservation"]>
   export type ReservationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     timeSlot?: boolean | Reservation$timeSlotArgs<ExtArgs>
@@ -10861,10 +10905,14 @@ export namespace Prisma {
       branchId: string
       customerName: string
       customerEmail: string
+      customerPhone: string | null
       date: Date
       people: number
       timeSlotId: string | null
       status: $Enums.ReservationStatus
+      dietaryRestrictions: string | null
+      accessibilityNeeds: string | null
+      notes: string | null
       createdAt: Date
       createdBy: string | null
       updatedBy: string | null
@@ -11298,10 +11346,14 @@ export namespace Prisma {
     readonly branchId: FieldRef<"Reservation", 'String'>
     readonly customerName: FieldRef<"Reservation", 'String'>
     readonly customerEmail: FieldRef<"Reservation", 'String'>
+    readonly customerPhone: FieldRef<"Reservation", 'String'>
     readonly date: FieldRef<"Reservation", 'DateTime'>
     readonly people: FieldRef<"Reservation", 'Int'>
     readonly timeSlotId: FieldRef<"Reservation", 'String'>
     readonly status: FieldRef<"Reservation", 'ReservationStatus'>
+    readonly dietaryRestrictions: FieldRef<"Reservation", 'String'>
+    readonly accessibilityNeeds: FieldRef<"Reservation", 'String'>
+    readonly notes: FieldRef<"Reservation", 'String'>
     readonly createdAt: FieldRef<"Reservation", 'DateTime'>
     readonly createdBy: FieldRef<"Reservation", 'String'>
     readonly updatedBy: FieldRef<"Reservation", 'String'>
@@ -12808,58 +12860,102 @@ export namespace Prisma {
 
   export type AggregateTimeSlot = {
     _count: TimeSlotCountAggregateOutputType | null
+    _avg: TimeSlotAvgAggregateOutputType | null
+    _sum: TimeSlotSumAggregateOutputType | null
     _min: TimeSlotMinAggregateOutputType | null
     _max: TimeSlotMaxAggregateOutputType | null
   }
 
+  export type TimeSlotAvgAggregateOutputType = {
+    pricePerPerson: Decimal | null
+  }
+
+  export type TimeSlotSumAggregateOutputType = {
+    pricePerPerson: Decimal | null
+  }
+
   export type TimeSlotMinAggregateOutputType = {
     id: string | null
-    label: string | null
     startTime: Date | null
     endTime: Date | null
+    pricePerPerson: Decimal | null
+    notes: string | null
+    isActive: boolean | null
     branchId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type TimeSlotMaxAggregateOutputType = {
     id: string | null
-    label: string | null
     startTime: Date | null
     endTime: Date | null
+    pricePerPerson: Decimal | null
+    notes: string | null
+    isActive: boolean | null
     branchId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type TimeSlotCountAggregateOutputType = {
     id: number
-    label: number
     startTime: number
     endTime: number
+    daysOfWeek: number
+    pricePerPerson: number
+    notes: number
+    isActive: number
     branchId: number
+    createdAt: number
+    updatedAt: number
     _all: number
   }
 
 
+  export type TimeSlotAvgAggregateInputType = {
+    pricePerPerson?: true
+  }
+
+  export type TimeSlotSumAggregateInputType = {
+    pricePerPerson?: true
+  }
+
   export type TimeSlotMinAggregateInputType = {
     id?: true
-    label?: true
     startTime?: true
     endTime?: true
+    pricePerPerson?: true
+    notes?: true
+    isActive?: true
     branchId?: true
+    createdAt?: true
+    updatedAt?: true
   }
 
   export type TimeSlotMaxAggregateInputType = {
     id?: true
-    label?: true
     startTime?: true
     endTime?: true
+    pricePerPerson?: true
+    notes?: true
+    isActive?: true
     branchId?: true
+    createdAt?: true
+    updatedAt?: true
   }
 
   export type TimeSlotCountAggregateInputType = {
     id?: true
-    label?: true
     startTime?: true
     endTime?: true
+    daysOfWeek?: true
+    pricePerPerson?: true
+    notes?: true
+    isActive?: true
     branchId?: true
+    createdAt?: true
+    updatedAt?: true
     _all?: true
   }
 
@@ -12901,6 +12997,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: TimeSlotAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TimeSlotSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: TimeSlotMinAggregateInputType
@@ -12931,17 +13039,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: TimeSlotCountAggregateInputType | true
+    _avg?: TimeSlotAvgAggregateInputType
+    _sum?: TimeSlotSumAggregateInputType
     _min?: TimeSlotMinAggregateInputType
     _max?: TimeSlotMaxAggregateInputType
   }
 
   export type TimeSlotGroupByOutputType = {
     id: string
-    label: string
     startTime: Date
     endTime: Date
+    daysOfWeek: string[]
+    pricePerPerson: Decimal | null
+    notes: string | null
+    isActive: boolean
     branchId: string
+    createdAt: Date
+    updatedAt: Date
     _count: TimeSlotCountAggregateOutputType | null
+    _avg: TimeSlotAvgAggregateOutputType | null
+    _sum: TimeSlotSumAggregateOutputType | null
     _min: TimeSlotMinAggregateOutputType | null
     _max: TimeSlotMaxAggregateOutputType | null
   }
@@ -12962,10 +13079,15 @@ export namespace Prisma {
 
   export type TimeSlotSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    label?: boolean
     startTime?: boolean
     endTime?: boolean
+    daysOfWeek?: boolean
+    pricePerPerson?: boolean
+    notes?: boolean
+    isActive?: boolean
     branchId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | TimeSlot$reservationsArgs<ExtArgs>
     _count?: boolean | TimeSlotCountOutputTypeDefaultArgs<ExtArgs>
@@ -12973,31 +13095,46 @@ export namespace Prisma {
 
   export type TimeSlotSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    label?: boolean
     startTime?: boolean
     endTime?: boolean
+    daysOfWeek?: boolean
+    pricePerPerson?: boolean
+    notes?: boolean
+    isActive?: boolean
     branchId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["timeSlot"]>
 
   export type TimeSlotSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    label?: boolean
     startTime?: boolean
     endTime?: boolean
+    daysOfWeek?: boolean
+    pricePerPerson?: boolean
+    notes?: boolean
+    isActive?: boolean
     branchId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["timeSlot"]>
 
   export type TimeSlotSelectScalar = {
     id?: boolean
-    label?: boolean
     startTime?: boolean
     endTime?: boolean
+    daysOfWeek?: boolean
+    pricePerPerson?: boolean
+    notes?: boolean
+    isActive?: boolean
     branchId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
   }
 
-  export type TimeSlotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "label" | "startTime" | "endTime" | "branchId", ExtArgs["result"]["timeSlot"]>
+  export type TimeSlotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "startTime" | "endTime" | "daysOfWeek" | "pricePerPerson" | "notes" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["timeSlot"]>
   export type TimeSlotInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | TimeSlot$reservationsArgs<ExtArgs>
@@ -13018,10 +13155,15 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      label: string
       startTime: Date
       endTime: Date
+      daysOfWeek: string[]
+      pricePerPerson: Prisma.Decimal | null
+      notes: string | null
+      isActive: boolean
       branchId: string
+      createdAt: Date
+      updatedAt: Date
     }, ExtArgs["result"]["timeSlot"]>
     composites: {}
   }
@@ -13448,10 +13590,15 @@ export namespace Prisma {
    */
   interface TimeSlotFieldRefs {
     readonly id: FieldRef<"TimeSlot", 'String'>
-    readonly label: FieldRef<"TimeSlot", 'String'>
     readonly startTime: FieldRef<"TimeSlot", 'DateTime'>
     readonly endTime: FieldRef<"TimeSlot", 'DateTime'>
+    readonly daysOfWeek: FieldRef<"TimeSlot", 'String[]'>
+    readonly pricePerPerson: FieldRef<"TimeSlot", 'Decimal'>
+    readonly notes: FieldRef<"TimeSlot", 'String'>
+    readonly isActive: FieldRef<"TimeSlot", 'Boolean'>
     readonly branchId: FieldRef<"TimeSlot", 'String'>
+    readonly createdAt: FieldRef<"TimeSlot", 'DateTime'>
+    readonly updatedAt: FieldRef<"TimeSlot", 'DateTime'>
   }
     
 
@@ -20756,10 +20903,14 @@ export namespace Prisma {
     branchId: 'branchId',
     customerName: 'customerName',
     customerEmail: 'customerEmail',
+    customerPhone: 'customerPhone',
     date: 'date',
     people: 'people',
     timeSlotId: 'timeSlotId',
     status: 'status',
+    dietaryRestrictions: 'dietaryRestrictions',
+    accessibilityNeeds: 'accessibilityNeeds',
+    notes: 'notes',
     createdAt: 'createdAt',
     createdBy: 'createdBy',
     updatedBy: 'updatedBy'
@@ -20779,10 +20930,15 @@ export namespace Prisma {
 
   export const TimeSlotScalarFieldEnum: {
     id: 'id',
-    label: 'label',
     startTime: 'startTime',
     endTime: 'endTime',
-    branchId: 'branchId'
+    daysOfWeek: 'daysOfWeek',
+    pricePerPerson: 'pricePerPerson',
+    notes: 'notes',
+    isActive: 'isActive',
+    branchId: 'branchId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   };
 
   export type TimeSlotScalarFieldEnum = (typeof TimeSlotScalarFieldEnum)[keyof typeof TimeSlotScalarFieldEnum]
@@ -20968,20 +21124,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'PriceType'
-   */
-  export type EnumPriceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceType'>
-    
-
-
-  /**
-   * Reference to a field of type 'PriceType[]'
-   */
-  export type ListEnumPriceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceType[]'>
-    
-
-
-  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -20992,6 +21134,20 @@ export namespace Prisma {
    * Reference to a field of type 'Decimal[]'
    */
   export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'PriceType'
+   */
+  export type EnumPriceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceType'>
+    
+
+
+  /**
+   * Reference to a field of type 'PriceType[]'
+   */
+  export type ListEnumPriceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceType[]'>
     
 
 
@@ -21503,10 +21659,14 @@ export namespace Prisma {
     branchId?: StringFilter<"Reservation"> | string
     customerName?: StringFilter<"Reservation"> | string
     customerEmail?: StringFilter<"Reservation"> | string
+    customerPhone?: StringNullableFilter<"Reservation"> | string | null
     date?: DateTimeFilter<"Reservation"> | Date | string
     people?: IntFilter<"Reservation"> | number
     timeSlotId?: StringNullableFilter<"Reservation"> | string | null
     status?: EnumReservationStatusFilter<"Reservation"> | $Enums.ReservationStatus
+    dietaryRestrictions?: StringNullableFilter<"Reservation"> | string | null
+    accessibilityNeeds?: StringNullableFilter<"Reservation"> | string | null
+    notes?: StringNullableFilter<"Reservation"> | string | null
     createdAt?: DateTimeFilter<"Reservation"> | Date | string
     createdBy?: StringNullableFilter<"Reservation"> | string | null
     updatedBy?: StringNullableFilter<"Reservation"> | string | null
@@ -21520,10 +21680,14 @@ export namespace Prisma {
     branchId?: SortOrder
     customerName?: SortOrder
     customerEmail?: SortOrder
+    customerPhone?: SortOrderInput | SortOrder
     date?: SortOrder
     people?: SortOrder
     timeSlotId?: SortOrderInput | SortOrder
     status?: SortOrder
+    dietaryRestrictions?: SortOrderInput | SortOrder
+    accessibilityNeeds?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     createdBy?: SortOrderInput | SortOrder
     updatedBy?: SortOrderInput | SortOrder
@@ -21540,10 +21704,14 @@ export namespace Prisma {
     branchId?: StringFilter<"Reservation"> | string
     customerName?: StringFilter<"Reservation"> | string
     customerEmail?: StringFilter<"Reservation"> | string
+    customerPhone?: StringNullableFilter<"Reservation"> | string | null
     date?: DateTimeFilter<"Reservation"> | Date | string
     people?: IntFilter<"Reservation"> | number
     timeSlotId?: StringNullableFilter<"Reservation"> | string | null
     status?: EnumReservationStatusFilter<"Reservation"> | $Enums.ReservationStatus
+    dietaryRestrictions?: StringNullableFilter<"Reservation"> | string | null
+    accessibilityNeeds?: StringNullableFilter<"Reservation"> | string | null
+    notes?: StringNullableFilter<"Reservation"> | string | null
     createdAt?: DateTimeFilter<"Reservation"> | Date | string
     createdBy?: StringNullableFilter<"Reservation"> | string | null
     updatedBy?: StringNullableFilter<"Reservation"> | string | null
@@ -21557,10 +21725,14 @@ export namespace Prisma {
     branchId?: SortOrder
     customerName?: SortOrder
     customerEmail?: SortOrder
+    customerPhone?: SortOrderInput | SortOrder
     date?: SortOrder
     people?: SortOrder
     timeSlotId?: SortOrderInput | SortOrder
     status?: SortOrder
+    dietaryRestrictions?: SortOrderInput | SortOrder
+    accessibilityNeeds?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     createdBy?: SortOrderInput | SortOrder
     updatedBy?: SortOrderInput | SortOrder
@@ -21579,10 +21751,14 @@ export namespace Prisma {
     branchId?: StringWithAggregatesFilter<"Reservation"> | string
     customerName?: StringWithAggregatesFilter<"Reservation"> | string
     customerEmail?: StringWithAggregatesFilter<"Reservation"> | string
+    customerPhone?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
     date?: DateTimeWithAggregatesFilter<"Reservation"> | Date | string
     people?: IntWithAggregatesFilter<"Reservation"> | number
     timeSlotId?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
     status?: EnumReservationStatusWithAggregatesFilter<"Reservation"> | $Enums.ReservationStatus
+    dietaryRestrictions?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
+    accessibilityNeeds?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
+    notes?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Reservation"> | Date | string
     createdBy?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
     updatedBy?: StringNullableWithAggregatesFilter<"Reservation"> | string | null
@@ -21641,20 +21817,30 @@ export namespace Prisma {
     OR?: TimeSlotWhereInput[]
     NOT?: TimeSlotWhereInput | TimeSlotWhereInput[]
     id?: StringFilter<"TimeSlot"> | string
-    label?: StringFilter<"TimeSlot"> | string
     startTime?: DateTimeFilter<"TimeSlot"> | Date | string
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
+    daysOfWeek?: StringNullableListFilter<"TimeSlot">
+    pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableFilter<"TimeSlot"> | string | null
+    isActive?: BoolFilter<"TimeSlot"> | boolean
     branchId?: StringFilter<"TimeSlot"> | string
+    createdAt?: DateTimeFilter<"TimeSlot"> | Date | string
+    updatedAt?: DateTimeFilter<"TimeSlot"> | Date | string
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
     reservations?: ReservationListRelationFilter
   }
 
   export type TimeSlotOrderByWithRelationInput = {
     id?: SortOrder
-    label?: SortOrder
     startTime?: SortOrder
     endTime?: SortOrder
+    daysOfWeek?: SortOrder
+    pricePerPerson?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    isActive?: SortOrder
     branchId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
     branch?: BranchOrderByWithRelationInput
     reservations?: ReservationOrderByRelationAggregateInput
   }
@@ -21664,23 +21850,35 @@ export namespace Prisma {
     AND?: TimeSlotWhereInput | TimeSlotWhereInput[]
     OR?: TimeSlotWhereInput[]
     NOT?: TimeSlotWhereInput | TimeSlotWhereInput[]
-    label?: StringFilter<"TimeSlot"> | string
     startTime?: DateTimeFilter<"TimeSlot"> | Date | string
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
+    daysOfWeek?: StringNullableListFilter<"TimeSlot">
+    pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableFilter<"TimeSlot"> | string | null
+    isActive?: BoolFilter<"TimeSlot"> | boolean
     branchId?: StringFilter<"TimeSlot"> | string
+    createdAt?: DateTimeFilter<"TimeSlot"> | Date | string
+    updatedAt?: DateTimeFilter<"TimeSlot"> | Date | string
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
     reservations?: ReservationListRelationFilter
   }, "id">
 
   export type TimeSlotOrderByWithAggregationInput = {
     id?: SortOrder
-    label?: SortOrder
     startTime?: SortOrder
     endTime?: SortOrder
+    daysOfWeek?: SortOrder
+    pricePerPerson?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    isActive?: SortOrder
     branchId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
     _count?: TimeSlotCountOrderByAggregateInput
+    _avg?: TimeSlotAvgOrderByAggregateInput
     _max?: TimeSlotMaxOrderByAggregateInput
     _min?: TimeSlotMinOrderByAggregateInput
+    _sum?: TimeSlotSumOrderByAggregateInput
   }
 
   export type TimeSlotScalarWhereWithAggregatesInput = {
@@ -21688,10 +21886,15 @@ export namespace Prisma {
     OR?: TimeSlotScalarWhereWithAggregatesInput[]
     NOT?: TimeSlotScalarWhereWithAggregatesInput | TimeSlotScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"TimeSlot"> | string
-    label?: StringWithAggregatesFilter<"TimeSlot"> | string
     startTime?: DateTimeWithAggregatesFilter<"TimeSlot"> | Date | string
     endTime?: DateTimeWithAggregatesFilter<"TimeSlot"> | Date | string
+    daysOfWeek?: StringNullableListFilter<"TimeSlot">
+    pricePerPerson?: DecimalNullableWithAggregatesFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableWithAggregatesFilter<"TimeSlot"> | string | null
+    isActive?: BoolWithAggregatesFilter<"TimeSlot"> | boolean
     branchId?: StringWithAggregatesFilter<"TimeSlot"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"TimeSlot"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"TimeSlot"> | Date | string
   }
 
   export type CategoryWhereInput = {
@@ -22570,9 +22773,13 @@ export namespace Prisma {
     id?: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -22586,10 +22793,14 @@ export namespace Prisma {
     branchId: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     timeSlotId?: string | null
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -22600,9 +22811,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22616,10 +22831,14 @@ export namespace Prisma {
     branchId?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     timeSlotId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22631,10 +22850,14 @@ export namespace Prisma {
     branchId: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     timeSlotId?: string | null
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -22644,9 +22867,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22657,10 +22884,14 @@ export namespace Prisma {
     branchId?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     timeSlotId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -22708,61 +22939,96 @@ export namespace Prisma {
 
   export type TimeSlotCreateInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
     branch: BranchCreateNestedOneWithoutTimeSlotsInput
     reservations?: ReservationCreateNestedManyWithoutTimeSlotInput
   }
 
   export type TimeSlotUncheckedCreateInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
     branchId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
     reservations?: ReservationUncheckedCreateNestedManyWithoutTimeSlotInput
   }
 
   export type TimeSlotUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     branch?: BranchUpdateOneRequiredWithoutTimeSlotsNestedInput
     reservations?: ReservationUpdateManyWithoutTimeSlotNestedInput
   }
 
   export type TimeSlotUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     branchId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     reservations?: ReservationUncheckedUpdateManyWithoutTimeSlotNestedInput
   }
 
   export type TimeSlotCreateManyInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
     branchId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TimeSlotUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TimeSlotUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     branchId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CategoryCreateInput = {
@@ -23687,10 +23953,14 @@ export namespace Prisma {
     branchId?: SortOrder
     customerName?: SortOrder
     customerEmail?: SortOrder
+    customerPhone?: SortOrder
     date?: SortOrder
     people?: SortOrder
     timeSlotId?: SortOrder
     status?: SortOrder
+    dietaryRestrictions?: SortOrder
+    accessibilityNeeds?: SortOrder
+    notes?: SortOrder
     createdAt?: SortOrder
     createdBy?: SortOrder
     updatedBy?: SortOrder
@@ -23705,10 +23975,14 @@ export namespace Prisma {
     branchId?: SortOrder
     customerName?: SortOrder
     customerEmail?: SortOrder
+    customerPhone?: SortOrder
     date?: SortOrder
     people?: SortOrder
     timeSlotId?: SortOrder
     status?: SortOrder
+    dietaryRestrictions?: SortOrder
+    accessibilityNeeds?: SortOrder
+    notes?: SortOrder
     createdAt?: SortOrder
     createdBy?: SortOrder
     updatedBy?: SortOrder
@@ -23719,10 +23993,14 @@ export namespace Prisma {
     branchId?: SortOrder
     customerName?: SortOrder
     customerEmail?: SortOrder
+    customerPhone?: SortOrder
     date?: SortOrder
     people?: SortOrder
     timeSlotId?: SortOrder
     status?: SortOrder
+    dietaryRestrictions?: SortOrder
+    accessibilityNeeds?: SortOrder
+    notes?: SortOrder
     createdAt?: SortOrder
     createdBy?: SortOrder
     updatedBy?: SortOrder
@@ -23770,28 +24048,84 @@ export namespace Prisma {
     tableId?: SortOrder
   }
 
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type TimeSlotCountOrderByAggregateInput = {
     id?: SortOrder
-    label?: SortOrder
     startTime?: SortOrder
     endTime?: SortOrder
+    daysOfWeek?: SortOrder
+    pricePerPerson?: SortOrder
+    notes?: SortOrder
+    isActive?: SortOrder
     branchId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TimeSlotAvgOrderByAggregateInput = {
+    pricePerPerson?: SortOrder
   }
 
   export type TimeSlotMaxOrderByAggregateInput = {
     id?: SortOrder
-    label?: SortOrder
     startTime?: SortOrder
     endTime?: SortOrder
+    pricePerPerson?: SortOrder
+    notes?: SortOrder
+    isActive?: SortOrder
     branchId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type TimeSlotMinOrderByAggregateInput = {
     id?: SortOrder
-    label?: SortOrder
     startTime?: SortOrder
     endTime?: SortOrder
+    pricePerPerson?: SortOrder
+    notes?: SortOrder
+    isActive?: SortOrder
     branchId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type TimeSlotSumOrderByAggregateInput = {
+    pricePerPerson?: SortOrder
+  }
+
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type ProductListRelationFilter = {
@@ -24822,6 +25156,10 @@ export namespace Prisma {
     update?: XOR<XOR<TableUpdateToOneWithWhereWithoutReservationsInput, TableUpdateWithoutReservationsInput>, TableUncheckedUpdateWithoutReservationsInput>
   }
 
+  export type TimeSlotCreatedaysOfWeekInput = {
+    set: string[]
+  }
+
   export type BranchCreateNestedOneWithoutTimeSlotsInput = {
     create?: XOR<BranchCreateWithoutTimeSlotsInput, BranchUncheckedCreateWithoutTimeSlotsInput>
     connectOrCreate?: BranchCreateOrConnectWithoutTimeSlotsInput
@@ -24840,6 +25178,19 @@ export namespace Prisma {
     connectOrCreate?: ReservationCreateOrConnectWithoutTimeSlotInput | ReservationCreateOrConnectWithoutTimeSlotInput[]
     createMany?: ReservationCreateManyTimeSlotInputEnvelope
     connect?: ReservationWhereUniqueInput | ReservationWhereUniqueInput[]
+  }
+
+  export type TimeSlotUpdatedaysOfWeekInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
   }
 
   export type BranchUpdateOneRequiredWithoutTimeSlotsNestedInput = {
@@ -25420,6 +25771,33 @@ export namespace Prisma {
     _max?: NestedEnumReservationStatusFilter<$PrismaModel>
   }
 
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumPriceTypeFilter<$PrismaModel = never> = {
     equals?: $Enums.PriceType | EnumPriceTypeFieldRefInput<$PrismaModel>
     in?: $Enums.PriceType[] | ListEnumPriceTypeFieldRefInput<$PrismaModel>
@@ -25871,9 +26249,13 @@ export namespace Prisma {
     id?: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -25885,10 +26267,14 @@ export namespace Prisma {
     id?: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     timeSlotId?: string | null
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -25973,17 +26359,27 @@ export namespace Prisma {
 
   export type TimeSlotCreateWithoutBranchInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
     reservations?: ReservationCreateNestedManyWithoutTimeSlotInput
   }
 
   export type TimeSlotUncheckedCreateWithoutBranchInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
     reservations?: ReservationUncheckedCreateNestedManyWithoutTimeSlotInput
   }
 
@@ -26102,10 +26498,14 @@ export namespace Prisma {
     branchId?: StringFilter<"Reservation"> | string
     customerName?: StringFilter<"Reservation"> | string
     customerEmail?: StringFilter<"Reservation"> | string
+    customerPhone?: StringNullableFilter<"Reservation"> | string | null
     date?: DateTimeFilter<"Reservation"> | Date | string
     people?: IntFilter<"Reservation"> | number
     timeSlotId?: StringNullableFilter<"Reservation"> | string | null
     status?: EnumReservationStatusFilter<"Reservation"> | $Enums.ReservationStatus
+    dietaryRestrictions?: StringNullableFilter<"Reservation"> | string | null
+    accessibilityNeeds?: StringNullableFilter<"Reservation"> | string | null
+    notes?: StringNullableFilter<"Reservation"> | string | null
     createdAt?: DateTimeFilter<"Reservation"> | Date | string
     createdBy?: StringNullableFilter<"Reservation"> | string | null
     updatedBy?: StringNullableFilter<"Reservation"> | string | null
@@ -26193,10 +26593,15 @@ export namespace Prisma {
     OR?: TimeSlotScalarWhereInput[]
     NOT?: TimeSlotScalarWhereInput | TimeSlotScalarWhereInput[]
     id?: StringFilter<"TimeSlot"> | string
-    label?: StringFilter<"TimeSlot"> | string
     startTime?: DateTimeFilter<"TimeSlot"> | Date | string
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
+    daysOfWeek?: StringNullableListFilter<"TimeSlot">
+    pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    notes?: StringNullableFilter<"TimeSlot"> | string | null
+    isActive?: BoolFilter<"TimeSlot"> | boolean
     branchId?: StringFilter<"TimeSlot"> | string
+    createdAt?: DateTimeFilter<"TimeSlot"> | Date | string
+    updatedAt?: DateTimeFilter<"TimeSlot"> | Date | string
   }
 
   export type ProductOnBranchUpsertWithWhereUniqueWithoutBranchInput = {
@@ -26513,18 +26918,28 @@ export namespace Prisma {
 
   export type TimeSlotCreateWithoutReservationsInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
     branch: BranchCreateNestedOneWithoutTimeSlotsInput
   }
 
   export type TimeSlotUncheckedCreateWithoutReservationsInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
     branchId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TimeSlotCreateOrConnectWithoutReservationsInput = {
@@ -26602,18 +27017,28 @@ export namespace Prisma {
 
   export type TimeSlotUpdateWithoutReservationsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     branch?: BranchUpdateOneRequiredWithoutTimeSlotsNestedInput
   }
 
   export type TimeSlotUncheckedUpdateWithoutReservationsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     branchId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ReservationTableUpsertWithWhereUniqueWithoutReservationInput = {
@@ -26636,9 +27061,13 @@ export namespace Prisma {
     id?: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -26651,10 +27080,14 @@ export namespace Prisma {
     branchId: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     timeSlotId?: string | null
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -26701,9 +27134,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -26716,10 +27153,14 @@ export namespace Prisma {
     branchId?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     timeSlotId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -26787,9 +27228,13 @@ export namespace Prisma {
     id?: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -26802,9 +27247,13 @@ export namespace Prisma {
     branchId: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -27688,10 +28137,14 @@ export namespace Prisma {
     id?: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     timeSlotId?: string | null
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -27720,9 +28173,14 @@ export namespace Prisma {
 
   export type TimeSlotCreateManyBranchInput = {
     id?: string
-    label: string
     startTime: Date | string
     endTime: Date | string
+    daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
+    pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    notes?: string | null
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type ProductOnBranchCreateManyBranchInput = {
@@ -27744,9 +28202,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27758,10 +28220,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     timeSlotId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27772,10 +28238,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     timeSlotId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27850,25 +28320,40 @@ export namespace Prisma {
 
   export type TimeSlotUpdateWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     reservations?: ReservationUpdateManyWithoutTimeSlotNestedInput
   }
 
   export type TimeSlotUncheckedUpdateWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     reservations?: ReservationUncheckedUpdateManyWithoutTimeSlotNestedInput
   }
 
   export type TimeSlotUncheckedUpdateManyWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
-    label?: StringFieldUpdateOperationsInput | string
     startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
+    pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ProductOnBranchUpdateWithoutBranchInput = {
@@ -27963,9 +28448,13 @@ export namespace Prisma {
     branchId: string
     customerName: string
     customerEmail: string
+    customerPhone?: string | null
     date: Date | string
     people: number
     status?: $Enums.ReservationStatus
+    dietaryRestrictions?: string | null
+    accessibilityNeeds?: string | null
+    notes?: string | null
     createdAt?: Date | string
     createdBy?: string | null
     updatedBy?: string | null
@@ -27975,9 +28464,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27990,9 +28483,13 @@ export namespace Prisma {
     branchId?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28004,9 +28501,13 @@ export namespace Prisma {
     branchId?: StringFieldUpdateOperationsInput | string
     customerName?: StringFieldUpdateOperationsInput | string
     customerEmail?: StringFieldUpdateOperationsInput | string
+    customerPhone?: NullableStringFieldUpdateOperationsInput | string | null
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     people?: IntFieldUpdateOperationsInput | number
     status?: EnumReservationStatusFieldUpdateOperationsInput | $Enums.ReservationStatus
+    dietaryRestrictions?: NullableStringFieldUpdateOperationsInput | string | null
+    accessibilityNeeds?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdBy?: NullableStringFieldUpdateOperationsInput | string | null
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
