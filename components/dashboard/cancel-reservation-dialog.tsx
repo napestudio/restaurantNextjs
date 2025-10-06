@@ -15,12 +15,14 @@ interface CancelReservationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  isPending?: boolean;
 }
 
 export function CancelReservationDialog({
   open,
   onOpenChange,
   onConfirm,
+  isPending,
 }: CancelReservationDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -33,10 +35,13 @@ export function CancelReservationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>No, keep it</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            No, keep it
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700"
+            disabled={isPending}
           >
             Yes, cancel reservation
           </AlertDialogAction>

@@ -8,10 +8,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "lucide-react";
-import type { Reservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 
 interface ReservationStatsOverviewProps {
-  reservations: Reservation[];
+  reservations: SerializedReservation[];
 }
 
 export function ReservationStatsOverview({
@@ -19,9 +19,9 @@ export function ReservationStatsOverview({
 }: ReservationStatsOverviewProps) {
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter((r) => r.status === "confirmed").length,
-    pending: reservations.filter((r) => r.status === "pending").length,
-    totalGuests: reservations.reduce((sum, res) => sum + res.guests, 0),
+    confirmed: reservations.filter((r) => r.status === "CONFIRMED").length,
+    pending: reservations.filter((r) => r.status === "PENDING").length,
+    totalGuests: reservations.reduce((sum, res) => sum + res.people, 0),
   };
 
   return (

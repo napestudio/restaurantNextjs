@@ -25,15 +25,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Trash2, Filter } from "lucide-react";
-import type { Reservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { format, parseISO } from "date-fns";
+import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 
 interface ReservationsTableProps {
-  reservations: Reservation[];
+  reservations: SerializedReservation[];
   statusFilter: string;
   onStatusFilterChange: (status: string) => void;
-  onStatusUpdate: (id: number, status: string) => void;
-  onView: (reservation: Reservation) => void;
-  onCancel: (id: number) => void;
+  onStatusUpdate: (id: string, status: string) => void;
+  onView: (reservation: SerializedReservation) => void;
+  onCancel: (id: string) => void;
 }
 
 export function ReservationsTable({
@@ -47,7 +48,7 @@ export function ReservationsTable({
   const filteredReservations =
     statusFilter === "all"
       ? reservations
-      : reservations.filter((res) => res.status === statusFilter);
+      : reservations.filter((res) => res.status.toLowerCase() === statusFilter);
 
   return (
     <Card>
@@ -102,35 +103,40 @@ export function ReservationsTable({
               filteredReservations.map((reservation) => (
                 <TableRow key={reservation.id}>
                   <TableCell className="font-mono text-sm">
-                    #{reservation.id}
+                    {reservation.id.slice(0, 8)}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {reservation.name}
+                    {reservation.customerName}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{reservation.email}</div>
+                      <div>{reservation.customerEmail}</div>
                       <div className="text-muted-foreground">
-                        {reservation.phone}
+                        {reservation.customerPhone}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div className="font-medium">{reservation.date}</div>
+                      <div className="font-medium">
+                        {format(parseISO(reservation.date), 'MMM dd, yyyy')}
+                      </div>
                       <div className="text-muted-foreground">
-                        {reservation.time}
+                        {reservation.timeSlot
+                          ? `${reservation.timeSlot.startTime.slice(
+                              11,
+                              16
+                            )} - ${reservation.timeSlot.endTime.slice(11, 16)}`
+                          : "No time slot"}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {reservation.guests} guests
-                    </Badge>
+                    <Badge variant="outline">{reservation.people} guests</Badge>
                   </TableCell>
                   <TableCell>
                     <Select
-                      value={reservation.status}
+                      value={reservation.status.toLowerCase()}
                       onValueChange={(value) =>
                         onStatusUpdate(reservation.id, value)
                       }
@@ -141,7 +147,7 @@ export function ReservationsTable({
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="canceled">Canceled</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

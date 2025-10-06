@@ -41,6 +41,7 @@ interface CreateReservationDialogProps {
   onOpenChange: (open: boolean) => void;
   onCreate: (reservation: NewReservation) => void;
   timeSlots: TimeSlot[];
+  isPending?: boolean;
 }
 
 export function CreateReservationDialog({
@@ -48,6 +49,7 @@ export function CreateReservationDialog({
   onOpenChange,
   onCreate,
   timeSlots,
+  isPending,
 }: CreateReservationDialogProps) {
   const [newReservation, setNewReservation] = useState<NewReservation>({
     name: "",
@@ -331,12 +333,17 @@ export function CreateReservationDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleCreate}
             className="bg-red-600 hover:bg-red-700"
+            disabled={isPending}
           >
             Create Reservation
           </Button>
