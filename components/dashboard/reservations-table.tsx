@@ -55,7 +55,7 @@ export function ReservationsTable({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>All Reservations</CardTitle>
+            <CardTitle>Gestión de Reservas</CardTitle>
             <CardDescription>
               Manage and track all customer reservations
             </CardDescription>
@@ -119,7 +119,7 @@ export function ReservationsTable({
                   <TableCell>
                     <div className="text-sm">
                       <div className="font-medium">
-                        {format(parseISO(reservation.date), 'MMM dd, yyyy')}
+                        {format(parseISO(reservation.date), "MMM dd, yyyy")}
                       </div>
                       <div className="text-muted-foreground">
                         {reservation.timeSlot

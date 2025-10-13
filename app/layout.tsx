@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Restaurant Management System",
-  description: "Manage your restaurant operations - reservations, orders, tables, and more",
+  title: "Kiku Sushi",
+  description:
+    "Manage your restaurant operations - reservations, orders, tables, and more",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -26,9 +27,7 @@ export const metadata: Metadata = {
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [
-      { url: "/icon-152x152.png", sizes: "152x152", type: "image/png" },
-    ],
+    apple: [{ url: "/icon-152x152.png", sizes: "152x152", type: "image/png" }],
   },
 };
 
@@ -41,7 +40,10 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#3b82f6" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

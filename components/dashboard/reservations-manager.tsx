@@ -4,7 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import type { TimeSlot, SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import type {
+  TimeSlot,
+  SerializedReservation,
+} from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import {
   createReservation,
   updateReservationStatus,
@@ -41,8 +44,12 @@ export function ReservationsManager({
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const handleStatusUpdate = async (id: string, status: string) => {
+    console.log(status, "status");
     startTransition(async () => {
-      const result = await updateReservationStatus(id, status as ReservationStatus);
+      const result = await updateReservationStatus(
+        id,
+        status.toUpperCase() as ReservationStatus
+      );
 
       if (result.success) {
         router.refresh();

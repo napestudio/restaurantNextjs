@@ -11,15 +11,15 @@ export async function loginWithCredentials(formData: FormData) {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/",
+      redirectTo: "/dashboard",
     });
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return { error: "Invalid credentials" };
+          return { error: "Usuario o Contraseña incorrectos" };
         default:
-          return { error: "Something went wrong" };
+          return { error: "Algo salió mal" };
       }
     }
     throw error;

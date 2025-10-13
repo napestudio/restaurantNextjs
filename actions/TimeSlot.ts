@@ -64,8 +64,16 @@ export async function getTimeSlots(branchId: string) {
     return {
       success: true,
       data: timeSlots.map((slot) => ({
-        ...slot,
+        id: slot.id,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
+        notes: slot.notes,
+        isActive: slot.isActive,
+        branchId: slot.branchId,
+        createdAt: slot.createdAt,
+        updatedAt: slot.updatedAt,
       })),
     };
   } catch (error) {
@@ -242,7 +250,21 @@ export async function getAvailableTimeSlotsForDate(
       },
     });
 
-    return { success: true, data: timeSlots };
+    // Serialize the data for client components
+    const serializedSlots = timeSlots.map((slot) => ({
+      id: slot.id,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      daysOfWeek: slot.daysOfWeek,
+      pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
+      notes: slot.notes,
+      isActive: slot.isActive,
+      branchId: slot.branchId,
+      createdAt: slot.createdAt,
+      updatedAt: slot.updatedAt,
+    }));
+
+    return { success: true, data: serializedSlots };
   } catch (error) {
     console.error("Error fetching available time slots:", error);
     return { success: false, error: "Failed to fetch available time slots" };

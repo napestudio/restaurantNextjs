@@ -20,6 +20,7 @@ export async function createReservation(data: {
   accessibilityNeeds?: string;
   notes?: string;
   status?: ReservationStatus;
+  createdBy?: string;
 }) {
   console.log("creating", data);
   try {
@@ -39,6 +40,7 @@ export async function createReservation(data: {
         accessibilityNeeds: data.accessibilityNeeds,
         notes: data.notes,
         status: data.status || ReservationStatus.PENDING,
+        createdBy: data.createdBy || "ANON",
       },
       include: {
         timeSlot: true,
@@ -46,8 +48,19 @@ export async function createReservation(data: {
       },
     });
 
+    // Serialize the data for client components
+    const serializedReservation = {
+      ...reservation,
+      timeSlot: reservation.timeSlot
+        ? {
+            ...reservation.timeSlot,
+            pricePerPerson: reservation.timeSlot.pricePerPerson?.toNumber() || 0,
+          }
+        : null,
+    };
+
     revalidatePath("/dashboard/reservations");
-    return { success: true, data: reservation };
+    return { success: true, data: serializedReservation };
   } catch (error) {
     console.error("Error creating reservation:", error);
     return { success: false, error: "Failed to create reservation" };
