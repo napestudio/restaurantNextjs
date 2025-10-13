@@ -11,6 +11,11 @@
       "adminOnly": true
     },
     {
+      "label": "Turnos",
+      "href": "/dashboard/reservations/slots",
+      "adminOnly": true
+    },
+    {
       "label": "Usuarios",
       "href": "/dashboard/users",
       "adminOnly": true

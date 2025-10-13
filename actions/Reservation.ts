@@ -5,6 +5,27 @@ import { revalidatePath } from "next/cache";
 import { ReservationStatus } from "@/app/generated/prisma";
 
 /**
+ * Helper function to serialize reservation data for client components
+ */
+function serializeReservation(reservation: any) {
+  return {
+    ...reservation,
+    timeSlot: reservation.timeSlot
+      ? {
+          ...reservation.timeSlot,
+          pricePerPerson: reservation.timeSlot.pricePerPerson?.toNumber() || 0,
+        }
+      : null,
+    tables: reservation.tables
+      ? reservation.tables.map((rt: any) => ({
+          ...rt,
+          table: rt.table,
+        }))
+      : undefined,
+  };
+}
+
+/**
  * Create a new reservation
  */
 export async function createReservation(data: {
@@ -48,19 +69,8 @@ export async function createReservation(data: {
       },
     });
 
-    // Serialize the data for client components
-    const serializedReservation = {
-      ...reservation,
-      timeSlot: reservation.timeSlot
-        ? {
-            ...reservation.timeSlot,
-            pricePerPerson: reservation.timeSlot.pricePerPerson?.toNumber() || 0,
-          }
-        : null,
-    };
-
     revalidatePath("/dashboard/reservations");
-    return { success: true, data: serializedReservation };
+    return { success: true, data: serializeReservation(reservation) };
   } catch (error) {
     console.error("Error creating reservation:", error);
     return { success: false, error: "Failed to create reservation" };
@@ -89,7 +99,10 @@ export async function getReservations(branchId: string) {
       },
     });
 
-    return { success: true, data: reservations };
+    return {
+      success: true,
+      data: reservations.map((r) => serializeReservation(r)),
+    };
   } catch (error) {
     console.error("Error fetching reservations:", error);
     return { success: false, error: "Failed to fetch reservations" };
@@ -118,7 +131,7 @@ export async function getReservationById(id: string) {
       return { success: false, error: "Reservation not found" };
     }
 
-    return { success: true, data: reservation };
+    return { success: true, data: serializeReservation(reservation) };
   } catch (error) {
     console.error("Error fetching reservation:", error);
     return { success: false, error: "Failed to fetch reservation" };
@@ -198,7 +211,7 @@ export async function updateReservation(
     });
 
     revalidatePath("/dashboard/reservations");
-    return { success: true, data: reservation };
+    return { success: true, data: serializeReservation(reservation) };
   } catch (error) {
     console.error("Error updating reservation:", error);
     return { success: false, error: "Failed to update reservation" };
@@ -223,7 +236,7 @@ export async function updateReservationStatus(
     });
 
     revalidatePath("/dashboard/reservations");
-    return { success: true, data: reservation };
+    return { success: true, data: serializeReservation(reservation) };
   } catch (error) {
     console.error("Error updating reservation status:", error);
     return { success: false, error: "Failed to update reservation status" };
@@ -272,7 +285,7 @@ export async function cancelReservation(id: string) {
     });
 
     revalidatePath("/dashboard/reservations");
-    return { success: true, data: reservation };
+    return { success: true, data: serializeReservation(reservation) };
   } catch (error) {
     console.error("Error canceling reservation:", error);
     return { success: false, error: "Failed to cancel reservation" };
@@ -309,7 +322,10 @@ export async function getReservationsByDateRange(
       },
     });
 
-    return { success: true, data: reservations };
+    return {
+      success: true,
+      data: reservations.map((r) => serializeReservation(r)),
+    };
   } catch (error) {
     console.error("Error fetching reservations by date range:", error);
     return {
@@ -345,7 +361,10 @@ export async function getReservationsByStatus(
       },
     });
 
-    return { success: true, data: reservations };
+    return {
+      success: true,
+      data: reservations.map((r) => serializeReservation(r)),
+    };
   } catch (error) {
     console.error("Error fetching reservations by status:", error);
     return {

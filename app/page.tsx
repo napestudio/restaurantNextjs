@@ -1,6 +1,6 @@
-import Navbar from "@/lib/components/Navbar";
-import Hero from "@/lib/components/Hero";
-import homepageData from "@/lib/data/homepage.json";
+import Hero from "@/components/home/hero";
+import Navbar from "@/components/navbar";
+import homepageData from "@/config/homepage.json";
 
 export default function Home() {
   return (

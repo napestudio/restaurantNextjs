@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import LogoutButton from "./LogoutButton";
+import LogoutButton from "./logout-button";
 
 interface NavbarProps {
   logo: string;

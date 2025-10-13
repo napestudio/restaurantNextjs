@@ -28,7 +28,7 @@ export default function Hero({
           <p className="mt-6 max-w-2xl mx-auto text-xl text-gray-500">
             {subtitle}
           </p>
-          <div className="mt-10 flex justify-start gap-4">
+          <div className="mt-10 flex justify-star gap-4">
             <Link
               href="/reservations"
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
