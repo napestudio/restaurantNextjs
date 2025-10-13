@@ -1,0 +1,13 @@
+{
+  "navbar": {
+    "logo": "Kiku Sushi",
+    "loginButton": "Sign In"
+  },
+  "hero": {
+    "title": "Kiku Sushi",
+    "subtitle": "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
+    "ctaButton": "Reservá una mesa",
+    "secondaryButton": "Ver menú",
+    "reservationTitle": "Reservá tu mesa"
+  }
+}
