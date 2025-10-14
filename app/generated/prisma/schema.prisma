@@ -43,6 +43,12 @@ enum PriceType {
   DELIVERY
 }
 
+enum TableShape {
+  SQUARE
+  RECTANGLE
+  CIRCLE
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -127,10 +133,19 @@ model UserOnBranch {
 // MESAS Y RESERVAS
 //
 model Table {
-  id           String             @id @default(cuid())
-  number       Int
-  capacity     Int
-  isActive     Boolean            @default(true)
+  id       String  @id @default(cuid())
+  number   Int
+  capacity Int
+  isActive Boolean @default(true)
+
+  // Floor plan layout properties
+  positionX Float?      @default(0)
+  positionY Float?      @default(0)
+  width     Float?      @default(80)
+  height    Float?      @default(80)
+  rotation  Float?      @default(0) // in degrees
+  shape     TableShape? @default(SQUARE)
+
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String
   reservations ReservationTable[]

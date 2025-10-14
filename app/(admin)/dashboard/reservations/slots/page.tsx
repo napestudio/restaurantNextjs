@@ -3,7 +3,7 @@ import { getTimeSlots } from "@/actions/TimeSlot";
 
 export default async function TimeSlotsPage() {
   // TODO: Get branchId from user session/context
-  const branchId = "seed-branch-1"; // Replace with actual branchId from auth
+  const branchId = process.env.BRANCH_ID || ""; // Replace with actual branchId from auth
 
   const result = await getTimeSlots(branchId);
   const timeSlots = result.success ? result.data : [];

@@ -5,8 +5,7 @@ import { ReservationWithRelations } from "./lib/reservations";
 
 export default async function ReservationsPage() {
   // TODO: Get branchId from user session/context
-  const branchId = "seed-branch-1"; // Replace with actual branchId from auth
-
+  const branchId = process.env.BRANCH_ID || "";
   // Fetch time slots from database
   const timeSlotsResult = await getTimeSlots(branchId);
   const timeSlots = timeSlotsResult.success ? timeSlotsResult.data : [];
