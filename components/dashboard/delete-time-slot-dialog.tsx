@@ -28,20 +28,19 @@ export function DeleteTimeSlotDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Time Slot?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar Turno?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove this time slot. This action cannot be
-            undone.
+            Esto elimina el turno de manera permantente y no se puede revertir.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700"
             disabled={isPending}
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Eliminando..." : "Eliminar"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

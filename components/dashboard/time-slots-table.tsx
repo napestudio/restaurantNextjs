@@ -31,26 +31,24 @@ export function TimeSlotsTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>All Time Slots</CardTitle>
-          <CardDescription>
-            Manage your restaurants time slots and pricing
-          </CardDescription>
+          <CardTitle>Todos los Turnos</CardTitle>
+          <CardDescription>Administra los turnos</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="py-12 text-center">
             <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No Time Slots Yet
+              No hay turnos creados
             </h3>
             <p className="text-gray-600 mb-4">
-              Create your first time slot to get started
+              Crea turnos para comeenzar a aceptar reservas.
             </p>
             <Button
               onClick={onCreateClick}
               className="bg-red-600 hover:bg-red-700"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create Time Slot
+              Crear Turno
             </Button>
           </div>
         </CardContent>
@@ -61,10 +59,8 @@ export function TimeSlotsTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>All Time Slots</CardTitle>
-        <CardDescription>
-          Manage your restaurants time slots and pricing
-        </CardDescription>
+        <CardTitle>Todos los Turnos</CardTitle>
+        <CardDescription>Administra los turnos</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -84,10 +80,10 @@ export function TimeSlotsTable({
 
                       {slot.price > 0 ? (
                         <Badge variant="default" className="bg-green-600">
-                          ${slot.price}/person
+                          ${slot.price}/persona
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">Free</Badge>
+                        <Badge variant="secondary">Gratis</Badge>
                       )}
                     </div>
 
