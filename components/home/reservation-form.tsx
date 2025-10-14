@@ -231,7 +231,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
               <SelectValue placeholder="Personas" />
             </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+              {[1, 2, 3, 4, 5, 6].map((num) => (
                 <SelectItem key={num} value={num.toString()}>
                   {num} {num === 1 ? "Persona" : "Personas"}
                 </SelectItem>
@@ -355,7 +355,9 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         >
           {isPending
             ? "Procesando pago..."
-            : `Pagar reserva ($${selectedSlotPrice * Number.parseInt(formData.guests || "0")})`}
+            : `Pagar reserva ($${
+                selectedSlotPrice * Number.parseInt(formData.guests || "0")
+              })`}
         </Button>
       ) : (
         <Button

@@ -21,7 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/lib/reservations";
-import { getDayOfWeek, formatTime } from "@/app/(admin)/dashboard/reservations/lib/utils";
+import {
+  getDayOfWeek,
+  formatTime,
+} from "@/app/(admin)/dashboard/reservations/lib/utils";
 
 interface NewReservation {
   name: string;
@@ -198,7 +201,7 @@ export function CreateReservationDialog({
                   <SelectValue placeholder="Select guests" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                  {[1, 2, 3, 4, 5, 6].map((num) => (
                     <SelectItem key={num} value={num.toString()}>
                       {num} {num === 1 ? "Guest" : "Guests"}
                     </SelectItem>
@@ -281,7 +284,9 @@ export function CreateReservationDialog({
           </div>
 
           <div>
-            <Label htmlFor="new-accessibility">Accessibility Needs (Optional)</Label>
+            <Label htmlFor="new-accessibility">
+              Accessibility Needs (Optional)
+            </Label>
             <Input
               id="new-accessibility"
               value={newReservation.accessibilityNeeds}
@@ -317,7 +322,9 @@ export function CreateReservationDialog({
           </div>
 
           <div>
-            <Label htmlFor="new-notes">Special Requests / Notes (Optional)</Label>
+            <Label htmlFor="new-notes">
+              Special Requests / Notes (Optional)
+            </Label>
             <Textarea
               id="new-notes"
               value={newReservation.notes}
