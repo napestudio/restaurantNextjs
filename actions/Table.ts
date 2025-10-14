@@ -23,6 +23,63 @@ export async function getTables(branchId: string) {
 }
 
 /**
+ * Get all tables for a branch with their current reservation status
+ * Shows which tables are occupied, by whom, and how many people
+ */
+export async function getTablesWithStatus(branchId: string) {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const tables = await prisma.table.findMany({
+      where: {
+        branchId,
+      },
+      include: {
+        reservations: {
+          where: {
+            reservation: {
+              date: {
+                gte: today,
+                lt: tomorrow,
+              },
+              status: {
+                in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+              },
+            },
+          },
+          include: {
+            reservation: {
+              select: {
+                id: true,
+                customerName: true,
+                people: true,
+                status: true,
+                date: true,
+                timeSlot: {
+                  select: {
+                    startTime: true,
+                    endTime: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ number: "asc" }],
+    });
+
+    return { success: true, data: tables };
+  } catch (error) {
+    console.error("Error fetching tables with status:", error);
+    return { success: false, error: "Failed to fetch tables with status" };
+  }
+}
+
+/**
  * Get a single table by ID
  */
 export async function getTableById(id: string) {
