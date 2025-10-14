@@ -155,6 +155,9 @@ model Reservation {
   createdBy           String?
   updatedBy           String?
   tables              ReservationTable[]
+
+  @@index([branchId, date, status])
+  @@index([date, timeSlotId])
 }
 
 model ReservationTable {
@@ -163,6 +166,9 @@ model ReservationTable {
   reservationId String
   table         Table       @relation(fields: [tableId], references: [id])
   tableId       String
+
+  @@unique([reservationId, tableId])
+  @@index([tableId])
 }
 
 model TimeSlot {

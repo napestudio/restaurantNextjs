@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ReservationStatus } from "@/app/generated/prisma";
+import { findAvailableTables } from "./Table";
 
 /**
  * Helper function to serialize reservation data for client components
@@ -26,7 +27,7 @@ function serializeReservation(reservation: any) {
 }
 
 /**
- * Create a new reservation
+ * Create a new reservation with automatic table assignment
  */
 export async function createReservation(data: {
   branchId: string;
@@ -42,12 +43,22 @@ export async function createReservation(data: {
   notes?: string;
   status?: ReservationStatus;
   createdBy?: string;
+  autoAssignTables?: boolean; // Option to enable/disable auto-assignment
 }) {
-  console.log("creating", data);
+  console.log("creating reservation", data);
   try {
     // Parse the date
     const reservationDate = new Date(data.date);
 
+    // Validate that we have a time slot for table assignment
+    if (!data.timeSlotId) {
+      return {
+        success: false,
+        error: "Time slot is required for reservations",
+      };
+    }
+
+    // Step 1: Create the reservation with PENDING status initially
     const reservation = await prisma.reservation.create({
       data: {
         branchId: data.branchId,
@@ -56,11 +67,11 @@ export async function createReservation(data: {
         customerPhone: data.customerPhone,
         date: reservationDate,
         people: data.guests,
-        timeSlotId: data.timeSlotId || null,
+        timeSlotId: data.timeSlotId,
         dietaryRestrictions: data.dietaryRestrictions,
         accessibilityNeeds: data.accessibilityNeeds,
         notes: data.notes,
-        status: data.status || ReservationStatus.PENDING,
+        status: ReservationStatus.PENDING,
         createdBy: data.createdBy || "ANON",
       },
       include: {
@@ -69,8 +80,76 @@ export async function createReservation(data: {
       },
     });
 
+    // Step 2: Try to auto-assign tables (default behavior unless explicitly disabled)
+    const shouldAutoAssign = data.autoAssignTables !== false;
+    let assignmentResult = null;
+    let finalStatus = ReservationStatus.PENDING;
+
+    if (shouldAutoAssign) {
+      assignmentResult = await findAvailableTables(
+        data.branchId,
+        reservationDate,
+        data.timeSlotId,
+        data.guests
+      );
+
+      if (assignmentResult.success && assignmentResult.data) {
+        // Assign the tables
+        try {
+          await prisma.reservationTable.createMany({
+            data: assignmentResult.data.tableIds.map((tableId) => ({
+              reservationId: reservation.id,
+              tableId,
+            })),
+          });
+
+          // Update reservation status to CONFIRMED since tables are assigned
+          await prisma.reservation.update({
+            where: { id: reservation.id },
+            data: { status: ReservationStatus.CONFIRMED },
+          });
+
+          finalStatus = ReservationStatus.CONFIRMED;
+
+          console.log(
+            `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id}`
+          );
+        } catch (assignError) {
+          console.error("Error assigning tables:", assignError);
+          // Keep as PENDING if assignment fails
+        }
+      } else {
+        console.log(
+          `⚠️  No tables available for reservation ${reservation.id}. Keeping as PENDING for manual assignment.`
+        );
+      }
+    }
+
+    // Fetch the final reservation with all relations
+    const finalReservation = await prisma.reservation.findUnique({
+      where: { id: reservation.id },
+      include: {
+        timeSlot: true,
+        branch: true,
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
+    });
+
     revalidatePath("/dashboard/reservations");
-    return { success: true, data: serializeReservation(reservation) };
+
+    return {
+      success: true,
+      data: serializeReservation(finalReservation),
+      message:
+        finalStatus === ReservationStatus.CONFIRMED
+          ? "Reservation confirmed with table assignment"
+          : "Reservation created - pending table assignment",
+      autoAssigned: finalStatus === ReservationStatus.CONFIRMED,
+    };
   } catch (error) {
     console.error("Error creating reservation:", error);
     return { success: false, error: "Failed to create reservation" };

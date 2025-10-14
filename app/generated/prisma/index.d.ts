@@ -21785,6 +21785,7 @@ export namespace Prisma {
 
   export type ReservationTableWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    reservationId_tableId?: ReservationTableReservationIdTableIdCompoundUniqueInput
     AND?: ReservationTableWhereInput | ReservationTableWhereInput[]
     OR?: ReservationTableWhereInput[]
     NOT?: ReservationTableWhereInput | ReservationTableWhereInput[]
@@ -21792,7 +21793,7 @@ export namespace Prisma {
     tableId?: StringFilter<"ReservationTable"> | string
     reservation?: XOR<ReservationScalarRelationFilter, ReservationWhereInput>
     table?: XOR<TableScalarRelationFilter, TableWhereInput>
-  }, "id">
+  }, "id" | "reservationId_tableId">
 
   export type ReservationTableOrderByWithAggregationInput = {
     id?: SortOrder
@@ -24028,6 +24029,11 @@ export namespace Prisma {
   export type TableScalarRelationFilter = {
     is?: TableWhereInput
     isNot?: TableWhereInput
+  }
+
+  export type ReservationTableReservationIdTableIdCompoundUniqueInput = {
+    reservationId: string
+    tableId: string
   }
 
   export type ReservationTableCountOrderByAggregateInput = {
