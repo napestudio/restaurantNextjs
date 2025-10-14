@@ -56,9 +56,7 @@ export function ReservationsTable({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Gestión de Reservas</CardTitle>
-            <CardDescription>
-              Manage and track all customer reservations
-            </CardDescription>
+            <CardDescription>Administra todas las reservas</CardDescription>
           </div>
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
@@ -67,10 +65,10 @@ export function ReservationsTable({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="pending">Pendientes</SelectItem>
+                <SelectItem value="confirmed">Confirmadas</SelectItem>
+                <SelectItem value="cancelled">Completadas</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -81,12 +79,12 @@ export function ReservationsTable({
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>Guests</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Contacto</TableHead>
+              <TableHead>Fecha y hora</TableHead>
+              <TableHead>Personas</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -96,7 +94,7 @@ export function ReservationsTable({
                   colSpan={7}
                   className="text-center py-8 text-muted-foreground"
                 >
-                  No reservations found
+                  No se encontraron reservas.
                 </TableCell>
               </TableRow>
             ) : (
@@ -145,9 +143,9 @@ export function ReservationsTable({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="canceled">Canceled</SelectItem>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                        <SelectItem value="confirmed">Confirmada</SelectItem>
+                        <SelectItem value="canceled">Cancelada</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -157,7 +155,7 @@ export function ReservationsTable({
                         size="sm"
                         variant="outline"
                         onClick={() => onView(reservation)}
-                        title="View Details"
+                        title="Ver Detalles"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -165,7 +163,7 @@ export function ReservationsTable({
                         size="sm"
                         variant="destructive"
                         onClick={() => onCancel(reservation.id)}
-                        title="Cancel Reservation"
+                        title="Cancelar Reserva"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

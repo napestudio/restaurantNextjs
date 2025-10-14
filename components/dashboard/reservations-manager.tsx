@@ -135,10 +135,10 @@ export function ReservationsManager({
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Reservation Management
+            Administración de Reservas
           </h1>
           <p className="text-gray-600">
-            View and manage all restaurant reservations
+            Administra las reservas desde este panel.
           </p>
         </div>
         <Button
@@ -147,7 +147,7 @@ export function ReservationsManager({
           disabled={isPending}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create Reservation
+          Crear Reserva
         </Button>
       </div>
 

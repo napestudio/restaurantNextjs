@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { DollarSign } from "lucide-react";
 import { DAYS } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
-import { formatTime, getDayBadges } from "@/app/(admin)/dashboard/reservations/slots/lib/utils";
+import {
+  formatTime,
+  getDayBadges,
+} from "@/app/(admin)/dashboard/reservations/slots/lib/utils";
 
 interface NewSlot {
   timeFrom: string;
@@ -87,16 +90,16 @@ export function CreateTimeSlotDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Time Slot</DialogTitle>
+          <DialogTitle>Crear Turno</DialogTitle>
           <DialogDescription>
-            Set up a time slot with days and optional pricing
+            Crear un turno con horarios, días y precios personalizados.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="timeFrom">Time From</Label>
+              <Label htmlFor="timeFrom">Hora Desde</Label>
               <Input
                 id="timeFrom"
                 type="time"
@@ -110,7 +113,7 @@ export function CreateTimeSlotDialog({
               />
             </div>
             <div>
-              <Label htmlFor="timeTo">Time To</Label>
+              <Label htmlFor="timeTo">Hora Hasta</Label>
               <Input
                 id="timeTo"
                 type="time"
@@ -124,7 +127,7 @@ export function CreateTimeSlotDialog({
 
           {/* Day Picker */}
           <div>
-            <Label>Select Days</Label>
+            <Label>Días</Label>
             <div className="flex gap-2 mb-3 mt-2">
               <Button
                 type="button"
@@ -132,7 +135,7 @@ export function CreateTimeSlotDialog({
                 variant="outline"
                 onClick={selectAllDays}
               >
-                All Days
+                Todos
               </Button>
               <Button
                 type="button"
@@ -140,7 +143,7 @@ export function CreateTimeSlotDialog({
                 variant="outline"
                 onClick={selectWeekdays}
               >
-                Weekdays
+                Semana
               </Button>
               <Button
                 type="button"
@@ -148,7 +151,7 @@ export function CreateTimeSlotDialog({
                 variant="outline"
                 onClick={selectWeekend}
               >
-                Weekend
+                Fines de Semana
               </Button>
             </div>
             <div className="grid grid-cols-7 gap-2">
@@ -168,14 +171,14 @@ export function CreateTimeSlotDialog({
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Selected: {newSlot.days.length} day
+              Seleccionados: {newSlot.days.length} day
               {newSlot.days.length !== 1 ? "s" : ""}
             </p>
           </div>
 
           {/* Price */}
           <div>
-            <Label htmlFor="price">Price per Person (Optional)</Label>
+            <Label htmlFor="price">Precio por persona (Opcional)</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
@@ -192,20 +195,20 @@ export function CreateTimeSlotDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Leave at $0.00 for free reservations
+              Dejar en $0.00 para turnos gratis.
             </p>
           </div>
 
           {/* Notes */}
           <div>
-            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Label htmlFor="notes">Notas (Opacional)</Label>
             <Textarea
               id="notes"
               value={newSlot.notes}
               onChange={(e) =>
                 setNewSlot((prev) => ({ ...prev, notes: e.target.value }))
               }
-              placeholder="e.g., Weekend peak hours, Special event pricing..."
+              placeholder="e.j., Reservas solo para grupos grandes"
               rows={3}
             />
           </div>
@@ -213,21 +216,21 @@ export function CreateTimeSlotDialog({
           {/* Preview */}
           {newSlot.timeFrom && newSlot.timeTo && newSlot.days.length > 0 && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Preview</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">Vista Previa</h4>
               <p className="text-sm text-blue-800">
                 <strong>Time:</strong> {formatTime(newSlot.timeFrom)} -{" "}
                 {formatTime(newSlot.timeTo)}
               </p>
               <p className="text-sm text-blue-800">
-                <strong>Days:</strong> {getDayBadges(newSlot.days)}
+                <strong>Días:</strong> {getDayBadges(newSlot.days)}
               </p>
               <p className="text-sm text-blue-800">
-                <strong>Price:</strong>{" "}
+                <strong>Precio:</strong>{" "}
                 {newSlot.price ? `$${newSlot.price} per person` : "Free"}
               </p>
               {newSlot.notes && (
                 <p className="text-sm text-blue-800">
-                  <strong>Notes:</strong> {newSlot.notes}
+                  <strong>Notas:</strong> {newSlot.notes}
                 </p>
               )}
             </div>
@@ -239,14 +242,14 @@ export function CreateTimeSlotDialog({
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
-            Cancel
+            Cancelar
           </Button>
           <Button
             onClick={handleCreate}
             className="bg-red-600 hover:bg-red-700"
             disabled={isPending}
           >
-            {isPending ? "Creating..." : "Create Time Slot"}
+            {isPending ? "Creando..." : "Crear Turno"}
           </Button>
         </DialogFooter>
       </DialogContent>

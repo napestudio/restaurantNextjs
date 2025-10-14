@@ -10,13 +10,13 @@ export interface TimeSlot {
 
 // Day configuration
 export const DAYS = [
-  { value: "monday", label: "Monday", short: "M" },
-  { value: "tuesday", label: "Tuesday", short: "T" },
-  { value: "wednesday", label: "Wednesday", short: "W" },
-  { value: "thursday", label: "Thursday", short: "T" },
-  { value: "friday", label: "Friday", short: "F" },
-  { value: "saturday", label: "Saturday", short: "S" },
-  { value: "sunday", label: "Sunday", short: "S" },
+  { value: "monday", label: "Lunes", short: "L" },
+  { value: "tuesday", label: "Martes", short: "M" },
+  { value: "wednesday", label: "Miércoles", short: "X" },
+  { value: "thursday", label: "Jueves", short: "J" },
+  { value: "friday", label: "Viernes", short: "V" },
+  { value: "saturday", label: "Sábado", short: "S" },
+  { value: "sunday", label: "Domingo", short: "D" },
 ] as const;
 
 // Mock initial data
