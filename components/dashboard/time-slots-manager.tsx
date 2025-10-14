@@ -87,11 +87,9 @@ export function TimeSlotsManager({
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Time Slot Management
+            Administración de Turnos
           </h1>
-          <p className="text-gray-600">
-            Create time slots with flexible day schedules and pricing
-          </p>
+          <p className="text-gray-600">Crear turnos para reservas.</p>
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}
@@ -99,7 +97,7 @@ export function TimeSlotsManager({
           disabled={isPending}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create Time Slot
+          Crear Turno
         </Button>
       </div>
 

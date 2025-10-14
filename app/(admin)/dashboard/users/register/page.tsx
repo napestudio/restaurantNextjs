@@ -75,11 +75,10 @@ export default function RegisterUserPage() {
         <div className="md:col-span-1">
           <div className="px-4 sm:px-0">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Create New User
+              Crear un nuevo usuario
             </h3>
             <p className="mt-1 text-sm text-gray-600">
-              Add a new user to the system with specific role and branch
-              assignment.
+              Agregar un usuario a la plataforma.
             </p>
           </div>
         </div>
@@ -117,7 +116,7 @@ export default function RegisterUserPage() {
                     htmlFor="name"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Name
+                    Nombre
                   </label>
                   <input
                     type="text"
@@ -174,8 +173,7 @@ export default function RegisterUserPage() {
                     </p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Must be at least 8 characters with uppercase, lowercase, and
-                    numbers
+                    Mínimo 8 caracteres, al menos una letra y un número.
                   </p>
                 </div>
 
@@ -184,17 +182,17 @@ export default function RegisterUserPage() {
                     htmlFor="role"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Role
+                    Rol
                   </label>
                   <select
                     id="role"
                     {...register("role")}
                     className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                   >
-                    <option value="">Select a role</option>
+                    <option value="">Rol</option>
                     <option value={UserRole.ADMIN}>Admin</option>
                     <option value={UserRole.MANAGER}>Manager</option>
-                    <option value={UserRole.EMPLOYEE}>Employee</option>
+                    <option value={UserRole.EMPLOYEE}>Empleadoo</option>
                   </select>
                   {errors.role && (
                     <p className="mt-1 text-sm text-red-600">
@@ -208,14 +206,14 @@ export default function RegisterUserPage() {
                     htmlFor="branchId"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Branch
+                    Sucursal
                   </label>
                   <select
                     id="branchId"
                     {...register("branchId")}
                     className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                   >
-                    <option value="">Select a branch</option>
+                    <option value="">Seleccionar sucursal</option>
                     {branches.map((branch) => (
                       <option key={branch.id} value={branch.id}>
                         {branch.restaurant.name} - {branch.name}
@@ -236,14 +234,14 @@ export default function RegisterUserPage() {
                   onClick={handleCancel}
                   className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? "Creating..." : "Create User"}
+                  {isSubmitting ? "Creando..." : "Crear Usuario"}
                 </button>
               </div>
             </div>

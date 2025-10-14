@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "lucide-react";
 import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
@@ -29,7 +24,7 @@ export function ReservationStatsOverview({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            Total Reservations
+            Reservas Totales
           </CardTitle>
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -40,8 +35,8 @@ export function ReservationStatsOverview({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
-          <Badge variant="default">Active</Badge>
+          <CardTitle className="text-sm font-medium">Confirmadas</CardTitle>
+          <Badge variant="default">Activa</Badge>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
@@ -52,8 +47,8 @@ export function ReservationStatsOverview({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pending</CardTitle>
-          <Badge variant="secondary">Review</Badge>
+          <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
+          <Badge variant="secondary">Revisar</Badge>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-yellow-600">
@@ -64,7 +59,9 @@ export function ReservationStatsOverview({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Comensales Totales
+          </CardTitle>
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>

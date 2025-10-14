@@ -51,9 +51,9 @@ export function ViewReservationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Reservation Details</DialogTitle>
+          <DialogTitle>Detalles de la reserva</DialogTitle>
           <DialogDescription>
-            Complete information for reservation #{reservation?.id}
+            Información completa de la reserva #{reservation?.id}
           </DialogDescription>
         </DialogHeader>
         {reservation && (
@@ -61,13 +61,15 @@ export function ViewReservationDialog({
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Customer Name
+                  Nombre
                 </h3>
-                <p className="text-lg font-semibold">{reservation.customerName}</p>
+                <p className="text-lg font-semibold">
+                  {reservation.customerName}
+                </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Status
+                  Estado
                 </h3>
                 <div>{getStatusBadge(reservation.status)}</div>
               </div>
@@ -82,33 +84,38 @@ export function ViewReservationDialog({
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Phone
+                  Teléfono
                 </h3>
-                <p className="text-sm">{reservation.customerPhone || 'N/A'}</p>
+                <p className="text-sm">{reservation.customerPhone || "N/A"}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Date</h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">
+                  Fecha
+                </h3>
                 <p className="text-sm font-semibold">
-                  {format(parseISO(reservation.date), 'MMMM dd, yyyy')}
+                  {format(parseISO(reservation.date), "MMMM dd, yyyy")}
                 </p>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-1">Time</h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-1">Hora</h3>
                 <p className="text-sm font-semibold">
                   {reservation.timeSlot
-                    ? `${reservation.timeSlot.startTime.slice(11, 16)} - ${reservation.timeSlot.endTime.slice(11, 16)}`
-                    : 'No time slot'}
+                    ? `${reservation.timeSlot.startTime.slice(
+                        11,
+                        16
+                      )} - ${reservation.timeSlot.endTime.slice(11, 16)}`
+                    : "No time slot"}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Party Size
+                  Personas
                 </h3>
                 <p className="text-sm font-semibold">
-                  {reservation.people} guests
+                  {reservation.people} comensales
                 </p>
               </div>
             </div>
@@ -116,44 +123,47 @@ export function ViewReservationDialog({
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Dietary Restrictions
+                  Restricciones alimentarias
                 </h3>
                 <p className="text-sm bg-orange-50 p-3 rounded-md border border-orange-200">
-                  {reservation.dietaryRestrictions || "None"}
+                  {reservation.dietaryRestrictions || "Ninguna"}
                 </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
-                  Accessibility Needs
+                  Accesibilidad
                 </h3>
                 <p className="text-sm bg-blue-50 p-3 rounded-md border border-blue-200">
-                  {reservation.accessibilityNeeds || "None"}
+                  {reservation.accessibilityNeeds || "Ninguna"}
                 </p>
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-1">
-                Special Requests / Notes
+                Pedidos especialas / Notas
               </h3>
               <p className="text-sm bg-gray-50 p-3 rounded-md">
-                {reservation.notes || "No special requests"}
+                {reservation.notes || "No hay notas"}
               </p>
             </div>
 
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-1">
-                Created On
+                Creada el
               </h3>
               <p className="text-sm">
-                {format(parseISO(reservation.createdAt), 'MMM dd, yyyy hh:mm a')}
+                {format(
+                  parseISO(reservation.createdAt),
+                  "MMM dd, yyyy hh:mm a"
+                )}
               </p>
             </div>
           </div>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            Cerrar
           </Button>
         </DialogFooter>
       </DialogContent>
