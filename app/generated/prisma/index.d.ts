@@ -9473,6 +9473,7 @@ export namespace Prisma {
     number: number | null
     capacity: number | null
     isActive: boolean | null
+    isShared: boolean | null
     positionX: number | null
     positionY: number | null
     width: number | null
@@ -9488,6 +9489,7 @@ export namespace Prisma {
     number: number | null
     capacity: number | null
     isActive: boolean | null
+    isShared: boolean | null
     positionX: number | null
     positionY: number | null
     width: number | null
@@ -9503,6 +9505,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive: number
+    isShared: number
     positionX: number
     positionY: number
     width: number
@@ -9540,6 +9543,7 @@ export namespace Prisma {
     number?: true
     capacity?: true
     isActive?: true
+    isShared?: true
     positionX?: true
     positionY?: true
     width?: true
@@ -9555,6 +9559,7 @@ export namespace Prisma {
     number?: true
     capacity?: true
     isActive?: true
+    isShared?: true
     positionX?: true
     positionY?: true
     width?: true
@@ -9570,6 +9575,7 @@ export namespace Prisma {
     number?: true
     capacity?: true
     isActive?: true
+    isShared?: true
     positionX?: true
     positionY?: true
     width?: true
@@ -9672,6 +9678,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive: boolean
+    isShared: boolean
     positionX: number | null
     positionY: number | null
     width: number | null
@@ -9706,6 +9713,7 @@ export namespace Prisma {
     number?: boolean
     capacity?: boolean
     isActive?: boolean
+    isShared?: boolean
     positionX?: boolean
     positionY?: boolean
     width?: boolean
@@ -9724,6 +9732,7 @@ export namespace Prisma {
     number?: boolean
     capacity?: boolean
     isActive?: boolean
+    isShared?: boolean
     positionX?: boolean
     positionY?: boolean
     width?: boolean
@@ -9740,6 +9749,7 @@ export namespace Prisma {
     number?: boolean
     capacity?: boolean
     isActive?: boolean
+    isShared?: boolean
     positionX?: boolean
     positionY?: boolean
     width?: boolean
@@ -9756,6 +9766,7 @@ export namespace Prisma {
     number?: boolean
     capacity?: boolean
     isActive?: boolean
+    isShared?: boolean
     positionX?: boolean
     positionY?: boolean
     width?: boolean
@@ -9766,7 +9777,7 @@ export namespace Prisma {
     branchId?: boolean
   }
 
-  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "capacity" | "isActive" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId", ExtArgs["result"]["table"]>
+  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "capacity" | "isActive" | "isShared" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId", ExtArgs["result"]["table"]>
   export type TableInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | Table$reservationsArgs<ExtArgs>
@@ -9790,6 +9801,7 @@ export namespace Prisma {
       number: number
       capacity: number
       isActive: boolean
+      isShared: boolean
       positionX: number | null
       positionY: number | null
       width: number | null
@@ -10227,6 +10239,7 @@ export namespace Prisma {
     readonly number: FieldRef<"Table", 'Int'>
     readonly capacity: FieldRef<"Table", 'Int'>
     readonly isActive: FieldRef<"Table", 'Boolean'>
+    readonly isShared: FieldRef<"Table", 'Boolean'>
     readonly positionX: FieldRef<"Table", 'Float'>
     readonly positionY: FieldRef<"Table", 'Float'>
     readonly width: FieldRef<"Table", 'Float'>
@@ -21030,6 +21043,7 @@ export namespace Prisma {
     number: 'number',
     capacity: 'capacity',
     isActive: 'isActive',
+    isShared: 'isShared',
     positionX: 'positionX',
     positionY: 'positionY',
     width: 'width',
@@ -21772,6 +21786,7 @@ export namespace Prisma {
     number?: IntFilter<"Table"> | number
     capacity?: IntFilter<"Table"> | number
     isActive?: BoolFilter<"Table"> | boolean
+    isShared?: BoolFilter<"Table"> | boolean
     positionX?: FloatNullableFilter<"Table"> | number | null
     positionY?: FloatNullableFilter<"Table"> | number | null
     width?: FloatNullableFilter<"Table"> | number | null
@@ -21789,6 +21804,7 @@ export namespace Prisma {
     number?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
+    isShared?: SortOrder
     positionX?: SortOrderInput | SortOrder
     positionY?: SortOrderInput | SortOrder
     width?: SortOrderInput | SortOrder
@@ -21809,6 +21825,7 @@ export namespace Prisma {
     number?: IntFilter<"Table"> | number
     capacity?: IntFilter<"Table"> | number
     isActive?: BoolFilter<"Table"> | boolean
+    isShared?: BoolFilter<"Table"> | boolean
     positionX?: FloatNullableFilter<"Table"> | number | null
     positionY?: FloatNullableFilter<"Table"> | number | null
     width?: FloatNullableFilter<"Table"> | number | null
@@ -21826,6 +21843,7 @@ export namespace Prisma {
     number?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
+    isShared?: SortOrder
     positionX?: SortOrderInput | SortOrder
     positionY?: SortOrderInput | SortOrder
     width?: SortOrderInput | SortOrder
@@ -21849,6 +21867,7 @@ export namespace Prisma {
     number?: IntWithAggregatesFilter<"Table"> | number
     capacity?: IntWithAggregatesFilter<"Table"> | number
     isActive?: BoolWithAggregatesFilter<"Table"> | boolean
+    isShared?: BoolWithAggregatesFilter<"Table"> | boolean
     positionX?: FloatNullableWithAggregatesFilter<"Table"> | number | null
     positionY?: FloatNullableWithAggregatesFilter<"Table"> | number | null
     width?: FloatNullableWithAggregatesFilter<"Table"> | number | null
@@ -22924,6 +22943,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -22940,6 +22960,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -22956,6 +22977,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22972,6 +22994,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -22988,6 +23011,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -23003,6 +23027,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -23017,6 +23042,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -24166,6 +24192,7 @@ export namespace Prisma {
     number?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
+    isShared?: SortOrder
     positionX?: SortOrder
     positionY?: SortOrder
     width?: SortOrder
@@ -24191,6 +24218,7 @@ export namespace Prisma {
     number?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
+    isShared?: SortOrder
     positionX?: SortOrder
     positionY?: SortOrder
     width?: SortOrder
@@ -24206,6 +24234,7 @@ export namespace Prisma {
     number?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
+    isShared?: SortOrder
     positionX?: SortOrder
     positionY?: SortOrder
     width?: SortOrder
@@ -26757,6 +26786,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -26772,6 +26802,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -27004,6 +27035,7 @@ export namespace Prisma {
     number?: IntFilter<"Table"> | number
     capacity?: IntFilter<"Table"> | number
     isActive?: BoolFilter<"Table"> | boolean
+    isShared?: BoolFilter<"Table"> | boolean
     positionX?: FloatNullableFilter<"Table"> | number | null
     positionY?: FloatNullableFilter<"Table"> | number | null
     width?: FloatNullableFilter<"Table"> | number | null
@@ -27545,6 +27577,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -27560,6 +27593,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -27638,6 +27672,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -27653,6 +27688,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -28639,6 +28675,7 @@ export namespace Prisma {
     number: number
     capacity: number
     isActive?: boolean
+    isShared?: boolean
     positionX?: number | null
     positionY?: number | null
     width?: number | null
@@ -28777,6 +28814,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -28792,6 +28830,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -28807,6 +28846,7 @@ export namespace Prisma {
     number?: IntFieldUpdateOperationsInput | number
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    isShared?: BoolFieldUpdateOperationsInput | boolean
     positionX?: NullableFloatFieldUpdateOperationsInput | number | null
     positionY?: NullableFloatFieldUpdateOperationsInput | number | null
     width?: NullableFloatFieldUpdateOperationsInput | number | null

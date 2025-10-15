@@ -30,6 +30,7 @@ interface FloorTable {
   capacity: number;
   status: TableStatus;
   currentGuests: number;
+  isShared: boolean;
 }
 
 const shapeDefaults = {
@@ -50,6 +51,7 @@ interface TableWithReservations {
   shape: string | null;
   status: string | null;
   isActive: boolean;
+  isShared: boolean;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -129,6 +131,7 @@ export default function FloorPlanHandler({
         capacity: table.capacity,
         status,
         currentGuests,
+        isShared: table.isShared,
       };
     });
   };
@@ -146,6 +149,7 @@ export default function FloorPlanHandler({
     number: "",
     shape: "CIRCLE" as TableShapeType,
     capacity: "2",
+    isShared: false,
   });
 
   // Sync floor plan tables when dbTables change (e.g., new reservations)
@@ -203,6 +207,7 @@ export default function FloorPlanHandler({
             capacity: dbTable.capacity,
             status,
             currentGuests,
+            isShared: dbTable.isShared,
           };
         }
 
@@ -219,6 +224,7 @@ export default function FloorPlanHandler({
           capacity: dbTable.capacity,
           status,
           currentGuests,
+          isShared: dbTable.isShared,
         };
       });
     });
@@ -313,6 +319,7 @@ export default function FloorPlanHandler({
       rotation: 0,
       shape: newTable.shape,
       isActive: true,
+      isShared: newTable.isShared,
     });
 
     if (result.success && result.data) {
@@ -329,6 +336,7 @@ export default function FloorPlanHandler({
         capacity: result.data.capacity,
         status: "empty" as TableStatus,
         currentGuests: 0,
+        isShared: result.data.isShared ?? false,
       };
 
       setTables((prevTables) => [...prevTables, newFloorTable]);
@@ -346,11 +354,12 @@ export default function FloorPlanHandler({
         shape: result.data.shape ?? newTable.shape,
         status: null, // New tables have no manual status override
         isActive: result.data.isActive ?? true,
+        isShared: result.data.isShared ?? false,
         reservations: [],
       };
 
       setDbTables((prevTables) => [...prevTables, newDbTable]);
-      setNewTable({ number: "", shape: "CIRCLE", capacity: "2" });
+      setNewTable({ number: "", shape: "CIRCLE", capacity: "2", isShared: false });
       setAddDialogOpen(false);
     }
   };
@@ -486,6 +495,25 @@ export default function FloorPlanHandler({
     );
   };
 
+  const updateTableIsShared = async (tableId: string, isShared: boolean) => {
+    // Update local floor plan state
+    setTables((prevTables) =>
+      prevTables.map((table) =>
+        table.id === tableId ? { ...table, isShared } : table
+      )
+    );
+
+    // Update database
+    await updateTable(tableId, { isShared });
+
+    // Update parent state for simple view
+    setDbTables((prevTables) =>
+      prevTables.map((table) =>
+        table.id === tableId ? { ...table, isShared } : table
+      )
+    );
+  };
+
   const selectedTableData = tables.find((t) => t.id === selectedTable);
 
   return (
@@ -516,6 +544,7 @@ export default function FloorPlanHandler({
             onUpdateShape={updateTableShape}
             onUpdateCapacity={updateTableCapacity}
             onUpdateStatus={updateTableStatus}
+            onUpdateIsShared={updateTableIsShared}
             onRotate={rotateTable}
             onDelete={deleteTable}
           />
@@ -530,6 +559,7 @@ export default function FloorPlanHandler({
         tableNumber={newTable.number}
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
+        isShared={newTable.isShared}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
@@ -538,6 +568,9 @@ export default function FloorPlanHandler({
         }
         onTableCapacityChange={(value) =>
           setNewTable({ ...newTable, capacity: value })
+        }
+        onIsSharedChange={(value) =>
+          setNewTable({ ...newTable, isShared: value })
         }
         onAddTable={addTable}
       />

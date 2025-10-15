@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   RotateCw,
   Trash2,
@@ -39,6 +40,7 @@ interface FloorTable {
   capacity: number;
   status: TableStatus;
   currentGuests: number;
+  isShared?: boolean;
 }
 
 interface TablePropertiesPanelProps {
@@ -46,6 +48,7 @@ interface TablePropertiesPanelProps {
   onUpdateShape: (tableId: string, shape: TableShapeType) => void;
   onUpdateCapacity: (tableId: string, capacity: number) => void;
   onUpdateStatus: (tableId: string, status: TableStatus) => void;
+  onUpdateIsShared: (tableId: string, isShared: boolean) => void;
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
 }
@@ -55,6 +58,7 @@ export function TablePropertiesPanel({
   onUpdateShape,
   onUpdateCapacity,
   onUpdateStatus,
+  onUpdateIsShared,
   onRotate,
   onDelete,
 }: TablePropertiesPanelProps) {
@@ -176,6 +180,25 @@ export function TablePropertiesPanel({
                 Cambios manuales anulan el estado calculado de reservas
               </p>
             </div>
+
+            <div className="flex items-center space-x-2 py-2">
+              <Checkbox
+                id="edit-is-shared"
+                checked={selectedTable.isShared ?? false}
+                onCheckedChange={(checked) =>
+                  onUpdateIsShared(selectedTable.id, checked === true)
+                }
+              />
+              <Label
+                htmlFor="edit-is-shared"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Mesa compartida
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Permite múltiples reservas simultáneas
+            </p>
 
             <div>
               <Label className="text-xs text-muted-foreground">Posición</Label>

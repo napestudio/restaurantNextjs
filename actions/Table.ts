@@ -375,6 +375,7 @@ export async function createTable(data: {
   number: number;
   capacity: number;
   isActive?: boolean;
+  isShared?: boolean;
   positionX?: number;
   positionY?: number;
   width?: number;
@@ -404,6 +405,7 @@ export async function createTable(data: {
         number: data.number,
         capacity: data.capacity,
         isActive: data.isActive ?? true,
+        isShared: data.isShared ?? false,
         positionX: data.positionX,
         positionY: data.positionY,
         width: data.width,
@@ -429,6 +431,7 @@ export async function updateTable(
     number?: number;
     capacity?: number;
     isActive?: boolean;
+    isShared?: boolean;
   }
 ) {
   try {

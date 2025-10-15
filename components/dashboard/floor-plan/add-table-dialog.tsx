@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Circle, Square, RectangleHorizontal } from "lucide-react";
 
 type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
@@ -26,9 +27,11 @@ interface AddTableDialogProps {
   tableNumber: string;
   tableShape: TableShapeType;
   tableCapacity: string;
+  isShared: boolean;
   onTableNumberChange: (value: string) => void;
   onTableShapeChange: (value: TableShapeType) => void;
   onTableCapacityChange: (value: string) => void;
+  onIsSharedChange: (value: boolean) => void;
   onAddTable: () => void;
 }
 
@@ -38,9 +41,11 @@ export function AddTableDialog({
   tableNumber,
   tableShape,
   tableCapacity,
+  isShared,
   onTableNumberChange,
   onTableShapeChange,
   onTableCapacityChange,
+  onIsSharedChange,
   onAddTable,
 }: AddTableDialogProps) {
   return (
@@ -106,6 +111,20 @@ export function AddTableDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is-shared"
+              checked={isShared}
+              onCheckedChange={(checked) => onIsSharedChange(checked === true)}
+            />
+            <Label
+              htmlFor="is-shared"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Mesa compartida (puede tener múltiples reservas)
+            </Label>
           </div>
         </div>
         <DialogFooter>

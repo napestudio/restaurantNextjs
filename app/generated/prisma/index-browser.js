@@ -180,6 +180,7 @@ exports.Prisma.TableScalarFieldEnum = {
   number: 'number',
   capacity: 'capacity',
   isActive: 'isActive',
+  isShared: 'isShared',
   positionX: 'positionX',
   positionY: 'positionY',
   width: 'width',

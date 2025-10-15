@@ -144,6 +144,7 @@ model Table {
   number       Int
   capacity     Int
   isActive     Boolean            @default(true)
+  isShared     Boolean            @default(false) // For communal/shared tables that can have multiple reservations
 
   // Floor plan layout properties
   positionX    Float?             @default(0)
