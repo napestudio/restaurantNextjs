@@ -172,6 +172,9 @@ export function TablePropertiesPanel({
                   <SelectItem value="cleaning">Limpiando</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cambios manuales anulan el estado calculado de reservas
+              </p>
             </div>
 
             <div>

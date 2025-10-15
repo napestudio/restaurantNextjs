@@ -49,6 +49,13 @@ enum TableShape {
   CIRCLE
 }
 
+enum TableStatus {
+  EMPTY
+  OCCUPIED
+  RESERVED
+  CLEANING
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -145,6 +152,9 @@ model Table {
   height       Float?             @default(80)
   rotation     Float?             @default(0) // in degrees
   shape        TableShape?        @default(SQUARE)
+
+  // Manual status override (null = auto-calculate from reservations)
+  status       TableStatus?
 
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String

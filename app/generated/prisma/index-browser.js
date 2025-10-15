@@ -186,6 +186,7 @@ exports.Prisma.TableScalarFieldEnum = {
   height: 'height',
   rotation: 'rotation',
   shape: 'shape',
+  status: 'status',
   branchId: 'branchId'
 };
 
@@ -305,6 +306,13 @@ exports.TableShape = exports.$Enums.TableShape = {
   SQUARE: 'SQUARE',
   RECTANGLE: 'RECTANGLE',
   CIRCLE: 'CIRCLE'
+};
+
+exports.TableStatus = exports.$Enums.TableStatus = {
+  EMPTY: 'EMPTY',
+  OCCUPIED: 'OCCUPIED',
+  RESERVED: 'RESERVED',
+  CLEANING: 'CLEANING'
 };
 
 exports.ReservationStatus = exports.$Enums.ReservationStatus = {

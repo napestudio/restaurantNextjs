@@ -153,6 +153,16 @@ export const TableShape: {
 
 export type TableShape = (typeof TableShape)[keyof typeof TableShape]
 
+
+export const TableStatus: {
+  EMPTY: 'EMPTY',
+  OCCUPIED: 'OCCUPIED',
+  RESERVED: 'RESERVED',
+  CLEANING: 'CLEANING'
+};
+
+export type TableStatus = (typeof TableStatus)[keyof typeof TableStatus]
+
 }
 
 export type UserRole = $Enums.UserRole
@@ -178,6 +188,10 @@ export const PriceType: typeof $Enums.PriceType
 export type TableShape = $Enums.TableShape
 
 export const TableShape: typeof $Enums.TableShape
+
+export type TableStatus = $Enums.TableStatus
+
+export const TableStatus: typeof $Enums.TableStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -9465,6 +9479,7 @@ export namespace Prisma {
     height: number | null
     rotation: number | null
     shape: $Enums.TableShape | null
+    status: $Enums.TableStatus | null
     branchId: string | null
   }
 
@@ -9479,6 +9494,7 @@ export namespace Prisma {
     height: number | null
     rotation: number | null
     shape: $Enums.TableShape | null
+    status: $Enums.TableStatus | null
     branchId: string | null
   }
 
@@ -9493,6 +9509,7 @@ export namespace Prisma {
     height: number
     rotation: number
     shape: number
+    status: number
     branchId: number
     _all: number
   }
@@ -9529,6 +9546,7 @@ export namespace Prisma {
     height?: true
     rotation?: true
     shape?: true
+    status?: true
     branchId?: true
   }
 
@@ -9543,6 +9561,7 @@ export namespace Prisma {
     height?: true
     rotation?: true
     shape?: true
+    status?: true
     branchId?: true
   }
 
@@ -9557,6 +9576,7 @@ export namespace Prisma {
     height?: true
     rotation?: true
     shape?: true
+    status?: true
     branchId?: true
     _all?: true
   }
@@ -9658,6 +9678,7 @@ export namespace Prisma {
     height: number | null
     rotation: number | null
     shape: $Enums.TableShape | null
+    status: $Enums.TableStatus | null
     branchId: string
     _count: TableCountAggregateOutputType | null
     _avg: TableAvgAggregateOutputType | null
@@ -9691,6 +9712,7 @@ export namespace Prisma {
     height?: boolean
     rotation?: boolean
     shape?: boolean
+    status?: boolean
     branchId?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | Table$reservationsArgs<ExtArgs>
@@ -9708,6 +9730,7 @@ export namespace Prisma {
     height?: boolean
     rotation?: boolean
     shape?: boolean
+    status?: boolean
     branchId?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["table"]>
@@ -9723,6 +9746,7 @@ export namespace Prisma {
     height?: boolean
     rotation?: boolean
     shape?: boolean
+    status?: boolean
     branchId?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["table"]>
@@ -9738,10 +9762,11 @@ export namespace Prisma {
     height?: boolean
     rotation?: boolean
     shape?: boolean
+    status?: boolean
     branchId?: boolean
   }
 
-  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "capacity" | "isActive" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "branchId", ExtArgs["result"]["table"]>
+  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "capacity" | "isActive" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId", ExtArgs["result"]["table"]>
   export type TableInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | Table$reservationsArgs<ExtArgs>
@@ -9771,6 +9796,7 @@ export namespace Prisma {
       height: number | null
       rotation: number | null
       shape: $Enums.TableShape | null
+      status: $Enums.TableStatus | null
       branchId: string
     }, ExtArgs["result"]["table"]>
     composites: {}
@@ -10207,6 +10233,7 @@ export namespace Prisma {
     readonly height: FieldRef<"Table", 'Float'>
     readonly rotation: FieldRef<"Table", 'Float'>
     readonly shape: FieldRef<"Table", 'TableShape'>
+    readonly status: FieldRef<"Table", 'TableStatus'>
     readonly branchId: FieldRef<"Table", 'String'>
   }
     
@@ -21009,6 +21036,7 @@ export namespace Prisma {
     height: 'height',
     rotation: 'rotation',
     shape: 'shape',
+    status: 'status',
     branchId: 'branchId'
   };
 
@@ -21251,6 +21279,20 @@ export namespace Prisma {
    * Reference to a field of type 'TableShape[]'
    */
   export type ListEnumTableShapeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TableShape[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'TableStatus'
+   */
+  export type EnumTableStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TableStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'TableStatus[]'
+   */
+  export type ListEnumTableStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TableStatus[]'>
     
 
 
@@ -21736,6 +21778,7 @@ export namespace Prisma {
     height?: FloatNullableFilter<"Table"> | number | null
     rotation?: FloatNullableFilter<"Table"> | number | null
     shape?: EnumTableShapeNullableFilter<"Table"> | $Enums.TableShape | null
+    status?: EnumTableStatusNullableFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringFilter<"Table"> | string
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
     reservations?: ReservationTableListRelationFilter
@@ -21752,6 +21795,7 @@ export namespace Prisma {
     height?: SortOrderInput | SortOrder
     rotation?: SortOrderInput | SortOrder
     shape?: SortOrderInput | SortOrder
+    status?: SortOrderInput | SortOrder
     branchId?: SortOrder
     branch?: BranchOrderByWithRelationInput
     reservations?: ReservationTableOrderByRelationAggregateInput
@@ -21771,6 +21815,7 @@ export namespace Prisma {
     height?: FloatNullableFilter<"Table"> | number | null
     rotation?: FloatNullableFilter<"Table"> | number | null
     shape?: EnumTableShapeNullableFilter<"Table"> | $Enums.TableShape | null
+    status?: EnumTableStatusNullableFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringFilter<"Table"> | string
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
     reservations?: ReservationTableListRelationFilter
@@ -21787,6 +21832,7 @@ export namespace Prisma {
     height?: SortOrderInput | SortOrder
     rotation?: SortOrderInput | SortOrder
     shape?: SortOrderInput | SortOrder
+    status?: SortOrderInput | SortOrder
     branchId?: SortOrder
     _count?: TableCountOrderByAggregateInput
     _avg?: TableAvgOrderByAggregateInput
@@ -21809,6 +21855,7 @@ export namespace Prisma {
     height?: FloatNullableWithAggregatesFilter<"Table"> | number | null
     rotation?: FloatNullableWithAggregatesFilter<"Table"> | number | null
     shape?: EnumTableShapeNullableWithAggregatesFilter<"Table"> | $Enums.TableShape | null
+    status?: EnumTableStatusNullableWithAggregatesFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringWithAggregatesFilter<"Table"> | string
   }
 
@@ -22883,6 +22930,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     branch: BranchCreateNestedOneWithoutTablesInput
     reservations?: ReservationTableCreateNestedManyWithoutTableInput
   }
@@ -22898,6 +22946,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     branchId: string
     reservations?: ReservationTableUncheckedCreateNestedManyWithoutTableInput
   }
@@ -22913,6 +22962,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branch?: BranchUpdateOneRequiredWithoutTablesNestedInput
     reservations?: ReservationTableUpdateManyWithoutTableNestedInput
   }
@@ -22928,6 +22978,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
     reservations?: ReservationTableUncheckedUpdateManyWithoutTableNestedInput
   }
@@ -22943,6 +22994,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     branchId: string
   }
 
@@ -22957,6 +23009,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
   }
 
   export type TableUncheckedUpdateManyInput = {
@@ -22970,6 +23023,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -24090,6 +24144,13 @@ export namespace Prisma {
     not?: NestedEnumTableShapeNullableFilter<$PrismaModel> | $Enums.TableShape | null
   }
 
+  export type EnumTableStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.TableStatus | EnumTableStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumTableStatusNullableFilter<$PrismaModel> | $Enums.TableStatus | null
+  }
+
   export type ReservationTableListRelationFilter = {
     every?: ReservationTableWhereInput
     some?: ReservationTableWhereInput
@@ -24111,6 +24172,7 @@ export namespace Prisma {
     height?: SortOrder
     rotation?: SortOrder
     shape?: SortOrder
+    status?: SortOrder
     branchId?: SortOrder
   }
 
@@ -24135,6 +24197,7 @@ export namespace Prisma {
     height?: SortOrder
     rotation?: SortOrder
     shape?: SortOrder
+    status?: SortOrder
     branchId?: SortOrder
   }
 
@@ -24149,6 +24212,7 @@ export namespace Prisma {
     height?: SortOrder
     rotation?: SortOrder
     shape?: SortOrder
+    status?: SortOrder
     branchId?: SortOrder
   }
 
@@ -24210,6 +24274,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumTableShapeNullableFilter<$PrismaModel>
     _max?: NestedEnumTableShapeNullableFilter<$PrismaModel>
+  }
+
+  export type EnumTableStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TableStatus | EnumTableStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumTableStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.TableStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumTableStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumTableStatusNullableFilter<$PrismaModel>
   }
 
   export type EnumReservationStatusFilter<$PrismaModel = never> = {
@@ -25309,6 +25383,10 @@ export namespace Prisma {
     set?: $Enums.TableShape | null
   }
 
+  export type NullableEnumTableStatusFieldUpdateOperationsInput = {
+    set?: $Enums.TableStatus | null
+  }
+
   export type BranchUpdateOneRequiredWithoutTablesNestedInput = {
     create?: XOR<BranchCreateWithoutTablesInput, BranchUncheckedCreateWithoutTablesInput>
     connectOrCreate?: BranchCreateOrConnectWithoutTablesInput
@@ -26019,6 +26097,13 @@ export namespace Prisma {
     not?: NestedEnumTableShapeNullableFilter<$PrismaModel> | $Enums.TableShape | null
   }
 
+  export type NestedEnumTableStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.TableStatus | EnumTableStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumTableStatusNullableFilter<$PrismaModel> | $Enums.TableStatus | null
+  }
+
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -26078,6 +26163,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumTableShapeNullableFilter<$PrismaModel>
     _max?: NestedEnumTableShapeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumTableStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TableStatus | EnumTableStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.TableStatus[] | ListEnumTableStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumTableStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.TableStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumTableStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumTableStatusNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumReservationStatusFilter<$PrismaModel = never> = {
@@ -26668,6 +26763,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     reservations?: ReservationTableCreateNestedManyWithoutTableInput
   }
 
@@ -26682,6 +26778,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     reservations?: ReservationTableUncheckedCreateNestedManyWithoutTableInput
   }
 
@@ -26913,6 +27010,7 @@ export namespace Prisma {
     height?: FloatNullableFilter<"Table"> | number | null
     rotation?: FloatNullableFilter<"Table"> | number | null
     shape?: EnumTableShapeNullableFilter<"Table"> | $Enums.TableShape | null
+    status?: EnumTableStatusNullableFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringFilter<"Table"> | string
   }
 
@@ -27453,6 +27551,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     branch: BranchCreateNestedOneWithoutTablesInput
   }
 
@@ -27467,6 +27566,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
     branchId: string
   }
 
@@ -27544,6 +27644,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branch?: BranchUpdateOneRequiredWithoutTablesNestedInput
   }
 
@@ -27558,6 +27659,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -28543,6 +28645,7 @@ export namespace Prisma {
     height?: number | null
     rotation?: number | null
     shape?: $Enums.TableShape | null
+    status?: $Enums.TableStatus | null
   }
 
   export type TimeSlotCreateManyBranchInput = {
@@ -28680,6 +28783,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     reservations?: ReservationTableUpdateManyWithoutTableNestedInput
   }
 
@@ -28694,6 +28798,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     reservations?: ReservationTableUncheckedUpdateManyWithoutTableNestedInput
   }
 
@@ -28708,6 +28813,7 @@ export namespace Prisma {
     height?: NullableFloatFieldUpdateOperationsInput | number | null
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
+    status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
   }
 
   export type TimeSlotUpdateWithoutBranchInput = {
