@@ -23,6 +23,63 @@ export async function getTables(branchId: string) {
 }
 
 /**
+ * Get all tables for a branch with their current reservation status
+ * Shows which tables are occupied, by whom, and how many people
+ */
+export async function getTablesWithStatus(branchId: string) {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const tables = await prisma.table.findMany({
+      where: {
+        branchId,
+      },
+      include: {
+        reservations: {
+          where: {
+            reservation: {
+              date: {
+                gte: today,
+                lt: tomorrow,
+              },
+              status: {
+                in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+              },
+            },
+          },
+          include: {
+            reservation: {
+              select: {
+                id: true,
+                customerName: true,
+                people: true,
+                status: true,
+                date: true,
+                timeSlot: {
+                  select: {
+                    startTime: true,
+                    endTime: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ number: "asc" }],
+    });
+
+    return { success: true, data: tables };
+  } catch (error) {
+    console.error("Error fetching tables with status:", error);
+    return { success: false, error: "Failed to fetch tables with status" };
+  }
+}
+
+/**
  * Get a single table by ID
  */
 export async function getTableById(id: string) {
@@ -318,6 +375,12 @@ export async function createTable(data: {
   number: number;
   capacity: number;
   isActive?: boolean;
+  positionX?: number;
+  positionY?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
 }) {
   try {
     // Check if table number already exists in this branch
@@ -341,6 +404,12 @@ export async function createTable(data: {
         number: data.number,
         capacity: data.capacity,
         isActive: data.isActive ?? true,
+        positionX: data.positionX,
+        positionY: data.positionY,
+        width: data.width,
+        height: data.height,
+        rotation: data.rotation,
+        shape: data.shape,
       },
     });
 
@@ -445,5 +514,72 @@ export async function deleteTable(id: string) {
   } catch (error) {
     console.error("Error deleting table:", error);
     return { success: false, error: "Failed to delete table" };
+  }
+}
+
+/**
+ * Update table floor plan position and visual properties
+ */
+export async function updateTableFloorPlan(
+  id: string,
+  data: {
+    positionX?: number;
+    positionY?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+  }
+) {
+  try {
+    const table = await prisma.table.update({
+      where: { id },
+      data,
+    });
+
+    return { success: true, data: table };
+  } catch (error) {
+    console.error("Error updating table floor plan:", error);
+    return { success: false, error: "Failed to update table floor plan" };
+  }
+}
+
+/**
+ * Batch update multiple tables' floor plan positions
+ * Useful for saving entire floor plan layout at once
+ */
+export async function updateFloorPlanBatch(
+  tables: Array<{
+    id: string;
+    positionX?: number;
+    positionY?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+  }>
+) {
+  try {
+    // Use a transaction to update all tables atomically
+    await prisma.$transaction(
+      tables.map((table) =>
+        prisma.table.update({
+          where: { id: table.id },
+          data: {
+            positionX: table.positionX,
+            positionY: table.positionY,
+            width: table.width,
+            height: table.height,
+            rotation: table.rotation,
+            shape: table.shape,
+          },
+        })
+      )
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating floor plan batch:", error);
+    return { success: false, error: "Failed to update floor plan" };
   }
 }

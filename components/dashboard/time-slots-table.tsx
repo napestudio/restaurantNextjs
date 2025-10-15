@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Plus, Trash2, Calendar } from "lucide-react";
+import { Clock, Plus, Trash2, Calendar, Users } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
 import {
   formatTime,
@@ -80,7 +80,7 @@ export function TimeSlotsTable({
 
                       {slot.price > 0 ? (
                         <Badge variant="default" className="bg-green-600">
-                          ${slot.price}/persona
+                          ${slot.price}/<Users />
                         </Badge>
                       ) : (
                         <Badge variant="secondary">Gratis</Badge>

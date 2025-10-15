@@ -6,6 +6,11 @@
       "adminOnly": false
     },
     {
+      "label": "Mesas",
+      "href": "/dashboard/tables",
+      "adminOnly": true
+    },
+    {
       "label": "Reservas",
       "href": "/dashboard/reservations",
       "adminOnly": true

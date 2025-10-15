@@ -251,9 +251,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         >
           <SelectTrigger>
             <SelectValue
-              placeholder={
-                formData.date ? "Select time slot" : "Select a date first"
-              }
+              placeholder={formData.date ? "Turno" : "Selecciona turno"}
             />
           </SelectTrigger>
           <SelectContent>

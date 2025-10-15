@@ -1,0 +1,10 @@
+-- CreateEnum
+CREATE TYPE "public"."TableShape" AS ENUM ('SQUARE', 'RECTANGLE', 'CIRCLE');
+
+-- AlterTable
+ALTER TABLE "public"."Table" ADD COLUMN     "positionX" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "positionY" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "width" DOUBLE PRECISION DEFAULT 80,
+ADD COLUMN     "height" DOUBLE PRECISION DEFAULT 80,
+ADD COLUMN     "rotation" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "shape" "public"."TableShape" DEFAULT 'SQUARE';
