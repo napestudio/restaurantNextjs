@@ -117,7 +117,7 @@ export function FloorPlanCanvas({
           />
         )}
 
-        {/* Table number */}
+        {/* Table number - counter-rotated to stay upright */}
         <text
           x={centerX}
           y={centerY - 5}
@@ -126,11 +126,12 @@ export function FloorPlanCanvas({
           fontSize="16"
           fontWeight="bold"
           style={{ pointerEvents: "none", userSelect: "none" }}
+          transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
         >
           {table.number}
         </text>
 
-        {/* Capacity */}
+        {/* Capacity - counter-rotated to stay upright */}
         <text
           x={centerX}
           y={centerY + 15}
@@ -138,6 +139,7 @@ export function FloorPlanCanvas({
           fill="#fff"
           fontSize="12"
           style={{ pointerEvents: "none", userSelect: "none" }}
+          transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
         >
           {table.currentGuests}/{table.capacity}
         </text>
