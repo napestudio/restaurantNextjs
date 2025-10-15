@@ -133,9 +133,7 @@ export default function FloorPlanHandler({
     });
   };
 
-  const [tables, setTables] = useState<FloorTable[]>(
-    transformTables(dbTables)
-  );
+  const [tables, setTables] = useState<FloorTable[]>(transformTables(dbTables));
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [draggedTable, setDraggedTable] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -185,7 +183,8 @@ export default function FloorPlanHandler({
             reservationDate.getFullYear() === today.getFullYear();
 
           if (isToday) {
-            status = reservation.status === "CONFIRMED" ? "occupied" : "reserved";
+            status =
+              reservation.status === "CONFIRMED" ? "occupied" : "reserved";
           } else {
             status = "reserved";
           }
@@ -390,7 +389,10 @@ export default function FloorPlanHandler({
 
   const updateTableStatus = async (tableId: string, status: TableStatus) => {
     // Map frontend status to Prisma enum
-    const statusMap: Record<TableStatus, "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING"> = {
+    const statusMap: Record<
+      TableStatus,
+      "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING"
+    > = {
       empty: "EMPTY",
       occupied: "OCCUPIED",
       reserved: "RESERVED",
@@ -484,81 +486,43 @@ export default function FloorPlanHandler({
     );
   };
 
-  const saveFloorPlan = async () => {
-    // Save all table positions to database
-    const tablesToUpdate = tables.map((table) => ({
-      id: table.id,
-      positionX: table.x,
-      positionY: table.y,
-      width: table.width,
-      height: table.height,
-      rotation: table.rotation,
-      shape: table.shape,
-    }));
-
-    await updateFloorPlanBatch(tablesToUpdate);
-  };
-
-  const loadFloorPlan = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        setTables(data);
-        // Save imported data to database
-        await saveFloorPlan();
-      } catch (error) {
-        // Handle error silently or with toast
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const selectedTableData = tables.find((t) => t.id === selectedTable);
 
   return (
     <div className="space-y-6">
-      <FloorPlanToolbar
-        onAddTable={() => setAddDialogOpen(true)}
-        onExport={saveFloorPlan}
-        onImportClick={() => document.getElementById("file-upload")?.click()}
-        onImportFile={loadFloorPlan}
-      />
+      <FloorPlanToolbar onAddTable={() => setAddDialogOpen(true)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Floor Plan Canvas */}
-          <div className="lg:col-span-3">
-            <FloorPlanCanvas
-              tables={tables}
-              selectedTable={selectedTable}
-              draggedTable={draggedTable}
-              zoom={zoom}
-              showGrid={showGrid}
-              svgRef={svgRef}
-              onTableMouseDown={handleTableMouseDown}
-              onZoomIn={() => setZoom(Math.min(2, zoom + 0.1))}
-              onZoomOut={() => setZoom(Math.max(0.5, zoom - 0.1))}
-              onToggleGrid={() => setShowGrid(!showGrid)}
-            />
-          </div>
-
-          {/* Properties Panel */}
-          <div className="lg:col-span-1">
-            <TablePropertiesPanel
-              selectedTable={selectedTableData}
-              onUpdateShape={updateTableShape}
-              onUpdateCapacity={updateTableCapacity}
-              onUpdateStatus={updateTableStatus}
-              onRotate={rotateTable}
-              onDelete={deleteTable}
-            />
-          </div>
+        {/* Floor Plan Canvas */}
+        <div className="lg:col-span-3">
+          <FloorPlanCanvas
+            tables={tables}
+            selectedTable={selectedTable}
+            draggedTable={draggedTable}
+            zoom={zoom}
+            showGrid={showGrid}
+            svgRef={svgRef}
+            onTableMouseDown={handleTableMouseDown}
+            onZoomIn={() => setZoom(Math.min(2, zoom + 0.1))}
+            onZoomOut={() => setZoom(Math.max(0.5, zoom - 0.1))}
+            onToggleGrid={() => setShowGrid(!showGrid)}
+          />
         </div>
 
-        <FloorPlanInstructions />
+        {/* Properties Panel */}
+        <div className="lg:col-span-1">
+          <TablePropertiesPanel
+            selectedTable={selectedTableData}
+            onUpdateShape={updateTableShape}
+            onUpdateCapacity={updateTableCapacity}
+            onUpdateStatus={updateTableStatus}
+            onRotate={rotateTable}
+            onDelete={deleteTable}
+          />
+        </div>
+      </div>
+
+      <FloorPlanInstructions />
 
       <AddTableDialog
         open={addDialogOpen}

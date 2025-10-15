@@ -1,19 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Upload } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface FloorPlanToolbarProps {
   onAddTable: () => void;
-  onExport: () => void;
-  onImportClick: () => void;
-  onImportFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function FloorPlanToolbar({
-  onAddTable,
-  onExport,
-  onImportClick,
-  onImportFile,
-}: FloorPlanToolbarProps) {
+export function FloorPlanToolbar({ onAddTable }: FloorPlanToolbarProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
       <div>
@@ -28,10 +20,6 @@ export function FloorPlanToolbar({
         <Button onClick={onAddTable} className="bg-red-600 hover:bg-red-700">
           <Plus className="h-4 w-4 mr-2" />
           Agregar Mesa
-        </Button>
-        <Button onClick={onExport} variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar
         </Button>
       </div>
     </div>

@@ -47,7 +47,6 @@ export function TablesSimpleView({ tables }: TablesSimpleViewProps) {
 
   return (
     <div className="space-y-6">
-
       {/* Occupied Tables Section */}
       {occupiedTables.length > 0 && (
         <div>
@@ -61,9 +60,8 @@ export function TablesSimpleView({ tables }: TablesSimpleViewProps) {
                 tableNumber={table.number}
                 capacity={table.capacity}
                 isActive={table.isActive}
-                currentReservation={
-                  table.reservations[0]?.reservation || null
-                }
+                isOcupied={true}
+                currentReservation={table.reservations[0]?.reservation || null}
               />
             ))}
           </div>
