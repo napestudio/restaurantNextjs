@@ -21,9 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/lib/reservations";
-import {  
-  formatTime,
-} from "@/app/(admin)/dashboard/reservations/lib/utils";
+import { formatTime } from "@/app/(admin)/dashboard/reservations/lib/utils";
 import { WeekDatePicker } from "../week-date-picker";
 import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
 import { createReservation } from "@/actions/Reservation";
@@ -153,10 +151,10 @@ export function CreateReservationDialog({
 
         if (result.success) {
           // toast({
-        //   title: "Reservation Created",
-        //   description: "Your reservation has been successfully created!",
-        // });
-        // Reset form
+          //   title: "Reservation Created",
+          //   description: "Your reservation has been successfully created!",
+          // });
+          // Reset form
           setNewReservation({
             name: "",
             email: "",
@@ -177,7 +175,7 @@ export function CreateReservationDialog({
         //   description: result.error || "Failed to create reservation",
         //   variant: "destructive",
         // });
-      } finally {        
+      } finally {
         onOpenChange(false);
       }
     }
@@ -246,16 +244,66 @@ export function CreateReservationDialog({
             />
           </div>
 
+          <div>
+            <Label htmlFor="new-date">Date</Label>
+            <WeekDatePicker
+              value={newReservation.date}
+              onChange={(date) =>
+                setNewReservation((prev) => ({ ...prev, date: date }))
+              }
+              availableDays={availableDays}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="new-date">Date</Label>              
-              <WeekDatePicker
-                value={newReservation.date}
-                onChange={(date) =>
-                  setNewReservation((prev) => ({ ...prev, date: date }))
-                }
-                availableDays={availableDays}
-              />
+              <Label htmlFor="new-time">Time Slot</Label>
+              <Select
+                value={newReservation.time}
+                onValueChange={handleTimeSlotChange}
+                disabled={!newReservation.date}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      newReservation.date
+                        ? "Select time slot"
+                        : "Select a date first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSlots.length === 0 ? (
+                    <div className="p-2 text-sm text-gray-500 text-center">
+                      No hay turnos disponibles
+                    </div>
+                  ) : (
+                    availableSlots.map((slot) => (
+                      <SelectItem key={slot.id} value={slot.id}>
+                        <div className="flex items-center justify-between w-full gap-4">
+                          <span>
+                            {formatTime(slot.startTime)} -{" "}
+                            {formatTime(slot.endTime)}
+                          </span>
+                          {slot.pricePerPerson > 0 && (
+                            <span className="text-green-600 font-semibold text-xs">
+                              ${slot.pricePerPerson}/persona
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {selectedSlotPrice > 0 && newReservation.guests && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-xs text-green-800">
+                    <strong>Reservation Fee:</strong> ${selectedSlotPrice} ×{" "}
+                    {newReservation.guests} guests = $
+                    {selectedSlotPrice * Number.parseInt(newReservation.guests)}
+                  </p>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="new-guests">Number of Guests</Label>
@@ -277,57 +325,6 @@ export function CreateReservationDialog({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label htmlFor="new-time">Time Slot</Label>
-            <Select
-              value={newReservation.time}
-              onValueChange={handleTimeSlotChange}
-              disabled={!newReservation.date}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    newReservation.date
-                      ? "Select time slot"
-                      : "Select a date first"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {availableSlots.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 text-center">
-                    No hay turnos disponibles
-                  </div>
-                ) : (
-                  availableSlots.map((slot) => (
-                    <SelectItem key={slot.id} value={slot.id}>
-                      <div className="flex items-center justify-between w-full gap-4">
-                        <span>
-                          {formatTime(slot.startTime)} -{" "}
-                          {formatTime(slot.endTime)}
-                        </span>
-                        {slot.pricePerPerson > 0 && (
-                          <span className="text-green-600 font-semibold text-xs">
-                            ${slot.pricePerPerson}/persona
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {selectedSlotPrice > 0 && newReservation.guests && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-xs text-green-800">
-                  <strong>Reservation Fee:</strong> ${selectedSlotPrice} ×{" "}
-                  {newReservation.guests} guests = $
-                  {selectedSlotPrice * Number.parseInt(newReservation.guests)}
-                </p>
-              </div>
-            )}
           </div>
 
           <div>
