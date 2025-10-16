@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { createReservation } from "@/actions/Reservation";
 import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
+import { WeekDatePicker } from "../week-date-picker";
 
 interface ReservationFormData {
   name: string;
@@ -37,7 +38,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
     name: "",
     email: "",
     phone: "",
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     time: "",
     guests: "",
     dietaryRestrictions: "",
@@ -51,6 +52,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
       startTime: Date;
       endTime: Date;
       pricePerPerson: number;
+      daysOfWeek: string[];
     }[]
   >([]);
 
@@ -72,9 +74,19 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         setFormData((prev) => ({ ...prev, time: "" }));
         setSelectedSlotPrice(0);
       };
+
       fetchSlots();
     }
   }, [formData.date, branchId]);
+
+  // Calculate which days have available slots
+  const availableDays = useMemo(() => {
+    const daysSet = new Set<string>();
+    availableSlots.forEach((slot) => {
+      slot.daysOfWeek.forEach((day) => daysSet.add(day));
+    });
+    return Array.from(daysSet);
+  }, [availableSlots]);
 
   const formatTime = (date: Date): string => {
     const hours = date.getHours();
@@ -203,20 +215,62 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
           placeholder="(+54) 123-4567"
         />
       </div>
+      <div>
+        <Label htmlFor="date">Fecha *</Label>
+        <WeekDatePicker
+          value={formData.date}
+          onChange={(date) => setFormData((prev) => ({ ...prev, date: date }))}
+          availableDays={availableDays}
+        />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="date">Fecha *</Label>
-          <Input
-            id="date"
-            type="date"
-            value={formData.date}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, date: e.target.value }))
-            }
-            min={new Date().toISOString().split("T")[0]}
+          <Label htmlFor="time">Turno *</Label>
+          <Select
+            value={formData.time}
+            onValueChange={handleTimeSlotChange}
+            disabled={!formData.date}
             required
-          />
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={formData.date ? "Turno" : "Selecciona turno"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSlots.length === 0 ? (
+                <div className="p-2 text-sm text-gray-500 text-center">
+                  No hay turnos disponibles
+                </div>
+              ) : (
+                availableSlots.map((slot) => (
+                  <SelectItem key={slot.id} value={slot.id}>
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <span>
+                        {formatTime(slot.startTime)} -{" "}
+                        {formatTime(slot.endTime)}
+                      </span>
+                      {slot.pricePerPerson > 0 && (
+                        <span className="text-green-600 font-semibold text-xs">
+                          ${slot.pricePerPerson}/persona
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          {selectedSlotPrice > 0 && formData.guests && (
+            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-xs text-green-800">
+                <strong>Precio de la reserva:</strong> ${selectedSlotPrice} ×{" "}
+                {formData.guests} personas = $
+                {selectedSlotPrice * Number.parseInt(formData.guests)}
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <Label htmlFor="guests">Personas *</Label>
@@ -239,53 +293,6 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="time">Turno *</Label>
-        <Select
-          value={formData.time}
-          onValueChange={handleTimeSlotChange}
-          disabled={!formData.date}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue
-              placeholder={formData.date ? "Turno" : "Selecciona turno"}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {availableSlots.length === 0 ? (
-              <div className="p-2 text-sm text-gray-500 text-center">
-                No hay turnos disponibles
-              </div>
-            ) : (
-              availableSlots.map((slot) => (
-                <SelectItem key={slot.id} value={slot.id}>
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <span>
-                      {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                    </span>
-                    {slot.pricePerPerson > 0 && (
-                      <span className="text-green-600 font-semibold text-xs">
-                        ${slot.pricePerPerson}/persona
-                      </span>
-                    )}
-                  </div>
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-        {selectedSlotPrice > 0 && formData.guests && (
-          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-xs text-green-800">
-              <strong>Precio de la reserva:</strong> ${selectedSlotPrice} ×{" "}
-              {formData.guests} personas = $
-              {selectedSlotPrice * Number.parseInt(formData.guests)}
-            </p>
-          </div>
-        )}
       </div>
 
       <div>
