@@ -83,7 +83,7 @@ export async function createReservation(data: {
     // Step 2: Try to auto-assign tables (default behavior unless explicitly disabled)
     const shouldAutoAssign = data.autoAssignTables !== false;
     let assignmentResult = null;
-    let finalStatus = ReservationStatus.PENDING;
+    let finalStatus: ReservationStatus = ReservationStatus.PENDING;
 
     if (shouldAutoAssign) {
       assignmentResult = await findAvailableTables(
