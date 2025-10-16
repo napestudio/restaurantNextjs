@@ -17,9 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Circle, Square, RectangleHorizontal } from "lucide-react";
+import { Circle, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
 
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
+type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
 
 interface AddTableDialogProps {
   open: boolean;
@@ -91,6 +91,12 @@ export function AddTableDialog({
                   <div className="flex items-center space-x-2">
                     <RectangleHorizontal className="h-4 w-4" />
                     <span>Rectangular (6+ asientos)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="WIDE">
+                  <div className="flex items-center space-x-2">
+                    <RectangleVertical className="h-4 w-4" />
+                    <span>Barra (8+ asientos)</span>
                   </div>
                 </SelectItem>
               </SelectContent>

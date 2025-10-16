@@ -306,7 +306,8 @@ exports.UserRole = exports.$Enums.UserRole = {
 exports.TableShape = exports.$Enums.TableShape = {
   SQUARE: 'SQUARE',
   RECTANGLE: 'RECTANGLE',
-  CIRCLE: 'CIRCLE'
+  CIRCLE: 'CIRCLE',
+  WIDE: 'WIDE'
 };
 
 exports.TableStatus = exports.$Enums.TableStatus = {

@@ -1,14 +1,9 @@
 import type React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZoomIn, ZoomOut, Grid3x3 } from "lucide-react";
 
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
+type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
 type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
 
 interface FloorTable {
@@ -23,6 +18,7 @@ interface FloorTable {
   capacity: number;
   status: TableStatus;
   currentGuests: number;
+  isShared?: boolean;
 }
 
 interface FloorPlanCanvasProps {
@@ -117,6 +113,20 @@ export function FloorPlanCanvas({
           />
         )}
 
+        {table.shape === "WIDE" && (
+          <rect
+            x={table.x}
+            y={table.y}
+            width={table.width}
+            height={table.height}
+            fill={statusColors[table.status]}
+            stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+            strokeWidth={isSelected ? 3 : 2}
+            rx={8}
+            opacity={0.9}
+          />
+        )}
+
         {/* Table number - counter-rotated to stay upright */}
         <text
           x={centerX}
@@ -143,6 +153,34 @@ export function FloorPlanCanvas({
         >
           {table.currentGuests}/{table.capacity}
         </text>
+
+        {/* Shared table indicator - rotates with table, text stays upright */}
+        {table.isShared && (
+          <>
+            <circle
+              cx={table.x + table.width - 15}
+              cy={table.y + 15}
+              r="10"
+              fill="#fff"
+              opacity={0.9}
+              style={{ pointerEvents: "none" }}
+            />
+            <text
+              x={table.x + table.width - 15}
+              y={table.y + 19}
+              textAnchor="middle"
+              fill="#000"
+              fontSize="14"
+              fontWeight="bold"
+              style={{ pointerEvents: "none", userSelect: "none" }}
+              transform={`rotate(${-table.rotation} ${
+                table.x + table.width - 15
+              } ${table.y + 15})`}
+            >
+              C
+            </text>
+          </>
+        )}
       </g>
     );
   };

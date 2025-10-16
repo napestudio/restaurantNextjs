@@ -23,9 +23,10 @@ import {
   Circle,
   Square,
   RectangleHorizontal,
+  RectangleVertical,
 } from "lucide-react";
 
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
+type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
 type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
 
 interface FloorTable {
@@ -115,6 +116,12 @@ export function TablePropertiesPanel({
                     <div className="flex items-center space-x-2">
                       <RectangleHorizontal className="h-4 w-4" />
                       <span>Rectangular</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="WIDE">
+                    <div className="flex items-center space-x-2">
+                      <RectangleVertical className="h-4 w-4" />
+                      <span>Barra</span>
                     </div>
                   </SelectItem>
                 </SelectContent>

@@ -148,7 +148,8 @@ export type PriceType = (typeof PriceType)[keyof typeof PriceType]
 export const TableShape: {
   SQUARE: 'SQUARE',
   RECTANGLE: 'RECTANGLE',
-  CIRCLE: 'CIRCLE'
+  CIRCLE: 'CIRCLE',
+  WIDE: 'WIDE'
 };
 
 export type TableShape = (typeof TableShape)[keyof typeof TableShape]

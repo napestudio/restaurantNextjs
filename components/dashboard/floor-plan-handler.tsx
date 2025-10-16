@@ -15,7 +15,7 @@ import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanInstructions } from "./floor-plan/floor-plan-instructions";
 
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
+type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
 type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
 
 interface FloorTable {
@@ -37,6 +37,7 @@ const shapeDefaults = {
   CIRCLE: { width: 80, height: 80 },
   SQUARE: { width: 100, height: 100 },
   RECTANGLE: { width: 120, height: 80 },
+  WIDE: { width: 200, height: 60 },
 };
 
 interface TableWithReservations {
