@@ -2,9 +2,7 @@ import type React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZoomIn, ZoomOut, Grid3x3 } from "lucide-react";
-
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
-type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
+import type { TableShapeType, TableStatus } from "@/types/table";
 
 interface FloorTable {
   id: string;

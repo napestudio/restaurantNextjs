@@ -18,8 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Circle, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
-
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
+import type { TableShapeType } from "@/types/table";
 
 interface AddTableDialogProps {
   open: boolean;

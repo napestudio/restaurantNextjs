@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { ReservationStatus } from "@/app/generated/prisma";
+import { TableShapeType } from "@/types/table";
 
 /**
  * Get all tables for a branch
@@ -255,7 +256,11 @@ function findTableCombination(
 ): { id: string; capacity: number }[] | null {
   // Try combinations of 2 tables first, then 3
   for (let numTables = 2; numTables <= maxTables; numTables++) {
-    const combination = findCombinationOfSize(tables, targetCapacity, numTables);
+    const combination = findCombinationOfSize(
+      tables,
+      targetCapacity,
+      numTables
+    );
     if (combination) {
       return combination;
     }
@@ -381,7 +386,7 @@ export async function createTable(data: {
   width?: number;
   height?: number;
   rotation?: number;
-  shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+  shape?: TableShapeType;
 }) {
   try {
     // Check if table number already exists in this branch
@@ -560,7 +565,7 @@ export async function updateFloorPlanBatch(
     width?: number;
     height?: number;
     rotation?: number;
-    shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+    shape?: TableShapeType;
   }>
 ) {
   try {

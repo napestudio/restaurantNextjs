@@ -25,9 +25,7 @@ import {
   RectangleHorizontal,
   RectangleVertical,
 } from "lucide-react";
-
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
-type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
+import type { TableShapeType, TableStatus } from "@/types/table";
 
 interface FloorTable {
   id: string;
@@ -52,6 +50,7 @@ interface TablePropertiesPanelProps {
   onUpdateIsShared: (tableId: string, isShared: boolean) => void;
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
+  isEditMode: boolean;
 }
 
 export function TablePropertiesPanel({
@@ -62,6 +61,7 @@ export function TablePropertiesPanel({
   onUpdateIsShared,
   onRotate,
   onDelete,
+  isEditMode,
 }: TablePropertiesPanelProps) {
   return (
     <Card className="sticky top-4">
@@ -95,6 +95,7 @@ export function TablePropertiesPanel({
                 onValueChange={(value: TableShapeType) =>
                   onUpdateShape(selectedTable.id, value)
                 }
+                disabled={!isEditMode}
               >
                 <SelectTrigger id="edit-shape">
                   <SelectValue />
@@ -220,26 +221,33 @@ export function TablePropertiesPanel({
               <div className="text-sm mt-1">{selectedTable.rotation}°</div>
             </div>
 
-            <div className="pt-4 space-y-2">
-              <Button
-                onClick={() => onRotate(selectedTable.id)}
-                variant="outline"
-                className="w-full"
-                size="sm"
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Rotar 45°
-              </Button>
-              <Button
-                onClick={() => onDelete(selectedTable.id)}
-                variant="destructive"
-                className="w-full"
-                size="sm"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar Mesa
-              </Button>
-            </div>
+            {isEditMode && (
+              <div className="pt-4 space-y-2">
+                <Button
+                  onClick={() => onRotate(selectedTable.id)}
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                >
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Rotar 45°
+                </Button>
+                <Button
+                  onClick={() => onDelete(selectedTable.id)}
+                  variant="destructive"
+                  className="w-full"
+                  size="sm"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar Mesa
+                </Button>
+              </div>
+            )}
+            {!isEditMode && (
+              <p className="text-xs text-muted-foreground text-center pt-4 pb-2">
+                Activa el modo edición para modificar la mesa
+              </p>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">

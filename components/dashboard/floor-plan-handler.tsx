@@ -14,9 +14,7 @@ import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanInstructions } from "./floor-plan/floor-plan-instructions";
-
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
-type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
+import type { TableShapeType, TableStatus } from "@/types/table";
 
 interface FloorTable {
   id: string;
@@ -144,6 +142,9 @@ export default function FloorPlanHandler({
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const [newTable, setNewTable] = useState({
@@ -234,6 +235,12 @@ export default function FloorPlanHandler({
   // Handle mouse down on table
   const handleTableMouseDown = (e: React.MouseEvent, tableId: string) => {
     e.stopPropagation();
+
+    // Always allow selecting tables, but only allow dragging in edit mode
+    setSelectedTable(tableId);
+
+    if (!isEditMode) return;
+
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
@@ -245,7 +252,6 @@ export default function FloorPlanHandler({
     const y = (e.clientY - rect.top) / zoom;
 
     setDraggedTable(tableId);
-    setSelectedTable(tableId);
     setDragOffset({
       x: x - table.x,
       y: y - table.y,
@@ -280,15 +286,9 @@ export default function FloorPlanHandler({
     const handleMouseUp = async () => {
       if (!draggedTable) return;
 
-      // Save position to database when drag ends
-      const table = tables.find((t) => t.id === draggedTable);
+      // Mark as having unsaved changes instead of saving immediately
+      setHasUnsavedChanges(true);
       setDraggedTable(null);
-      if (table) {
-        await updateTableFloorPlan(table.id, {
-          positionX: table.x,
-          positionY: table.y,
-        });
-      }
     };
 
     if (draggedTable) {
@@ -375,7 +375,7 @@ export default function FloorPlanHandler({
     }
   };
 
-  const rotateTable = async (tableId: string) => {
+  const rotateTable = (tableId: string) => {
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
@@ -392,9 +392,7 @@ export default function FloorPlanHandler({
       )
     );
 
-    await updateTableFloorPlan(tableId, {
-      rotation: newRotation,
-    });
+    setHasUnsavedChanges(true);
   };
 
   const updateTableStatus = async (tableId: string, status: TableStatus) => {
@@ -457,7 +455,7 @@ export default function FloorPlanHandler({
     );
   };
 
-  const updateTableShape = async (tableId: string, shape: TableShapeType) => {
+  const updateTableShape = (tableId: string, shape: TableShapeType) => {
     const defaults = shapeDefaults[shape];
 
     // Update local floor plan state
@@ -474,26 +472,7 @@ export default function FloorPlanHandler({
       )
     );
 
-    // Update database
-    await updateTableFloorPlan(tableId, {
-      shape,
-      width: defaults.width,
-      height: defaults.height,
-    });
-
-    // Update parent state for simple view
-    setDbTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId
-          ? {
-              ...table,
-              shape,
-              width: defaults.width,
-              height: defaults.height,
-            }
-          : table
-      )
-    );
+    setHasUnsavedChanges(true);
   };
 
   const updateTableIsShared = async (tableId: string, isShared: boolean) => {
@@ -515,11 +494,62 @@ export default function FloorPlanHandler({
     );
   };
 
+  const saveFloorPlanChanges = async () => {
+    setIsSaving(true);
+    try {
+      // Prepare batch update data
+      const updates = tables.map((table) => ({
+        id: table.id,
+        positionX: table.x,
+        positionY: table.y,
+        width: table.width,
+        height: table.height,
+        rotation: table.rotation,
+        shape: table.shape,
+      }));
+
+      // Batch update all tables
+      await updateFloorPlanBatch(updates);
+
+      // Update parent state for simple view
+      setDbTables((prevTables) =>
+        prevTables.map((table) => {
+          const updatedTable = tables.find((t) => t.id === table.id);
+          if (updatedTable) {
+            return {
+              ...table,
+              positionX: updatedTable.x,
+              positionY: updatedTable.y,
+              width: updatedTable.width,
+              height: updatedTable.height,
+              rotation: updatedTable.rotation,
+              shape: updatedTable.shape,
+            };
+          }
+          return table;
+        })
+      );
+
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error("Error saving floor plan changes:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const selectedTableData = tables.find((t) => t.id === selectedTable);
 
   return (
     <div className="space-y-6">
-      <FloorPlanToolbar onAddTable={() => setAddDialogOpen(true)} />
+      <FloorPlanToolbar
+        onAddTable={() => setAddDialogOpen(true)}
+        onSave={saveFloorPlanChanges}
+        onToggleEditMode={() => setIsEditMode(!isEditMode)}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isSaving={isSaving}
+        isEditMode={isEditMode}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Floor Plan Canvas */}
@@ -548,6 +578,7 @@ export default function FloorPlanHandler({
             onUpdateIsShared={updateTableIsShared}
             onRotate={rotateTable}
             onDelete={deleteTable}
+            isEditMode={isEditMode}
           />
         </div>
       </div>
