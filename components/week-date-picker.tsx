@@ -41,11 +41,11 @@ export function WeekDatePicker({ value, onChange, availableDays }: WeekDatePicke
   }
 
   const getDayName = (date: Date) => {
-    return date.toLocaleDateString("en-US", { weekday: "short" })
+    return date.toLocaleDateString("es-ES", { weekday: "short" })
   }
 
   const getMonthName = (date: Date) => {
-    return date.toLocaleDateString("en-US", { month: "short" })
+    return date.toLocaleDateString("es-ES", { month: "short" })
   }
 
   const isToday = (date: Date) => {
@@ -67,8 +67,8 @@ export function WeekDatePicker({ value, onChange, availableDays }: WeekDatePicke
   const hasAvailableDaysInWeek = weekDates.some((date) => isAvailable(date))
 
   const getWeekLabel = () => {
-    if (weekOffset === 0) return "This Week"
-    if (weekOffset === 1) return "Next Week"
+    if (weekOffset === 0) return "Esta Semana"
+    if (weekOffset === 1) return "Próxima Semana"
     const firstDay = weekDates[0]
     const lastDay = weekDates[6]
     return `${getMonthName(firstDay)} ${firstDay.getDate()} - ${getMonthName(lastDay)} ${lastDay.getDate()}`
@@ -86,13 +86,13 @@ export function WeekDatePicker({ value, onChange, availableDays }: WeekDatePicke
           className="h-8"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Previous
+          Anterior
         </Button>
 
         <div className="text-sm font-medium text-gray-700">{getWeekLabel()}</div>
 
         <Button type="button" variant="outline" size="sm" onClick={() => setWeekOffset(weekOffset + 1)} className="h-8">
-          Next
+          Siguiente
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
@@ -149,15 +149,15 @@ export function WeekDatePicker({ value, onChange, availableDays }: WeekDatePicke
       <div className="flex items-center justify-center gap-4 text-xs text-gray-600">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 bg-red-500 rounded-full" />
-          <span>Today</span>
+          <span>Hoy</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-1 h-1 bg-green-500 rounded-full" />
-          <span>Available</span>
+          <span>Disponible</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 bg-gray-300 rounded-full" />
-          <span>Unavailable</span>
+          <span>No disponible</span>
         </div>
       </div>
     </div>
