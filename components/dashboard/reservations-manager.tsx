@@ -176,6 +176,7 @@ export function ReservationsManager({
         onCreate={handleCreate}
         timeSlots={timeSlots}
         isPending={isPending}
+        branchId={branchId}
       />
 
       <CancelReservationDialog
