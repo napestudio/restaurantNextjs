@@ -52,7 +52,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
       startTime: Date;
       endTime: Date;
       pricePerPerson: number;
-      daysOfWeek: string[]
+      daysOfWeek: string[];
     }[]
   >([]);
 
@@ -215,17 +215,62 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
           placeholder="(+54) 123-4567"
         />
       </div>
+      <div>
+        <Label htmlFor="date">Fecha *</Label>
+        <WeekDatePicker
+          value={formData.date}
+          onChange={(date) => setFormData((prev) => ({ ...prev, date: date }))}
+          availableDays={availableDays}
+        />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="date">Fecha *</Label>
-          <WeekDatePicker
-            value={formData.date}
-            onChange={(date) =>
-              setFormData((prev) => ({ ...prev, date: date }))
-            }
-            availableDays={availableDays}
-          />
+          <Label htmlFor="time">Turno *</Label>
+          <Select
+            value={formData.time}
+            onValueChange={handleTimeSlotChange}
+            disabled={!formData.date}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={formData.date ? "Turno" : "Selecciona turno"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSlots.length === 0 ? (
+                <div className="p-2 text-sm text-gray-500 text-center">
+                  No hay turnos disponibles
+                </div>
+              ) : (
+                availableSlots.map((slot) => (
+                  <SelectItem key={slot.id} value={slot.id}>
+                    <div className="flex items-center justify-between w-full gap-4">
+                      <span>
+                        {formatTime(slot.startTime)} -{" "}
+                        {formatTime(slot.endTime)}
+                      </span>
+                      {slot.pricePerPerson > 0 && (
+                        <span className="text-green-600 font-semibold text-xs">
+                          ${slot.pricePerPerson}/persona
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          {selectedSlotPrice > 0 && formData.guests && (
+            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-xs text-green-800">
+                <strong>Precio de la reserva:</strong> ${selectedSlotPrice} ×{" "}
+                {formData.guests} personas = $
+                {selectedSlotPrice * Number.parseInt(formData.guests)}
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <Label htmlFor="guests">Personas *</Label>
@@ -248,53 +293,6 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="time">Turno *</Label>
-        <Select
-          value={formData.time}
-          onValueChange={handleTimeSlotChange}
-          disabled={!formData.date}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue
-              placeholder={formData.date ? "Turno" : "Selecciona turno"}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {availableSlots.length === 0 ? (
-              <div className="p-2 text-sm text-gray-500 text-center">
-                No hay turnos disponibles
-              </div>
-            ) : (
-              availableSlots.map((slot) => (
-                <SelectItem key={slot.id} value={slot.id}>
-                  <div className="flex items-center justify-between w-full gap-4">
-                    <span>
-                      {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                    </span>
-                    {slot.pricePerPerson > 0 && (
-                      <span className="text-green-600 font-semibold text-xs">
-                        ${slot.pricePerPerson}/persona
-                      </span>
-                    )}
-                  </div>
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-        {selectedSlotPrice > 0 && formData.guests && (
-          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-xs text-green-800">
-              <strong>Precio de la reserva:</strong> ${selectedSlotPrice} ×{" "}
-              {formData.guests} personas = $
-              {selectedSlotPrice * Number.parseInt(formData.guests)}
-            </p>
-          </div>
-        )}
       </div>
 
       <div>
