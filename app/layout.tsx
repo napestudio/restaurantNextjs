@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Kiku Sushi",
   description:
     "Manage your restaurant operations - reservations, orders, tables, and more",
-  manifest: "/manifest.json",
+  // manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
