@@ -18,11 +18,11 @@ export function getDayOfWeek(dateString: string): string {
 /**
  * Formats a 24-hour time string to 12-hour format with AM/PM
  */
-export function formatTime(time: string): string {
-  if (!time) return "";
-  const [hours, minutes] = time.split(":");
-  const hour = Number.parseInt(hours);
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:${minutes} ${ampm}`;
-}
+
+export const formatTime = (date: Date): string => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  };
