@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/lib/reservations";
-import {
-  getDayOfWeek,
+import {  
   formatTime,
 } from "@/app/(admin)/dashboard/reservations/lib/utils";
+import { WeekDatePicker } from "../week-date-picker";
+import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
+import { createReservation } from "@/actions/Reservation";
 
 interface NewReservation {
   name: string;
@@ -45,20 +47,21 @@ interface CreateReservationDialogProps {
   onCreate: (reservation: NewReservation) => void;
   timeSlots: TimeSlot[];
   isPending?: boolean;
+  branchId: string;
 }
 
 export function CreateReservationDialog({
   open,
   onOpenChange,
   onCreate,
-  timeSlots,
   isPending,
+  branchId,
 }: CreateReservationDialogProps) {
   const [newReservation, setNewReservation] = useState<NewReservation>({
     name: "",
     email: "",
     phone: "",
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     time: "",
     guests: "",
     dietaryRestrictions: "",
@@ -68,23 +71,62 @@ export function CreateReservationDialog({
   });
 
   const [availableSlots, setAvailableSlots] = useState<
-    { timeFrom: string; timeTo: string; price: number }[]
+    {
+      id: string;
+      startTime: Date;
+      endTime: Date;
+      pricePerPerson: number;
+      daysOfWeek: string[];
+    }[]
   >([]);
   const [selectedSlotPrice, setSelectedSlotPrice] = useState(0);
 
   useEffect(() => {
     if (newReservation.date) {
-      const dayOfWeek = getDayOfWeek(newReservation.date);
-      const availableForDay = timeSlots.filter((slot) =>
-        slot.days.includes(dayOfWeek)
-      );
-      setAvailableSlots(availableForDay);
-      setNewReservation((prev) => ({ ...prev, time: "" }));
-      setSelectedSlotPrice(0);
-    }
-  }, [newReservation.date, timeSlots]);
+      const fetchSlots = async () => {
+        const result = await getAvailableTimeSlotsForDate(
+          branchId,
+          new Date(newReservation.date)
+        );
+        if (result.success && result.data) {
+          setAvailableSlots(result.data);
+        } else {
+          setAvailableSlots([]);
+        }
+        setNewReservation((prev) => ({ ...prev, time: "" }));
+        setSelectedSlotPrice(0);
+      };
 
-  const handleCreate = () => {
+      fetchSlots();
+    }
+  }, [newReservation.date, branchId]);
+
+  // Calculate which days have available slots
+  const availableDays = useMemo(() => {
+    const daysSet = new Set<string>();
+    availableSlots.forEach((slot) => {
+      slot.daysOfWeek.forEach((day) => daysSet.add(day));
+    });
+    return Array.from(daysSet);
+  }, [availableSlots]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !newReservation.name ||
+      !newReservation.email ||
+      !newReservation.date ||
+      !newReservation.time ||
+      !newReservation.guests
+    ) {
+      // toast({
+      //   title: "Missing Information",
+      //   description: "Please fill in all required fields",
+      //   variant: "destructive",
+      // });
+      return;
+    }
+
     if (
       newReservation.name &&
       newReservation.email &&
@@ -92,28 +134,59 @@ export function CreateReservationDialog({
       newReservation.time &&
       newReservation.guests
     ) {
-      onCreate(newReservation);
-      setNewReservation({
-        name: "",
-        email: "",
-        phone: "",
-        date: "",
-        time: "",
-        guests: "",
-        dietaryRestrictions: "",
-        accessibilityNeeds: "",
-        notes: "",
-        status: "confirmed",
-      });
+      try {
+        //onCreate(newReservation);
+        const result = await createReservation({
+          branchId,
+          customerName: newReservation.name,
+          customerEmail: newReservation.email,
+          customerPhone: newReservation.phone || undefined,
+          date: newReservation.date,
+          time: newReservation.time,
+          guests: Number.parseInt(newReservation.guests),
+          timeSlotId: newReservation.time,
+          dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
+          accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
+          notes: newReservation.notes || undefined,
+          createdBy: "WEB",
+        });
+
+        if (result.success) {
+          // toast({
+        //   title: "Reservation Created",
+        //   description: "Your reservation has been successfully created!",
+        // });
+        // Reset form
+          setNewReservation({
+            name: "",
+            email: "",
+            phone: "",
+            date: "",
+            time: "",
+            guests: "",
+            dietaryRestrictions: "",
+            accessibilityNeeds: "",
+            notes: "",
+            status: "confirmed",
+          });
+          setSelectedSlotPrice(0);
+        }
+      } catch (error) {
+        // toast({
+        //   title: "Error",
+        //   description: result.error || "Failed to create reservation",
+        //   variant: "destructive",
+        // });
+      } finally {        
+        onOpenChange(false);
+      }
     }
   };
 
   const handleTimeSlotChange = (value: string) => {
     setNewReservation((prev) => ({ ...prev, time: value }));
-    const slot = availableSlots.find(
-      (s) => `${s.timeFrom}-${s.timeTo}` === value
-    );
-    setSelectedSlotPrice(slot?.price || 0);
+    const slot = availableSlots.find((s) => s.id === value);
+    setSelectedSlotPrice(slot?.pricePerPerson || 0);
   };
 
   return (
@@ -125,7 +198,7 @@ export function CreateReservationDialog({
             Add a new reservation to the system
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleCreate} className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="new-name">Full Name</Label>
@@ -175,18 +248,13 @@ export function CreateReservationDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="new-date">Date</Label>
-              <Input
-                id="new-date"
-                type="date"
+              <Label htmlFor="new-date">Date</Label>              
+              <WeekDatePicker
                 value={newReservation.date}
-                onChange={(e) =>
-                  setNewReservation((prev) => ({
-                    ...prev,
-                    date: e.target.value,
-                  }))
+                onChange={(date) =>
+                  setNewReservation((prev) => ({ ...prev, date: date }))
                 }
-                min={new Date().toISOString().split("T")[0]}
+                availableDays={availableDays}
               />
             </div>
             <div>
@@ -230,22 +298,19 @@ export function CreateReservationDialog({
               <SelectContent>
                 {availableSlots.length === 0 ? (
                   <div className="p-2 text-sm text-gray-500 text-center">
-                    No slots available for this day
+                    No hay turnos disponibles
                   </div>
                 ) : (
-                  availableSlots.map((slot, index) => (
-                    <SelectItem
-                      key={index}
-                      value={`${slot.timeFrom}-${slot.timeTo}`}
-                    >
+                  availableSlots.map((slot) => (
+                    <SelectItem key={slot.id} value={slot.id}>
                       <div className="flex items-center justify-between w-full gap-4">
                         <span>
-                          {formatTime(slot.timeFrom)} -{" "}
-                          {formatTime(slot.timeTo)}
+                          {formatTime(slot.startTime)} -{" "}
+                          {formatTime(slot.endTime)}
                         </span>
-                        {slot.price > 0 && (
+                        {slot.pricePerPerson > 0 && (
                           <span className="text-green-600 font-semibold text-xs">
-                            ${slot.price}/person
+                            ${slot.pricePerPerson}/persona
                           </span>
                         )}
                       </div>
@@ -338,7 +403,7 @@ export function CreateReservationDialog({
               rows={3}
             />
           </div>
-        </div>
+        </form>
         <DialogFooter>
           <Button
             variant="outline"
