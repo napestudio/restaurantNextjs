@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { createReservation } from "@/actions/Reservation";
 import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
+import { WeekDatePicker } from "../week-date-picker";
 
 interface ReservationFormData {
   name: string;
@@ -37,7 +38,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
     name: "",
     email: "",
     phone: "",
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     time: "",
     guests: "",
     dietaryRestrictions: "",
@@ -51,6 +52,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
       startTime: Date;
       endTime: Date;
       pricePerPerson: number;
+      daysOfWeek: string[]
     }[]
   >([]);
 
@@ -72,9 +74,19 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         setFormData((prev) => ({ ...prev, time: "" }));
         setSelectedSlotPrice(0);
       };
+
       fetchSlots();
     }
   }, [formData.date, branchId]);
+
+  // Calculate which days have available slots
+  const availableDays = useMemo(() => {
+    const daysSet = new Set<string>();
+    availableSlots.forEach((slot) => {
+      slot.daysOfWeek.forEach((day) => daysSet.add(day));
+    });
+    return Array.from(daysSet);
+  }, [availableSlots]);
 
   const formatTime = (date: Date): string => {
     const hours = date.getHours();
@@ -207,15 +219,12 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="date">Fecha *</Label>
-          <Input
-            id="date"
-            type="date"
+          <WeekDatePicker
             value={formData.date}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, date: e.target.value }))
+            onChange={(date) =>
+              setFormData((prev) => ({ ...prev, date: date }))
             }
-            min={new Date().toISOString().split("T")[0]}
-            required
+            availableDays={availableDays}
           />
         </div>
         <div>
