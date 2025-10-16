@@ -4,6 +4,7 @@ interface TableCardProps {
   tableNumber: number;
   capacity: number;
   isActive: boolean;
+  isOcupied?: boolean;
   currentReservation?: {
     customerName: string;
     people: number;
@@ -19,8 +20,9 @@ export function TableCard({
   capacity,
   isActive,
   currentReservation,
+  isOcupied,
 }: TableCardProps) {
-  const isOccupied = !!currentReservation;
+  const isOccupied = !!currentReservation || isOcupied;
 
   const getStatusColor = () => {
     if (!isActive) return "bg-gray-200 border-gray-300";
@@ -62,9 +64,7 @@ export function TableCard({
       {/* Table Number - Large and prominent */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <div className="text-3xl font-bold text-gray-900">
-            {tableNumber}
-          </div>
+          <div className="text-3xl font-bold text-gray-900">{tableNumber}</div>
           <div className={`text-xs font-medium ${getStatusTextColor()}`}>
             {getStatusText()}
           </div>

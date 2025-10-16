@@ -11,8 +11,7 @@ export function FloorPlanInstructions() {
           <div>
             <div className="font-semibold mb-2">🖱️ Mover Mesas</div>
             <p className="text-muted-foreground">
-              Haz clic y arrastra cualquier mesa para reposicionarla en el
-              plano
+              Haz clic y arrastra cualquier mesa para reposicionarla en el plano
             </p>
           </div>
           <div>
@@ -26,13 +25,6 @@ export function FloorPlanInstructions() {
             <p className="text-muted-foreground">
               Selecciona una mesa y usa el botón de rotar para cambiar su
               orientación
-            </p>
-          </div>
-          <div>
-            <div className="font-semibold mb-2">💾 Guardar Distribución</div>
-            <p className="text-muted-foreground">
-              Exporta tu plano para guardarlo, o importa una distribución
-              previamente guardada
             </p>
           </div>
         </div>

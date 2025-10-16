@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   RotateCw,
   Trash2,
@@ -22,10 +23,9 @@ import {
   Circle,
   Square,
   RectangleHorizontal,
+  RectangleVertical,
 } from "lucide-react";
-
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
-type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
+import type { TableShapeType, TableStatus } from "@/types/table";
 
 interface FloorTable {
   id: string;
@@ -39,6 +39,7 @@ interface FloorTable {
   capacity: number;
   status: TableStatus;
   currentGuests: number;
+  isShared?: boolean;
 }
 
 interface TablePropertiesPanelProps {
@@ -46,8 +47,10 @@ interface TablePropertiesPanelProps {
   onUpdateShape: (tableId: string, shape: TableShapeType) => void;
   onUpdateCapacity: (tableId: string, capacity: number) => void;
   onUpdateStatus: (tableId: string, status: TableStatus) => void;
+  onUpdateIsShared: (tableId: string, isShared: boolean) => void;
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
+  isEditMode: boolean;
 }
 
 export function TablePropertiesPanel({
@@ -55,8 +58,10 @@ export function TablePropertiesPanel({
   onUpdateShape,
   onUpdateCapacity,
   onUpdateStatus,
+  onUpdateIsShared,
   onRotate,
   onDelete,
+  isEditMode,
 }: TablePropertiesPanelProps) {
   return (
     <Card className="sticky top-4">
@@ -90,6 +95,7 @@ export function TablePropertiesPanel({
                 onValueChange={(value: TableShapeType) =>
                   onUpdateShape(selectedTable.id, value)
                 }
+                disabled={!isEditMode}
               >
                 <SelectTrigger id="edit-shape">
                   <SelectValue />
@@ -111,6 +117,12 @@ export function TablePropertiesPanel({
                     <div className="flex items-center space-x-2">
                       <RectangleHorizontal className="h-4 w-4" />
                       <span>Rectangular</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="WIDE">
+                    <div className="flex items-center space-x-2">
+                      <RectangleVertical className="h-4 w-4" />
+                      <span>Barra</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -172,7 +184,29 @@ export function TablePropertiesPanel({
                   <SelectItem value="cleaning">Limpiando</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cambios manuales anulan el estado calculado de reservas
+              </p>
             </div>
+
+            <div className="flex items-center space-x-2 py-2">
+              <Checkbox
+                id="edit-is-shared"
+                checked={selectedTable.isShared ?? false}
+                onCheckedChange={(checked) =>
+                  onUpdateIsShared(selectedTable.id, checked === true)
+                }
+              />
+              <Label
+                htmlFor="edit-is-shared"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Mesa compartida
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Permite múltiples reservas simultáneas
+            </p>
 
             <div>
               <Label className="text-xs text-muted-foreground">Posición</Label>
@@ -187,26 +221,33 @@ export function TablePropertiesPanel({
               <div className="text-sm mt-1">{selectedTable.rotation}°</div>
             </div>
 
-            <div className="pt-4 space-y-2">
-              <Button
-                onClick={() => onRotate(selectedTable.id)}
-                variant="outline"
-                className="w-full"
-                size="sm"
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Rotar 45°
-              </Button>
-              <Button
-                onClick={() => onDelete(selectedTable.id)}
-                variant="destructive"
-                className="w-full"
-                size="sm"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar Mesa
-              </Button>
-            </div>
+            {isEditMode && (
+              <div className="pt-4 space-y-2">
+                <Button
+                  onClick={() => onRotate(selectedTable.id)}
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                >
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Rotar 45°
+                </Button>
+                <Button
+                  onClick={() => onDelete(selectedTable.id)}
+                  variant="destructive"
+                  className="w-full"
+                  size="sm"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar Mesa
+                </Button>
+              </div>
+            )}
+            {!isEditMode && (
+              <p className="text-xs text-muted-foreground text-center pt-4 pb-2">
+                Activa el modo edición para modificar la mesa
+              </p>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">

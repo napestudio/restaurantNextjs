@@ -15,7 +15,7 @@ export default function Home() {
         ctaButton={homepageData.hero.ctaButton}
         secondaryButton={homepageData.hero.secondaryButton}
         reservationTitle={homepageData.hero.reservationTitle}
-        branchId="seed-branch-1"
+        branchId={process.env.BRANCH_ID || ""}
       />
     </div>
   );

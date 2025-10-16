@@ -1,15 +1,8 @@
 import type React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZoomIn, ZoomOut, Grid3x3 } from "lucide-react";
-
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
-type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
+import type { TableShapeType, TableStatus } from "@/types/table";
 
 interface FloorTable {
   id: string;
@@ -23,6 +16,7 @@ interface FloorTable {
   capacity: number;
   status: TableStatus;
   currentGuests: number;
+  isShared?: boolean;
 }
 
 interface FloorPlanCanvasProps {
@@ -51,6 +45,11 @@ const statusStrokeColors = {
   reserved: "#2563eb",
   cleaning: "#ca8a04",
 };
+
+// Canvas dimensions - modify these to change the floor plan size
+const CANVAS_WIDTH = 1400;
+const CANVAS_HEIGHT = 800;
+const CANVAS_CONTAINER_HEIGHT = 600; // Height of the scrollable container
 
 export function FloorPlanCanvas({
   tables,
@@ -117,7 +116,21 @@ export function FloorPlanCanvas({
           />
         )}
 
-        {/* Table number */}
+        {table.shape === "WIDE" && (
+          <rect
+            x={table.x}
+            y={table.y}
+            width={table.width}
+            height={table.height}
+            fill={statusColors[table.status]}
+            stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+            strokeWidth={isSelected ? 3 : 2}
+            rx={8}
+            opacity={0.9}
+          />
+        )}
+
+        {/* Table number - counter-rotated to stay upright */}
         <text
           x={centerX}
           y={centerY - 5}
@@ -126,11 +139,12 @@ export function FloorPlanCanvas({
           fontSize="16"
           fontWeight="bold"
           style={{ pointerEvents: "none", userSelect: "none" }}
+          transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
         >
           {table.number}
         </text>
 
-        {/* Capacity */}
+        {/* Capacity - counter-rotated to stay upright */}
         <text
           x={centerX}
           y={centerY + 15}
@@ -138,9 +152,38 @@ export function FloorPlanCanvas({
           fill="#fff"
           fontSize="12"
           style={{ pointerEvents: "none", userSelect: "none" }}
+          transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
         >
           {table.currentGuests}/{table.capacity}
         </text>
+
+        {/* Shared table indicator - rotates with table, text stays upright */}
+        {table.isShared && (
+          <>
+            <circle
+              cx={table.x + table.width - 15}
+              cy={table.y + 15}
+              r="10"
+              fill="#fff"
+              opacity={0.9}
+              style={{ pointerEvents: "none" }}
+            />
+            <text
+              x={table.x + table.width - 15}
+              y={table.y + 19}
+              textAnchor="middle"
+              fill="#000"
+              fontSize="14"
+              fontWeight="bold"
+              style={{ pointerEvents: "none", userSelect: "none" }}
+              transform={`rotate(${-table.rotation} ${
+                table.x + table.width - 15
+              } ${table.y + 15})`}
+            >
+              C
+            </text>
+          </>
+        )}
       </g>
     );
   };
@@ -150,37 +193,38 @@ export function FloorPlanCanvas({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Plano del Salón</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onToggleGrid}
-              className={showGrid ? "bg-blue-50" : ""}
-            >
-              <Grid3x3 className="h-4 w-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={onZoomOut}>
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium min-w-12 text-center">
-              {Math.round(zoom * 100)}%
-            </span>
-            <Button size="sm" variant="outline" onClick={onZoomIn}>
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        {/* Floating toolbar in top right - fixed position */}
+        <div className="absolute top-4 right-12 z-10 flex items-center space-x-2 bg-white rounded-lg shadow-lg p-2 opacity-65 hover:opacity-100 transition-opacity pointer-events-auto">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onToggleGrid}
+            className={showGrid ? "bg-blue-50" : ""}
+          >
+            <Grid3x3 className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onClick={onZoomOut}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium min-w-12 text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button size="sm" variant="outline" onClick={onZoomIn}>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </div>
         <div
           className="border rounded-lg overflow-auto bg-gray-100"
-          style={{ height: "600px" }}
+          style={{ height: `${CANVAS_CONTAINER_HEIGHT}px` }}
         >
           <svg
             ref={svgRef}
-            width={800 * zoom}
-            height={600 * zoom}
-            viewBox="0 0 800 600"
+            width={CANVAS_WIDTH * zoom}
+            height={CANVAS_HEIGHT * zoom}
+            viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
             className="bg-white"
             style={{ cursor: draggedTable ? "grabbing" : "default" }}
           >
@@ -202,7 +246,13 @@ export function FloorPlanCanvas({
                 </pattern>
               </defs>
             )}
-            {showGrid && <rect width="800" height="600" fill="url(#grid)" />}
+            {showGrid && (
+              <rect
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                fill="url(#grid)"
+              />
+            )}
 
             {/* Tables */}
             {tables.map((table) => renderTable(table))}

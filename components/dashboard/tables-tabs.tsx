@@ -7,14 +7,14 @@ interface TabsProps {
   defaultTab?: "simple" | "floor-plan";
 }
 
-export function TablesTabs({ children, defaultTab = "simple" }: TabsProps) {
+export function TablesTabs({ children, defaultTab = "floor-plan" }: TabsProps) {
   const [activeTab, setActiveTab] = useState<"simple" | "floor-plan">(
     defaultTab
   );
 
   const tabs = [
+    { id: "floor-plan" as const, label: "Plano del salón" },
     { id: "simple" as const, label: "Vista Simple" },
-    { id: "floor-plan" as const, label: "Plano de Planta" },
   ];
 
   return (
@@ -41,7 +41,9 @@ export function TablesTabs({ children, defaultTab = "simple" }: TabsProps) {
       </div>
 
       <div className="mt-6">
-        {Array.isArray(children) ? children[tabs.findIndex((t) => t.id === activeTab)] : children}
+        {Array.isArray(children)
+          ? children[tabs.findIndex((t) => t.id === activeTab)]
+          : children}
       </div>
     </div>
   );

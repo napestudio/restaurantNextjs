@@ -47,6 +47,14 @@ enum TableShape {
   SQUARE
   RECTANGLE
   CIRCLE
+  WIDE
+}
+
+enum TableStatus {
+  EMPTY
+  OCCUPIED
+  RESERVED
+  CLEANING
 }
 
 //
@@ -137,6 +145,7 @@ model Table {
   number       Int
   capacity     Int
   isActive     Boolean            @default(true)
+  isShared     Boolean            @default(false) // For communal/shared tables that can have multiple reservations
 
   // Floor plan layout properties
   positionX    Float?             @default(0)
@@ -145,6 +154,9 @@ model Table {
   height       Float?             @default(80)
   rotation     Float?             @default(0) // in degrees
   shape        TableShape?        @default(SQUARE)
+
+  // Manual status override (null = auto-calculate from reservations)
+  status       TableStatus?
 
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String
