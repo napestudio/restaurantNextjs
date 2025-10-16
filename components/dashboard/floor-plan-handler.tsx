@@ -16,6 +16,10 @@ import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanInstructions } from "./floor-plan/floor-plan-instructions";
 import type { TableShapeType, TableStatus } from "@/types/table";
 
+// Canvas dimensions - must match floor-plan-canvas.tsx
+const CANVAS_WIDTH = 1400;
+const CANVAS_HEIGHT = 800;
+
 interface FloorTable {
   id: string;
   number: number;
@@ -275,8 +279,14 @@ export default function FloorPlanHandler({
           table.id === draggedTable
             ? {
                 ...table,
-                x: Math.max(0, Math.min(800 - table.width, x - dragOffset.x)),
-                y: Math.max(0, Math.min(600 - table.height, y - dragOffset.y)),
+                x: Math.max(
+                  0,
+                  Math.min(CANVAS_WIDTH - table.width, x - dragOffset.x)
+                ),
+                y: Math.max(
+                  0,
+                  Math.min(CANVAS_HEIGHT - table.height, y - dragOffset.y)
+                ),
               }
             : table
         )
@@ -360,7 +370,12 @@ export default function FloorPlanHandler({
       };
 
       setDbTables((prevTables) => [...prevTables, newDbTable]);
-      setNewTable({ number: "", shape: "CIRCLE", capacity: "2", isShared: false });
+      setNewTable({
+        number: "",
+        shape: "CIRCLE",
+        capacity: "2",
+        isShared: false,
+      });
       setAddDialogOpen(false);
     }
   };
@@ -553,7 +568,8 @@ export default function FloorPlanHandler({
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Floor Plan Canvas */}
-        <div className="lg:col-span-3">
+
+        <div className="lg:col-span-3 relative">
           <FloorPlanCanvas
             tables={tables}
             selectedTable={selectedTable}
@@ -567,7 +583,6 @@ export default function FloorPlanHandler({
             onToggleGrid={() => setShowGrid(!showGrid)}
           />
         </div>
-
         {/* Properties Panel */}
         <div className="lg:col-span-1">
           <TablePropertiesPanel

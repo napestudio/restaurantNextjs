@@ -18,6 +18,7 @@ export interface TableWithReservations {
   shape: string | null;
   status: string | null;
   isActive: boolean;
+  isShared: boolean;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -47,12 +48,12 @@ export function TablesClientWrapper({
     <>
       <TablesStatsOverview tables={tables} />
       <TablesTabs>
-        <TablesSimpleView tables={tables} />
         <FloorPlanHandler
           branchId={branchId}
           tables={tables}
           setTables={setTables}
         />
+        <TablesSimpleView tables={tables} />
       </TablesTabs>
     </>
   );
