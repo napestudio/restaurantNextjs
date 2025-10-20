@@ -13,9 +13,11 @@ async function main() {
     create: {
       id: "seed-restaurant-1",
       name: "Demo Restaurant",
+      slug: "demo-restaurant",
       description: "A demo restaurant for testing and development",
       phone: "+1 (555) 123-4567",
       logoUrl: "/logo.png",
+      isActive: true,
     },
   });
   console.log("✅ Restaurant created:", restaurant.name);
@@ -27,6 +29,7 @@ async function main() {
     create: {
       id: "seed-branch-1",
       name: "Main Branch",
+      slug: "main-branch",
       address: "123 Main Street, Downtown",
       restaurantId: restaurant.id,
     },
@@ -94,6 +97,7 @@ async function main() {
         id: "cat-appetizers",
         name: "Appetizers",
         order: 1,
+        restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
@@ -103,6 +107,7 @@ async function main() {
         id: "cat-main-courses",
         name: "Main Courses",
         order: 2,
+        restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
@@ -112,6 +117,7 @@ async function main() {
         id: "cat-desserts",
         name: "Desserts",
         order: 3,
+        restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
@@ -121,6 +127,7 @@ async function main() {
         id: "cat-beverages",
         name: "Beverages",
         order: 4,
+        restaurantId: restaurant.id,
       },
     }),
   ]);
@@ -211,6 +218,7 @@ async function main() {
         name: productData.name,
         description: productData.description,
         categoryId: productData.categoryId,
+        restaurantId: restaurant.id,
         isActive: true,
       },
     });
