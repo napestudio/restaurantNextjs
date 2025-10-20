@@ -1,11 +1,13 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../app/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [citext]
 }
 
 //
@@ -102,11 +104,22 @@ model Session {
 model Restaurant {
   id          String   @id @default(cuid())
   name        String
+  /** NUEVO: slug único público (case-insensitive) para misitio.com/[slug] */
+  slug        String   @unique @db.Citext
   description String?
   phone       String?
   logoUrl     String?
+  isActive    Boolean  @default(true)
+
   branches    Branch[]
+  /** Los menús/categorías quedan aislados por restaurante */
+  categories  Category[]
+  products    Product[]
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
 }
 
 model Branch {
@@ -117,12 +130,20 @@ model Branch {
   restaurantId String
   createdAt    DateTime   @default(now())
 
+  /** OPCIONAL: slug por sucursal para futuro /[restaurantSlug]/[branchSlug] */
+  slug         String?    @db.Citext
+
   reservations Reservation[]
   orders       Order[]
   tables       Table[]
   timeSlots    TimeSlot[]
   products     ProductOnBranch[]
   userAccess   UserOnBranch[]
+
+  /** Evita duplicar nombres de sucursal dentro del mismo restaurante */
+  @@unique([restaurantId, name])
+  /** Si usás slug por sucursal, garantiza unicidad dentro del restaurante */
+  @@unique([restaurantId, slug])
 }
 
 model UserOnBranch {
@@ -145,22 +166,25 @@ model Table {
   number       Int
   capacity     Int
   isActive     Boolean            @default(true)
-  isShared     Boolean            @default(false) // For communal/shared tables that can have multiple reservations
+  isShared     Boolean            @default(false)
 
-  // Floor plan layout properties
+  // Floor plan
   positionX    Float?             @default(0)
   positionY    Float?             @default(0)
   width        Float?             @default(80)
   height       Float?             @default(80)
-  rotation     Float?             @default(0) // in degrees
+  rotation     Float?             @default(0)
   shape        TableShape?        @default(SQUARE)
 
-  // Manual status override (null = auto-calculate from reservations)
+  // Manual status override
   status       TableStatus?
 
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String
   reservations ReservationTable[]
+
+  /** Un número de mesa no se repite dentro de la misma sucursal */
+  @@unique([branchId, number])
 }
 
 model Reservation {
@@ -200,42 +224,57 @@ model ReservationTable {
 
 model TimeSlot {
   id             String   @id @default(cuid())
-  startTime      DateTime @db.Time // PostgreSQL TIME type
-  endTime        DateTime @db.Time // PostgreSQL TIME type
-  daysOfWeek     String[] // Array of day names: ["monday", "tuesday", etc.]
-  pricePerPerson Decimal? @default(0) // Optional price per person, 0 for free
-  notes          String? // Optional notes/description
+  startTime      DateTime @db.Time
+  endTime        DateTime @db.Time
+  daysOfWeek     String[]
+  pricePerPerson Decimal? @default(0)
+  notes          String?
   isActive       Boolean  @default(true)
   branch         Branch   @relation(fields: [branchId], references: [id])
   branchId       String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  reservations Reservation[]
+  reservations   Reservation[]
 }
 
 //
-// PRODUCTOS Y MENÚ
+// PRODUCTOS Y MENÚ (aislados por restaurante)
 //
 model Category {
-  id       String    @id @default(cuid())
-  name     String
-  order    Int       @default(0)
-  products Product[]
+  id            String      @id @default(cuid())
+  name          String
+  order         Int         @default(0)
+
+  /** NUEVO: categoría pertenece a un restaurante */
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  products      Product[]
+
+  @@unique([restaurantId, name]) // mismo nombre no se repite dentro del restaurante
+  @@index([restaurantId])
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id            String      @id @default(cuid())
+  name          String
+  description   String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
 
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id])
+  /** NUEVO: producto pertenece a un restaurante */
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
-  branches   ProductOnBranch[]
-  orderItems OrderItem[]
+  categoryId    String?
+  category      Category?   @relation(fields: [categoryId], references: [id])
+
+  branches      ProductOnBranch[]
+  orderItems    OrderItem[]
+
+  @@unique([restaurantId, name]) // evita duplicar nombres de producto dentro del restaurante
+  @@index([restaurantId])
 }
 
 model ProductOnBranch {
@@ -267,9 +306,9 @@ model ProductPrice {
 // PEDIDOS
 //
 model Order {
-  id       String @id @default(cuid())
-  branch   Branch @relation(fields: [branchId], references: [id])
-  branchId String
+  id         String   @id @default(cuid())
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  branchId   String
 
   customerName  String
   customerEmail String
@@ -295,4 +334,13 @@ model OrderItem {
   itemName  String
   quantity  Int
   price     Decimal
+}
+
+//
+// Slugs reservados para rutas del sistema (admin, api, auth, etc.)
+//
+model ReservedSlug {
+  slug       String   @id @db.Citext
+  reason     String?
+  createdAt  DateTime @default(now())
 }

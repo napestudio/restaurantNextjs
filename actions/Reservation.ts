@@ -8,6 +8,7 @@ import { findAvailableTables } from "./Table";
 /**
  * Helper function to serialize reservation data for client components
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serializeReservation(reservation: any) {
   return {
     ...reservation,
@@ -18,7 +19,8 @@ function serializeReservation(reservation: any) {
         }
       : null,
     tables: reservation.tables
-      ? reservation.tables.map((rt: any) => ({
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        reservation.tables.map((rt: any) => ({
           ...rt,
           table: rt.table,
         }))

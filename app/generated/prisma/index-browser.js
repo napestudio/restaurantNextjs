@@ -153,10 +153,13 @@ exports.Prisma.SessionScalarFieldEnum = {
 exports.Prisma.RestaurantScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  slug: 'slug',
   description: 'description',
   phone: 'phone',
   logoUrl: 'logoUrl',
-  createdAt: 'createdAt'
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.BranchScalarFieldEnum = {
@@ -164,7 +167,8 @@ exports.Prisma.BranchScalarFieldEnum = {
   name: 'name',
   address: 'address',
   restaurantId: 'restaurantId',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  slug: 'slug'
 };
 
 exports.Prisma.UserOnBranchScalarFieldEnum = {
@@ -231,7 +235,8 @@ exports.Prisma.TimeSlotScalarFieldEnum = {
 exports.Prisma.CategoryScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  order: 'order'
+  order: 'order',
+  restaurantId: 'restaurantId'
 };
 
 exports.Prisma.ProductScalarFieldEnum = {
@@ -240,6 +245,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   description: 'description',
   isActive: 'isActive',
   createdAt: 'createdAt',
+  restaurantId: 'restaurantId',
   categoryId: 'categoryId'
 };
 
@@ -281,6 +287,12 @@ exports.Prisma.OrderItemScalarFieldEnum = {
   itemName: 'itemName',
   quantity: 'quantity',
   price: 'price'
+};
+
+exports.Prisma.ReservedSlugScalarFieldEnum = {
+  slug: 'slug',
+  reason: 'reason',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -359,7 +371,8 @@ exports.Prisma.ModelName = {
   ProductOnBranch: 'ProductOnBranch',
   ProductPrice: 'ProductPrice',
   Order: 'Order',
-  OrderItem: 'OrderItem'
+  OrderItem: 'OrderItem',
+  ReservedSlug: 'ReservedSlug'
 };
 
 /**
