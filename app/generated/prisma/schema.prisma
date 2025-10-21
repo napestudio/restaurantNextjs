@@ -192,6 +192,7 @@ model Table {
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String
   reservations ReservationTable[]
+  timeSlots    TimeSlotTable[]
 
   /**
    * Un número de mesa no se repite dentro de la misma sucursal
@@ -236,11 +237,13 @@ model ReservationTable {
 
 model TimeSlot {
   id             String   @id @default(cuid())
+  name           String
   startTime      DateTime @db.Time
   endTime        DateTime @db.Time
   daysOfWeek     String[]
   pricePerPerson Decimal? @default(0)
   notes          String?
+  moreInfoUrl    String?
   isActive       Boolean  @default(true)
   branch         Branch   @relation(fields: [branchId], references: [id])
   branchId       String
@@ -248,6 +251,18 @@ model TimeSlot {
   updatedAt      DateTime @updatedAt
 
   reservations Reservation[]
+  tables       TimeSlotTable[]
+}
+
+model TimeSlotTable {
+  id         String   @id @default(cuid())
+  timeSlot   TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+  timeSlotId String
+  table      Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableId    String
+
+  @@unique([timeSlotId, tableId])
+  @@index([tableId])
 }
 
 //

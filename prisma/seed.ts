@@ -12,15 +12,15 @@ async function main() {
     update: {},
     create: {
       id: "seed-restaurant-1",
-      name: "Demo Restaurant",
-      slug: "demo-restaurant",
-      description: "A demo restaurant for testing and development",
-      phone: "+1 (555) 123-4567",
+      name: "Kiku Sushi",
+      slug: "kiku-sushi",
+      description: "Auténtica cocina japonesa con los mejores ingredientes frescos",
+      phone: "+54 11 1234-5678",
       logoUrl: "/logo.png",
       isActive: true,
     },
   });
-  console.log("✅ Restaurant created:", restaurant.name);
+  console.log("✅ Restaurante creado:", restaurant.name);
 
   // Create Branch
   const branch = await prisma.branch.upsert({
@@ -28,27 +28,27 @@ async function main() {
     update: {},
     create: {
       id: "seed-branch-1",
-      name: "Main Branch",
-      slug: "main-branch",
-      address: "123 Main Street, Downtown",
+      name: "Sucursal Principal",
+      slug: "sucursal-principal",
+      address: "Av. Corrientes 1234, Buenos Aires",
       restaurantId: restaurant.id,
     },
   });
-  console.log("✅ Branch created:", branch.name);
+  console.log("✅ Sucursal creada:", branch.name);
 
   // Create Admin User
   const hashedPassword = await bcrypt.hash("Admin@123", 10);
   const adminUser = await prisma.user.upsert({
-    where: { email: "admin@restaurant.com" },
+    where: { email: "admin@kikusushi.com" },
     update: {},
     create: {
-      email: "admin@restaurant.com",
-      name: "Admin User",
+      email: "admin@kikusushi.com",
+      name: "Administrador",
       accounts: {
         create: {
           type: "credentials",
           provider: "credentials",
-          providerAccountId: "admin@restaurant.com",
+          providerAccountId: "admin@kikusushi.com",
           refresh_token: hashedPassword,
         },
       },
@@ -60,21 +60,21 @@ async function main() {
       },
     },
   });
-  console.log("✅ Admin user created:", adminUser.email);
+  console.log("✅ Usuario administrador creado:", adminUser.email);
 
   // Create Manager User
   const managerPassword = await bcrypt.hash("Manager@123", 10);
   const managerUser = await prisma.user.upsert({
-    where: { email: "manager@restaurant.com" },
+    where: { email: "gerente@kikusushi.com" },
     update: {},
     create: {
-      email: "manager@restaurant.com",
-      name: "Manager User",
+      email: "gerente@kikusushi.com",
+      name: "Gerente",
       accounts: {
         create: {
           type: "credentials",
           provider: "credentials",
-          providerAccountId: "manager@restaurant.com",
+          providerAccountId: "gerente@kikusushi.com",
           refresh_token: managerPassword,
         },
       },
@@ -86,7 +86,7 @@ async function main() {
       },
     },
   });
-  console.log("✅ Manager user created:", managerUser.email);
+  console.log("✅ Usuario gerente creado:", managerUser.email);
 
   // Create Categories
   const categories = await Promise.all([
@@ -95,7 +95,7 @@ async function main() {
       update: {},
       create: {
         id: "cat-appetizers",
-        name: "Appetizers",
+        name: "Entradas",
         order: 1,
         restaurantId: restaurant.id,
       },
@@ -105,7 +105,7 @@ async function main() {
       update: {},
       create: {
         id: "cat-main-courses",
-        name: "Main Courses",
+        name: "Platos Principales",
         order: 2,
         restaurantId: restaurant.id,
       },
@@ -115,7 +115,7 @@ async function main() {
       update: {},
       create: {
         id: "cat-desserts",
-        name: "Desserts",
+        name: "Postres",
         order: 3,
         restaurantId: restaurant.id,
       },
@@ -125,86 +125,86 @@ async function main() {
       update: {},
       create: {
         id: "cat-beverages",
-        name: "Beverages",
+        name: "Bebidas",
         order: 4,
         restaurantId: restaurant.id,
       },
     }),
   ]);
-  console.log("✅ Categories created:", categories.length);
+  console.log("✅ Categorías creadas:", categories.length);
 
   // Create Products
   const products = [
     {
-      id: "prod-caesar-salad",
-      name: "Caesar Salad",
-      description: "Fresh romaine lettuce with Caesar dressing and croutons",
+      id: "prod-edamame",
+      name: "Edamame",
+      description: "Porotos de soja al vapor con sal marina",
       categoryId: "cat-appetizers",
-      prices: { dineIn: 8.99, takeAway: 7.99, delivery: 9.99 },
+      prices: { dineIn: 650, takeAway: 600, delivery: 700 },
       stock: 50,
     },
     {
-      id: "prod-bruschetta",
-      name: "Bruschetta",
-      description: "Toasted bread topped with tomatoes, garlic, and basil",
+      id: "prod-gyoza",
+      name: "Gyoza",
+      description: "Empanaditas japonesas rellenas de cerdo y vegetales",
       categoryId: "cat-appetizers",
-      prices: { dineIn: 7.99, takeAway: 6.99, delivery: 8.99 },
+      prices: { dineIn: 850, takeAway: 800, delivery: 900 },
       stock: 40,
     },
     {
-      id: "prod-grilled-salmon",
-      name: "Grilled Salmon",
-      description: "Fresh salmon fillet with seasonal vegetables",
+      id: "prod-california-roll",
+      name: "California Roll",
+      description: "Roll de cangrejo, palta y pepino (8 piezas)",
       categoryId: "cat-main-courses",
-      prices: { dineIn: 24.99, takeAway: 22.99, delivery: 26.99 },
+      prices: { dineIn: 1200, takeAway: 1100, delivery: 1300 },
       stock: 30,
     },
     {
-      id: "prod-pasta-carbonara",
-      name: "Pasta Carbonara",
-      description: "Classic Italian pasta with bacon, eggs, and parmesan",
+      id: "prod-salmon-nigiri",
+      name: "Nigiri de Salmón",
+      description: "Salmón fresco sobre arroz (5 piezas)",
       categoryId: "cat-main-courses",
-      prices: { dineIn: 16.99, takeAway: 14.99, delivery: 18.99 },
+      prices: { dineIn: 1800, takeAway: 1700, delivery: 1900 },
       stock: 45,
     },
     {
-      id: "prod-ribeye-steak",
-      name: "Ribeye Steak",
-      description: "12oz premium ribeye steak with mashed potatoes",
+      id: "prod-dragon-roll",
+      name: "Dragon Roll",
+      description: "Roll premium con langostino tempura, palta y salsa de anguila (10 piezas)",
       categoryId: "cat-main-courses",
-      prices: { dineIn: 32.99, takeAway: 30.99, delivery: 34.99 },
+      prices: { dineIn: 2500, takeAway: 2400, delivery: 2600 },
       stock: 20,
     },
     {
-      id: "prod-tiramisu",
-      name: "Tiramisu",
-      description: "Classic Italian coffee-flavored dessert",
+      id: "prod-mochi",
+      name: "Mochi",
+      description: "Postre japonés de arroz dulce relleno de helado (3 piezas)",
       categoryId: "cat-desserts",
-      prices: { dineIn: 7.99, takeAway: 6.99, delivery: 8.99 },
+      prices: { dineIn: 900, takeAway: 850, delivery: 950 },
       stock: 35,
     },
     {
-      id: "prod-chocolate-lava-cake",
-      name: "Chocolate Lava Cake",
-      description: "Warm chocolate cake with molten center",
+      id: "prod-dorayaki",
+      name: "Dorayaki",
+      description: "Panqueques japoneses rellenos con pasta de judías dulces",
       categoryId: "cat-desserts",
-      prices: { dineIn: 8.99, takeAway: 7.99, delivery: 9.99 },
+      prices: { dineIn: 750, takeAway: 700, delivery: 800 },
       stock: 25,
     },
     {
-      id: "prod-espresso",
-      name: "Espresso",
-      description: "Strong Italian coffee",
+      id: "prod-te-verde",
+      name: "Té Verde",
+      description: "Té verde japonés tradicional",
       categoryId: "cat-beverages",
-      prices: { dineIn: 3.99, takeAway: 3.49, delivery: 4.49 },
+      prices: { dineIn: 400, takeAway: 350, delivery: 450 },
       stock: 100,
     },
     {
-      id: "prod-fresh-juice",
-      name: "Fresh Orange Juice",
-      description: "Freshly squeezed orange juice",
+      id: "prod-ramune",
+      name: "Ramune",
+      description: "Bebida gaseosa japonesa con sabor a frutas",
       categoryId: "cat-beverages",
-      prices: { dineIn: 4.99, takeAway: 4.49, delivery: 5.49 },
+      prices: { dineIn: 500, takeAway: 450, delivery: 550 },
       stock: 60,
     },
   ];
@@ -256,7 +256,7 @@ async function main() {
       },
     });
   }
-  console.log("✅ Products created:", products.length);
+  console.log("✅ Productos creados:", products.length);
 
   // Create Tables
   const tables = [
@@ -285,18 +285,31 @@ async function main() {
       },
     });
   }
-  console.log("✅ Tables created:", tables.length);
+  console.log("✅ Mesas creadas:", tables.length);
+
+  // Get created table IDs for relationships
+  const createdTables = await prisma.table.findMany({
+    where: { branchId: branch.id },
+    select: { id: true, number: true },
+  });
 
   // Create Time Slots
   const timeSlots = [
     {
+      id: `slot-${branch.id}-11:00`,
+      name: "Almuerzo Entre Semana",
       startTime: "11:00",
       endTime: "11:30",
       daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday"],
       pricePerPerson: 0,
-      notes: "Weekday lunch service",
+      notes: "Servicio de almuerzo entre semana",
+      moreInfoUrl: null,
+      // Link tables 1-4 (smaller tables for lunch)
+      tableNumbers: [1, 2, 3, 4],
     },
     {
+      id: `slot-${branch.id}-12:00`,
+      name: "Almuerzo Pico",
       startTime: "12:00",
       endTime: "13:00",
       daysOfWeek: [
@@ -309,16 +322,26 @@ async function main() {
         "sunday",
       ],
       pricePerPerson: 0,
-      notes: "Peak lunch hour - all days",
+      notes: "Hora pico del almuerzo - todos los días",
+      moreInfoUrl: null,
+      // All tables available for peak lunch
+      tableNumbers: [1, 2, 3, 4, 5, 6, 7, 8],
     },
     {
+      id: `slot-${branch.id}-19:00`,
+      name: "Cena Premium Fin de Semana",
       startTime: "19:00",
       endTime: "20:00",
       daysOfWeek: ["friday", "saturday"],
-      pricePerPerson: 25,
-      notes: "Weekend peak dinner - premium pricing",
+      pricePerPerson: 2500,
+      notes: "Cena especial fin de semana - precio premium",
+      moreInfoUrl: "https://kikusushi.com/experiencia-premium",
+      // Larger tables for premium dining
+      tableNumbers: [5, 6, 7, 8],
     },
     {
+      id: `slot-${branch.id}-18:00`,
+      name: "Cena Temprana",
       startTime: "18:00",
       endTime: "19:00",
       daysOfWeek: [
@@ -331,14 +354,22 @@ async function main() {
         "sunday",
       ],
       pricePerPerson: 0,
-      notes: "Early dinner - all days free",
+      notes: "Cena temprana - todos los días gratis",
+      moreInfoUrl: null,
+      // All tables available
+      tableNumbers: [1, 2, 3, 4, 5, 6, 7, 8],
     },
     {
+      id: `slot-${branch.id}-20:00`,
+      name: "Cena Nocturna",
       startTime: "20:00",
       endTime: "21:00",
       daysOfWeek: ["friday", "saturday", "sunday"],
-      pricePerPerson: 15,
-      notes: "Weekend late dinner",
+      pricePerPerson: 1500,
+      notes: "Cena fin de semana tardía",
+      moreInfoUrl: null,
+      // Medium to large tables for late dinner
+      tableNumbers: [3, 4, 5, 6, 7, 8],
     },
   ];
 
@@ -355,33 +386,45 @@ async function main() {
     const endTime = new Date(referenceDate);
     endTime.setHours(endHour, endMin);
 
+    // Get table IDs for this slot
+    const tableIds = createdTables
+      .filter((t) => slot.tableNumbers.includes(t.number))
+      .map((t) => t.id);
+
     await prisma.timeSlot.upsert({
       where: {
-        id: `slot-${branch.id}-${slot.startTime}`,
+        id: slot.id,
       },
       update: {},
       create: {
-        id: `slot-${branch.id}-${slot.startTime}`,
+        id: slot.id,
+        name: slot.name,
         startTime,
         endTime,
         daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson,
         notes: slot.notes,
+        moreInfoUrl: slot.moreInfoUrl,
         isActive: true,
         branchId: branch.id,
+        tables: {
+          create: tableIds.map((tableId) => ({
+            tableId,
+          })),
+        },
       },
     });
   }
-  console.log("✅ Time slots created:", timeSlots.length);
+  console.log("✅ Turnos creados:", timeSlots.length);
 
-  console.log("\n🎉 Database seeding completed successfully!");
-  console.log("\n📝 Login Credentials:");
+  console.log("\n🎉 ¡Base de datos poblada exitosamente!");
+  console.log("\n📝 Credenciales de Acceso:");
   console.log("-----------------------------------");
-  console.log("Admin User:");
-  console.log("  Email: admin@restaurant.com");
+  console.log("Usuario Administrador:");
+  console.log("  Email: admin@kikusushi.com");
   console.log("  Password: Admin@123");
-  console.log("\nManager User:");
-  console.log("  Email: manager@restaurant.com");
+  console.log("\nUsuario Gerente:");
+  console.log("  Email: gerente@kikusushi.com");
   console.log("  Password: Manager@123");
   console.log("-----------------------------------\n");
 }
@@ -391,7 +434,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error("Error during seeding:", e);
+    console.error("Error durante el poblado de la base de datos:", e);
     await prisma.$disconnect();
     process.exit(1);
   });

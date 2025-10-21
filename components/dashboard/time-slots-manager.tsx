@@ -35,15 +35,21 @@ export function TimeSlotsManager({
     days: string[];
     price: string;
     notes: string;
+    name?: string;
+    moreInfoUrl?: string;
+    tableIds: string[];
   }) => {
     startTransition(async () => {
       const result = await createTimeSlot({
         branchId,
+        name: newSlot.name || "Unnamed Slot",
         startTime: newSlot.timeFrom,
         endTime: newSlot.timeTo,
         daysOfWeek: newSlot.days,
         pricePerPerson: newSlot.price ? parseFloat(newSlot.price) : 0,
         notes: newSlot.notes,
+        moreInfoUrl: newSlot.moreInfoUrl,
+        tableIds: newSlot.tableIds,
       });
 
       if (result.success) {
@@ -116,6 +122,7 @@ export function TimeSlotsManager({
         onOpenChange={setCreateDialogOpen}
         onCreate={handleCreate}
         isPending={isPending}
+        branchId={branchId}
       />
 
       <DeleteTimeSlotDialog

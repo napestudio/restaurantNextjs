@@ -8,27 +8,48 @@ import { revalidatePath } from "next/cache";
  */
 export async function createTimeSlot(data: {
   branchId: string;
+  name: string;
   startTime: string; // HH:mm format (e.g., "19:00")
   endTime: string; // HH:mm format (e.g., "20:00")
   daysOfWeek: string[]; // ["monday", "tuesday", etc.]
   pricePerPerson?: number;
   notes?: string;
+  moreInfoUrl?: string;
+  tableIds?: string[]; // IDs of tables to link to this time slot
   isActive?: boolean;
 }) {
   try {
-    // Convert time strings to Date objects (using a reference date)
-    const startTime = new Date(`1970-01-01T${data.startTime}:00`);
-    const endTime = new Date(`1970-01-01T${data.endTime}:00`);
+    // Convert time strings to Date objects in UTC to avoid timezone issues
+    // PostgreSQL TIME type stores time without timezone
+    const startTime = new Date(`1970-01-01T${data.startTime}:00.000Z`);
+    const endTime = new Date(`1970-01-01T${data.endTime}:00.000Z`);
 
     const timeSlot = await prisma.timeSlot.create({
       data: {
         branchId: data.branchId,
+        name: data.name,
         startTime,
         endTime,
         daysOfWeek: data.daysOfWeek,
         pricePerPerson: data.pricePerPerson ?? 0,
         notes: data.notes,
+        moreInfoUrl: data.moreInfoUrl,
         isActive: data.isActive ?? true,
+        // Create table relationships if tableIds provided
+        tables: data.tableIds
+          ? {
+              create: data.tableIds.map((tableId) => ({
+                tableId,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
       },
     });
 
@@ -56,6 +77,13 @@ export async function getTimeSlots(branchId: string) {
         branchId,
         isActive: true,
       },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
       orderBy: {
         startTime: "asc",
       },
@@ -65,13 +93,16 @@ export async function getTimeSlots(branchId: string) {
       success: true,
       data: timeSlots.map((slot) => ({
         id: slot.id,
+        name: slot.name,
         startTime: slot.startTime,
         endTime: slot.endTime,
         daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
         notes: slot.notes,
+        moreInfoUrl: slot.moreInfoUrl,
         isActive: slot.isActive,
         branchId: slot.branchId,
+        tables: slot.tables.map((tt) => tt.table),
         createdAt: slot.createdAt,
         updatedAt: slot.updatedAt,
       })),
@@ -112,29 +143,37 @@ export async function getTimeSlotById(id: string) {
 export async function updateTimeSlot(
   id: string,
   data: {
+    name?: string;
     startTime?: string; // HH:mm format
     endTime?: string; // HH:mm format
     daysOfWeek?: string[];
     pricePerPerson?: number;
     notes?: string;
+    moreInfoUrl?: string;
+    tableIds?: string[]; // Replace table relationships
     isActive?: boolean;
   }
 ) {
   try {
     const updateData: {
+      name?: string;
       startTime?: Date;
       endTime?: Date;
       daysOfWeek?: string[];
       pricePerPerson?: number;
       notes?: string | null;
+      moreInfoUrl?: string | null;
       isActive?: boolean;
     } = {};
 
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
     if (data.startTime) {
-      updateData.startTime = new Date(`1970-01-01T${data.startTime}:00`);
+      updateData.startTime = new Date(`1970-01-01T${data.startTime}:00.000Z`);
     }
     if (data.endTime) {
-      updateData.endTime = new Date(`1970-01-01T${data.endTime}:00`);
+      updateData.endTime = new Date(`1970-01-01T${data.endTime}:00.000Z`);
     }
     if (data.daysOfWeek !== undefined) {
       updateData.daysOfWeek = data.daysOfWeek;
@@ -145,13 +184,40 @@ export async function updateTimeSlot(
     if (data.notes !== undefined) {
       updateData.notes = data.notes;
     }
+    if (data.moreInfoUrl !== undefined) {
+      updateData.moreInfoUrl = data.moreInfoUrl;
+    }
     if (data.isActive !== undefined) {
       updateData.isActive = data.isActive;
+    }
+
+    // If tableIds is provided, update the table relationships
+    if (data.tableIds !== undefined) {
+      // Delete existing relationships and create new ones
+      await prisma.timeSlotTable.deleteMany({
+        where: { timeSlotId: id },
+      });
+
+      if (data.tableIds.length > 0) {
+        await prisma.timeSlotTable.createMany({
+          data: data.tableIds.map((tableId) => ({
+            timeSlotId: id,
+            tableId,
+          })),
+        });
+      }
     }
 
     const timeSlot = await prisma.timeSlot.update({
       where: { id },
       data: updateData,
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
     });
 
     revalidatePath("/dashboard/reservations/slots");

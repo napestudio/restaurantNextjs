@@ -101,9 +101,28 @@ export function ReservationsManager({
   }) => {
     startTransition(async () => {
       // Find the time slot ID based on the time value
-      const timeSlot = timeSlots.find(
-        (slot) => `${slot.timeFrom}-${slot.timeTo}` === newReservation.time
-      );
+      const timeSlot = timeSlots.find((slot) => {
+        let startTime: string;
+        let endTime: string;
+
+        if (slot.startTime instanceof Date) {
+          startTime = `${slot.startTime.getUTCHours().toString().padStart(2, '0')}:${slot.startTime.getUTCMinutes().toString().padStart(2, '0')}`;
+        } else if (typeof slot.startTime === 'string' && slot.startTime.includes('T')) {
+          startTime = slot.startTime.substring(11, 16);
+        } else {
+          startTime = slot.startTime;
+        }
+
+        if (slot.endTime instanceof Date) {
+          endTime = `${slot.endTime.getUTCHours().toString().padStart(2, '0')}:${slot.endTime.getUTCMinutes().toString().padStart(2, '0')}`;
+        } else if (typeof slot.endTime === 'string' && slot.endTime.includes('T')) {
+          endTime = slot.endTime.substring(11, 16);
+        } else {
+          endTime = slot.endTime;
+        }
+
+        return `${startTime}-${endTime}` === newReservation.time;
+      });
 
       const result = await createReservation({
         branchId,
