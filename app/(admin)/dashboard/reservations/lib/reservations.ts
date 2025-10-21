@@ -45,9 +45,16 @@ export type SerializedReservation = {
 // Time slot type for UI
 export interface TimeSlot {
   id: string;
-  timeFrom: string;
-  timeTo: string;
-  days: string[];
-  price: number;
+  name: string;
+  startTime: Date | string;
+  endTime: Date | string;
+  daysOfWeek: string[];
+  pricePerPerson: number | null;
+  notes: string | null;
+  moreInfoUrl: string | null;
+  isActive: boolean;
+  branchId: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 

@@ -34,22 +34,23 @@ export default async function ReservationsPage() {
       : null,
   }));
 
-  // Format time slots to match the expected format
-  const formattedTimeSlots = timeSlots?.map((slot) => ({
-    id: slot.id,
-    timeFrom: slot.startTime.toISOString().slice(11, 16), // Extract HH:mm
-    timeTo: slot.endTime.toISOString().slice(11, 16), // Extract HH:mm
-    days: slot.daysOfWeek,
-    price: Number(slot.pricePerPerson) || 0,
+  // Serialize time slots for client component (convert Dates to strings, Decimals to numbers)
+  const serializedTimeSlots = timeSlots?.map((slot) => ({
+    ...slot,
+    startTime: slot.startTime.toISOString(),
+    endTime: slot.endTime.toISOString(),
+    pricePerPerson: slot.pricePerPerson ? Number(slot.pricePerPerson) : null,
+    createdAt: slot.createdAt.toISOString(),
+    updatedAt: slot.updatedAt.toISOString(),
   }));
 
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="px-4 sm:px-6 lg:px-8 py-8">
-        {formattedTimeSlots && (
+        {serializedTimeSlots && (
           <ReservationsManager
             initialReservations={reservations}
-            timeSlots={formattedTimeSlots}
+            timeSlots={serializedTimeSlots}
             branchId={branchId}
           />
         )}

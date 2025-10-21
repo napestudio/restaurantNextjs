@@ -55,6 +55,7 @@ interface TableWithReservations {
   status: string | null;
   isActive: boolean;
   isShared: boolean;
+  sectionId: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -69,16 +70,30 @@ interface TableWithReservations {
   }>;
 }
 
+interface Section {
+  id: string;
+  name: string;
+  color: string;
+  order: number;
+  _count: {
+    tables: number;
+  };
+}
+
 interface FloorPlanPageProps {
   branchId: string;
   tables: TableWithReservations[];
   setTables: React.Dispatch<React.SetStateAction<TableWithReservations[]>>;
+  selectedSection?: string | null;
+  sections?: Section[];
 }
 
 export default function FloorPlanHandler({
   branchId,
   tables: dbTables,
   setTables: setDbTables,
+  selectedSection: externalSelectedSection,
+  sections: externalSections = [],
 }: FloorPlanPageProps) {
   // Transform database tables to FloorTable format
   const transformTables = (dbTables: TableWithReservations[]): FloorTable[] => {
@@ -151,12 +166,26 @@ export default function FloorPlanHandler({
   const [isEditMode, setIsEditMode] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Use external sections and selectedSection if provided
+  const sections = externalSections;
+  const selectedSection = externalSelectedSection;
+
   const [newTable, setNewTable] = useState({
     number: "",
+    name: "",
     shape: "CIRCLE" as TableShapeType,
     capacity: "2",
     isShared: false,
+    sectionId: "",
   });
+
+  // Filter tables by selected section
+  const filteredTables = selectedSection
+    ? tables.filter((table) => {
+        const dbTable = dbTables.find((t) => t.id === table.id);
+        return dbTable?.sectionId === selectedSection;
+      })
+    : tables;
 
   // Sync floor plan tables when dbTables change (e.g., new reservations)
   useEffect(() => {
@@ -322,7 +351,9 @@ export default function FloorPlanHandler({
     const result = await createTable({
       branchId,
       number: Number.parseInt(newTable.number),
+      name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
+      sectionId: newTable.sectionId || undefined,
       positionX: 50,
       positionY: 50,
       width: defaults.width,
@@ -366,17 +397,21 @@ export default function FloorPlanHandler({
         status: null, // New tables have no manual status override
         isActive: result.data.isActive ?? true,
         isShared: result.data.isShared ?? false,
+        sectionId: result.data.sectionId ?? null,
         reservations: [],
       };
 
       setDbTables((prevTables) => [...prevTables, newDbTable]);
       setNewTable({
         number: "",
+        name: "",
         shape: "CIRCLE",
         capacity: "2",
         isShared: false,
+        sectionId: "",
       });
       setAddDialogOpen(false);
+
     }
   };
 
@@ -555,6 +590,14 @@ export default function FloorPlanHandler({
 
   const selectedTableData = tables.find((t) => t.id === selectedTable);
 
+  // Get additional table info for properties panel
+  const selectedDbTable = selectedTable
+    ? dbTables.find((t) => t.id === selectedTable)
+    : undefined;
+  const selectedTableSection = selectedDbTable?.sectionId
+    ? sections.find((s) => s.id === selectedDbTable.sectionId)
+    : undefined;
+
   return (
     <div className="space-y-6">
       <FloorPlanToolbar
@@ -571,7 +614,7 @@ export default function FloorPlanHandler({
 
         <div className="lg:col-span-3 relative">
           <FloorPlanCanvas
-            tables={tables}
+            tables={filteredTables}
             selectedTable={selectedTable}
             draggedTable={draggedTable}
             zoom={zoom}
@@ -587,6 +630,9 @@ export default function FloorPlanHandler({
         <div className="lg:col-span-1">
           <TablePropertiesPanel
             selectedTable={selectedTableData}
+            tableName={selectedDbTable?.name}
+            sectionName={selectedTableSection?.name}
+            sectionColor={selectedTableSection?.color}
             onUpdateShape={updateTableShape}
             onUpdateCapacity={updateTableCapacity}
             onUpdateStatus={updateTableStatus}
@@ -604,11 +650,17 @@ export default function FloorPlanHandler({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         tableNumber={newTable.number}
+        tableName={newTable.name}
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
+        sectionId={newTable.sectionId}
+        sections={sections}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
+        }
+        onTableNameChange={(value) =>
+          setNewTable({ ...newTable, name: value })
         }
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })
@@ -618,6 +670,9 @@ export default function FloorPlanHandler({
         }
         onIsSharedChange={(value) =>
           setNewTable({ ...newTable, isShared: value })
+        }
+        onSectionChange={(value) =>
+          setNewTable({ ...newTable, sectionId: value })
         }
         onAddTable={addTable}
       />

@@ -179,9 +179,21 @@ exports.Prisma.UserOnBranchScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.SectionScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  color: 'color',
+  order: 'order',
+  isActive: 'isActive',
+  branchId: 'branchId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.TableScalarFieldEnum = {
   id: 'id',
   number: 'number',
+  name: 'name',
   capacity: 'capacity',
   isActive: 'isActive',
   isShared: 'isShared',
@@ -192,7 +204,8 @@ exports.Prisma.TableScalarFieldEnum = {
   rotation: 'rotation',
   shape: 'shape',
   status: 'status',
-  branchId: 'branchId'
+  branchId: 'branchId',
+  sectionId: 'sectionId'
 };
 
 exports.Prisma.ReservationScalarFieldEnum = {
@@ -221,15 +234,23 @@ exports.Prisma.ReservationTableScalarFieldEnum = {
 
 exports.Prisma.TimeSlotScalarFieldEnum = {
   id: 'id',
+  name: 'name',
   startTime: 'startTime',
   endTime: 'endTime',
   daysOfWeek: 'daysOfWeek',
   pricePerPerson: 'pricePerPerson',
   notes: 'notes',
+  moreInfoUrl: 'moreInfoUrl',
   isActive: 'isActive',
   branchId: 'branchId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TimeSlotTableScalarFieldEnum = {
+  id: 'id',
+  timeSlotId: 'timeSlotId',
+  tableId: 'tableId'
 };
 
 exports.Prisma.CategoryScalarFieldEnum = {
@@ -362,10 +383,12 @@ exports.Prisma.ModelName = {
   Restaurant: 'Restaurant',
   Branch: 'Branch',
   UserOnBranch: 'UserOnBranch',
+  Section: 'Section',
   Table: 'Table',
   Reservation: 'Reservation',
   ReservationTable: 'ReservationTable',
   TimeSlot: 'TimeSlot',
+  TimeSlotTable: 'TimeSlotTable',
   Category: 'Category',
   Product: 'Product',
   ProductOnBranch: 'ProductOnBranch',

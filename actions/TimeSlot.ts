@@ -8,27 +8,48 @@ import { revalidatePath } from "next/cache";
  */
 export async function createTimeSlot(data: {
   branchId: string;
+  name: string;
   startTime: string; // HH:mm format (e.g., "19:00")
   endTime: string; // HH:mm format (e.g., "20:00")
   daysOfWeek: string[]; // ["monday", "tuesday", etc.]
   pricePerPerson?: number;
   notes?: string;
+  moreInfoUrl?: string;
+  tableIds?: string[]; // IDs of tables to link to this time slot
   isActive?: boolean;
 }) {
   try {
-    // Convert time strings to Date objects (using a reference date)
-    const startTime = new Date(`1970-01-01T${data.startTime}:00`);
-    const endTime = new Date(`1970-01-01T${data.endTime}:00`);
+    // Convert time strings to Date objects in UTC to avoid timezone issues
+    // PostgreSQL TIME type stores time without timezone
+    const startTime = new Date(`1970-01-01T${data.startTime}:00.000Z`);
+    const endTime = new Date(`1970-01-01T${data.endTime}:00.000Z`);
 
     const timeSlot = await prisma.timeSlot.create({
       data: {
         branchId: data.branchId,
+        name: data.name,
         startTime,
         endTime,
         daysOfWeek: data.daysOfWeek,
         pricePerPerson: data.pricePerPerson ?? 0,
         notes: data.notes,
+        moreInfoUrl: data.moreInfoUrl,
         isActive: data.isActive ?? true,
+        // Create table relationships if tableIds provided
+        tables: data.tableIds
+          ? {
+              create: data.tableIds.map((tableId) => ({
+                tableId,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
       },
     });
 
@@ -56,6 +77,13 @@ export async function getTimeSlots(branchId: string) {
         branchId,
         isActive: true,
       },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
       orderBy: {
         startTime: "asc",
       },
@@ -65,13 +93,16 @@ export async function getTimeSlots(branchId: string) {
       success: true,
       data: timeSlots.map((slot) => ({
         id: slot.id,
+        name: slot.name,
         startTime: slot.startTime,
         endTime: slot.endTime,
         daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
         notes: slot.notes,
+        moreInfoUrl: slot.moreInfoUrl,
         isActive: slot.isActive,
         branchId: slot.branchId,
+        tables: slot.tables.map((tt) => tt.table),
         createdAt: slot.createdAt,
         updatedAt: slot.updatedAt,
       })),
@@ -112,29 +143,37 @@ export async function getTimeSlotById(id: string) {
 export async function updateTimeSlot(
   id: string,
   data: {
+    name?: string;
     startTime?: string; // HH:mm format
     endTime?: string; // HH:mm format
     daysOfWeek?: string[];
     pricePerPerson?: number;
     notes?: string;
+    moreInfoUrl?: string;
+    tableIds?: string[]; // Replace table relationships
     isActive?: boolean;
   }
 ) {
   try {
     const updateData: {
+      name?: string;
       startTime?: Date;
       endTime?: Date;
       daysOfWeek?: string[];
       pricePerPerson?: number;
       notes?: string | null;
+      moreInfoUrl?: string | null;
       isActive?: boolean;
     } = {};
 
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
     if (data.startTime) {
-      updateData.startTime = new Date(`1970-01-01T${data.startTime}:00`);
+      updateData.startTime = new Date(`1970-01-01T${data.startTime}:00.000Z`);
     }
     if (data.endTime) {
-      updateData.endTime = new Date(`1970-01-01T${data.endTime}:00`);
+      updateData.endTime = new Date(`1970-01-01T${data.endTime}:00.000Z`);
     }
     if (data.daysOfWeek !== undefined) {
       updateData.daysOfWeek = data.daysOfWeek;
@@ -145,13 +184,40 @@ export async function updateTimeSlot(
     if (data.notes !== undefined) {
       updateData.notes = data.notes;
     }
+    if (data.moreInfoUrl !== undefined) {
+      updateData.moreInfoUrl = data.moreInfoUrl;
+    }
     if (data.isActive !== undefined) {
       updateData.isActive = data.isActive;
+    }
+
+    // If tableIds is provided, update the table relationships
+    if (data.tableIds !== undefined) {
+      // Delete existing relationships and create new ones
+      await prisma.timeSlotTable.deleteMany({
+        where: { timeSlotId: id },
+      });
+
+      if (data.tableIds.length > 0) {
+        await prisma.timeSlotTable.createMany({
+          data: data.tableIds.map((tableId) => ({
+            timeSlotId: id,
+            tableId,
+          })),
+        });
+      }
     }
 
     const timeSlot = await prisma.timeSlot.update({
       where: { id },
       data: updateData,
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
     });
 
     revalidatePath("/dashboard/reservations/slots");
@@ -253,11 +319,13 @@ export async function getAvailableTimeSlotsForDate(
     // Serialize the data for client components
     const serializedSlots = timeSlots.map((slot) => ({
       id: slot.id,
+      name: slot.name,
       startTime: slot.startTime,
       endTime: slot.endTime,
       daysOfWeek: slot.daysOfWeek,
       pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
       notes: slot.notes,
+      moreInfoUrl: slot.moreInfoUrl,
       isActive: slot.isActive,
       branchId: slot.branchId,
       createdAt: slot.createdAt,
@@ -296,5 +364,108 @@ export async function toggleTimeSlotStatus(id: string) {
   } catch (error) {
     console.error("Error toggling time slot status:", error);
     return { success: false, error: "Failed to toggle time slot status" };
+  }
+}
+
+/**
+ * Get available tables for a time slot, considering overlapping time slots
+ * Returns all tables with their availability status and conflicting time slot info
+ */
+export async function getAvailableTablesForTimeSlot(params: {
+  branchId: string;
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+  daysOfWeek: string[];
+  excludeTimeSlotId?: string; // For edit mode - exclude this time slot from conflict checking
+}) {
+  try {
+    const { branchId, startTime, endTime, daysOfWeek, excludeTimeSlotId } = params;
+
+    // Get all active tables for the branch (shared tables first for better UX)
+    const allTables = await prisma.table.findMany({
+      where: {
+        branchId,
+        isActive: true,
+      },
+      orderBy: [
+        { isShared: 'desc' }, // Show shared tables first
+        { number: 'asc' },
+      ],
+    });
+
+    // Convert time strings to Date objects for comparison
+    const requestStartTime = new Date(`1970-01-01T${startTime}:00.000Z`);
+    const requestEndTime = new Date(`1970-01-01T${endTime}:00.000Z`);
+
+    // Get all active time slots for this branch that overlap with the requested time/days
+    const overlappingTimeSlots = await prisma.timeSlot.findMany({
+      where: {
+        branchId,
+        isActive: true,
+        id: excludeTimeSlotId ? { not: excludeTimeSlotId } : undefined,
+        // Filter by days that overlap
+        daysOfWeek: {
+          hasSome: daysOfWeek,
+        },
+      },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
+    });
+
+    // Filter to only slots that actually have time overlap
+    const conflictingSlots = overlappingTimeSlots.filter((slot) => {
+      // Check if time ranges overlap: start1 < end2 AND start2 < end1
+      return requestStartTime < slot.endTime && slot.startTime < requestEndTime;
+    });
+
+    // Build a map of table ID to conflicting time slot
+    // ALL tables (both shared and regular) are unavailable if assigned to overlapping slots
+    const tableConflicts = new Map<string, { id: string; name: string; startTime: Date; endTime: Date }>();
+
+    conflictingSlots.forEach((slot) => {
+      slot.tables.forEach((tt) => {
+        // Only add if this table's days actually overlap with requested days
+        const hasCommonDay = daysOfWeek.some((day) => slot.daysOfWeek.includes(day));
+        if (hasCommonDay) {
+          tableConflicts.set(tt.tableId, {
+            id: slot.id,
+            name: slot.name,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+          });
+        }
+      });
+    });
+
+    // Map tables with availability info
+    const tablesWithAvailability = allTables.map((table) => {
+      const conflict = tableConflicts.get(table.id);
+      return {
+        id: table.id,
+        number: table.number,
+        name: table.name,
+        capacity: table.capacity,
+        isActive: table.isActive,
+        isShared: table.isShared, // Include isShared flag
+        isAvailable: !conflict,
+        conflictingTimeSlot: conflict || null,
+      };
+    });
+
+    return {
+      success: true,
+      data: tablesWithAvailability,
+    };
+  } catch (error) {
+    console.error("Error getting available tables:", error);
+    return {
+      success: false,
+      error: "Failed to get available tables"
+    };
   }
 }

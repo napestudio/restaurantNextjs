@@ -8,27 +8,22 @@ export default async function TimeSlotsPage() {
   const result = await getTimeSlots(branchId);
   const timeSlots = result.success ? result.data : [];
   if (!timeSlots) return;
-  // Transform time slots to match the expected format
-  const formattedTimeSlots = timeSlots.map((slot) => {
-    // Extract time from Date object (HH:mm format)
-    const startTime = slot.startTime.toISOString().substring(11, 16);
-    const endTime = slot.endTime.toISOString().substring(11, 16);
 
-    return {
-      id: slot.id || "",
-      timeFrom: startTime,
-      timeTo: endTime,
-      days: slot.daysOfWeek,
-      price: parseFloat(slot.pricePerPerson?.toString() || "0"),
-      notes: slot.notes || "",
-    };
-  });
+  // Serialize time slots for client component (convert Dates to strings, Decimals to numbers)
+  const serializedTimeSlots = timeSlots.map((slot) => ({
+    ...slot,
+    startTime: slot.startTime.toISOString(),
+    endTime: slot.endTime.toISOString(),
+    pricePerPerson: slot.pricePerPerson ? Number(slot.pricePerPerson) : null,
+    createdAt: slot.createdAt.toISOString(),
+    updatedAt: slot.updatedAt.toISOString(),
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="px-4 sm:px-6 lg:px-8 py-8">
         <TimeSlotsManager
-          initialTimeSlots={formattedTimeSlots}
+          initialTimeSlots={serializedTimeSlots}
           branchId={branchId}
         />
       </main>
