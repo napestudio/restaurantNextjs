@@ -46,3 +46,44 @@ export function getDayBadges(days: string[]): string {
     .filter(Boolean)
     .join(", ");
 }
+
+/**
+ * Checks if two time ranges overlap
+ * Times overlap if: startTime1 < endTime2 AND startTime2 < endTime1
+ */
+export function doTimesOverlap(
+  start1: Date | string,
+  end1: Date | string,
+  start2: Date | string,
+  end2: Date | string
+): boolean {
+  const s1 = typeof start1 === 'string' ? new Date(`1970-01-01T${start1}:00.000Z`) : start1;
+  const e1 = typeof end1 === 'string' ? new Date(`1970-01-01T${end1}:00.000Z`) : end1;
+  const s2 = typeof start2 === 'string' ? new Date(`1970-01-01T${start2}:00.000Z`) : start2;
+  const e2 = typeof end2 === 'string' ? new Date(`1970-01-01T${end2}:00.000Z`) : end2;
+
+  return s1 < e2 && s2 < e1;
+}
+
+/**
+ * Checks if two arrays of days have any common days
+ */
+export function haveCommonDays(days1: string[], days2: string[]): boolean {
+  return days1.some((day) => days2.includes(day));
+}
+
+/**
+ * Checks if two time slots overlap (same day + overlapping times)
+ */
+export function doTimeSlotsOverlap(
+  slot1: { startTime: Date | string; endTime: Date | string; daysOfWeek: string[] },
+  slot2: { startTime: Date | string; endTime: Date | string; daysOfWeek: string[] }
+): boolean {
+  // Check if they share at least one common day
+  if (!haveCommonDays(slot1.daysOfWeek, slot2.daysOfWeek)) {
+    return false;
+  }
+
+  // Check if their time ranges overlap
+  return doTimesOverlap(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime);
+}

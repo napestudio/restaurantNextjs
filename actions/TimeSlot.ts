@@ -364,3 +364,102 @@ export async function toggleTimeSlotStatus(id: string) {
     return { success: false, error: "Failed to toggle time slot status" };
   }
 }
+
+/**
+ * Get available tables for a time slot, considering overlapping time slots
+ * Returns all tables with their availability status and conflicting time slot info
+ */
+export async function getAvailableTablesForTimeSlot(params: {
+  branchId: string;
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+  daysOfWeek: string[];
+  excludeTimeSlotId?: string; // For edit mode - exclude this time slot from conflict checking
+}) {
+  try {
+    const { branchId, startTime, endTime, daysOfWeek, excludeTimeSlotId } = params;
+
+    // Get all active tables for the branch
+    const allTables = await prisma.table.findMany({
+      where: {
+        branchId,
+        isActive: true,
+      },
+      orderBy: {
+        number: 'asc',
+      },
+    });
+
+    // Convert time strings to Date objects for comparison
+    const requestStartTime = new Date(`1970-01-01T${startTime}:00.000Z`);
+    const requestEndTime = new Date(`1970-01-01T${endTime}:00.000Z`);
+
+    // Get all active time slots for this branch that overlap with the requested time/days
+    const overlappingTimeSlots = await prisma.timeSlot.findMany({
+      where: {
+        branchId,
+        isActive: true,
+        id: excludeTimeSlotId ? { not: excludeTimeSlotId } : undefined,
+        // Filter by days that overlap
+        daysOfWeek: {
+          hasSome: daysOfWeek,
+        },
+      },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
+    });
+
+    // Filter to only slots that actually have time overlap
+    const conflictingSlots = overlappingTimeSlots.filter((slot) => {
+      // Check if time ranges overlap: start1 < end2 AND start2 < end1
+      return requestStartTime < slot.endTime && slot.startTime < requestEndTime;
+    });
+
+    // Build a map of table ID to conflicting time slot
+    const tableConflicts = new Map<string, { id: string; name: string; startTime: Date; endTime: Date }>();
+
+    conflictingSlots.forEach((slot) => {
+      slot.tables.forEach((tt) => {
+        // Only add if this table's days actually overlap with requested days
+        const hasCommonDay = daysOfWeek.some((day) => slot.daysOfWeek.includes(day));
+        if (hasCommonDay) {
+          tableConflicts.set(tt.tableId, {
+            id: slot.id,
+            name: slot.name,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+          });
+        }
+      });
+    });
+
+    // Map tables with availability info
+    const tablesWithAvailability = allTables.map((table) => {
+      const conflict = tableConflicts.get(table.id);
+      return {
+        id: table.id,
+        number: table.number,
+        capacity: table.capacity,
+        isActive: table.isActive,
+        isAvailable: !conflict,
+        conflictingTimeSlot: conflict || null,
+      };
+    });
+
+    return {
+      success: true,
+      data: tablesWithAvailability,
+    };
+  } catch (error) {
+    console.error("Error getting available tables:", error);
+    return {
+      success: false,
+      error: "Failed to get available tables"
+    };
+  }
+}

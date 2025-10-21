@@ -31,7 +31,15 @@ import {
   CollapsibleTrigger,
 } from "../ui/collapsible";
 import { Checkbox } from "../ui/checkbox";
-import { getTables } from "@/actions/Table";
+import { getAvailableTablesForTimeSlot } from "@/actions/TimeSlot";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface NewSlot {
   timeFrom: string;
@@ -44,11 +52,18 @@ interface NewSlot {
   moreInfoUrl?: string;
 }
 
-interface Table {
+interface TableWithAvailability {
   id: string;
   number: number;
   capacity: number;
   isActive: boolean;
+  isAvailable: boolean;
+  conflictingTimeSlot: {
+    id: string;
+    name: string;
+    startTime: Date;
+    endTime: Date;
+  } | null;
 }
 
 interface CreateTimeSlotDialogProps {
@@ -67,7 +82,7 @@ export function CreateTimeSlotDialog({
   branchId,
 }: CreateTimeSlotDialogProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [tables, setTables] = useState<Table[]>([]);
+  const [tables, setTables] = useState<TableWithAvailability[]>([]);
   const [loadingTables, setLoadingTables] = useState(false);
   const [newSlot, setNewSlot] = useState<NewSlot>({
     timeFrom: "",
@@ -80,14 +95,27 @@ export function CreateTimeSlotDialog({
     moreInfoUrl: "",
   });
 
-  // Fetch tables when dialog opens
+  // Fetch available tables when time/days change
   useEffect(() => {
-    if (open && branchId) {
+    if (open && branchId && newSlot.timeFrom && newSlot.timeTo && newSlot.days.length > 0) {
       setLoadingTables(true);
-      getTables(branchId)
+      getAvailableTablesForTimeSlot({
+        branchId,
+        startTime: newSlot.timeFrom,
+        endTime: newSlot.timeTo,
+        daysOfWeek: newSlot.days,
+      })
         .then((result) => {
           if (result.success && result.data) {
-            setTables(result.data.filter((t) => t.isActive));
+            setTables(result.data);
+            // Auto-deselect tables that are now unavailable
+            const availableTableIds = result.data
+              .filter((t) => t.isAvailable)
+              .map((t) => t.id);
+            setNewSlot((prev) => ({
+              ...prev,
+              tableIds: prev.tableIds.filter((id) => availableTableIds.includes(id)),
+            }));
           }
         })
         .catch((error) => {
@@ -96,8 +124,12 @@ export function CreateTimeSlotDialog({
         .finally(() => {
           setLoadingTables(false);
         });
+    } else if (open && branchId) {
+      // Reset tables if criteria not met
+      setTables([]);
+      setNewSlot((prev) => ({ ...prev, tableIds: [] }));
     }
-  }, [open, branchId]);
+  }, [open, branchId, newSlot.timeFrom, newSlot.timeTo, newSlot.days]);
 
   const toggleDay = (day: string) => {
     setNewSlot((prev) => ({
@@ -146,7 +178,9 @@ export function CreateTimeSlotDialog({
   };
 
   const handleSelectAllTables = () => {
-    setNewSlot((prev) => ({ ...prev, tableIds: tables.map((t) => t.id) }));
+    // Only select available tables
+    const availableTableIds = tables.filter((t) => t.isAvailable).map((t) => t.id);
+    setNewSlot((prev) => ({ ...prev, tableIds: availableTableIds }));
   };
 
   const handleDeselectAllTables = () => {
@@ -155,6 +189,11 @@ export function CreateTimeSlotDialog({
 
   const handleCreate = () => {
     if (newSlot.timeFrom && newSlot.timeTo && newSlot.days.length > 0) {
+      // Validation: must have at least one table selected
+      if (newSlot.tableIds.length === 0) {
+        alert("Debes seleccionar al menos una mesa para este turno.");
+        return;
+      }
       onCreate(newSlot);
       setNewSlot({
         timeFrom: "",
@@ -168,6 +207,10 @@ export function CreateTimeSlotDialog({
       });
     }
   };
+
+  // Check if there are available tables
+  const availableTables = tables.filter((t) => t.isAvailable);
+  const hasNoAvailableTables = tables.length > 0 && availableTables.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChangeHandler}>
@@ -362,7 +405,7 @@ export function CreateTimeSlotDialog({
                       variant="outline"
                       size="sm"
                       onClick={handleSelectAllTables}
-                      disabled={loadingTables || tables.length === 0}
+                      disabled={loadingTables || availableTables.length === 0}
                     >
                       Seleccionar Todas
                     </Button>
@@ -377,6 +420,18 @@ export function CreateTimeSlotDialog({
                     </Button>
                   </div>
                 </div>
+
+                {/* Warning if no tables available */}
+                {hasNoAvailableTables && (
+                  <Alert className="mb-3 border-yellow-500 bg-yellow-50">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      No hay mesas disponibles para el horario y días seleccionados.
+                      Todas las mesas ya están asignadas a otros turnos que se superponen.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg max-h-60 overflow-y-auto">
                   {loadingTables ? (
                     <div className="col-span-2 text-center py-4 text-gray-500">
@@ -384,39 +439,69 @@ export function CreateTimeSlotDialog({
                     </div>
                   ) : tables.length === 0 ? (
                     <div className="col-span-2 text-center py-4 text-gray-500">
-                      No hay mesas disponibles.
+                      Selecciona horario y días para ver las mesas disponibles.
                     </div>
                   ) : (
-                    tables.map((table) => (
-                      <div
-                        key={table.id}
-                        className={`flex items-center space-x-3 p-3 rounded-md border-2 transition-colors ${
-                          newSlot.tableIds?.includes(table.id)
-                            ? "bg-green-50 border-green-500"
-                            : "bg-white border-gray-200"
-                        }`}
-                      >
-                        <Checkbox
-                          id={`table-${table.id}`}
-                          checked={newSlot.tableIds?.includes(table.id)}
-                          onCheckedChange={() => handleTableToggle(table.id)}
-                        />
-                        <Label
-                          htmlFor={`table-${table.id}`}
-                          className="cursor-pointer flex-1"
-                        >
-                          <div className="font-medium">Mesa {table.number}</div>
-                          <div className="text-xs text-gray-500">
-                            Capacidad: {table.capacity}
+                    <TooltipProvider>
+                      {tables.map((table) => {
+                        const isDisabled = !table.isAvailable;
+                        const tableElement = (
+                          <div
+                            key={table.id}
+                            className={`flex items-center space-x-3 p-3 rounded-md border-2 transition-colors ${
+                              isDisabled
+                                ? "bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed"
+                                : newSlot.tableIds?.includes(table.id)
+                                ? "bg-green-50 border-green-500"
+                                : "bg-white border-gray-200"
+                            }`}
+                          >
+                            <Checkbox
+                              id={`table-${table.id}`}
+                              checked={newSlot.tableIds?.includes(table.id)}
+                              onCheckedChange={() => handleTableToggle(table.id)}
+                              disabled={isDisabled}
+                            />
+                            <Label
+                              htmlFor={`table-${table.id}`}
+                              className={`flex-1 ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+                            >
+                              <div className="font-medium">Mesa {table.number}</div>
+                              <div className="text-xs text-gray-500">
+                                Capacidad: {table.capacity}
+                              </div>
+                            </Label>
                           </div>
-                        </Label>
-                      </div>
-                    ))
+                        );
+
+                        // Wrap unavailable tables in tooltip
+                        if (isDisabled && table.conflictingTimeSlot) {
+                          return (
+                            <Tooltip key={table.id}>
+                              <TooltipTrigger asChild>
+                                {tableElement}
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="font-semibold">No disponible</p>
+                                <p className="text-xs">
+                                  Asignada a: {table.conflictingTimeSlot.name}
+                                </p>
+                                <p className="text-xs">
+                                  {formatTime(table.conflictingTimeSlot.startTime)} - {formatTime(table.conflictingTimeSlot.endTime)}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+
+                        return tableElement;
+                      })}
+                    </TooltipProvider>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Selecciona las mesas que estarán disponibles para este turno.
-                  Las que no estén seleccionadas no podrán ser reservadas.
+                  Las mesas no disponibles están ocupadas por otros turnos.
                 </p>
               </div>
             </CollapsibleContent>
