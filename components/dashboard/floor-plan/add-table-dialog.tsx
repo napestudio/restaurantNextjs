@@ -25,6 +25,12 @@ import {
 } from "lucide-react";
 import type { TableShapeType } from "@/types/table";
 
+interface Section {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface AddTableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,11 +39,14 @@ interface AddTableDialogProps {
   tableShape: TableShapeType;
   tableCapacity: string;
   isShared: boolean;
+  sectionId?: string;
+  sections?: Section[];
   onTableNumberChange: (value: string) => void;
   onTableNameChange?: (value: string) => void;
   onTableShapeChange: (value: TableShapeType) => void;
   onTableCapacityChange: (value: string) => void;
   onIsSharedChange: (value: boolean) => void;
+  onSectionChange?: (value: string) => void;
   onAddTable: () => void;
 }
 
@@ -49,11 +58,14 @@ export function AddTableDialog({
   tableShape,
   tableCapacity,
   isShared,
+  sectionId,
+  sections = [],
   onTableNumberChange,
   onTableNameChange,
   onTableShapeChange,
   onTableCapacityChange,
   onIsSharedChange,
+  onSectionChange,
   onAddTable,
 }: AddTableDialogProps) {
   return (
@@ -92,6 +104,39 @@ export function AddTableDialog({
               Ejemplo: Barra Central
             </p>
           </div>
+
+          {sections.length > 0 && (
+            <div>
+              <Label htmlFor="section">Sección (Opcional)</Label>
+              <Select
+                value={sectionId || "none"}
+                onValueChange={(value) =>
+                  onSectionChange?.(value === "none" ? "" : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar sección" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin sección asignada</SelectItem>
+                  {sections.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: section.color }}
+                        />
+                        {section.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Asigna la mesa a una sección específica del restaurante
+              </p>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="table-shape">Forma de la Mesa</Label>

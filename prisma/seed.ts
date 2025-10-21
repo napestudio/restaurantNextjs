@@ -258,16 +258,58 @@ async function main() {
   }
   console.log("✅ Productos creados:", products.length);
 
+  // Create Sections
+  const mainDining = await prisma.section.upsert({
+    where: { id: "section-main-dining" },
+    update: {},
+    create: {
+      id: "section-main-dining",
+      name: "Main Dining",
+      color: "#3b82f6", // blue
+      order: 1,
+      branchId: branch.id,
+      isActive: true,
+    },
+  });
+
+  const patio = await prisma.section.upsert({
+    where: { id: "section-patio" },
+    update: {},
+    create: {
+      id: "section-patio",
+      name: "Patio",
+      color: "#10b981", // green
+      order: 2,
+      branchId: branch.id,
+      isActive: true,
+    },
+  });
+
+  const bar = await prisma.section.upsert({
+    where: { id: "section-bar" },
+    update: {},
+    create: {
+      id: "section-bar",
+      name: "Bar Area",
+      color: "#f59e0b", // amber
+      order: 3,
+      branchId: branch.id,
+      isActive: true,
+    },
+  });
+
+  console.log("✅ Secciones creadas: 3");
+
   // Create Tables
   const tables = [
-    { number: 1, capacity: 2 },
-    { number: 2, capacity: 2 },
-    { number: 3, capacity: 4 },
-    { number: 4, capacity: 4 },
-    { number: 5, capacity: 4 },
-    { number: 6, capacity: 6 },
-    { number: 7, capacity: 6 },
-    { number: 8, capacity: 8 },
+    { number: 1, capacity: 2, sectionId: mainDining.id },
+    { number: 2, capacity: 2, sectionId: mainDining.id },
+    { number: 3, capacity: 4, sectionId: mainDining.id },
+    { number: 4, capacity: 4, sectionId: patio.id },
+    { number: 5, capacity: 4, sectionId: patio.id },
+    { number: 6, capacity: 6, sectionId: patio.id },
+    { number: 7, capacity: 6, sectionId: bar.id },
+    { number: 8, capacity: 8, sectionId: bar.id },
   ];
 
   for (const tableData of tables) {
@@ -281,6 +323,7 @@ async function main() {
         number: tableData.number,
         capacity: tableData.capacity,
         branchId: branch.id,
+        sectionId: tableData.sectionId,
         isActive: true,
       },
     });

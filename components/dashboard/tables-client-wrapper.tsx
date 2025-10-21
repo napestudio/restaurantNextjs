@@ -19,6 +19,7 @@ export interface TableWithReservations {
   status: string | null;
   isActive: boolean;
   isShared: boolean;
+  sectionId: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
