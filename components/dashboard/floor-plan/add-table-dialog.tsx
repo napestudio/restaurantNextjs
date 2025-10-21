@@ -17,17 +17,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Circle, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import {
+  Circle,
+  Square,
+  RectangleHorizontal,
+  RectangleVertical,
+} from "lucide-react";
 import type { TableShapeType } from "@/types/table";
 
 interface AddTableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableNumber: string;
+  tableName?: string;
   tableShape: TableShapeType;
   tableCapacity: string;
   isShared: boolean;
   onTableNumberChange: (value: string) => void;
+  onTableNameChange?: (value: string) => void;
   onTableShapeChange: (value: TableShapeType) => void;
   onTableCapacityChange: (value: string) => void;
   onIsSharedChange: (value: boolean) => void;
@@ -38,10 +45,12 @@ export function AddTableDialog({
   open,
   onOpenChange,
   tableNumber,
+  tableName,
   tableShape,
   tableCapacity,
   isShared,
   onTableNumberChange,
+  onTableNameChange,
   onTableShapeChange,
   onTableCapacityChange,
   onIsSharedChange,
@@ -58,13 +67,30 @@ export function AddTableDialog({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="table-number">Número de Mesa</Label>
+            <Label htmlFor="table-number">Número de Mesa *</Label>
             <Input
               id="table-number"
+              type="number"
               value={tableNumber}
               onChange={(e) => onTableNumberChange(e.target.value)}
-              placeholder="ej: T1, T2, A1"
+              placeholder="1, 2, 3..."
+              required
             />
+          </div>
+
+          <div>
+            <Label htmlFor="table-name">Nombre de Mesa (Opcional)</Label>
+            <Input
+              id="table-name"
+              value={tableName || ""}
+              onChange={(e) => onTableNameChange?.(e.target.value)}
+              placeholder={`Si se deja vacío, se usará el número "${
+                tableNumber || ""
+              }"`}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Ejemplo: Barra Central
+            </p>
           </div>
 
           <div>
@@ -77,25 +103,25 @@ export function AddTableDialog({
                 <SelectItem value="CIRCLE">
                   <div className="flex items-center space-x-2">
                     <Circle className="h-4 w-4" />
-                    <span>Círculo (2 asientos)</span>
+                    <span>Círculo</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="SQUARE">
                   <div className="flex items-center space-x-2">
                     <Square className="h-4 w-4" />
-                    <span>Cuadrada (4 asientos)</span>
+                    <span>Cuadrada</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="RECTANGLE">
                   <div className="flex items-center space-x-2">
                     <RectangleHorizontal className="h-4 w-4" />
-                    <span>Rectangular (6+ asientos)</span>
+                    <span>Rectangular</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="WIDE">
                   <div className="flex items-center space-x-2">
                     <RectangleVertical className="h-4 w-4" />
-                    <span>Barra (8+ asientos)</span>
+                    <span>Barra</span>
                   </div>
                 </SelectItem>
               </SelectContent>

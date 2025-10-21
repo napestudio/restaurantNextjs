@@ -164,6 +164,7 @@ model UserOnBranch {
 model Table {
   id           String             @id @default(cuid())
   number       Int
+  name         String?
   capacity     Int
   isActive     Boolean            @default(true)
   isShared     Boolean            @default(false)

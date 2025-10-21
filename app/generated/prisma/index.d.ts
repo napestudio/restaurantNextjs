@@ -9807,6 +9807,7 @@ export namespace Prisma {
   export type TableMinAggregateOutputType = {
     id: string | null
     number: number | null
+    name: string | null
     capacity: number | null
     isActive: boolean | null
     isShared: boolean | null
@@ -9823,6 +9824,7 @@ export namespace Prisma {
   export type TableMaxAggregateOutputType = {
     id: string | null
     number: number | null
+    name: string | null
     capacity: number | null
     isActive: boolean | null
     isShared: boolean | null
@@ -9839,6 +9841,7 @@ export namespace Prisma {
   export type TableCountAggregateOutputType = {
     id: number
     number: number
+    name: number
     capacity: number
     isActive: number
     isShared: number
@@ -9877,6 +9880,7 @@ export namespace Prisma {
   export type TableMinAggregateInputType = {
     id?: true
     number?: true
+    name?: true
     capacity?: true
     isActive?: true
     isShared?: true
@@ -9893,6 +9897,7 @@ export namespace Prisma {
   export type TableMaxAggregateInputType = {
     id?: true
     number?: true
+    name?: true
     capacity?: true
     isActive?: true
     isShared?: true
@@ -9909,6 +9914,7 @@ export namespace Prisma {
   export type TableCountAggregateInputType = {
     id?: true
     number?: true
+    name?: true
     capacity?: true
     isActive?: true
     isShared?: true
@@ -10012,6 +10018,7 @@ export namespace Prisma {
   export type TableGroupByOutputType = {
     id: string
     number: number
+    name: string | null
     capacity: number
     isActive: boolean
     isShared: boolean
@@ -10047,6 +10054,7 @@ export namespace Prisma {
   export type TableSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     number?: boolean
+    name?: boolean
     capacity?: boolean
     isActive?: boolean
     isShared?: boolean
@@ -10067,6 +10075,7 @@ export namespace Prisma {
   export type TableSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     number?: boolean
+    name?: boolean
     capacity?: boolean
     isActive?: boolean
     isShared?: boolean
@@ -10084,6 +10093,7 @@ export namespace Prisma {
   export type TableSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     number?: boolean
+    name?: boolean
     capacity?: boolean
     isActive?: boolean
     isShared?: boolean
@@ -10101,6 +10111,7 @@ export namespace Prisma {
   export type TableSelectScalar = {
     id?: boolean
     number?: boolean
+    name?: boolean
     capacity?: boolean
     isActive?: boolean
     isShared?: boolean
@@ -10114,7 +10125,7 @@ export namespace Prisma {
     branchId?: boolean
   }
 
-  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "capacity" | "isActive" | "isShared" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId", ExtArgs["result"]["table"]>
+  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "name" | "capacity" | "isActive" | "isShared" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId", ExtArgs["result"]["table"]>
   export type TableInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | Table$reservationsArgs<ExtArgs>
@@ -10138,6 +10149,7 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       number: number
+      name: string | null
       capacity: number
       isActive: boolean
       isShared: boolean
@@ -10577,6 +10589,7 @@ export namespace Prisma {
   interface TableFieldRefs {
     readonly id: FieldRef<"Table", 'String'>
     readonly number: FieldRef<"Table", 'Int'>
+    readonly name: FieldRef<"Table", 'String'>
     readonly capacity: FieldRef<"Table", 'Int'>
     readonly isActive: FieldRef<"Table", 'Boolean'>
     readonly isShared: FieldRef<"Table", 'Boolean'>
@@ -23530,6 +23543,7 @@ export namespace Prisma {
   export const TableScalarFieldEnum: {
     id: 'id',
     number: 'number',
+    name: 'name',
     capacity: 'capacity',
     isActive: 'isActive',
     isShared: 'isShared',
@@ -24323,6 +24337,7 @@ export namespace Prisma {
     NOT?: TableWhereInput | TableWhereInput[]
     id?: StringFilter<"Table"> | string
     number?: IntFilter<"Table"> | number
+    name?: StringNullableFilter<"Table"> | string | null
     capacity?: IntFilter<"Table"> | number
     isActive?: BoolFilter<"Table"> | boolean
     isShared?: BoolFilter<"Table"> | boolean
@@ -24342,6 +24357,7 @@ export namespace Prisma {
   export type TableOrderByWithRelationInput = {
     id?: SortOrder
     number?: SortOrder
+    name?: SortOrderInput | SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
     isShared?: SortOrder
@@ -24365,6 +24381,7 @@ export namespace Prisma {
     OR?: TableWhereInput[]
     NOT?: TableWhereInput | TableWhereInput[]
     number?: IntFilter<"Table"> | number
+    name?: StringNullableFilter<"Table"> | string | null
     capacity?: IntFilter<"Table"> | number
     isActive?: BoolFilter<"Table"> | boolean
     isShared?: BoolFilter<"Table"> | boolean
@@ -24384,6 +24401,7 @@ export namespace Prisma {
   export type TableOrderByWithAggregationInput = {
     id?: SortOrder
     number?: SortOrder
+    name?: SortOrderInput | SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
     isShared?: SortOrder
@@ -24408,6 +24426,7 @@ export namespace Prisma {
     NOT?: TableScalarWhereWithAggregatesInput | TableScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Table"> | string
     number?: IntWithAggregatesFilter<"Table"> | number
+    name?: StringNullableWithAggregatesFilter<"Table"> | string | null
     capacity?: IntWithAggregatesFilter<"Table"> | number
     isActive?: BoolWithAggregatesFilter<"Table"> | boolean
     isShared?: BoolWithAggregatesFilter<"Table"> | boolean
@@ -25642,6 +25661,7 @@ export namespace Prisma {
   export type TableCreateInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -25660,6 +25680,7 @@ export namespace Prisma {
   export type TableUncheckedCreateInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -25678,6 +25699,7 @@ export namespace Prisma {
   export type TableUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -25696,6 +25718,7 @@ export namespace Prisma {
   export type TableUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -25714,6 +25737,7 @@ export namespace Prisma {
   export type TableCreateManyInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -25730,6 +25754,7 @@ export namespace Prisma {
   export type TableUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -25745,6 +25770,7 @@ export namespace Prisma {
   export type TableUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -27072,6 +27098,7 @@ export namespace Prisma {
   export type TableCountOrderByAggregateInput = {
     id?: SortOrder
     number?: SortOrder
+    name?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
     isShared?: SortOrder
@@ -27098,6 +27125,7 @@ export namespace Prisma {
   export type TableMaxOrderByAggregateInput = {
     id?: SortOrder
     number?: SortOrder
+    name?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
     isShared?: SortOrder
@@ -27114,6 +27142,7 @@ export namespace Prisma {
   export type TableMinOrderByAggregateInput = {
     id?: SortOrder
     number?: SortOrder
+    name?: SortOrder
     capacity?: SortOrder
     isActive?: SortOrder
     isShared?: SortOrder
@@ -30064,6 +30093,7 @@ export namespace Prisma {
   export type TableCreateWithoutBranchInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -30081,6 +30111,7 @@ export namespace Prisma {
   export type TableUncheckedCreateWithoutBranchInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -30331,6 +30362,7 @@ export namespace Prisma {
     NOT?: TableScalarWhereInput | TableScalarWhereInput[]
     id?: StringFilter<"Table"> | string
     number?: IntFilter<"Table"> | number
+    name?: StringNullableFilter<"Table"> | string | null
     capacity?: IntFilter<"Table"> | number
     isActive?: BoolFilter<"Table"> | boolean
     isShared?: BoolFilter<"Table"> | boolean
@@ -30944,6 +30976,7 @@ export namespace Prisma {
   export type TableCreateWithoutReservationsInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -30961,6 +30994,7 @@ export namespace Prisma {
   export type TableUncheckedCreateWithoutReservationsInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -31041,6 +31075,7 @@ export namespace Prisma {
   export type TableUpdateWithoutReservationsInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -31058,6 +31093,7 @@ export namespace Prisma {
   export type TableUncheckedUpdateWithoutReservationsInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -31282,6 +31318,7 @@ export namespace Prisma {
   export type TableCreateWithoutTimeSlotsInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -31299,6 +31336,7 @@ export namespace Prisma {
   export type TableUncheckedCreateWithoutTimeSlotsInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -31375,6 +31413,7 @@ export namespace Prisma {
   export type TableUpdateWithoutTimeSlotsInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -31392,6 +31431,7 @@ export namespace Prisma {
   export type TableUncheckedUpdateWithoutTimeSlotsInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -32474,6 +32514,7 @@ export namespace Prisma {
   export type TableCreateManyBranchInput = {
     id?: string
     number: number
+    name?: string | null
     capacity: number
     isActive?: boolean
     isShared?: boolean
@@ -32615,6 +32656,7 @@ export namespace Prisma {
   export type TableUpdateWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -32632,6 +32674,7 @@ export namespace Prisma {
   export type TableUncheckedUpdateWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean
@@ -32649,6 +32692,7 @@ export namespace Prisma {
   export type TableUncheckedUpdateManyWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
     capacity?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isShared?: BoolFieldUpdateOperationsInput | boolean

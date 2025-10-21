@@ -319,11 +319,13 @@ export async function getAvailableTimeSlotsForDate(
     // Serialize the data for client components
     const serializedSlots = timeSlots.map((slot) => ({
       id: slot.id,
+      name: slot.name,
       startTime: slot.startTime,
       endTime: slot.endTime,
       daysOfWeek: slot.daysOfWeek,
       pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
       notes: slot.notes,
+      moreInfoUrl: slot.moreInfoUrl,
       isActive: slot.isActive,
       branchId: slot.branchId,
       createdAt: slot.createdAt,
@@ -379,15 +381,16 @@ export async function getAvailableTablesForTimeSlot(params: {
   try {
     const { branchId, startTime, endTime, daysOfWeek, excludeTimeSlotId } = params;
 
-    // Get all active tables for the branch
+    // Get all active tables for the branch (shared tables first for better UX)
     const allTables = await prisma.table.findMany({
       where: {
         branchId,
         isActive: true,
       },
-      orderBy: {
-        number: 'asc',
-      },
+      orderBy: [
+        { isShared: 'desc' }, // Show shared tables first
+        { number: 'asc' },
+      ],
     });
 
     // Convert time strings to Date objects for comparison
@@ -421,6 +424,7 @@ export async function getAvailableTablesForTimeSlot(params: {
     });
 
     // Build a map of table ID to conflicting time slot
+    // ALL tables (both shared and regular) are unavailable if assigned to overlapping slots
     const tableConflicts = new Map<string, { id: string; name: string; startTime: Date; endTime: Date }>();
 
     conflictingSlots.forEach((slot) => {
@@ -444,8 +448,10 @@ export async function getAvailableTablesForTimeSlot(params: {
       return {
         id: table.id,
         number: table.number,
+        name: table.name,
         capacity: table.capacity,
         isActive: table.isActive,
+        isShared: table.isShared, // Include isShared flag
         isAvailable: !conflict,
         conflictingTimeSlot: conflict || null,
       };

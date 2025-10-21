@@ -182,6 +182,7 @@ exports.Prisma.UserOnBranchScalarFieldEnum = {
 exports.Prisma.TableScalarFieldEnum = {
   id: 'id',
   number: 'number',
+  name: 'name',
   capacity: 'capacity',
   isActive: 'isActive',
   isShared: 'isShared',

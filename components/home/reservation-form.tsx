@@ -49,14 +49,21 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
   const [availableSlots, setAvailableSlots] = useState<
     {
       id: string;
+      name: string;
       startTime: Date;
       endTime: Date;
       pricePerPerson: number;
       daysOfWeek: string[];
+      moreInfoUrl: string | null;
     }[]
   >([]);
 
   const [selectedSlotPrice, setSelectedSlotPrice] = useState(0);
+  const [selectedSlot, setSelectedSlot] = useState<{
+    id: string;
+    name: string;
+    moreInfoUrl: string | null;
+  } | null>(null);
 
   // Fetch available time slots when date changes
   useEffect(() => {
@@ -73,6 +80,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         }
         setFormData((prev) => ({ ...prev, time: "" }));
         setSelectedSlotPrice(0);
+        setSelectedSlot(null);
       };
 
       fetchSlots();
@@ -100,6 +108,11 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
     setFormData((prev) => ({ ...prev, time: value }));
     const slot = availableSlots.find((s) => s.id === value);
     setSelectedSlotPrice(slot?.pricePerPerson || 0);
+    setSelectedSlot(
+      slot
+        ? { id: slot.id, name: slot.name, moreInfoUrl: slot.moreInfoUrl }
+        : null
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,6 +169,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
           notes: "",
         });
         setSelectedSlotPrice(0);
+        setSelectedSlot(null);
       } else {
         // toast({
         //   title: "Error",
@@ -246,22 +260,58 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
               ) : (
                 availableSlots.map((slot) => (
                   <SelectItem key={slot.id} value={slot.id}>
-                    <div className="flex items-center justify-between w-full gap-4">
-                      <span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between w-full gap-4">
+                        <span className="font-medium">{slot.name}</span>
+                        {slot.pricePerPerson > 0 && (
+                          <span className="text-green-600 font-semibold text-xs">
+                            ${slot.pricePerPerson}/persona
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">
                         {formatTime(slot.startTime)} -{" "}
                         {formatTime(slot.endTime)}
                       </span>
-                      {slot.pricePerPerson > 0 && (
-                        <span className="text-green-600 font-semibold text-xs">
-                          ${slot.pricePerPerson}/persona
-                        </span>
-                      )}
                     </div>
                   </SelectItem>
                 ))
               )}
             </SelectContent>
           </Select>
+
+          {/* Selected Slot Information */}
+          {selectedSlot && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
+              <p className="text-sm font-semibold text-blue-900">
+                {selectedSlot.name}
+              </p>
+              {selectedSlot.moreInfoUrl && (
+                <a
+                  href={selectedSlot.moreInfoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+                >
+                  Más información
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+              )}
+            </div>
+          )}
+
           {selectedSlotPrice > 0 && formData.guests && (
             <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
               <p className="text-xs text-green-800">

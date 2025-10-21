@@ -153,6 +153,7 @@ export default function FloorPlanHandler({
 
   const [newTable, setNewTable] = useState({
     number: "",
+    name: "",
     shape: "CIRCLE" as TableShapeType,
     capacity: "2",
     isShared: false,
@@ -322,6 +323,7 @@ export default function FloorPlanHandler({
     const result = await createTable({
       branchId,
       number: Number.parseInt(newTable.number),
+      name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
       positionX: 50,
       positionY: 50,
@@ -372,6 +374,7 @@ export default function FloorPlanHandler({
       setDbTables((prevTables) => [...prevTables, newDbTable]);
       setNewTable({
         number: "",
+        name: "",
         shape: "CIRCLE",
         capacity: "2",
         isShared: false,
@@ -604,11 +607,15 @@ export default function FloorPlanHandler({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         tableNumber={newTable.number}
+        tableName={newTable.name}
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
+        }
+        onTableNameChange={(value) =>
+          setNewTable({ ...newTable, name: value })
         }
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })

@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Settings,
   Tag,
+  Users,
 } from "lucide-react";
 import { DAYS } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
 import {
@@ -55,8 +56,10 @@ interface NewSlot {
 interface TableWithAvailability {
   id: string;
   number: number;
+  name?: string | null;
   capacity: number;
   isActive: boolean;
+  isShared: boolean;
   isAvailable: boolean;
   conflictingTimeSlot: {
     id: string;
@@ -466,7 +469,17 @@ export function CreateTimeSlotDialog({
                               htmlFor={`table-${table.id}`}
                               className={`flex-1 ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}
                             >
-                              <div className="font-medium">Mesa {table.number}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {table.name || `Mesa ${table.number}`}
+                                </span>
+                                {table.isShared && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                                    <Users className="h-2.5 w-2.5" />
+                                    Compartida
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-gray-500">
                                 Capacidad: {table.capacity}
                               </div>
@@ -499,10 +512,18 @@ export function CreateTimeSlotDialog({
                     </TooltipProvider>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Selecciona las mesas que estarán disponibles para este turno.
-                  Las mesas no disponibles están ocupadas por otros turnos.
-                </p>
+                <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                  <p>
+                    Selecciona las mesas que estarán disponibles para este turno.
+                    Las mesas no disponibles están ocupadas por otros turnos.
+                  </p>
+                  <p className="flex items-center gap-1.5 text-blue-600">
+                    <Users className="h-3 w-3" />
+                    <span>
+                      Las <strong>mesas compartidas</strong> pueden tener múltiples reservas simultáneas hasta llenar su capacidad.
+                    </span>
+                  </p>
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
