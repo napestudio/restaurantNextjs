@@ -9,17 +9,12 @@ import {
   updateFloorPlanBatch,
   deleteTable as deleteTableAction,
 } from "@/actions/Table";
-import { getSectionsByBranch } from "@/actions/Section";
 import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
-import { AddSectionDialog } from "./floor-plan/add-section-dialog";
-import { EditSectionDialog } from "./floor-plan/edit-section-dialog";
 import { FloorPlanInstructions } from "./floor-plan/floor-plan-instructions";
 import type { TableShapeType, TableStatus } from "@/types/table";
-import { Button } from "@/components/ui/button";
-import { Settings2 } from "lucide-react";
 
 // Canvas dimensions - must match floor-plan-canvas.tsx
 const CANVAS_WIDTH = 1400;
@@ -89,12 +84,16 @@ interface FloorPlanPageProps {
   branchId: string;
   tables: TableWithReservations[];
   setTables: React.Dispatch<React.SetStateAction<TableWithReservations[]>>;
+  selectedSection?: string | null;
+  sections?: Section[];
 }
 
 export default function FloorPlanHandler({
   branchId,
   tables: dbTables,
   setTables: setDbTables,
+  selectedSection: externalSelectedSection,
+  sections: externalSections = [],
 }: FloorPlanPageProps) {
   // Transform database tables to FloorTable format
   const transformTables = (dbTables: TableWithReservations[]): FloorTable[] => {
@@ -162,15 +161,14 @@ export default function FloorPlanHandler({
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [addSectionDialogOpen, setAddSectionDialogOpen] = useState(false);
-  const [editSectionDialogOpen, setEditSectionDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [editingSection, setEditingSection] = useState<Section | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Use external sections and selectedSection if provided
+  const sections = externalSections;
+  const selectedSection = externalSelectedSection;
 
   const [newTable, setNewTable] = useState({
     number: "",
@@ -180,17 +178,6 @@ export default function FloorPlanHandler({
     isShared: false,
     sectionId: "",
   });
-
-  // Fetch sections on mount
-  useEffect(() => {
-    const fetchSections = async () => {
-      const result = await getSectionsByBranch(branchId);
-      if (result.success && result.data) {
-        setSections(result.data);
-      }
-    };
-    fetchSections();
-  }, [branchId]);
 
   // Filter tables by selected section
   const filteredTables = selectedSection
@@ -425,8 +412,6 @@ export default function FloorPlanHandler({
       });
       setAddDialogOpen(false);
 
-      // Refresh sections count
-      refreshSections();
     }
   };
 
@@ -613,81 +598,8 @@ export default function FloorPlanHandler({
     ? sections.find((s) => s.id === selectedDbTable.sectionId)
     : undefined;
 
-  const refreshSections = async () => {
-    const result = await getSectionsByBranch(branchId);
-    if (result.success && result.data) {
-      setSections(result.data);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Section Tabs */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          variant={selectedSection === null ? "default" : "outline"}
-          onClick={() => setSelectedSection(null)}
-          className={
-            selectedSection === null
-              ? "bg-gray-600 hover:bg-gray-700"
-              : "hover:bg-gray-100"
-          }
-        >
-          Todas las Mesas
-          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
-            {tables.length}
-          </span>
-        </Button>
-        {sections.map((section) => (
-          <div key={section.id} className="relative group">
-            <Button
-              variant={selectedSection === section.id ? "default" : "outline"}
-              onClick={() => setSelectedSection(section.id)}
-              className={
-                selectedSection === section.id
-                  ? "pr-10"
-                  : "hover:bg-gray-100 border-2 pr-10"
-              }
-              style={{
-                backgroundColor:
-                  selectedSection === section.id ? section.color : "transparent",
-                borderColor: section.color,
-                color: selectedSection === section.id ? "white" : section.color,
-              }}
-            >
-              <div
-                className="w-3 h-3 rounded-full mr-2"
-                style={{ backgroundColor: section.color }}
-              />
-              {section.name}
-              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
-                {section._count.tables}
-              </span>
-            </Button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingSection(section);
-                setEditSectionDialogOpen(true);
-              }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/20 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{
-                color: selectedSection === section.id ? "white" : section.color,
-              }}
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-        <Button
-          variant="outline"
-          onClick={() => setAddSectionDialogOpen(true)}
-          className="border-dashed"
-        >
-          + Nueva Sección
-        </Button>
-      </div>
-
       <FloorPlanToolbar
         onAddTable={() => setAddDialogOpen(true)}
         onSave={saveFloorPlanChanges}
@@ -763,20 +675,6 @@ export default function FloorPlanHandler({
           setNewTable({ ...newTable, sectionId: value })
         }
         onAddTable={addTable}
-      />
-
-      <AddSectionDialog
-        open={addSectionDialogOpen}
-        onOpenChange={setAddSectionDialogOpen}
-        branchId={branchId}
-        onSectionAdded={refreshSections}
-      />
-
-      <EditSectionDialog
-        open={editSectionDialogOpen}
-        onOpenChange={setEditSectionDialogOpen}
-        section={editingSection}
-        onSectionUpdated={refreshSections}
       />
     </div>
   );

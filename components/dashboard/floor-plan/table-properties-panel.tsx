@@ -75,7 +75,7 @@ export function TablePropertiesPanel({
         <CardTitle className="text-lg">Propiedades de la Mesa</CardTitle>
         <CardDescription>
           {selectedTable
-            ? `Mesa ${selectedTable.number}`
+            ? `${selectedTable.number} ${tableName || ""}`
             : "Selecciona una mesa para editar"}
         </CardDescription>
       </CardHeader>
@@ -88,15 +88,6 @@ export function TablePropertiesPanel({
               </Label>
               <div className="text-lg font-bold">{selectedTable.number}</div>
             </div>
-
-            {tableName && (
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  Nombre de la Mesa
-                </Label>
-                <div className="text-sm font-medium">{tableName}</div>
-              </div>
-            )}
 
             {sectionName && (
               <div>
