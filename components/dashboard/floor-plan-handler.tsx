@@ -42,6 +42,18 @@ const shapeDefaults = {
   WIDE: { width: 400, height: 100 },
 };
 
+// Calculate the bounding box of a rotated rectangle
+function getRotatedBounds(width: number, height: number, rotation: number) {
+  const angleRad = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(angleRad));
+  const sin = Math.abs(Math.sin(angleRad));
+
+  const boundingWidth = width * cos + height * sin;
+  const boundingHeight = width * sin + height * cos;
+
+  return { width: boundingWidth, height: boundingHeight };
+}
+
 interface TableWithReservations {
   id: string;
   number: number;
@@ -313,21 +325,22 @@ export default function FloorPlanHandler({
       const y = (e.clientY - rect.top) / zoom;
 
       setTables((prevTables) =>
-        prevTables.map((table) =>
-          table.id === draggedTable
-            ? {
-                ...table,
-                x: Math.max(
-                  0,
-                  Math.min(canvasWidth - table.width, x - dragOffset.x)
-                ),
-                y: Math.max(
-                  0,
-                  Math.min(canvasHeight - table.height, y - dragOffset.y)
-                ),
-              }
-            : table
-        )
+        prevTables.map((table) => {
+          if (table.id !== draggedTable) return table;
+
+          // Allow center to reach canvas edges (table can overflow)
+          const centerX = x - dragOffset.x + table.width / 2;
+          const centerY = y - dragOffset.y + table.height / 2;
+
+          const constrainedCenterX = Math.max(0, Math.min(canvasWidth, centerX));
+          const constrainedCenterY = Math.max(0, Math.min(canvasHeight, centerY));
+
+          return {
+            ...table,
+            x: constrainedCenterX - table.width / 2,
+            y: constrainedCenterY - table.height / 2,
+          };
+        })
       );
     };
 
@@ -440,6 +453,7 @@ export default function FloorPlanHandler({
 
     const newRotation = (table.rotation + 45) % 360;
 
+    // No position constraints - allow table to overflow canvas if needed
     setTables((prevTables) =>
       prevTables.map((t) =>
         t.id === tableId

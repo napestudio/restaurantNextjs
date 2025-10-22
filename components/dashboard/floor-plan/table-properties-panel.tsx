@@ -242,15 +242,17 @@ export function TablePropertiesPanel({
 
             {isEditMode && (
               <div className="pt-4 space-y-2">
-                <Button
-                  onClick={() => onRotate(selectedTable.id)}
-                  variant="outline"
-                  className="w-full"
-                  size="sm"
-                >
-                  <RotateCw className="h-4 w-4 mr-2" />
-                  Rotar 45°
-                </Button>
+                {(selectedTable.shape === "RECTANGLE" || selectedTable.shape === "WIDE") && (
+                  <Button
+                    onClick={() => onRotate(selectedTable.id)}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <RotateCw className="h-4 w-4 mr-2" />
+                    Rotar 45°
+                  </Button>
+                )}
                 <Button
                   onClick={() => onDelete(selectedTable.id)}
                   variant="destructive"
