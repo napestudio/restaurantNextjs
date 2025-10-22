@@ -26,6 +26,8 @@ interface FloorPlanCanvasProps {
   zoom: number;
   showGrid: boolean;
   svgRef: React.RefObject<SVGSVGElement | null>;
+  canvasWidth: number;
+  canvasHeight: number;
   onTableMouseDown: (e: React.MouseEvent, tableId: string) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -46,9 +48,6 @@ const statusStrokeColors = {
   cleaning: "#ca8a04",
 };
 
-// Canvas dimensions - modify these to change the floor plan size
-const CANVAS_WIDTH = 1400;
-const CANVAS_HEIGHT = 800;
 const CANVAS_CONTAINER_HEIGHT = 600; // Height of the scrollable container
 
 export function FloorPlanCanvas({
@@ -58,6 +57,8 @@ export function FloorPlanCanvas({
   zoom,
   showGrid,
   svgRef,
+  canvasWidth,
+  canvasHeight,
   onTableMouseDown,
   onZoomIn,
   onZoomOut,
@@ -222,9 +223,9 @@ export function FloorPlanCanvas({
         >
           <svg
             ref={svgRef}
-            width={CANVAS_WIDTH * zoom}
-            height={CANVAS_HEIGHT * zoom}
-            viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
+            width={canvasWidth * zoom}
+            height={canvasHeight * zoom}
+            viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
             className="bg-white"
             style={{ cursor: draggedTable ? "grabbing" : "default" }}
           >
@@ -248,8 +249,8 @@ export function FloorPlanCanvas({
             )}
             {showGrid && (
               <rect
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
+                width={canvasWidth}
+                height={canvasHeight}
                 fill="url(#grid)"
               />
             )}

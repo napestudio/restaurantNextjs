@@ -5,11 +5,11 @@ import { TablesTabs } from "./tables-tabs";
 import { TablesSimpleView } from "./tables-simple-view";
 import { TablesStatsOverview } from "./tables-stats-overview";
 import FloorPlanHandler from "./floor-plan-handler";
-import { getSectionsByBranch } from "@/actions/Section";
+import { getSectorsByBranch } from "@/actions/Sector";
 import { Button } from "@/components/ui/button";
 import { Settings2, Plus } from "lucide-react";
-import { AddSectionDialog } from "./floor-plan/add-section-dialog";
-import { EditSectionDialog } from "./floor-plan/edit-section-dialog";
+import { AddSectorDialog } from "./floor-plan/add-sector-dialog";
+import { EditSectorDialog } from "./floor-plan/edit-sector-dialog";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { createTable } from "@/actions/Table";
 import type { TableShapeType } from "@/types/table";
@@ -27,7 +27,7 @@ export interface TableWithReservations {
   status: string | null;
   isActive: boolean;
   isShared: boolean;
-  sectionId: string | null;
+  sectorId: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -47,11 +47,13 @@ interface TablesClientWrapperProps {
   initialTables: TableWithReservations[];
 }
 
-interface Section {
+interface Sector {
   id: string;
   name: string;
   color: string;
   order: number;
+  width: number;
+  height: number;
   _count: {
     tables: number;
   };
@@ -69,11 +71,11 @@ export function TablesClientWrapper({
   initialTables,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [addSectionDialogOpen, setAddSectionDialogOpen] = useState(false);
-  const [editSectionDialogOpen, setEditSectionDialogOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [sectors, setSectors] = useState<Sector[]>([]);
+  const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [addSectorDialogOpen, setAddSectorDialogOpen] = useState(false);
+  const [editSectorDialogOpen, setEditSectorDialogOpen] = useState(false);
+  const [editingSector, setEditingSector] = useState<Sector | null>(null);
   const [addTableDialogOpen, setAddTableDialogOpen] = useState(false);
   const [newTable, setNewTable] = useState({
     number: "",
@@ -81,24 +83,24 @@ export function TablesClientWrapper({
     shape: "CIRCLE" as TableShapeType,
     capacity: "2",
     isShared: false,
-    sectionId: "",
+    sectorId: "",
   });
 
-  // Fetch sections on mount
+  // Fetch sectors on mount
   useEffect(() => {
-    const fetchSections = async () => {
-      const result = await getSectionsByBranch(branchId);
+    const fetchSectors = async () => {
+      const result = await getSectorsByBranch(branchId);
       if (result.success && result.data) {
-        setSections(result.data);
+        setSectors(result.data);
       }
     };
-    fetchSections();
+    fetchSectors();
   }, [branchId]);
 
-  const refreshSections = async () => {
-    const result = await getSectionsByBranch(branchId);
+  const refreshSectors = async () => {
+    const result = await getSectorsByBranch(branchId);
     if (result.success && result.data) {
-      setSections(result.data);
+      setSectors(result.data);
     }
   };
 
@@ -114,7 +116,7 @@ export function TablesClientWrapper({
       number: Number.parseInt(newTable.number),
       name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
-      sectionId: newTable.sectionId || undefined,
+      sectorId: newTable.sectorId || undefined,
       positionX: 50,
       positionY: 50,
       width: defaults.width,
@@ -139,7 +141,7 @@ export function TablesClientWrapper({
         status: null,
         isActive: result.data.isActive ?? true,
         isShared: result.data.isShared ?? false,
-        sectionId: result.data.sectionId ?? null,
+        sectorId: result.data.sectorId ?? null,
         reservations: [],
       };
 
@@ -150,29 +152,29 @@ export function TablesClientWrapper({
         shape: "CIRCLE",
         capacity: "2",
         isShared: false,
-        sectionId: "",
+        sectorId: "",
       });
       setAddTableDialogOpen(false);
-      refreshSections();
+      refreshSectors();
     }
   };
 
-  // Filter tables by selected section
-  const filteredTables = selectedSection
-    ? tables.filter((table) => table.sectionId === selectedSection)
+  // Filter tables by selected sector
+  const filteredTables = selectedSector
+    ? tables.filter((table) => table.sectorId === selectedSector)
     : tables;
 
   return (
     <>
       <TablesStatsOverview tables={tables} />
 
-      {/* Section Tabs - Shared between both views */}
+      {/* Sector Tabs - Shared between both views */}
       <div className="flex items-center gap-2 flex-wrap mb-6">
         <Button
-          variant={selectedSection === null ? "default" : "outline"}
-          onClick={() => setSelectedSection(null)}
+          variant={selectedSector === null ? "default" : "outline"}
+          onClick={() => setSelectedSector(null)}
           className={
-            selectedSection === null
+            selectedSector === null
               ? "bg-gray-600 hover:bg-gray-700"
               : "hover:bg-gray-100"
           }
@@ -182,41 +184,41 @@ export function TablesClientWrapper({
             {tables.length}
           </span>
         </Button>
-        {sections.map((section) => (
-          <div key={section.id} className="relative group">
+        {sectors.map((sector) => (
+          <div key={sector.id} className="relative group">
             <Button
-              variant={selectedSection === section.id ? "default" : "outline"}
-              onClick={() => setSelectedSection(section.id)}
+              variant={selectedSector === sector.id ? "default" : "outline"}
+              onClick={() => setSelectedSector(sector.id)}
               className={
-                selectedSection === section.id
+                selectedSector === sector.id
                   ? "pr-10"
                   : "hover:bg-gray-100 border-2 pr-10"
               }
               style={{
                 backgroundColor:
-                  selectedSection === section.id ? section.color : "transparent",
-                borderColor: section.color,
-                color: selectedSection === section.id ? "white" : section.color,
+                  selectedSector === sector.id ? sector.color : "transparent",
+                borderColor: sector.color,
+                color: selectedSector === sector.id ? "white" : sector.color,
               }}
             >
               <div
                 className="w-3 h-3 rounded-full mr-2"
-                style={{ backgroundColor: section.color }}
+                style={{ backgroundColor: sector.color }}
               />
-              {section.name}
+              {sector.name}
               <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
-                {section._count.tables}
+                {sector._count.tables}
               </span>
             </Button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setEditingSection(section);
-                setEditSectionDialogOpen(true);
+                setEditingSector(sector);
+                setEditSectorDialogOpen(true);
               }}
               className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/20 opacity-0 group-hover:opacity-100 transition-opacity"
               style={{
-                color: selectedSection === section.id ? "white" : section.color,
+                color: selectedSector === sector.id ? "white" : sector.color,
               }}
             >
               <Settings2 className="h-3.5 w-3.5" />
@@ -225,10 +227,10 @@ export function TablesClientWrapper({
         ))}
         <Button
           variant="outline"
-          onClick={() => setAddSectionDialogOpen(true)}
+          onClick={() => setAddSectorDialogOpen(true)}
           className="border-dashed"
         >
-          + Nueva Sección
+          + Nuevo Sector
         </Button>
         <Button
           onClick={() => setAddTableDialogOpen(true)}
@@ -244,24 +246,24 @@ export function TablesClientWrapper({
           branchId={branchId}
           tables={tables}
           setTables={setTables}
-          selectedSection={selectedSection}
-          sections={sections}
+          selectedSector={selectedSector}
+          sectors={sectors}
         />
         <TablesSimpleView tables={filteredTables} />
       </TablesTabs>
 
-      <AddSectionDialog
-        open={addSectionDialogOpen}
-        onOpenChange={setAddSectionDialogOpen}
+      <AddSectorDialog
+        open={addSectorDialogOpen}
+        onOpenChange={setAddSectorDialogOpen}
         branchId={branchId}
-        onSectionAdded={refreshSections}
+        onSectorAdded={refreshSectors}
       />
 
-      <EditSectionDialog
-        open={editSectionDialogOpen}
-        onOpenChange={setEditSectionDialogOpen}
-        section={editingSection}
-        onSectionUpdated={refreshSections}
+      <EditSectorDialog
+        open={editSectorDialogOpen}
+        onOpenChange={setEditSectorDialogOpen}
+        sector={editingSector}
+        onSectorUpdated={refreshSectors}
       />
 
       <AddTableDialog
@@ -272,8 +274,8 @@ export function TablesClientWrapper({
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
-        sectionId={newTable.sectionId}
-        sections={sections}
+        sectorId={newTable.sectorId}
+        sectors={sectors}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
@@ -287,8 +289,8 @@ export function TablesClientWrapper({
         onIsSharedChange={(value) =>
           setNewTable({ ...newTable, isShared: value })
         }
-        onSectionChange={(value) =>
-          setNewTable({ ...newTable, sectionId: value })
+        onSectorChange={(value) =>
+          setNewTable({ ...newTable, sectorId: value })
         }
         onAddTable={addTable}
       />

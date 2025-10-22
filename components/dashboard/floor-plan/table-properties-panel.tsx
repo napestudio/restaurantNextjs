@@ -45,8 +45,8 @@ interface FloorTable {
 interface TablePropertiesPanelProps {
   selectedTable: FloorTable | undefined;
   tableName?: string | null;
-  sectionName?: string | null;
-  sectionColor?: string | null;
+  sectorName?: string | null;
+  sectorColor?: string | null;
   onUpdateShape: (tableId: string, shape: TableShapeType) => void;
   onUpdateCapacity: (tableId: string, capacity: number) => void;
   onUpdateStatus: (tableId: string, status: TableStatus) => void;
@@ -59,8 +59,8 @@ interface TablePropertiesPanelProps {
 export function TablePropertiesPanel({
   selectedTable,
   tableName,
-  sectionName,
-  sectionColor,
+  sectorName,
+  sectorColor,
   onUpdateShape,
   onUpdateCapacity,
   onUpdateStatus,
@@ -89,15 +89,15 @@ export function TablePropertiesPanel({
               <div className="text-lg font-bold">{selectedTable.number}</div>
             </div>
 
-            {sectionName && (
+            {sectorName && (
               <div>
-                <Label className="text-xs text-muted-foreground">Sección</Label>
+                <Label className="text-xs text-muted-foreground">Sector</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <div
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: sectionColor || "#3b82f6" }}
+                    style={{ backgroundColor: sectorColor || "#3b82f6" }}
                   />
-                  <span className="text-sm font-medium">{sectionName}</span>
+                  <span className="text-sm font-medium">{sectorName}</span>
                 </div>
               </div>
             )}

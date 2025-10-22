@@ -258,58 +258,64 @@ async function main() {
   }
   console.log("✅ Productos creados:", products.length);
 
-  // Create Sections
-  const mainDining = await prisma.section.upsert({
-    where: { id: "section-main-dining" },
+  // Create Sectors
+  const salonPrincipal = await prisma.sector.upsert({
+    where: { id: "sector-salon-principal" },
     update: {},
     create: {
-      id: "section-main-dining",
-      name: "Main Dining",
+      id: "sector-salon-principal",
+      name: "Salón Principal",
       color: "#3b82f6", // blue
       order: 1,
+      width: 1400,
+      height: 800,
       branchId: branch.id,
       isActive: true,
     },
   });
 
-  const patio = await prisma.section.upsert({
-    where: { id: "section-patio" },
+  const patio = await prisma.sector.upsert({
+    where: { id: "sector-patio" },
     update: {},
     create: {
-      id: "section-patio",
+      id: "sector-patio",
       name: "Patio",
       color: "#10b981", // green
       order: 2,
+      width: 1200,
+      height: 900,
       branchId: branch.id,
       isActive: true,
     },
   });
 
-  const bar = await prisma.section.upsert({
-    where: { id: "section-bar" },
+  const bar = await prisma.sector.upsert({
+    where: { id: "sector-bar" },
     update: {},
     create: {
-      id: "section-bar",
-      name: "Bar Area",
+      id: "sector-bar",
+      name: "Área de Bar",
       color: "#f59e0b", // amber
       order: 3,
+      width: 1000,
+      height: 600,
       branchId: branch.id,
       isActive: true,
     },
   });
 
-  console.log("✅ Secciones creadas: 3");
+  console.log("✅ Sectores creados: 3");
 
   // Create Tables
   const tables = [
-    { number: 1, capacity: 2, sectionId: mainDining.id },
-    { number: 2, capacity: 2, sectionId: mainDining.id },
-    { number: 3, capacity: 4, sectionId: mainDining.id },
-    { number: 4, capacity: 4, sectionId: patio.id },
-    { number: 5, capacity: 4, sectionId: patio.id },
-    { number: 6, capacity: 6, sectionId: patio.id },
-    { number: 7, capacity: 6, sectionId: bar.id },
-    { number: 8, capacity: 8, sectionId: bar.id },
+    { number: 1, capacity: 2, sectorId: salonPrincipal.id },
+    { number: 2, capacity: 2, sectorId: salonPrincipal.id },
+    { number: 3, capacity: 4, sectorId: salonPrincipal.id },
+    { number: 4, capacity: 4, sectorId: patio.id },
+    { number: 5, capacity: 4, sectorId: patio.id },
+    { number: 6, capacity: 6, sectorId: patio.id },
+    { number: 7, capacity: 6, sectorId: bar.id },
+    { number: 8, capacity: 8, sectorId: bar.id },
   ];
 
   for (const tableData of tables) {
@@ -323,7 +329,7 @@ async function main() {
         number: tableData.number,
         capacity: tableData.capacity,
         branchId: branch.id,
-        sectionId: tableData.sectionId,
+        sectorId: tableData.sectorId,
         isActive: true,
       },
     });

@@ -44,10 +44,10 @@ export type Branch = $Result.DefaultSelection<Prisma.$BranchPayload>
  */
 export type UserOnBranch = $Result.DefaultSelection<Prisma.$UserOnBranchPayload>
 /**
- * Model Section
+ * Model Sector
  * 
  */
-export type Section = $Result.DefaultSelection<Prisma.$SectionPayload>
+export type Sector = $Result.DefaultSelection<Prisma.$SectorPayload>
 /**
  * Model Table
  * 
@@ -114,6 +114,7 @@ export type ReservedSlug = $Result.DefaultSelection<Prisma.$ReservedSlugPayload>
  */
 export namespace $Enums {
   export const UserRole: {
+  SUPERADMIN: 'SUPERADMIN',
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
   EMPLOYEE: 'EMPLOYEE'
@@ -388,14 +389,14 @@ export class PrismaClient<
   get userOnBranch(): Prisma.UserOnBranchDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.section`: Exposes CRUD operations for the **Section** model.
+   * `prisma.sector`: Exposes CRUD operations for the **Sector** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more Sections
-    * const sections = await prisma.section.findMany()
+    * // Fetch zero or more Sectors
+    * const sectors = await prisma.sector.findMany()
     * ```
     */
-  get section(): Prisma.SectionDelegate<ExtArgs, ClientOptions>;
+  get sector(): Prisma.SectorDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.table`: Exposes CRUD operations for the **Table** model.
@@ -962,7 +963,7 @@ export namespace Prisma {
     Restaurant: 'Restaurant',
     Branch: 'Branch',
     UserOnBranch: 'UserOnBranch',
-    Section: 'Section',
+    Sector: 'Sector',
     Table: 'Table',
     Reservation: 'Reservation',
     ReservationTable: 'ReservationTable',
@@ -993,7 +994,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "account" | "session" | "restaurant" | "branch" | "userOnBranch" | "section" | "table" | "reservation" | "reservationTable" | "timeSlot" | "timeSlotTable" | "category" | "product" | "productOnBranch" | "productPrice" | "order" | "orderItem" | "reservedSlug"
+      modelProps: "user" | "account" | "session" | "restaurant" | "branch" | "userOnBranch" | "sector" | "table" | "reservation" | "reservationTable" | "timeSlot" | "timeSlotTable" | "category" | "product" | "productOnBranch" | "productPrice" | "order" | "orderItem" | "reservedSlug"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1441,77 +1442,77 @@ export namespace Prisma {
           }
         }
       }
-      Section: {
-        payload: Prisma.$SectionPayload<ExtArgs>
-        fields: Prisma.SectionFieldRefs
+      Sector: {
+        payload: Prisma.$SectorPayload<ExtArgs>
+        fields: Prisma.SectorFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.SectionFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload> | null
+            args: Prisma.SectorFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.SectionFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>
+            args: Prisma.SectorFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>
           }
           findFirst: {
-            args: Prisma.SectionFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload> | null
+            args: Prisma.SectorFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.SectionFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>
+            args: Prisma.SectorFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>
           }
           findMany: {
-            args: Prisma.SectionFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>[]
+            args: Prisma.SectorFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>[]
           }
           create: {
-            args: Prisma.SectionCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>
+            args: Prisma.SectorCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>
           }
           createMany: {
-            args: Prisma.SectionCreateManyArgs<ExtArgs>
+            args: Prisma.SectorCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.SectionCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>[]
+            args: Prisma.SectorCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>[]
           }
           delete: {
-            args: Prisma.SectionDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>
+            args: Prisma.SectorDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>
           }
           update: {
-            args: Prisma.SectionUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>
+            args: Prisma.SectorUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>
           }
           deleteMany: {
-            args: Prisma.SectionDeleteManyArgs<ExtArgs>
+            args: Prisma.SectorDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.SectionUpdateManyArgs<ExtArgs>
+            args: Prisma.SectorUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateManyAndReturn: {
-            args: Prisma.SectionUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>[]
+            args: Prisma.SectorUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>[]
           }
           upsert: {
-            args: Prisma.SectionUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SectionPayload>
+            args: Prisma.SectorUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SectorPayload>
           }
           aggregate: {
-            args: Prisma.SectionAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateSection>
+            args: Prisma.SectorAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSector>
           }
           groupBy: {
-            args: Prisma.SectionGroupByArgs<ExtArgs>
-            result: $Utils.Optional<SectionGroupByOutputType>[]
+            args: Prisma.SectorGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SectorGroupByOutputType>[]
           }
           count: {
-            args: Prisma.SectionCountArgs<ExtArgs>
-            result: $Utils.Optional<SectionCountAggregateOutputType> | number
+            args: Prisma.SectorCountArgs<ExtArgs>
+            result: $Utils.Optional<SectorCountAggregateOutputType> | number
           }
         }
       }
@@ -2505,7 +2506,7 @@ export namespace Prisma {
     restaurant?: RestaurantOmit
     branch?: BranchOmit
     userOnBranch?: UserOnBranchOmit
-    section?: SectionOmit
+    sector?: SectorOmit
     table?: TableOmit
     reservation?: ReservationOmit
     reservationTable?: ReservationTableOmit
@@ -2698,7 +2699,7 @@ export namespace Prisma {
   export type BranchCountOutputType = {
     reservations: number
     orders: number
-    sections: number
+    sectors: number
     tables: number
     timeSlots: number
     products: number
@@ -2708,7 +2709,7 @@ export namespace Prisma {
   export type BranchCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     reservations?: boolean | BranchCountOutputTypeCountReservationsArgs
     orders?: boolean | BranchCountOutputTypeCountOrdersArgs
-    sections?: boolean | BranchCountOutputTypeCountSectionsArgs
+    sectors?: boolean | BranchCountOutputTypeCountSectorsArgs
     tables?: boolean | BranchCountOutputTypeCountTablesArgs
     timeSlots?: boolean | BranchCountOutputTypeCountTimeSlotsArgs
     products?: boolean | BranchCountOutputTypeCountProductsArgs
@@ -2743,8 +2744,8 @@ export namespace Prisma {
   /**
    * BranchCountOutputType without action
    */
-  export type BranchCountOutputTypeCountSectionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: SectionWhereInput
+  export type BranchCountOutputTypeCountSectorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SectorWhereInput
   }
 
   /**
@@ -2777,32 +2778,32 @@ export namespace Prisma {
 
 
   /**
-   * Count Type SectionCountOutputType
+   * Count Type SectorCountOutputType
    */
 
-  export type SectionCountOutputType = {
+  export type SectorCountOutputType = {
     tables: number
   }
 
-  export type SectionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    tables?: boolean | SectionCountOutputTypeCountTablesArgs
+  export type SectorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tables?: boolean | SectorCountOutputTypeCountTablesArgs
   }
 
   // Custom InputTypes
   /**
-   * SectionCountOutputType without action
+   * SectorCountOutputType without action
    */
-  export type SectionCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the SectionCountOutputType
+     * Select specific fields to fetch from the SectorCountOutputType
      */
-    select?: SectionCountOutputTypeSelect<ExtArgs> | null
+    select?: SectorCountOutputTypeSelect<ExtArgs> | null
   }
 
   /**
-   * SectionCountOutputType without action
+   * SectorCountOutputType without action
    */
-  export type SectionCountOutputTypeCountTablesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorCountOutputTypeCountTablesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TableWhereInput
   }
 
@@ -7768,7 +7769,7 @@ export namespace Prisma {
     restaurant?: boolean | RestaurantDefaultArgs<ExtArgs>
     reservations?: boolean | Branch$reservationsArgs<ExtArgs>
     orders?: boolean | Branch$ordersArgs<ExtArgs>
-    sections?: boolean | Branch$sectionsArgs<ExtArgs>
+    sectors?: boolean | Branch$sectorsArgs<ExtArgs>
     tables?: boolean | Branch$tablesArgs<ExtArgs>
     timeSlots?: boolean | Branch$timeSlotsArgs<ExtArgs>
     products?: boolean | Branch$productsArgs<ExtArgs>
@@ -7810,7 +7811,7 @@ export namespace Prisma {
     restaurant?: boolean | RestaurantDefaultArgs<ExtArgs>
     reservations?: boolean | Branch$reservationsArgs<ExtArgs>
     orders?: boolean | Branch$ordersArgs<ExtArgs>
-    sections?: boolean | Branch$sectionsArgs<ExtArgs>
+    sectors?: boolean | Branch$sectorsArgs<ExtArgs>
     tables?: boolean | Branch$tablesArgs<ExtArgs>
     timeSlots?: boolean | Branch$timeSlotsArgs<ExtArgs>
     products?: boolean | Branch$productsArgs<ExtArgs>
@@ -7830,7 +7831,7 @@ export namespace Prisma {
       restaurant: Prisma.$RestaurantPayload<ExtArgs>
       reservations: Prisma.$ReservationPayload<ExtArgs>[]
       orders: Prisma.$OrderPayload<ExtArgs>[]
-      sections: Prisma.$SectionPayload<ExtArgs>[]
+      sectors: Prisma.$SectorPayload<ExtArgs>[]
       tables: Prisma.$TablePayload<ExtArgs>[]
       timeSlots: Prisma.$TimeSlotPayload<ExtArgs>[]
       products: Prisma.$ProductOnBranchPayload<ExtArgs>[]
@@ -8243,7 +8244,7 @@ export namespace Prisma {
     restaurant<T extends RestaurantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, RestaurantDefaultArgs<ExtArgs>>): Prisma__RestaurantClient<$Result.GetResult<Prisma.$RestaurantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     reservations<T extends Branch$reservationsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orders<T extends Branch$ordersArgs<ExtArgs> = {}>(args?: Subset<T, Branch$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    sections<T extends Branch$sectionsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$sectionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sectors<T extends Branch$sectorsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$sectorsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tables<T extends Branch$tablesArgs<ExtArgs> = {}>(args?: Subset<T, Branch$tablesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TablePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     timeSlots<T extends Branch$timeSlotsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$timeSlotsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TimeSlotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     products<T extends Branch$productsArgs<ExtArgs> = {}>(args?: Subset<T, Branch$productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductOnBranchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -8727,27 +8728,27 @@ export namespace Prisma {
   }
 
   /**
-   * Branch.sections
+   * Branch.sectors
    */
-  export type Branch$sectionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Branch$sectorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
-    where?: SectionWhereInput
-    orderBy?: SectionOrderByWithRelationInput | SectionOrderByWithRelationInput[]
-    cursor?: SectionWhereUniqueInput
+    include?: SectorInclude<ExtArgs> | null
+    where?: SectorWhereInput
+    orderBy?: SectorOrderByWithRelationInput | SectorOrderByWithRelationInput[]
+    cursor?: SectorWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: SectionScalarFieldEnum | SectionScalarFieldEnum[]
+    distinct?: SectorScalarFieldEnum | SectorScalarFieldEnum[]
   }
 
   /**
@@ -9932,52 +9933,62 @@ export namespace Prisma {
 
 
   /**
-   * Model Section
+   * Model Sector
    */
 
-  export type AggregateSection = {
-    _count: SectionCountAggregateOutputType | null
-    _avg: SectionAvgAggregateOutputType | null
-    _sum: SectionSumAggregateOutputType | null
-    _min: SectionMinAggregateOutputType | null
-    _max: SectionMaxAggregateOutputType | null
+  export type AggregateSector = {
+    _count: SectorCountAggregateOutputType | null
+    _avg: SectorAvgAggregateOutputType | null
+    _sum: SectorSumAggregateOutputType | null
+    _min: SectorMinAggregateOutputType | null
+    _max: SectorMaxAggregateOutputType | null
   }
 
-  export type SectionAvgAggregateOutputType = {
+  export type SectorAvgAggregateOutputType = {
     order: number | null
+    width: number | null
+    height: number | null
   }
 
-  export type SectionSumAggregateOutputType = {
+  export type SectorSumAggregateOutputType = {
     order: number | null
+    width: number | null
+    height: number | null
   }
 
-  export type SectionMinAggregateOutputType = {
+  export type SectorMinAggregateOutputType = {
     id: string | null
     name: string | null
     color: string | null
     order: number | null
+    width: number | null
+    height: number | null
     isActive: boolean | null
     branchId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
-  export type SectionMaxAggregateOutputType = {
+  export type SectorMaxAggregateOutputType = {
     id: string | null
     name: string | null
     color: string | null
     order: number | null
+    width: number | null
+    height: number | null
     isActive: boolean | null
     branchId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
-  export type SectionCountAggregateOutputType = {
+  export type SectorCountAggregateOutputType = {
     id: number
     name: number
     color: number
     order: number
+    width: number
+    height: number
     isActive: number
     branchId: number
     createdAt: number
@@ -9986,41 +9997,51 @@ export namespace Prisma {
   }
 
 
-  export type SectionAvgAggregateInputType = {
+  export type SectorAvgAggregateInputType = {
     order?: true
+    width?: true
+    height?: true
   }
 
-  export type SectionSumAggregateInputType = {
+  export type SectorSumAggregateInputType = {
     order?: true
+    width?: true
+    height?: true
   }
 
-  export type SectionMinAggregateInputType = {
+  export type SectorMinAggregateInputType = {
     id?: true
     name?: true
     color?: true
     order?: true
+    width?: true
+    height?: true
     isActive?: true
     branchId?: true
     createdAt?: true
     updatedAt?: true
   }
 
-  export type SectionMaxAggregateInputType = {
+  export type SectorMaxAggregateInputType = {
     id?: true
     name?: true
     color?: true
     order?: true
+    width?: true
+    height?: true
     isActive?: true
     branchId?: true
     createdAt?: true
     updatedAt?: true
   }
 
-  export type SectionCountAggregateInputType = {
+  export type SectorCountAggregateInputType = {
     id?: true
     name?: true
     color?: true
     order?: true
+    width?: true
+    height?: true
     isActive?: true
     branchId?: true
     createdAt?: true
@@ -10028,186 +10049,196 @@ export namespace Prisma {
     _all?: true
   }
 
-  export type SectionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which Section to aggregate.
+     * Filter which Sector to aggregate.
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of Sections to fetch.
+     * Determine the order of Sectors to fetch.
      */
-    orderBy?: SectionOrderByWithRelationInput | SectionOrderByWithRelationInput[]
+    orderBy?: SectorOrderByWithRelationInput | SectorOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: SectionWhereUniqueInput
+    cursor?: SectorWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` Sections from the position of the cursor.
+     * Take `±n` Sectors from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` Sections.
+     * Skip the first `n` Sectors.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned Sections
+     * Count returned Sectors
     **/
-    _count?: true | SectionCountAggregateInputType
+    _count?: true | SectorCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to average
     **/
-    _avg?: SectionAvgAggregateInputType
+    _avg?: SectorAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to sum
     **/
-    _sum?: SectionSumAggregateInputType
+    _sum?: SectorSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: SectionMinAggregateInputType
+    _min?: SectorMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: SectionMaxAggregateInputType
+    _max?: SectorMaxAggregateInputType
   }
 
-  export type GetSectionAggregateType<T extends SectionAggregateArgs> = {
-        [P in keyof T & keyof AggregateSection]: P extends '_count' | 'count'
+  export type GetSectorAggregateType<T extends SectorAggregateArgs> = {
+        [P in keyof T & keyof AggregateSector]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateSection[P]>
-      : GetScalarType<T[P], AggregateSection[P]>
+        : GetScalarType<T[P], AggregateSector[P]>
+      : GetScalarType<T[P], AggregateSector[P]>
   }
 
 
 
 
-  export type SectionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: SectionWhereInput
-    orderBy?: SectionOrderByWithAggregationInput | SectionOrderByWithAggregationInput[]
-    by: SectionScalarFieldEnum[] | SectionScalarFieldEnum
-    having?: SectionScalarWhereWithAggregatesInput
+  export type SectorGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SectorWhereInput
+    orderBy?: SectorOrderByWithAggregationInput | SectorOrderByWithAggregationInput[]
+    by: SectorScalarFieldEnum[] | SectorScalarFieldEnum
+    having?: SectorScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: SectionCountAggregateInputType | true
-    _avg?: SectionAvgAggregateInputType
-    _sum?: SectionSumAggregateInputType
-    _min?: SectionMinAggregateInputType
-    _max?: SectionMaxAggregateInputType
+    _count?: SectorCountAggregateInputType | true
+    _avg?: SectorAvgAggregateInputType
+    _sum?: SectorSumAggregateInputType
+    _min?: SectorMinAggregateInputType
+    _max?: SectorMaxAggregateInputType
   }
 
-  export type SectionGroupByOutputType = {
+  export type SectorGroupByOutputType = {
     id: string
     name: string
     color: string
     order: number
+    width: number
+    height: number
     isActive: boolean
     branchId: string
     createdAt: Date
     updatedAt: Date
-    _count: SectionCountAggregateOutputType | null
-    _avg: SectionAvgAggregateOutputType | null
-    _sum: SectionSumAggregateOutputType | null
-    _min: SectionMinAggregateOutputType | null
-    _max: SectionMaxAggregateOutputType | null
+    _count: SectorCountAggregateOutputType | null
+    _avg: SectorAvgAggregateOutputType | null
+    _sum: SectorSumAggregateOutputType | null
+    _min: SectorMinAggregateOutputType | null
+    _max: SectorMaxAggregateOutputType | null
   }
 
-  type GetSectionGroupByPayload<T extends SectionGroupByArgs> = Prisma.PrismaPromise<
+  type GetSectorGroupByPayload<T extends SectorGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<SectionGroupByOutputType, T['by']> &
+      PickEnumerable<SectorGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof SectionGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof SectorGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], SectionGroupByOutputType[P]>
-            : GetScalarType<T[P], SectionGroupByOutputType[P]>
+              : GetScalarType<T[P], SectorGroupByOutputType[P]>
+            : GetScalarType<T[P], SectorGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type SectionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type SectorSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
     color?: boolean
     order?: boolean
+    width?: boolean
+    height?: boolean
     isActive?: boolean
     branchId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    tables?: boolean | Section$tablesArgs<ExtArgs>
-    _count?: boolean | SectionCountOutputTypeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["section"]>
+    tables?: boolean | Sector$tablesArgs<ExtArgs>
+    _count?: boolean | SectorCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["sector"]>
 
-  export type SectionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type SectorSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
     color?: boolean
     order?: boolean
+    width?: boolean
+    height?: boolean
     isActive?: boolean
     branchId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["section"]>
+  }, ExtArgs["result"]["sector"]>
 
-  export type SectionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type SectorSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
     color?: boolean
     order?: boolean
+    width?: boolean
+    height?: boolean
     isActive?: boolean
     branchId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["section"]>
+  }, ExtArgs["result"]["sector"]>
 
-  export type SectionSelectScalar = {
+  export type SectorSelectScalar = {
     id?: boolean
     name?: boolean
     color?: boolean
     order?: boolean
+    width?: boolean
+    height?: boolean
     isActive?: boolean
     branchId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type SectionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "color" | "order" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["section"]>
-  export type SectionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "color" | "order" | "width" | "height" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["sector"]>
+  export type SectorInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    tables?: boolean | Section$tablesArgs<ExtArgs>
-    _count?: boolean | SectionCountOutputTypeDefaultArgs<ExtArgs>
+    tables?: boolean | Sector$tablesArgs<ExtArgs>
+    _count?: boolean | SectorCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type SectionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
   }
-  export type SectionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
   }
 
-  export type $SectionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "Section"
+  export type $SectorPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Sector"
     objects: {
       branch: Prisma.$BranchPayload<ExtArgs>
       tables: Prisma.$TablePayload<ExtArgs>[]
@@ -10217,140 +10248,142 @@ export namespace Prisma {
       name: string
       color: string
       order: number
+      width: number
+      height: number
       isActive: boolean
       branchId: string
       createdAt: Date
       updatedAt: Date
-    }, ExtArgs["result"]["section"]>
+    }, ExtArgs["result"]["sector"]>
     composites: {}
   }
 
-  type SectionGetPayload<S extends boolean | null | undefined | SectionDefaultArgs> = $Result.GetResult<Prisma.$SectionPayload, S>
+  type SectorGetPayload<S extends boolean | null | undefined | SectorDefaultArgs> = $Result.GetResult<Prisma.$SectorPayload, S>
 
-  type SectionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<SectionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: SectionCountAggregateInputType | true
+  type SectorCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SectorFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SectorCountAggregateInputType | true
     }
 
-  export interface SectionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Section'], meta: { name: 'Section' } }
+  export interface SectorDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Sector'], meta: { name: 'Sector' } }
     /**
-     * Find zero or one Section that matches the filter.
-     * @param {SectionFindUniqueArgs} args - Arguments to find a Section
+     * Find zero or one Sector that matches the filter.
+     * @param {SectorFindUniqueArgs} args - Arguments to find a Sector
      * @example
-     * // Get one Section
-     * const section = await prisma.section.findUnique({
+     * // Get one Sector
+     * const sector = await prisma.sector.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends SectionFindUniqueArgs>(args: SelectSubset<T, SectionFindUniqueArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findUnique<T extends SectorFindUniqueArgs>(args: SelectSubset<T, SectorFindUniqueArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find one Section that matches the filter or throw an error with `error.code='P2025'`
+     * Find one Sector that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
-     * @param {SectionFindUniqueOrThrowArgs} args - Arguments to find a Section
+     * @param {SectorFindUniqueOrThrowArgs} args - Arguments to find a Sector
      * @example
-     * // Get one Section
-     * const section = await prisma.section.findUniqueOrThrow({
+     * // Get one Sector
+     * const sector = await prisma.sector.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends SectionFindUniqueOrThrowArgs>(args: SelectSubset<T, SectionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findUniqueOrThrow<T extends SectorFindUniqueOrThrowArgs>(args: SelectSubset<T, SectorFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first Section that matches the filter.
+     * Find the first Sector that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionFindFirstArgs} args - Arguments to find a Section
+     * @param {SectorFindFirstArgs} args - Arguments to find a Sector
      * @example
-     * // Get one Section
-     * const section = await prisma.section.findFirst({
+     * // Get one Sector
+     * const sector = await prisma.sector.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends SectionFindFirstArgs>(args?: SelectSubset<T, SectionFindFirstArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findFirst<T extends SectorFindFirstArgs>(args?: SelectSubset<T, SectorFindFirstArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first Section that matches the filter or
+     * Find the first Sector that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionFindFirstOrThrowArgs} args - Arguments to find a Section
+     * @param {SectorFindFirstOrThrowArgs} args - Arguments to find a Sector
      * @example
-     * // Get one Section
-     * const section = await prisma.section.findFirstOrThrow({
+     * // Get one Sector
+     * const sector = await prisma.sector.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends SectionFindFirstOrThrowArgs>(args?: SelectSubset<T, SectionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findFirstOrThrow<T extends SectorFindFirstOrThrowArgs>(args?: SelectSubset<T, SectorFindFirstOrThrowArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find zero or more Sections that matches the filter.
+     * Find zero or more Sectors that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {SectorFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all Sections
-     * const sections = await prisma.section.findMany()
+     * // Get all Sectors
+     * const sectors = await prisma.sector.findMany()
      * 
-     * // Get first 10 Sections
-     * const sections = await prisma.section.findMany({ take: 10 })
+     * // Get first 10 Sectors
+     * const sectors = await prisma.sector.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const sectionWithIdOnly = await prisma.section.findMany({ select: { id: true } })
+     * const sectorWithIdOnly = await prisma.sector.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends SectionFindManyArgs>(args?: SelectSubset<T, SectionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    findMany<T extends SectorFindManyArgs>(args?: SelectSubset<T, SectorFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
 
     /**
-     * Create a Section.
-     * @param {SectionCreateArgs} args - Arguments to create a Section.
+     * Create a Sector.
+     * @param {SectorCreateArgs} args - Arguments to create a Sector.
      * @example
-     * // Create one Section
-     * const Section = await prisma.section.create({
+     * // Create one Sector
+     * const Sector = await prisma.sector.create({
      *   data: {
-     *     // ... data to create a Section
+     *     // ... data to create a Sector
      *   }
      * })
      * 
      */
-    create<T extends SectionCreateArgs>(args: SelectSubset<T, SectionCreateArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    create<T extends SectorCreateArgs>(args: SelectSubset<T, SectorCreateArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Create many Sections.
-     * @param {SectionCreateManyArgs} args - Arguments to create many Sections.
+     * Create many Sectors.
+     * @param {SectorCreateManyArgs} args - Arguments to create many Sectors.
      * @example
-     * // Create many Sections
-     * const section = await prisma.section.createMany({
+     * // Create many Sectors
+     * const sector = await prisma.sector.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends SectionCreateManyArgs>(args?: SelectSubset<T, SectionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends SectorCreateManyArgs>(args?: SelectSubset<T, SectorCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Sections and returns the data saved in the database.
-     * @param {SectionCreateManyAndReturnArgs} args - Arguments to create many Sections.
+     * Create many Sectors and returns the data saved in the database.
+     * @param {SectorCreateManyAndReturnArgs} args - Arguments to create many Sectors.
      * @example
-     * // Create many Sections
-     * const section = await prisma.section.createManyAndReturn({
+     * // Create many Sectors
+     * const sector = await prisma.sector.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
-     * // Create many Sections and only return the `id`
-     * const sectionWithIdOnly = await prisma.section.createManyAndReturn({
+     * // Create many Sectors and only return the `id`
+     * const sectorWithIdOnly = await prisma.sector.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -10360,28 +10393,28 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends SectionCreateManyAndReturnArgs>(args?: SelectSubset<T, SectionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    createManyAndReturn<T extends SectorCreateManyAndReturnArgs>(args?: SelectSubset<T, SectorCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Delete a Section.
-     * @param {SectionDeleteArgs} args - Arguments to delete one Section.
+     * Delete a Sector.
+     * @param {SectorDeleteArgs} args - Arguments to delete one Sector.
      * @example
-     * // Delete one Section
-     * const Section = await prisma.section.delete({
+     * // Delete one Sector
+     * const Sector = await prisma.sector.delete({
      *   where: {
-     *     // ... filter to delete one Section
+     *     // ... filter to delete one Sector
      *   }
      * })
      * 
      */
-    delete<T extends SectionDeleteArgs>(args: SelectSubset<T, SectionDeleteArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    delete<T extends SectorDeleteArgs>(args: SelectSubset<T, SectorDeleteArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Update one Section.
-     * @param {SectionUpdateArgs} args - Arguments to update one Section.
+     * Update one Sector.
+     * @param {SectorUpdateArgs} args - Arguments to update one Sector.
      * @example
-     * // Update one Section
-     * const section = await prisma.section.update({
+     * // Update one Sector
+     * const sector = await prisma.sector.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -10391,30 +10424,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends SectionUpdateArgs>(args: SelectSubset<T, SectionUpdateArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    update<T extends SectorUpdateArgs>(args: SelectSubset<T, SectorUpdateArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Delete zero or more Sections.
-     * @param {SectionDeleteManyArgs} args - Arguments to filter Sections to delete.
+     * Delete zero or more Sectors.
+     * @param {SectorDeleteManyArgs} args - Arguments to filter Sectors to delete.
      * @example
-     * // Delete a few Sections
-     * const { count } = await prisma.section.deleteMany({
+     * // Delete a few Sectors
+     * const { count } = await prisma.sector.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends SectionDeleteManyArgs>(args?: SelectSubset<T, SectionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends SectorDeleteManyArgs>(args?: SelectSubset<T, SectorDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Sections.
+     * Update zero or more Sectors.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {SectorUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many Sections
-     * const section = await prisma.section.updateMany({
+     * // Update many Sectors
+     * const sector = await prisma.sector.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -10424,14 +10457,14 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends SectionUpdateManyArgs>(args: SelectSubset<T, SectionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends SectorUpdateManyArgs>(args: SelectSubset<T, SectorUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Sections and returns the data updated in the database.
-     * @param {SectionUpdateManyAndReturnArgs} args - Arguments to update many Sections.
+     * Update zero or more Sectors and returns the data updated in the database.
+     * @param {SectorUpdateManyAndReturnArgs} args - Arguments to update many Sectors.
      * @example
-     * // Update many Sections
-     * const section = await prisma.section.updateManyAndReturn({
+     * // Update many Sectors
+     * const sector = await prisma.sector.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -10440,8 +10473,8 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more Sections and only return the `id`
-     * const sectionWithIdOnly = await prisma.section.updateManyAndReturn({
+     * // Update zero or more Sectors and only return the `id`
+     * const sectorWithIdOnly = await prisma.sector.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
      *     // ... provide filter here
@@ -10454,56 +10487,56 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    updateManyAndReturn<T extends SectionUpdateManyAndReturnArgs>(args: SelectSubset<T, SectionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    updateManyAndReturn<T extends SectorUpdateManyAndReturnArgs>(args: SelectSubset<T, SectorUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Create or update one Section.
-     * @param {SectionUpsertArgs} args - Arguments to update or create a Section.
+     * Create or update one Sector.
+     * @param {SectorUpsertArgs} args - Arguments to update or create a Sector.
      * @example
-     * // Update or create a Section
-     * const section = await prisma.section.upsert({
+     * // Update or create a Sector
+     * const sector = await prisma.sector.upsert({
      *   create: {
-     *     // ... data to create a Section
+     *     // ... data to create a Sector
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the Section we want to update
+     *     // ... the filter for the Sector we want to update
      *   }
      * })
      */
-    upsert<T extends SectionUpsertArgs>(args: SelectSubset<T, SectionUpsertArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    upsert<T extends SectorUpsertArgs>(args: SelectSubset<T, SectorUpsertArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
 
     /**
-     * Count the number of Sections.
+     * Count the number of Sectors.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionCountArgs} args - Arguments to filter Sections to count.
+     * @param {SectorCountArgs} args - Arguments to filter Sectors to count.
      * @example
-     * // Count the number of Sections
-     * const count = await prisma.section.count({
+     * // Count the number of Sectors
+     * const count = await prisma.sector.count({
      *   where: {
-     *     // ... the filter for the Sections we want to count
+     *     // ... the filter for the Sectors we want to count
      *   }
      * })
     **/
-    count<T extends SectionCountArgs>(
-      args?: Subset<T, SectionCountArgs>,
+    count<T extends SectorCountArgs>(
+      args?: Subset<T, SectorCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], SectionCountAggregateOutputType>
+          : GetScalarType<T['select'], SectorCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a Section.
+     * Allows you to perform aggregations operations on a Sector.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {SectorAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -10523,13 +10556,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends SectionAggregateArgs>(args: Subset<T, SectionAggregateArgs>): Prisma.PrismaPromise<GetSectionAggregateType<T>>
+    aggregate<T extends SectorAggregateArgs>(args: Subset<T, SectorAggregateArgs>): Prisma.PrismaPromise<GetSectorAggregateType<T>>
 
     /**
-     * Group by Section.
+     * Group by Sector.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {SectionGroupByArgs} args - Group by arguments.
+     * @param {SectorGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -10544,14 +10577,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends SectionGroupByArgs,
+      T extends SectorGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: SectionGroupByArgs['orderBy'] }
-        : { orderBy?: SectionGroupByArgs['orderBy'] },
+        ? { orderBy: SectorGroupByArgs['orderBy'] }
+        : { orderBy?: SectorGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -10600,23 +10633,23 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, SectionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSectionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, SectorGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSectorGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the Section model
+   * Fields of the Sector model
    */
-  readonly fields: SectionFieldRefs;
+  readonly fields: SectorFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for Section.
+   * The delegate class that acts as a "Promise-like" for Sector.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__SectionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__SectorClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    tables<T extends Section$tablesArgs<ExtArgs> = {}>(args?: Subset<T, Section$tablesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TablePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    tables<T extends Sector$tablesArgs<ExtArgs> = {}>(args?: Subset<T, Sector$tablesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TablePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -10643,416 +10676,418 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the Section model
+   * Fields of the Sector model
    */
-  interface SectionFieldRefs {
-    readonly id: FieldRef<"Section", 'String'>
-    readonly name: FieldRef<"Section", 'String'>
-    readonly color: FieldRef<"Section", 'String'>
-    readonly order: FieldRef<"Section", 'Int'>
-    readonly isActive: FieldRef<"Section", 'Boolean'>
-    readonly branchId: FieldRef<"Section", 'String'>
-    readonly createdAt: FieldRef<"Section", 'DateTime'>
-    readonly updatedAt: FieldRef<"Section", 'DateTime'>
+  interface SectorFieldRefs {
+    readonly id: FieldRef<"Sector", 'String'>
+    readonly name: FieldRef<"Sector", 'String'>
+    readonly color: FieldRef<"Sector", 'String'>
+    readonly order: FieldRef<"Sector", 'Int'>
+    readonly width: FieldRef<"Sector", 'Int'>
+    readonly height: FieldRef<"Sector", 'Int'>
+    readonly isActive: FieldRef<"Sector", 'Boolean'>
+    readonly branchId: FieldRef<"Sector", 'String'>
+    readonly createdAt: FieldRef<"Sector", 'DateTime'>
+    readonly updatedAt: FieldRef<"Sector", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * Section findUnique
+   * Sector findUnique
    */
-  export type SectionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * Filter, which Section to fetch.
+     * Filter, which Sector to fetch.
      */
-    where: SectionWhereUniqueInput
+    where: SectorWhereUniqueInput
   }
 
   /**
-   * Section findUniqueOrThrow
+   * Sector findUniqueOrThrow
    */
-  export type SectionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * Filter, which Section to fetch.
+     * Filter, which Sector to fetch.
      */
-    where: SectionWhereUniqueInput
+    where: SectorWhereUniqueInput
   }
 
   /**
-   * Section findFirst
+   * Sector findFirst
    */
-  export type SectionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * Filter, which Section to fetch.
+     * Filter, which Sector to fetch.
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of Sections to fetch.
+     * Determine the order of Sectors to fetch.
      */
-    orderBy?: SectionOrderByWithRelationInput | SectionOrderByWithRelationInput[]
+    orderBy?: SectorOrderByWithRelationInput | SectorOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for Sections.
+     * Sets the position for searching for Sectors.
      */
-    cursor?: SectionWhereUniqueInput
+    cursor?: SectorWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` Sections from the position of the cursor.
+     * Take `±n` Sectors from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` Sections.
+     * Skip the first `n` Sectors.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of Sections.
+     * Filter by unique combinations of Sectors.
      */
-    distinct?: SectionScalarFieldEnum | SectionScalarFieldEnum[]
+    distinct?: SectorScalarFieldEnum | SectorScalarFieldEnum[]
   }
 
   /**
-   * Section findFirstOrThrow
+   * Sector findFirstOrThrow
    */
-  export type SectionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * Filter, which Section to fetch.
+     * Filter, which Sector to fetch.
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of Sections to fetch.
+     * Determine the order of Sectors to fetch.
      */
-    orderBy?: SectionOrderByWithRelationInput | SectionOrderByWithRelationInput[]
+    orderBy?: SectorOrderByWithRelationInput | SectorOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for Sections.
+     * Sets the position for searching for Sectors.
      */
-    cursor?: SectionWhereUniqueInput
+    cursor?: SectorWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` Sections from the position of the cursor.
+     * Take `±n` Sectors from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` Sections.
+     * Skip the first `n` Sectors.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of Sections.
+     * Filter by unique combinations of Sectors.
      */
-    distinct?: SectionScalarFieldEnum | SectionScalarFieldEnum[]
+    distinct?: SectorScalarFieldEnum | SectorScalarFieldEnum[]
   }
 
   /**
-   * Section findMany
+   * Sector findMany
    */
-  export type SectionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * Filter, which Sections to fetch.
+     * Filter, which Sectors to fetch.
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of Sections to fetch.
+     * Determine the order of Sectors to fetch.
      */
-    orderBy?: SectionOrderByWithRelationInput | SectionOrderByWithRelationInput[]
+    orderBy?: SectorOrderByWithRelationInput | SectorOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing Sections.
+     * Sets the position for listing Sectors.
      */
-    cursor?: SectionWhereUniqueInput
+    cursor?: SectorWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` Sections from the position of the cursor.
+     * Take `±n` Sectors from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` Sections.
+     * Skip the first `n` Sectors.
      */
     skip?: number
-    distinct?: SectionScalarFieldEnum | SectionScalarFieldEnum[]
+    distinct?: SectorScalarFieldEnum | SectorScalarFieldEnum[]
   }
 
   /**
-   * Section create
+   * Sector create
    */
-  export type SectionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * The data needed to create a Section.
+     * The data needed to create a Sector.
      */
-    data: XOR<SectionCreateInput, SectionUncheckedCreateInput>
+    data: XOR<SectorCreateInput, SectorUncheckedCreateInput>
   }
 
   /**
-   * Section createMany
+   * Sector createMany
    */
-  export type SectionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many Sections.
+     * The data used to create many Sectors.
      */
-    data: SectionCreateManyInput | SectionCreateManyInput[]
+    data: SectorCreateManyInput | SectorCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * Section createManyAndReturn
+   * Sector createManyAndReturn
    */
-  export type SectionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelectCreateManyAndReturn<ExtArgs> | null
+    select?: SectorSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
-     * The data used to create many Sections.
+     * The data used to create many Sectors.
      */
-    data: SectionCreateManyInput | SectionCreateManyInput[]
+    data: SectorCreateManyInput | SectorCreateManyInput[]
     skipDuplicates?: boolean
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionIncludeCreateManyAndReturn<ExtArgs> | null
+    include?: SectorIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
-   * Section update
+   * Sector update
    */
-  export type SectionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * The data needed to update a Section.
+     * The data needed to update a Sector.
      */
-    data: XOR<SectionUpdateInput, SectionUncheckedUpdateInput>
+    data: XOR<SectorUpdateInput, SectorUncheckedUpdateInput>
     /**
-     * Choose, which Section to update.
+     * Choose, which Sector to update.
      */
-    where: SectionWhereUniqueInput
+    where: SectorWhereUniqueInput
   }
 
   /**
-   * Section updateMany
+   * Sector updateMany
    */
-  export type SectionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update Sections.
+     * The data used to update Sectors.
      */
-    data: XOR<SectionUpdateManyMutationInput, SectionUncheckedUpdateManyInput>
+    data: XOR<SectorUpdateManyMutationInput, SectorUncheckedUpdateManyInput>
     /**
-     * Filter which Sections to update
+     * Filter which Sectors to update
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
-     * Limit how many Sections to update.
+     * Limit how many Sectors to update.
      */
     limit?: number
   }
 
   /**
-   * Section updateManyAndReturn
+   * Sector updateManyAndReturn
    */
-  export type SectionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelectUpdateManyAndReturn<ExtArgs> | null
+    select?: SectorSelectUpdateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
-     * The data used to update Sections.
+     * The data used to update Sectors.
      */
-    data: XOR<SectionUpdateManyMutationInput, SectionUncheckedUpdateManyInput>
+    data: XOR<SectorUpdateManyMutationInput, SectorUncheckedUpdateManyInput>
     /**
-     * Filter which Sections to update
+     * Filter which Sectors to update
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
-     * Limit how many Sections to update.
+     * Limit how many Sectors to update.
      */
     limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionIncludeUpdateManyAndReturn<ExtArgs> | null
+    include?: SectorIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
-   * Section upsert
+   * Sector upsert
    */
-  export type SectionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * The filter to search for the Section to update in case it exists.
+     * The filter to search for the Sector to update in case it exists.
      */
-    where: SectionWhereUniqueInput
+    where: SectorWhereUniqueInput
     /**
-     * In case the Section found by the `where` argument doesn't exist, create a new Section with this data.
+     * In case the Sector found by the `where` argument doesn't exist, create a new Sector with this data.
      */
-    create: XOR<SectionCreateInput, SectionUncheckedCreateInput>
+    create: XOR<SectorCreateInput, SectorUncheckedCreateInput>
     /**
-     * In case the Section was found with the provided `where` argument, update it with this data.
+     * In case the Sector was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<SectionUpdateInput, SectionUncheckedUpdateInput>
+    update: XOR<SectorUpdateInput, SectorUncheckedUpdateInput>
   }
 
   /**
-   * Section delete
+   * Sector delete
    */
-  export type SectionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
     /**
-     * Filter which Section to delete.
+     * Filter which Sector to delete.
      */
-    where: SectionWhereUniqueInput
+    where: SectorWhereUniqueInput
   }
 
   /**
-   * Section deleteMany
+   * Sector deleteMany
    */
-  export type SectionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which Sections to delete
+     * Filter which Sectors to delete
      */
-    where?: SectionWhereInput
+    where?: SectorWhereInput
     /**
-     * Limit how many Sections to delete.
+     * Limit how many Sectors to delete.
      */
     limit?: number
   }
 
   /**
-   * Section.tables
+   * Sector.tables
    */
-  export type Section$tablesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Sector$tablesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the Table
      */
@@ -11074,21 +11109,21 @@ export namespace Prisma {
   }
 
   /**
-   * Section without action
+   * Sector without action
    */
-  export type SectionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SectorDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
+    include?: SectorInclude<ExtArgs> | null
   }
 
 
@@ -11139,7 +11174,7 @@ export namespace Prisma {
     shape: $Enums.TableShape | null
     status: $Enums.TableStatus | null
     branchId: string | null
-    sectionId: string | null
+    sectorId: string | null
   }
 
   export type TableMaxAggregateOutputType = {
@@ -11157,7 +11192,7 @@ export namespace Prisma {
     shape: $Enums.TableShape | null
     status: $Enums.TableStatus | null
     branchId: string | null
-    sectionId: string | null
+    sectorId: string | null
   }
 
   export type TableCountAggregateOutputType = {
@@ -11175,7 +11210,7 @@ export namespace Prisma {
     shape: number
     status: number
     branchId: number
-    sectionId: number
+    sectorId: number
     _all: number
   }
 
@@ -11215,7 +11250,7 @@ export namespace Prisma {
     shape?: true
     status?: true
     branchId?: true
-    sectionId?: true
+    sectorId?: true
   }
 
   export type TableMaxAggregateInputType = {
@@ -11233,7 +11268,7 @@ export namespace Prisma {
     shape?: true
     status?: true
     branchId?: true
-    sectionId?: true
+    sectorId?: true
   }
 
   export type TableCountAggregateInputType = {
@@ -11251,7 +11286,7 @@ export namespace Prisma {
     shape?: true
     status?: true
     branchId?: true
-    sectionId?: true
+    sectorId?: true
     _all?: true
   }
 
@@ -11356,7 +11391,7 @@ export namespace Prisma {
     shape: $Enums.TableShape | null
     status: $Enums.TableStatus | null
     branchId: string
-    sectionId: string | null
+    sectorId: string | null
     _count: TableCountAggregateOutputType | null
     _avg: TableAvgAggregateOutputType | null
     _sum: TableSumAggregateOutputType | null
@@ -11393,9 +11428,9 @@ export namespace Prisma {
     shape?: boolean
     status?: boolean
     branchId?: boolean
-    sectionId?: boolean
+    sectorId?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    section?: boolean | Table$sectionArgs<ExtArgs>
+    sector?: boolean | Table$sectorArgs<ExtArgs>
     reservations?: boolean | Table$reservationsArgs<ExtArgs>
     timeSlots?: boolean | Table$timeSlotsArgs<ExtArgs>
     _count?: boolean | TableCountOutputTypeDefaultArgs<ExtArgs>
@@ -11416,9 +11451,9 @@ export namespace Prisma {
     shape?: boolean
     status?: boolean
     branchId?: boolean
-    sectionId?: boolean
+    sectorId?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    section?: boolean | Table$sectionArgs<ExtArgs>
+    sector?: boolean | Table$sectorArgs<ExtArgs>
   }, ExtArgs["result"]["table"]>
 
   export type TableSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -11436,9 +11471,9 @@ export namespace Prisma {
     shape?: boolean
     status?: boolean
     branchId?: boolean
-    sectionId?: boolean
+    sectorId?: boolean
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    section?: boolean | Table$sectionArgs<ExtArgs>
+    sector?: boolean | Table$sectorArgs<ExtArgs>
   }, ExtArgs["result"]["table"]>
 
   export type TableSelectScalar = {
@@ -11456,31 +11491,31 @@ export namespace Prisma {
     shape?: boolean
     status?: boolean
     branchId?: boolean
-    sectionId?: boolean
+    sectorId?: boolean
   }
 
-  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "name" | "capacity" | "isActive" | "isShared" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId" | "sectionId", ExtArgs["result"]["table"]>
+  export type TableOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "number" | "name" | "capacity" | "isActive" | "isShared" | "positionX" | "positionY" | "width" | "height" | "rotation" | "shape" | "status" | "branchId" | "sectorId", ExtArgs["result"]["table"]>
   export type TableInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    section?: boolean | Table$sectionArgs<ExtArgs>
+    sector?: boolean | Table$sectorArgs<ExtArgs>
     reservations?: boolean | Table$reservationsArgs<ExtArgs>
     timeSlots?: boolean | Table$timeSlotsArgs<ExtArgs>
     _count?: boolean | TableCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type TableIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    section?: boolean | Table$sectionArgs<ExtArgs>
+    sector?: boolean | Table$sectorArgs<ExtArgs>
   }
   export type TableIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
-    section?: boolean | Table$sectionArgs<ExtArgs>
+    sector?: boolean | Table$sectorArgs<ExtArgs>
   }
 
   export type $TablePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Table"
     objects: {
       branch: Prisma.$BranchPayload<ExtArgs>
-      section: Prisma.$SectionPayload<ExtArgs> | null
+      sector: Prisma.$SectorPayload<ExtArgs> | null
       reservations: Prisma.$ReservationTablePayload<ExtArgs>[]
       timeSlots: Prisma.$TimeSlotTablePayload<ExtArgs>[]
     }
@@ -11499,7 +11534,7 @@ export namespace Prisma {
       shape: $Enums.TableShape | null
       status: $Enums.TableStatus | null
       branchId: string
-      sectionId: string | null
+      sectorId: string | null
     }, ExtArgs["result"]["table"]>
     composites: {}
   }
@@ -11895,7 +11930,7 @@ export namespace Prisma {
   export interface Prisma__TableClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     branch<T extends BranchDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BranchDefaultArgs<ExtArgs>>): Prisma__BranchClient<$Result.GetResult<Prisma.$BranchPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    section<T extends Table$sectionArgs<ExtArgs> = {}>(args?: Subset<T, Table$sectionArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    sector<T extends Table$sectorArgs<ExtArgs> = {}>(args?: Subset<T, Table$sectorArgs<ExtArgs>>): Prisma__SectorClient<$Result.GetResult<Prisma.$SectorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     reservations<T extends Table$reservationsArgs<ExtArgs> = {}>(args?: Subset<T, Table$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReservationTablePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     timeSlots<T extends Table$timeSlotsArgs<ExtArgs> = {}>(args?: Subset<T, Table$timeSlotsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TimeSlotTablePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -11941,7 +11976,7 @@ export namespace Prisma {
     readonly shape: FieldRef<"Table", 'TableShape'>
     readonly status: FieldRef<"Table", 'TableStatus'>
     readonly branchId: FieldRef<"Table", 'String'>
-    readonly sectionId: FieldRef<"Table", 'String'>
+    readonly sectorId: FieldRef<"Table", 'String'>
   }
     
 
@@ -12338,22 +12373,22 @@ export namespace Prisma {
   }
 
   /**
-   * Table.section
+   * Table.sector
    */
-  export type Table$sectionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Table$sectorArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Section
+     * Select specific fields to fetch from the Sector
      */
-    select?: SectionSelect<ExtArgs> | null
+    select?: SectorSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Section
+     * Omit specific fields from the Sector
      */
-    omit?: SectionOmit<ExtArgs> | null
+    omit?: SectorOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: SectionInclude<ExtArgs> | null
-    where?: SectionWhereInput
+    include?: SectorInclude<ExtArgs> | null
+    where?: SectorWhereInput
   }
 
   /**
@@ -24900,18 +24935,20 @@ export namespace Prisma {
   export type UserOnBranchScalarFieldEnum = (typeof UserOnBranchScalarFieldEnum)[keyof typeof UserOnBranchScalarFieldEnum]
 
 
-  export const SectionScalarFieldEnum: {
+  export const SectorScalarFieldEnum: {
     id: 'id',
     name: 'name',
     color: 'color',
     order: 'order',
+    width: 'width',
+    height: 'height',
     isActive: 'isActive',
     branchId: 'branchId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
 
-  export type SectionScalarFieldEnum = (typeof SectionScalarFieldEnum)[keyof typeof SectionScalarFieldEnum]
+  export type SectorScalarFieldEnum = (typeof SectorScalarFieldEnum)[keyof typeof SectorScalarFieldEnum]
 
 
   export const TableScalarFieldEnum: {
@@ -24929,7 +24966,7 @@ export namespace Prisma {
     shape: 'shape',
     status: 'status',
     branchId: 'branchId',
-    sectionId: 'sectionId'
+    sectorId: 'sectorId'
   };
 
   export type TableScalarFieldEnum = (typeof TableScalarFieldEnum)[keyof typeof TableScalarFieldEnum]
@@ -25580,7 +25617,7 @@ export namespace Prisma {
     restaurant?: XOR<RestaurantScalarRelationFilter, RestaurantWhereInput>
     reservations?: ReservationListRelationFilter
     orders?: OrderListRelationFilter
-    sections?: SectionListRelationFilter
+    sectors?: SectorListRelationFilter
     tables?: TableListRelationFilter
     timeSlots?: TimeSlotListRelationFilter
     products?: ProductOnBranchListRelationFilter
@@ -25597,7 +25634,7 @@ export namespace Prisma {
     restaurant?: RestaurantOrderByWithRelationInput
     reservations?: ReservationOrderByRelationAggregateInput
     orders?: OrderOrderByRelationAggregateInput
-    sections?: SectionOrderByRelationAggregateInput
+    sectors?: SectorOrderByRelationAggregateInput
     tables?: TableOrderByRelationAggregateInput
     timeSlots?: TimeSlotOrderByRelationAggregateInput
     products?: ProductOnBranchOrderByRelationAggregateInput
@@ -25619,7 +25656,7 @@ export namespace Prisma {
     restaurant?: XOR<RestaurantScalarRelationFilter, RestaurantWhereInput>
     reservations?: ReservationListRelationFilter
     orders?: OrderListRelationFilter
-    sections?: SectionListRelationFilter
+    sectors?: SectorListRelationFilter
     tables?: TableListRelationFilter
     timeSlots?: TimeSlotListRelationFilter
     products?: ProductOnBranchListRelationFilter
@@ -25709,27 +25746,31 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"UserOnBranch"> | Date | string
   }
 
-  export type SectionWhereInput = {
-    AND?: SectionWhereInput | SectionWhereInput[]
-    OR?: SectionWhereInput[]
-    NOT?: SectionWhereInput | SectionWhereInput[]
-    id?: StringFilter<"Section"> | string
-    name?: StringFilter<"Section"> | string
-    color?: StringFilter<"Section"> | string
-    order?: IntFilter<"Section"> | number
-    isActive?: BoolFilter<"Section"> | boolean
-    branchId?: StringFilter<"Section"> | string
-    createdAt?: DateTimeFilter<"Section"> | Date | string
-    updatedAt?: DateTimeFilter<"Section"> | Date | string
+  export type SectorWhereInput = {
+    AND?: SectorWhereInput | SectorWhereInput[]
+    OR?: SectorWhereInput[]
+    NOT?: SectorWhereInput | SectorWhereInput[]
+    id?: StringFilter<"Sector"> | string
+    name?: StringFilter<"Sector"> | string
+    color?: StringFilter<"Sector"> | string
+    order?: IntFilter<"Sector"> | number
+    width?: IntFilter<"Sector"> | number
+    height?: IntFilter<"Sector"> | number
+    isActive?: BoolFilter<"Sector"> | boolean
+    branchId?: StringFilter<"Sector"> | string
+    createdAt?: DateTimeFilter<"Sector"> | Date | string
+    updatedAt?: DateTimeFilter<"Sector"> | Date | string
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
     tables?: TableListRelationFilter
   }
 
-  export type SectionOrderByWithRelationInput = {
+  export type SectorOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
     color?: SortOrder
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
     isActive?: SortOrder
     branchId?: SortOrder
     createdAt?: SortOrder
@@ -25738,51 +25779,57 @@ export namespace Prisma {
     tables?: TableOrderByRelationAggregateInput
   }
 
-  export type SectionWhereUniqueInput = Prisma.AtLeast<{
+  export type SectorWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    branchId_name?: SectionBranchIdNameCompoundUniqueInput
-    AND?: SectionWhereInput | SectionWhereInput[]
-    OR?: SectionWhereInput[]
-    NOT?: SectionWhereInput | SectionWhereInput[]
-    name?: StringFilter<"Section"> | string
-    color?: StringFilter<"Section"> | string
-    order?: IntFilter<"Section"> | number
-    isActive?: BoolFilter<"Section"> | boolean
-    branchId?: StringFilter<"Section"> | string
-    createdAt?: DateTimeFilter<"Section"> | Date | string
-    updatedAt?: DateTimeFilter<"Section"> | Date | string
+    branchId_name?: SectorBranchIdNameCompoundUniqueInput
+    AND?: SectorWhereInput | SectorWhereInput[]
+    OR?: SectorWhereInput[]
+    NOT?: SectorWhereInput | SectorWhereInput[]
+    name?: StringFilter<"Sector"> | string
+    color?: StringFilter<"Sector"> | string
+    order?: IntFilter<"Sector"> | number
+    width?: IntFilter<"Sector"> | number
+    height?: IntFilter<"Sector"> | number
+    isActive?: BoolFilter<"Sector"> | boolean
+    branchId?: StringFilter<"Sector"> | string
+    createdAt?: DateTimeFilter<"Sector"> | Date | string
+    updatedAt?: DateTimeFilter<"Sector"> | Date | string
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
     tables?: TableListRelationFilter
   }, "id" | "branchId_name">
 
-  export type SectionOrderByWithAggregationInput = {
+  export type SectorOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
     color?: SortOrder
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
     isActive?: SortOrder
     branchId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    _count?: SectionCountOrderByAggregateInput
-    _avg?: SectionAvgOrderByAggregateInput
-    _max?: SectionMaxOrderByAggregateInput
-    _min?: SectionMinOrderByAggregateInput
-    _sum?: SectionSumOrderByAggregateInput
+    _count?: SectorCountOrderByAggregateInput
+    _avg?: SectorAvgOrderByAggregateInput
+    _max?: SectorMaxOrderByAggregateInput
+    _min?: SectorMinOrderByAggregateInput
+    _sum?: SectorSumOrderByAggregateInput
   }
 
-  export type SectionScalarWhereWithAggregatesInput = {
-    AND?: SectionScalarWhereWithAggregatesInput | SectionScalarWhereWithAggregatesInput[]
-    OR?: SectionScalarWhereWithAggregatesInput[]
-    NOT?: SectionScalarWhereWithAggregatesInput | SectionScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"Section"> | string
-    name?: StringWithAggregatesFilter<"Section"> | string
-    color?: StringWithAggregatesFilter<"Section"> | string
-    order?: IntWithAggregatesFilter<"Section"> | number
-    isActive?: BoolWithAggregatesFilter<"Section"> | boolean
-    branchId?: StringWithAggregatesFilter<"Section"> | string
-    createdAt?: DateTimeWithAggregatesFilter<"Section"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"Section"> | Date | string
+  export type SectorScalarWhereWithAggregatesInput = {
+    AND?: SectorScalarWhereWithAggregatesInput | SectorScalarWhereWithAggregatesInput[]
+    OR?: SectorScalarWhereWithAggregatesInput[]
+    NOT?: SectorScalarWhereWithAggregatesInput | SectorScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Sector"> | string
+    name?: StringWithAggregatesFilter<"Sector"> | string
+    color?: StringWithAggregatesFilter<"Sector"> | string
+    order?: IntWithAggregatesFilter<"Sector"> | number
+    width?: IntWithAggregatesFilter<"Sector"> | number
+    height?: IntWithAggregatesFilter<"Sector"> | number
+    isActive?: BoolWithAggregatesFilter<"Sector"> | boolean
+    branchId?: StringWithAggregatesFilter<"Sector"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"Sector"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Sector"> | Date | string
   }
 
   export type TableWhereInput = {
@@ -25803,9 +25850,9 @@ export namespace Prisma {
     shape?: EnumTableShapeNullableFilter<"Table"> | $Enums.TableShape | null
     status?: EnumTableStatusNullableFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringFilter<"Table"> | string
-    sectionId?: StringNullableFilter<"Table"> | string | null
+    sectorId?: StringNullableFilter<"Table"> | string | null
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
-    section?: XOR<SectionNullableScalarRelationFilter, SectionWhereInput> | null
+    sector?: XOR<SectorNullableScalarRelationFilter, SectorWhereInput> | null
     reservations?: ReservationTableListRelationFilter
     timeSlots?: TimeSlotTableListRelationFilter
   }
@@ -25825,9 +25872,9 @@ export namespace Prisma {
     shape?: SortOrderInput | SortOrder
     status?: SortOrderInput | SortOrder
     branchId?: SortOrder
-    sectionId?: SortOrderInput | SortOrder
+    sectorId?: SortOrderInput | SortOrder
     branch?: BranchOrderByWithRelationInput
-    section?: SectionOrderByWithRelationInput
+    sector?: SectorOrderByWithRelationInput
     reservations?: ReservationTableOrderByRelationAggregateInput
     timeSlots?: TimeSlotTableOrderByRelationAggregateInput
   }
@@ -25851,9 +25898,9 @@ export namespace Prisma {
     shape?: EnumTableShapeNullableFilter<"Table"> | $Enums.TableShape | null
     status?: EnumTableStatusNullableFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringFilter<"Table"> | string
-    sectionId?: StringNullableFilter<"Table"> | string | null
+    sectorId?: StringNullableFilter<"Table"> | string | null
     branch?: XOR<BranchScalarRelationFilter, BranchWhereInput>
-    section?: XOR<SectionNullableScalarRelationFilter, SectionWhereInput> | null
+    sector?: XOR<SectorNullableScalarRelationFilter, SectorWhereInput> | null
     reservations?: ReservationTableListRelationFilter
     timeSlots?: TimeSlotTableListRelationFilter
   }, "id" | "branchId_number">
@@ -25873,7 +25920,7 @@ export namespace Prisma {
     shape?: SortOrderInput | SortOrder
     status?: SortOrderInput | SortOrder
     branchId?: SortOrder
-    sectionId?: SortOrderInput | SortOrder
+    sectorId?: SortOrderInput | SortOrder
     _count?: TableCountOrderByAggregateInput
     _avg?: TableAvgOrderByAggregateInput
     _max?: TableMaxOrderByAggregateInput
@@ -25899,7 +25946,7 @@ export namespace Prisma {
     shape?: EnumTableShapeNullableWithAggregatesFilter<"Table"> | $Enums.TableShape | null
     status?: EnumTableStatusNullableWithAggregatesFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringWithAggregatesFilter<"Table"> | string
-    sectionId?: StringNullableWithAggregatesFilter<"Table"> | string | null
+    sectorId?: StringNullableWithAggregatesFilter<"Table"> | string | null
   }
 
   export type ReservationWhereInput = {
@@ -26989,7 +27036,7 @@ export namespace Prisma {
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     reservations?: ReservationCreateNestedManyWithoutBranchInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
@@ -27005,7 +27052,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -27021,7 +27068,7 @@ export namespace Prisma {
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
@@ -27037,7 +27084,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
@@ -27124,80 +27171,94 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type SectionCreateInput = {
+  export type SectorCreateInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    branch: BranchCreateNestedOneWithoutSectionsInput
-    tables?: TableCreateNestedManyWithoutSectionInput
+    branch: BranchCreateNestedOneWithoutSectorsInput
+    tables?: TableCreateNestedManyWithoutSectorInput
   }
 
-  export type SectionUncheckedCreateInput = {
+  export type SectorUncheckedCreateInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     branchId: string
     createdAt?: Date | string
     updatedAt?: Date | string
-    tables?: TableUncheckedCreateNestedManyWithoutSectionInput
+    tables?: TableUncheckedCreateNestedManyWithoutSectorInput
   }
 
-  export type SectionUpdateInput = {
+  export type SectorUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    branch?: BranchUpdateOneRequiredWithoutSectionsNestedInput
-    tables?: TableUpdateManyWithoutSectionNestedInput
+    branch?: BranchUpdateOneRequiredWithoutSectorsNestedInput
+    tables?: TableUpdateManyWithoutSectorNestedInput
   }
 
-  export type SectionUncheckedUpdateInput = {
+  export type SectorUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     branchId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    tables?: TableUncheckedUpdateManyWithoutSectionNestedInput
+    tables?: TableUncheckedUpdateManyWithoutSectorNestedInput
   }
 
-  export type SectionCreateManyInput = {
+  export type SectorCreateManyInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     branchId: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
-  export type SectionUpdateManyMutationInput = {
+  export type SectorUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type SectionUncheckedUpdateManyInput = {
+  export type SectorUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     branchId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -27219,7 +27280,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branch: BranchCreateNestedOneWithoutTablesInput
-    section?: SectionCreateNestedOneWithoutTablesInput
+    sector?: SectorCreateNestedOneWithoutTablesInput
     reservations?: ReservationTableCreateNestedManyWithoutTableInput
     timeSlots?: TimeSlotTableCreateNestedManyWithoutTableInput
   }
@@ -27239,7 +27300,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branchId: string
-    sectionId?: string | null
+    sectorId?: string | null
     reservations?: ReservationTableUncheckedCreateNestedManyWithoutTableInput
     timeSlots?: TimeSlotTableUncheckedCreateNestedManyWithoutTableInput
   }
@@ -27259,7 +27320,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branch?: BranchUpdateOneRequiredWithoutTablesNestedInput
-    section?: SectionUpdateOneWithoutTablesNestedInput
+    sector?: SectorUpdateOneWithoutTablesNestedInput
     reservations?: ReservationTableUpdateManyWithoutTableNestedInput
     timeSlots?: TimeSlotTableUpdateManyWithoutTableNestedInput
   }
@@ -27279,7 +27340,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
-    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sectorId?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationTableUncheckedUpdateManyWithoutTableNestedInput
     timeSlots?: TimeSlotTableUncheckedUpdateManyWithoutTableNestedInput
   }
@@ -27299,7 +27360,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branchId: string
-    sectionId?: string | null
+    sectorId?: string | null
   }
 
   export type TableUpdateManyMutationInput = {
@@ -27333,7 +27394,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
-    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sectorId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ReservationCreateInput = {
@@ -28460,10 +28521,10 @@ export namespace Prisma {
     none?: OrderWhereInput
   }
 
-  export type SectionListRelationFilter = {
-    every?: SectionWhereInput
-    some?: SectionWhereInput
-    none?: SectionWhereInput
+  export type SectorListRelationFilter = {
+    every?: SectorWhereInput
+    some?: SectorWhereInput
+    none?: SectorWhereInput
   }
 
   export type TableListRelationFilter = {
@@ -28492,7 +28553,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type SectionOrderByRelationAggregateInput = {
+  export type SectorOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -28607,50 +28668,60 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type SectionBranchIdNameCompoundUniqueInput = {
+  export type SectorBranchIdNameCompoundUniqueInput = {
     branchId: string
     name: string
   }
 
-  export type SectionCountOrderByAggregateInput = {
+  export type SectorCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     color?: SortOrder
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
     isActive?: SortOrder
     branchId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
-  export type SectionAvgOrderByAggregateInput = {
+  export type SectorAvgOrderByAggregateInput = {
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
   }
 
-  export type SectionMaxOrderByAggregateInput = {
+  export type SectorMaxOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     color?: SortOrder
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
     isActive?: SortOrder
     branchId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
-  export type SectionMinOrderByAggregateInput = {
+  export type SectorMinOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     color?: SortOrder
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
     isActive?: SortOrder
     branchId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
-  export type SectionSumOrderByAggregateInput = {
+  export type SectorSumOrderByAggregateInput = {
     order?: SortOrder
+    width?: SortOrder
+    height?: SortOrder
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
@@ -28694,9 +28765,9 @@ export namespace Prisma {
     not?: NestedEnumTableStatusNullableFilter<$PrismaModel> | $Enums.TableStatus | null
   }
 
-  export type SectionNullableScalarRelationFilter = {
-    is?: SectionWhereInput | null
-    isNot?: SectionWhereInput | null
+  export type SectorNullableScalarRelationFilter = {
+    is?: SectorWhereInput | null
+    isNot?: SectorWhereInput | null
   }
 
   export type ReservationTableListRelationFilter = {
@@ -28739,7 +28810,7 @@ export namespace Prisma {
     shape?: SortOrder
     status?: SortOrder
     branchId?: SortOrder
-    sectionId?: SortOrder
+    sectorId?: SortOrder
   }
 
   export type TableAvgOrderByAggregateInput = {
@@ -28767,7 +28838,7 @@ export namespace Prisma {
     shape?: SortOrder
     status?: SortOrder
     branchId?: SortOrder
-    sectionId?: SortOrder
+    sectorId?: SortOrder
   }
 
   export type TableMinOrderByAggregateInput = {
@@ -28785,7 +28856,7 @@ export namespace Prisma {
     shape?: SortOrder
     status?: SortOrder
     branchId?: SortOrder
-    sectionId?: SortOrder
+    sectorId?: SortOrder
   }
 
   export type TableSumOrderByAggregateInput = {
@@ -29755,11 +29826,11 @@ export namespace Prisma {
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
   }
 
-  export type SectionCreateNestedManyWithoutBranchInput = {
-    create?: XOR<SectionCreateWithoutBranchInput, SectionUncheckedCreateWithoutBranchInput> | SectionCreateWithoutBranchInput[] | SectionUncheckedCreateWithoutBranchInput[]
-    connectOrCreate?: SectionCreateOrConnectWithoutBranchInput | SectionCreateOrConnectWithoutBranchInput[]
-    createMany?: SectionCreateManyBranchInputEnvelope
-    connect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
+  export type SectorCreateNestedManyWithoutBranchInput = {
+    create?: XOR<SectorCreateWithoutBranchInput, SectorUncheckedCreateWithoutBranchInput> | SectorCreateWithoutBranchInput[] | SectorUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: SectorCreateOrConnectWithoutBranchInput | SectorCreateOrConnectWithoutBranchInput[]
+    createMany?: SectorCreateManyBranchInputEnvelope
+    connect?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
   }
 
   export type TableCreateNestedManyWithoutBranchInput = {
@@ -29804,11 +29875,11 @@ export namespace Prisma {
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
   }
 
-  export type SectionUncheckedCreateNestedManyWithoutBranchInput = {
-    create?: XOR<SectionCreateWithoutBranchInput, SectionUncheckedCreateWithoutBranchInput> | SectionCreateWithoutBranchInput[] | SectionUncheckedCreateWithoutBranchInput[]
-    connectOrCreate?: SectionCreateOrConnectWithoutBranchInput | SectionCreateOrConnectWithoutBranchInput[]
-    createMany?: SectionCreateManyBranchInputEnvelope
-    connect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
+  export type SectorUncheckedCreateNestedManyWithoutBranchInput = {
+    create?: XOR<SectorCreateWithoutBranchInput, SectorUncheckedCreateWithoutBranchInput> | SectorCreateWithoutBranchInput[] | SectorUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: SectorCreateOrConnectWithoutBranchInput | SectorCreateOrConnectWithoutBranchInput[]
+    createMany?: SectorCreateManyBranchInputEnvelope
+    connect?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
   }
 
   export type TableUncheckedCreateNestedManyWithoutBranchInput = {
@@ -29875,18 +29946,18 @@ export namespace Prisma {
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
   }
 
-  export type SectionUpdateManyWithoutBranchNestedInput = {
-    create?: XOR<SectionCreateWithoutBranchInput, SectionUncheckedCreateWithoutBranchInput> | SectionCreateWithoutBranchInput[] | SectionUncheckedCreateWithoutBranchInput[]
-    connectOrCreate?: SectionCreateOrConnectWithoutBranchInput | SectionCreateOrConnectWithoutBranchInput[]
-    upsert?: SectionUpsertWithWhereUniqueWithoutBranchInput | SectionUpsertWithWhereUniqueWithoutBranchInput[]
-    createMany?: SectionCreateManyBranchInputEnvelope
-    set?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    disconnect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    delete?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    connect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    update?: SectionUpdateWithWhereUniqueWithoutBranchInput | SectionUpdateWithWhereUniqueWithoutBranchInput[]
-    updateMany?: SectionUpdateManyWithWhereWithoutBranchInput | SectionUpdateManyWithWhereWithoutBranchInput[]
-    deleteMany?: SectionScalarWhereInput | SectionScalarWhereInput[]
+  export type SectorUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<SectorCreateWithoutBranchInput, SectorUncheckedCreateWithoutBranchInput> | SectorCreateWithoutBranchInput[] | SectorUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: SectorCreateOrConnectWithoutBranchInput | SectorCreateOrConnectWithoutBranchInput[]
+    upsert?: SectorUpsertWithWhereUniqueWithoutBranchInput | SectorUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: SectorCreateManyBranchInputEnvelope
+    set?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    disconnect?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    delete?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    connect?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    update?: SectorUpdateWithWhereUniqueWithoutBranchInput | SectorUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: SectorUpdateManyWithWhereWithoutBranchInput | SectorUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: SectorScalarWhereInput | SectorScalarWhereInput[]
   }
 
   export type TableUpdateManyWithoutBranchNestedInput = {
@@ -29973,18 +30044,18 @@ export namespace Prisma {
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
   }
 
-  export type SectionUncheckedUpdateManyWithoutBranchNestedInput = {
-    create?: XOR<SectionCreateWithoutBranchInput, SectionUncheckedCreateWithoutBranchInput> | SectionCreateWithoutBranchInput[] | SectionUncheckedCreateWithoutBranchInput[]
-    connectOrCreate?: SectionCreateOrConnectWithoutBranchInput | SectionCreateOrConnectWithoutBranchInput[]
-    upsert?: SectionUpsertWithWhereUniqueWithoutBranchInput | SectionUpsertWithWhereUniqueWithoutBranchInput[]
-    createMany?: SectionCreateManyBranchInputEnvelope
-    set?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    disconnect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    delete?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    connect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
-    update?: SectionUpdateWithWhereUniqueWithoutBranchInput | SectionUpdateWithWhereUniqueWithoutBranchInput[]
-    updateMany?: SectionUpdateManyWithWhereWithoutBranchInput | SectionUpdateManyWithWhereWithoutBranchInput[]
-    deleteMany?: SectionScalarWhereInput | SectionScalarWhereInput[]
+  export type SectorUncheckedUpdateManyWithoutBranchNestedInput = {
+    create?: XOR<SectorCreateWithoutBranchInput, SectorUncheckedCreateWithoutBranchInput> | SectorCreateWithoutBranchInput[] | SectorUncheckedCreateWithoutBranchInput[]
+    connectOrCreate?: SectorCreateOrConnectWithoutBranchInput | SectorCreateOrConnectWithoutBranchInput[]
+    upsert?: SectorUpsertWithWhereUniqueWithoutBranchInput | SectorUpsertWithWhereUniqueWithoutBranchInput[]
+    createMany?: SectorCreateManyBranchInputEnvelope
+    set?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    disconnect?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    delete?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    connect?: SectorWhereUniqueInput | SectorWhereUniqueInput[]
+    update?: SectorUpdateWithWhereUniqueWithoutBranchInput | SectorUpdateWithWhereUniqueWithoutBranchInput[]
+    updateMany?: SectorUpdateManyWithWhereWithoutBranchInput | SectorUpdateManyWithWhereWithoutBranchInput[]
+    deleteMany?: SectorScalarWhereInput | SectorScalarWhereInput[]
   }
 
   export type TableUncheckedUpdateManyWithoutBranchNestedInput = {
@@ -30075,23 +30146,23 @@ export namespace Prisma {
     update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutUserAccessInput, BranchUpdateWithoutUserAccessInput>, BranchUncheckedUpdateWithoutUserAccessInput>
   }
 
-  export type BranchCreateNestedOneWithoutSectionsInput = {
-    create?: XOR<BranchCreateWithoutSectionsInput, BranchUncheckedCreateWithoutSectionsInput>
-    connectOrCreate?: BranchCreateOrConnectWithoutSectionsInput
+  export type BranchCreateNestedOneWithoutSectorsInput = {
+    create?: XOR<BranchCreateWithoutSectorsInput, BranchUncheckedCreateWithoutSectorsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutSectorsInput
     connect?: BranchWhereUniqueInput
   }
 
-  export type TableCreateNestedManyWithoutSectionInput = {
-    create?: XOR<TableCreateWithoutSectionInput, TableUncheckedCreateWithoutSectionInput> | TableCreateWithoutSectionInput[] | TableUncheckedCreateWithoutSectionInput[]
-    connectOrCreate?: TableCreateOrConnectWithoutSectionInput | TableCreateOrConnectWithoutSectionInput[]
-    createMany?: TableCreateManySectionInputEnvelope
+  export type TableCreateNestedManyWithoutSectorInput = {
+    create?: XOR<TableCreateWithoutSectorInput, TableUncheckedCreateWithoutSectorInput> | TableCreateWithoutSectorInput[] | TableUncheckedCreateWithoutSectorInput[]
+    connectOrCreate?: TableCreateOrConnectWithoutSectorInput | TableCreateOrConnectWithoutSectorInput[]
+    createMany?: TableCreateManySectorInputEnvelope
     connect?: TableWhereUniqueInput | TableWhereUniqueInput[]
   }
 
-  export type TableUncheckedCreateNestedManyWithoutSectionInput = {
-    create?: XOR<TableCreateWithoutSectionInput, TableUncheckedCreateWithoutSectionInput> | TableCreateWithoutSectionInput[] | TableUncheckedCreateWithoutSectionInput[]
-    connectOrCreate?: TableCreateOrConnectWithoutSectionInput | TableCreateOrConnectWithoutSectionInput[]
-    createMany?: TableCreateManySectionInputEnvelope
+  export type TableUncheckedCreateNestedManyWithoutSectorInput = {
+    create?: XOR<TableCreateWithoutSectorInput, TableUncheckedCreateWithoutSectorInput> | TableCreateWithoutSectorInput[] | TableUncheckedCreateWithoutSectorInput[]
+    connectOrCreate?: TableCreateOrConnectWithoutSectorInput | TableCreateOrConnectWithoutSectorInput[]
+    createMany?: TableCreateManySectorInputEnvelope
     connect?: TableWhereUniqueInput | TableWhereUniqueInput[]
   }
 
@@ -30103,39 +30174,39 @@ export namespace Prisma {
     divide?: number
   }
 
-  export type BranchUpdateOneRequiredWithoutSectionsNestedInput = {
-    create?: XOR<BranchCreateWithoutSectionsInput, BranchUncheckedCreateWithoutSectionsInput>
-    connectOrCreate?: BranchCreateOrConnectWithoutSectionsInput
-    upsert?: BranchUpsertWithoutSectionsInput
+  export type BranchUpdateOneRequiredWithoutSectorsNestedInput = {
+    create?: XOR<BranchCreateWithoutSectorsInput, BranchUncheckedCreateWithoutSectorsInput>
+    connectOrCreate?: BranchCreateOrConnectWithoutSectorsInput
+    upsert?: BranchUpsertWithoutSectorsInput
     connect?: BranchWhereUniqueInput
-    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutSectionsInput, BranchUpdateWithoutSectionsInput>, BranchUncheckedUpdateWithoutSectionsInput>
+    update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutSectorsInput, BranchUpdateWithoutSectorsInput>, BranchUncheckedUpdateWithoutSectorsInput>
   }
 
-  export type TableUpdateManyWithoutSectionNestedInput = {
-    create?: XOR<TableCreateWithoutSectionInput, TableUncheckedCreateWithoutSectionInput> | TableCreateWithoutSectionInput[] | TableUncheckedCreateWithoutSectionInput[]
-    connectOrCreate?: TableCreateOrConnectWithoutSectionInput | TableCreateOrConnectWithoutSectionInput[]
-    upsert?: TableUpsertWithWhereUniqueWithoutSectionInput | TableUpsertWithWhereUniqueWithoutSectionInput[]
-    createMany?: TableCreateManySectionInputEnvelope
+  export type TableUpdateManyWithoutSectorNestedInput = {
+    create?: XOR<TableCreateWithoutSectorInput, TableUncheckedCreateWithoutSectorInput> | TableCreateWithoutSectorInput[] | TableUncheckedCreateWithoutSectorInput[]
+    connectOrCreate?: TableCreateOrConnectWithoutSectorInput | TableCreateOrConnectWithoutSectorInput[]
+    upsert?: TableUpsertWithWhereUniqueWithoutSectorInput | TableUpsertWithWhereUniqueWithoutSectorInput[]
+    createMany?: TableCreateManySectorInputEnvelope
     set?: TableWhereUniqueInput | TableWhereUniqueInput[]
     disconnect?: TableWhereUniqueInput | TableWhereUniqueInput[]
     delete?: TableWhereUniqueInput | TableWhereUniqueInput[]
     connect?: TableWhereUniqueInput | TableWhereUniqueInput[]
-    update?: TableUpdateWithWhereUniqueWithoutSectionInput | TableUpdateWithWhereUniqueWithoutSectionInput[]
-    updateMany?: TableUpdateManyWithWhereWithoutSectionInput | TableUpdateManyWithWhereWithoutSectionInput[]
+    update?: TableUpdateWithWhereUniqueWithoutSectorInput | TableUpdateWithWhereUniqueWithoutSectorInput[]
+    updateMany?: TableUpdateManyWithWhereWithoutSectorInput | TableUpdateManyWithWhereWithoutSectorInput[]
     deleteMany?: TableScalarWhereInput | TableScalarWhereInput[]
   }
 
-  export type TableUncheckedUpdateManyWithoutSectionNestedInput = {
-    create?: XOR<TableCreateWithoutSectionInput, TableUncheckedCreateWithoutSectionInput> | TableCreateWithoutSectionInput[] | TableUncheckedCreateWithoutSectionInput[]
-    connectOrCreate?: TableCreateOrConnectWithoutSectionInput | TableCreateOrConnectWithoutSectionInput[]
-    upsert?: TableUpsertWithWhereUniqueWithoutSectionInput | TableUpsertWithWhereUniqueWithoutSectionInput[]
-    createMany?: TableCreateManySectionInputEnvelope
+  export type TableUncheckedUpdateManyWithoutSectorNestedInput = {
+    create?: XOR<TableCreateWithoutSectorInput, TableUncheckedCreateWithoutSectorInput> | TableCreateWithoutSectorInput[] | TableUncheckedCreateWithoutSectorInput[]
+    connectOrCreate?: TableCreateOrConnectWithoutSectorInput | TableCreateOrConnectWithoutSectorInput[]
+    upsert?: TableUpsertWithWhereUniqueWithoutSectorInput | TableUpsertWithWhereUniqueWithoutSectorInput[]
+    createMany?: TableCreateManySectorInputEnvelope
     set?: TableWhereUniqueInput | TableWhereUniqueInput[]
     disconnect?: TableWhereUniqueInput | TableWhereUniqueInput[]
     delete?: TableWhereUniqueInput | TableWhereUniqueInput[]
     connect?: TableWhereUniqueInput | TableWhereUniqueInput[]
-    update?: TableUpdateWithWhereUniqueWithoutSectionInput | TableUpdateWithWhereUniqueWithoutSectionInput[]
-    updateMany?: TableUpdateManyWithWhereWithoutSectionInput | TableUpdateManyWithWhereWithoutSectionInput[]
+    update?: TableUpdateWithWhereUniqueWithoutSectorInput | TableUpdateWithWhereUniqueWithoutSectorInput[]
+    updateMany?: TableUpdateManyWithWhereWithoutSectorInput | TableUpdateManyWithWhereWithoutSectorInput[]
     deleteMany?: TableScalarWhereInput | TableScalarWhereInput[]
   }
 
@@ -30145,10 +30216,10 @@ export namespace Prisma {
     connect?: BranchWhereUniqueInput
   }
 
-  export type SectionCreateNestedOneWithoutTablesInput = {
-    create?: XOR<SectionCreateWithoutTablesInput, SectionUncheckedCreateWithoutTablesInput>
-    connectOrCreate?: SectionCreateOrConnectWithoutTablesInput
-    connect?: SectionWhereUniqueInput
+  export type SectorCreateNestedOneWithoutTablesInput = {
+    create?: XOR<SectorCreateWithoutTablesInput, SectorUncheckedCreateWithoutTablesInput>
+    connectOrCreate?: SectorCreateOrConnectWithoutTablesInput
+    connect?: SectorWhereUniqueInput
   }
 
   export type ReservationTableCreateNestedManyWithoutTableInput = {
@@ -30203,14 +30274,14 @@ export namespace Prisma {
     update?: XOR<XOR<BranchUpdateToOneWithWhereWithoutTablesInput, BranchUpdateWithoutTablesInput>, BranchUncheckedUpdateWithoutTablesInput>
   }
 
-  export type SectionUpdateOneWithoutTablesNestedInput = {
-    create?: XOR<SectionCreateWithoutTablesInput, SectionUncheckedCreateWithoutTablesInput>
-    connectOrCreate?: SectionCreateOrConnectWithoutTablesInput
-    upsert?: SectionUpsertWithoutTablesInput
-    disconnect?: SectionWhereInput | boolean
-    delete?: SectionWhereInput | boolean
-    connect?: SectionWhereUniqueInput
-    update?: XOR<XOR<SectionUpdateToOneWithWhereWithoutTablesInput, SectionUpdateWithoutTablesInput>, SectionUncheckedUpdateWithoutTablesInput>
+  export type SectorUpdateOneWithoutTablesNestedInput = {
+    create?: XOR<SectorCreateWithoutTablesInput, SectorUncheckedCreateWithoutTablesInput>
+    connectOrCreate?: SectorCreateOrConnectWithoutTablesInput
+    upsert?: SectorUpsertWithoutTablesInput
+    disconnect?: SectorWhereInput | boolean
+    delete?: SectorWhereInput | boolean
+    connect?: SectorWhereUniqueInput
+    update?: XOR<XOR<SectorUpdateToOneWithWhereWithoutTablesInput, SectorUpdateWithoutTablesInput>, SectorUncheckedUpdateWithoutTablesInput>
   }
 
   export type ReservationTableUpdateManyWithoutTableNestedInput = {
@@ -31532,7 +31603,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationCreateNestedManyWithoutBranchInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
@@ -31547,7 +31618,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -31822,35 +31893,39 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type SectionCreateWithoutBranchInput = {
+  export type SectorCreateWithoutBranchInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    tables?: TableCreateNestedManyWithoutSectionInput
+    tables?: TableCreateNestedManyWithoutSectorInput
   }
 
-  export type SectionUncheckedCreateWithoutBranchInput = {
+  export type SectorUncheckedCreateWithoutBranchInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    tables?: TableUncheckedCreateNestedManyWithoutSectionInput
+    tables?: TableUncheckedCreateNestedManyWithoutSectorInput
   }
 
-  export type SectionCreateOrConnectWithoutBranchInput = {
-    where: SectionWhereUniqueInput
-    create: XOR<SectionCreateWithoutBranchInput, SectionUncheckedCreateWithoutBranchInput>
+  export type SectorCreateOrConnectWithoutBranchInput = {
+    where: SectorWhereUniqueInput
+    create: XOR<SectorCreateWithoutBranchInput, SectorUncheckedCreateWithoutBranchInput>
   }
 
-  export type SectionCreateManyBranchInputEnvelope = {
-    data: SectionCreateManyBranchInput | SectionCreateManyBranchInput[]
+  export type SectorCreateManyBranchInputEnvelope = {
+    data: SectorCreateManyBranchInput | SectorCreateManyBranchInput[]
     skipDuplicates?: boolean
   }
 
@@ -31868,7 +31943,7 @@ export namespace Prisma {
     rotation?: number | null
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
-    section?: SectionCreateNestedOneWithoutTablesInput
+    sector?: SectorCreateNestedOneWithoutTablesInput
     reservations?: ReservationTableCreateNestedManyWithoutTableInput
     timeSlots?: TimeSlotTableCreateNestedManyWithoutTableInput
   }
@@ -31887,7 +31962,7 @@ export namespace Prisma {
     rotation?: number | null
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
-    sectionId?: string | null
+    sectorId?: string | null
     reservations?: ReservationTableUncheckedCreateNestedManyWithoutTableInput
     timeSlots?: TimeSlotTableUncheckedCreateNestedManyWithoutTableInput
   }
@@ -32106,34 +32181,36 @@ export namespace Prisma {
     updatedBy?: StringNullableFilter<"Order"> | string | null
   }
 
-  export type SectionUpsertWithWhereUniqueWithoutBranchInput = {
-    where: SectionWhereUniqueInput
-    update: XOR<SectionUpdateWithoutBranchInput, SectionUncheckedUpdateWithoutBranchInput>
-    create: XOR<SectionCreateWithoutBranchInput, SectionUncheckedCreateWithoutBranchInput>
+  export type SectorUpsertWithWhereUniqueWithoutBranchInput = {
+    where: SectorWhereUniqueInput
+    update: XOR<SectorUpdateWithoutBranchInput, SectorUncheckedUpdateWithoutBranchInput>
+    create: XOR<SectorCreateWithoutBranchInput, SectorUncheckedCreateWithoutBranchInput>
   }
 
-  export type SectionUpdateWithWhereUniqueWithoutBranchInput = {
-    where: SectionWhereUniqueInput
-    data: XOR<SectionUpdateWithoutBranchInput, SectionUncheckedUpdateWithoutBranchInput>
+  export type SectorUpdateWithWhereUniqueWithoutBranchInput = {
+    where: SectorWhereUniqueInput
+    data: XOR<SectorUpdateWithoutBranchInput, SectorUncheckedUpdateWithoutBranchInput>
   }
 
-  export type SectionUpdateManyWithWhereWithoutBranchInput = {
-    where: SectionScalarWhereInput
-    data: XOR<SectionUpdateManyMutationInput, SectionUncheckedUpdateManyWithoutBranchInput>
+  export type SectorUpdateManyWithWhereWithoutBranchInput = {
+    where: SectorScalarWhereInput
+    data: XOR<SectorUpdateManyMutationInput, SectorUncheckedUpdateManyWithoutBranchInput>
   }
 
-  export type SectionScalarWhereInput = {
-    AND?: SectionScalarWhereInput | SectionScalarWhereInput[]
-    OR?: SectionScalarWhereInput[]
-    NOT?: SectionScalarWhereInput | SectionScalarWhereInput[]
-    id?: StringFilter<"Section"> | string
-    name?: StringFilter<"Section"> | string
-    color?: StringFilter<"Section"> | string
-    order?: IntFilter<"Section"> | number
-    isActive?: BoolFilter<"Section"> | boolean
-    branchId?: StringFilter<"Section"> | string
-    createdAt?: DateTimeFilter<"Section"> | Date | string
-    updatedAt?: DateTimeFilter<"Section"> | Date | string
+  export type SectorScalarWhereInput = {
+    AND?: SectorScalarWhereInput | SectorScalarWhereInput[]
+    OR?: SectorScalarWhereInput[]
+    NOT?: SectorScalarWhereInput | SectorScalarWhereInput[]
+    id?: StringFilter<"Sector"> | string
+    name?: StringFilter<"Sector"> | string
+    color?: StringFilter<"Sector"> | string
+    order?: IntFilter<"Sector"> | number
+    width?: IntFilter<"Sector"> | number
+    height?: IntFilter<"Sector"> | number
+    isActive?: BoolFilter<"Sector"> | boolean
+    branchId?: StringFilter<"Sector"> | string
+    createdAt?: DateTimeFilter<"Sector"> | Date | string
+    updatedAt?: DateTimeFilter<"Sector"> | Date | string
   }
 
   export type TableUpsertWithWhereUniqueWithoutBranchInput = {
@@ -32170,7 +32247,7 @@ export namespace Prisma {
     shape?: EnumTableShapeNullableFilter<"Table"> | $Enums.TableShape | null
     status?: EnumTableStatusNullableFilter<"Table"> | $Enums.TableStatus | null
     branchId?: StringFilter<"Table"> | string
-    sectionId?: StringNullableFilter<"Table"> | string | null
+    sectorId?: StringNullableFilter<"Table"> | string | null
   }
 
   export type TimeSlotUpsertWithWhereUniqueWithoutBranchInput = {
@@ -32285,7 +32362,7 @@ export namespace Prisma {
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     reservations?: ReservationCreateNestedManyWithoutBranchInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
@@ -32300,7 +32377,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -32362,7 +32439,7 @@ export namespace Prisma {
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
@@ -32377,13 +32454,13 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
   }
 
-  export type BranchCreateWithoutSectionsInput = {
+  export type BranchCreateWithoutSectorsInput = {
     id?: string
     name: string
     address: string
@@ -32398,7 +32475,7 @@ export namespace Prisma {
     userAccess?: UserOnBranchCreateNestedManyWithoutBranchInput
   }
 
-  export type BranchUncheckedCreateWithoutSectionsInput = {
+  export type BranchUncheckedCreateWithoutSectorsInput = {
     id?: string
     name: string
     address: string
@@ -32413,12 +32490,12 @@ export namespace Prisma {
     userAccess?: UserOnBranchUncheckedCreateNestedManyWithoutBranchInput
   }
 
-  export type BranchCreateOrConnectWithoutSectionsInput = {
+  export type BranchCreateOrConnectWithoutSectorsInput = {
     where: BranchWhereUniqueInput
-    create: XOR<BranchCreateWithoutSectionsInput, BranchUncheckedCreateWithoutSectionsInput>
+    create: XOR<BranchCreateWithoutSectorsInput, BranchUncheckedCreateWithoutSectorsInput>
   }
 
-  export type TableCreateWithoutSectionInput = {
+  export type TableCreateWithoutSectorInput = {
     id?: string
     number: number
     name?: string | null
@@ -32437,7 +32514,7 @@ export namespace Prisma {
     timeSlots?: TimeSlotTableCreateNestedManyWithoutTableInput
   }
 
-  export type TableUncheckedCreateWithoutSectionInput = {
+  export type TableUncheckedCreateWithoutSectorInput = {
     id?: string
     number: number
     name?: string | null
@@ -32456,28 +32533,28 @@ export namespace Prisma {
     timeSlots?: TimeSlotTableUncheckedCreateNestedManyWithoutTableInput
   }
 
-  export type TableCreateOrConnectWithoutSectionInput = {
+  export type TableCreateOrConnectWithoutSectorInput = {
     where: TableWhereUniqueInput
-    create: XOR<TableCreateWithoutSectionInput, TableUncheckedCreateWithoutSectionInput>
+    create: XOR<TableCreateWithoutSectorInput, TableUncheckedCreateWithoutSectorInput>
   }
 
-  export type TableCreateManySectionInputEnvelope = {
-    data: TableCreateManySectionInput | TableCreateManySectionInput[]
+  export type TableCreateManySectorInputEnvelope = {
+    data: TableCreateManySectorInput | TableCreateManySectorInput[]
     skipDuplicates?: boolean
   }
 
-  export type BranchUpsertWithoutSectionsInput = {
-    update: XOR<BranchUpdateWithoutSectionsInput, BranchUncheckedUpdateWithoutSectionsInput>
-    create: XOR<BranchCreateWithoutSectionsInput, BranchUncheckedCreateWithoutSectionsInput>
+  export type BranchUpsertWithoutSectorsInput = {
+    update: XOR<BranchUpdateWithoutSectorsInput, BranchUncheckedUpdateWithoutSectorsInput>
+    create: XOR<BranchCreateWithoutSectorsInput, BranchUncheckedCreateWithoutSectorsInput>
     where?: BranchWhereInput
   }
 
-  export type BranchUpdateToOneWithWhereWithoutSectionsInput = {
+  export type BranchUpdateToOneWithWhereWithoutSectorsInput = {
     where?: BranchWhereInput
-    data: XOR<BranchUpdateWithoutSectionsInput, BranchUncheckedUpdateWithoutSectionsInput>
+    data: XOR<BranchUpdateWithoutSectorsInput, BranchUncheckedUpdateWithoutSectorsInput>
   }
 
-  export type BranchUpdateWithoutSectionsInput = {
+  export type BranchUpdateWithoutSectorsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
@@ -32492,7 +32569,7 @@ export namespace Prisma {
     userAccess?: UserOnBranchUpdateManyWithoutBranchNestedInput
   }
 
-  export type BranchUncheckedUpdateWithoutSectionsInput = {
+  export type BranchUncheckedUpdateWithoutSectorsInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
@@ -32507,20 +32584,20 @@ export namespace Prisma {
     userAccess?: UserOnBranchUncheckedUpdateManyWithoutBranchNestedInput
   }
 
-  export type TableUpsertWithWhereUniqueWithoutSectionInput = {
+  export type TableUpsertWithWhereUniqueWithoutSectorInput = {
     where: TableWhereUniqueInput
-    update: XOR<TableUpdateWithoutSectionInput, TableUncheckedUpdateWithoutSectionInput>
-    create: XOR<TableCreateWithoutSectionInput, TableUncheckedCreateWithoutSectionInput>
+    update: XOR<TableUpdateWithoutSectorInput, TableUncheckedUpdateWithoutSectorInput>
+    create: XOR<TableCreateWithoutSectorInput, TableUncheckedCreateWithoutSectorInput>
   }
 
-  export type TableUpdateWithWhereUniqueWithoutSectionInput = {
+  export type TableUpdateWithWhereUniqueWithoutSectorInput = {
     where: TableWhereUniqueInput
-    data: XOR<TableUpdateWithoutSectionInput, TableUncheckedUpdateWithoutSectionInput>
+    data: XOR<TableUpdateWithoutSectorInput, TableUncheckedUpdateWithoutSectorInput>
   }
 
-  export type TableUpdateManyWithWhereWithoutSectionInput = {
+  export type TableUpdateManyWithWhereWithoutSectorInput = {
     where: TableScalarWhereInput
-    data: XOR<TableUpdateManyMutationInput, TableUncheckedUpdateManyWithoutSectionInput>
+    data: XOR<TableUpdateManyMutationInput, TableUncheckedUpdateManyWithoutSectorInput>
   }
 
   export type BranchCreateWithoutTablesInput = {
@@ -32532,7 +32609,7 @@ export namespace Prisma {
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     reservations?: ReservationCreateNestedManyWithoutBranchInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
     userAccess?: UserOnBranchCreateNestedManyWithoutBranchInput
@@ -32547,7 +32624,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
     userAccess?: UserOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -32558,31 +32635,35 @@ export namespace Prisma {
     create: XOR<BranchCreateWithoutTablesInput, BranchUncheckedCreateWithoutTablesInput>
   }
 
-  export type SectionCreateWithoutTablesInput = {
+  export type SectorCreateWithoutTablesInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    branch: BranchCreateNestedOneWithoutSectionsInput
+    branch: BranchCreateNestedOneWithoutSectorsInput
   }
 
-  export type SectionUncheckedCreateWithoutTablesInput = {
+  export type SectorUncheckedCreateWithoutTablesInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     branchId: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
-  export type SectionCreateOrConnectWithoutTablesInput = {
-    where: SectionWhereUniqueInput
-    create: XOR<SectionCreateWithoutTablesInput, SectionUncheckedCreateWithoutTablesInput>
+  export type SectorCreateOrConnectWithoutTablesInput = {
+    where: SectorWhereUniqueInput
+    create: XOR<SectorCreateWithoutTablesInput, SectorUncheckedCreateWithoutTablesInput>
   }
 
   export type ReservationTableCreateWithoutTableInput = {
@@ -32645,7 +32726,7 @@ export namespace Prisma {
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
     userAccess?: UserOnBranchUpdateManyWithoutBranchNestedInput
@@ -32660,39 +32741,43 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
     userAccess?: UserOnBranchUncheckedUpdateManyWithoutBranchNestedInput
   }
 
-  export type SectionUpsertWithoutTablesInput = {
-    update: XOR<SectionUpdateWithoutTablesInput, SectionUncheckedUpdateWithoutTablesInput>
-    create: XOR<SectionCreateWithoutTablesInput, SectionUncheckedCreateWithoutTablesInput>
-    where?: SectionWhereInput
+  export type SectorUpsertWithoutTablesInput = {
+    update: XOR<SectorUpdateWithoutTablesInput, SectorUncheckedUpdateWithoutTablesInput>
+    create: XOR<SectorCreateWithoutTablesInput, SectorUncheckedCreateWithoutTablesInput>
+    where?: SectorWhereInput
   }
 
-  export type SectionUpdateToOneWithWhereWithoutTablesInput = {
-    where?: SectionWhereInput
-    data: XOR<SectionUpdateWithoutTablesInput, SectionUncheckedUpdateWithoutTablesInput>
+  export type SectorUpdateToOneWithWhereWithoutTablesInput = {
+    where?: SectorWhereInput
+    data: XOR<SectorUpdateWithoutTablesInput, SectorUncheckedUpdateWithoutTablesInput>
   }
 
-  export type SectionUpdateWithoutTablesInput = {
+  export type SectorUpdateWithoutTablesInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    branch?: BranchUpdateOneRequiredWithoutSectionsNestedInput
+    branch?: BranchUpdateOneRequiredWithoutSectorsNestedInput
   }
 
-  export type SectionUncheckedUpdateWithoutTablesInput = {
+  export type SectorUncheckedUpdateWithoutTablesInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     branchId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32757,7 +32842,7 @@ export namespace Prisma {
     slug?: string | null
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
@@ -32772,7 +32857,7 @@ export namespace Prisma {
     createdAt?: Date | string
     slug?: string | null
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -32860,7 +32945,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
@@ -32875,7 +32960,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
@@ -32997,7 +33082,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branch: BranchCreateNestedOneWithoutTablesInput
-    section?: SectionCreateNestedOneWithoutTablesInput
+    sector?: SectorCreateNestedOneWithoutTablesInput
     timeSlots?: TimeSlotTableCreateNestedManyWithoutTableInput
   }
 
@@ -33016,7 +33101,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branchId: string
-    sectionId?: string | null
+    sectorId?: string | null
     timeSlots?: TimeSlotTableUncheckedCreateNestedManyWithoutTableInput
   }
 
@@ -33098,7 +33183,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branch?: BranchUpdateOneRequiredWithoutTablesNestedInput
-    section?: SectionUpdateOneWithoutTablesNestedInput
+    sector?: SectorUpdateOneWithoutTablesNestedInput
     timeSlots?: TimeSlotTableUpdateManyWithoutTableNestedInput
   }
 
@@ -33117,7 +33202,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
-    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sectorId?: NullableStringFieldUpdateOperationsInput | string | null
     timeSlots?: TimeSlotTableUncheckedUpdateManyWithoutTableNestedInput
   }
 
@@ -33130,7 +33215,7 @@ export namespace Prisma {
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     reservations?: ReservationCreateNestedManyWithoutBranchInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
     userAccess?: UserOnBranchCreateNestedManyWithoutBranchInput
@@ -33145,7 +33230,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
     userAccess?: UserOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -33242,7 +33327,7 @@ export namespace Prisma {
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
     userAccess?: UserOnBranchUpdateManyWithoutBranchNestedInput
@@ -33257,7 +33342,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
     userAccess?: UserOnBranchUncheckedUpdateManyWithoutBranchNestedInput
@@ -33347,7 +33432,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branch: BranchCreateNestedOneWithoutTablesInput
-    section?: SectionCreateNestedOneWithoutTablesInput
+    sector?: SectorCreateNestedOneWithoutTablesInput
     reservations?: ReservationTableCreateNestedManyWithoutTableInput
   }
 
@@ -33366,7 +33451,7 @@ export namespace Prisma {
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
     branchId: string
-    sectionId?: string | null
+    sectorId?: string | null
     reservations?: ReservationTableUncheckedCreateNestedManyWithoutTableInput
   }
 
@@ -33444,7 +33529,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branch?: BranchUpdateOneRequiredWithoutTablesNestedInput
-    section?: SectionUpdateOneWithoutTablesNestedInput
+    sector?: SectorUpdateOneWithoutTablesNestedInput
     reservations?: ReservationTableUpdateManyWithoutTableNestedInput
   }
 
@@ -33463,7 +33548,7 @@ export namespace Prisma {
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
     branchId?: StringFieldUpdateOperationsInput | string
-    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sectorId?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationTableUncheckedUpdateManyWithoutTableNestedInput
   }
 
@@ -33837,7 +33922,7 @@ export namespace Prisma {
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     reservations?: ReservationCreateNestedManyWithoutBranchInput
     orders?: OrderCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     userAccess?: UserOnBranchCreateNestedManyWithoutBranchInput
@@ -33852,7 +33937,7 @@ export namespace Prisma {
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
     orders?: OrderUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     userAccess?: UserOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -33938,7 +34023,7 @@ export namespace Prisma {
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     userAccess?: UserOnBranchUpdateManyWithoutBranchNestedInput
@@ -33953,7 +34038,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     userAccess?: UserOnBranchUncheckedUpdateManyWithoutBranchNestedInput
@@ -34045,7 +34130,7 @@ export namespace Prisma {
     slug?: string | null
     restaurant: RestaurantCreateNestedOneWithoutBranchesInput
     reservations?: ReservationCreateNestedManyWithoutBranchInput
-    sections?: SectionCreateNestedManyWithoutBranchInput
+    sectors?: SectorCreateNestedManyWithoutBranchInput
     tables?: TableCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchCreateNestedManyWithoutBranchInput
@@ -34060,7 +34145,7 @@ export namespace Prisma {
     createdAt?: Date | string
     slug?: string | null
     reservations?: ReservationUncheckedCreateNestedManyWithoutBranchInput
-    sections?: SectionUncheckedCreateNestedManyWithoutBranchInput
+    sectors?: SectorUncheckedCreateNestedManyWithoutBranchInput
     tables?: TableUncheckedCreateNestedManyWithoutBranchInput
     timeSlots?: TimeSlotUncheckedCreateNestedManyWithoutBranchInput
     products?: ProductOnBranchUncheckedCreateNestedManyWithoutBranchInput
@@ -34117,7 +34202,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     restaurant?: RestaurantUpdateOneRequiredWithoutBranchesNestedInput
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
@@ -34132,7 +34217,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
@@ -34430,7 +34515,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUpdateManyWithoutBranchNestedInput
     orders?: OrderUpdateManyWithoutBranchNestedInput
-    sections?: SectionUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUpdateManyWithoutBranchNestedInput
     tables?: TableUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUpdateManyWithoutBranchNestedInput
@@ -34445,7 +34530,7 @@ export namespace Prisma {
     slug?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationUncheckedUpdateManyWithoutBranchNestedInput
     orders?: OrderUncheckedUpdateManyWithoutBranchNestedInput
-    sections?: SectionUncheckedUpdateManyWithoutBranchNestedInput
+    sectors?: SectorUncheckedUpdateManyWithoutBranchNestedInput
     tables?: TableUncheckedUpdateManyWithoutBranchNestedInput
     timeSlots?: TimeSlotUncheckedUpdateManyWithoutBranchNestedInput
     products?: ProductOnBranchUncheckedUpdateManyWithoutBranchNestedInput
@@ -34542,11 +34627,13 @@ export namespace Prisma {
     updatedBy?: string | null
   }
 
-  export type SectionCreateManyBranchInput = {
+  export type SectorCreateManyBranchInput = {
     id?: string
     name: string
     color?: string
     order?: number
+    width?: number
+    height?: number
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -34566,7 +34653,7 @@ export namespace Prisma {
     rotation?: number | null
     shape?: $Enums.TableShape | null
     status?: $Enums.TableStatus | null
-    sectionId?: string | null
+    sectorId?: string | null
   }
 
   export type TimeSlotCreateManyBranchInput = {
@@ -34695,33 +34782,39 @@ export namespace Prisma {
     updatedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
-  export type SectionUpdateWithoutBranchInput = {
+  export type SectorUpdateWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    tables?: TableUpdateManyWithoutSectionNestedInput
+    tables?: TableUpdateManyWithoutSectorNestedInput
   }
 
-  export type SectionUncheckedUpdateWithoutBranchInput = {
+  export type SectorUncheckedUpdateWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    tables?: TableUncheckedUpdateManyWithoutSectionNestedInput
+    tables?: TableUncheckedUpdateManyWithoutSectorNestedInput
   }
 
-  export type SectionUncheckedUpdateManyWithoutBranchInput = {
+  export type SectorUncheckedUpdateManyWithoutBranchInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     color?: StringFieldUpdateOperationsInput | string
     order?: IntFieldUpdateOperationsInput | number
+    width?: IntFieldUpdateOperationsInput | number
+    height?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -34741,7 +34834,7 @@ export namespace Prisma {
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
-    section?: SectionUpdateOneWithoutTablesNestedInput
+    sector?: SectorUpdateOneWithoutTablesNestedInput
     reservations?: ReservationTableUpdateManyWithoutTableNestedInput
     timeSlots?: TimeSlotTableUpdateManyWithoutTableNestedInput
   }
@@ -34760,7 +34853,7 @@ export namespace Prisma {
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
-    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sectorId?: NullableStringFieldUpdateOperationsInput | string | null
     reservations?: ReservationTableUncheckedUpdateManyWithoutTableNestedInput
     timeSlots?: TimeSlotTableUncheckedUpdateManyWithoutTableNestedInput
   }
@@ -34779,7 +34872,7 @@ export namespace Prisma {
     rotation?: NullableFloatFieldUpdateOperationsInput | number | null
     shape?: NullableEnumTableShapeFieldUpdateOperationsInput | $Enums.TableShape | null
     status?: NullableEnumTableStatusFieldUpdateOperationsInput | $Enums.TableStatus | null
-    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sectorId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TimeSlotUpdateWithoutBranchInput = {
@@ -34875,7 +34968,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type TableCreateManySectionInput = {
+  export type TableCreateManySectorInput = {
     id?: string
     number: number
     name?: string | null
@@ -34892,7 +34985,7 @@ export namespace Prisma {
     branchId: string
   }
 
-  export type TableUpdateWithoutSectionInput = {
+  export type TableUpdateWithoutSectorInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     name?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34911,7 +35004,7 @@ export namespace Prisma {
     timeSlots?: TimeSlotTableUpdateManyWithoutTableNestedInput
   }
 
-  export type TableUncheckedUpdateWithoutSectionInput = {
+  export type TableUncheckedUpdateWithoutSectorInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     name?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34930,7 +35023,7 @@ export namespace Prisma {
     timeSlots?: TimeSlotTableUncheckedUpdateManyWithoutTableNestedInput
   }
 
-  export type TableUncheckedUpdateManyWithoutSectionInput = {
+  export type TableUncheckedUpdateManyWithoutSectorInput = {
     id?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     name?: NullableStringFieldUpdateOperationsInput | string | null

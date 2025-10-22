@@ -4,19 +4,21 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-const sectionSchema = z.object({
+const sectorSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color inválido"),
   branchId: z.string().min(1, "La sucursal es requerida"),
   order: z.number().optional(),
+  width: z.number().min(400).max(5000).optional(),
+  height: z.number().min(400).max(5000).optional(),
 });
 
-export async function createSection(data: z.infer<typeof sectionSchema>) {
+export async function createSector(data: z.infer<typeof sectorSchema>) {
   try {
-    const validatedData = sectionSchema.parse(data);
+    const validatedData = sectorSchema.parse(data);
 
-    // Check if section name already exists in this branch
-    const existingSection = await prisma.section.findUnique({
+    // Check if sector name already exists in this branch
+    const existingSector = await prisma.sector.findUnique({
       where: {
         branchId_name: {
           branchId: validatedData.branchId,
@@ -25,26 +27,28 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
       },
     });
 
-    if (existingSection) {
+    if (existingSector) {
       return {
         success: false,
-        error: "Ya existe una sección con ese nombre en esta sucursal",
+        error: "Ya existe un sector con ese nombre en esta sucursal",
       };
     }
 
-    // Get the highest order value to place new section at the end
-    const maxOrder = await prisma.section.findFirst({
+    // Get the highest order value to place new sector at the end
+    const maxOrder = await prisma.sector.findFirst({
       where: { branchId: validatedData.branchId },
       orderBy: { order: "desc" },
       select: { order: true },
     });
 
-    const section = await prisma.section.create({
+    const sector = await prisma.sector.create({
       data: {
         name: validatedData.name,
         color: validatedData.color,
         branchId: validatedData.branchId,
         order: validatedData.order ?? (maxOrder?.order ?? 0) + 1,
+        width: validatedData.width ?? 1200,
+        height: validatedData.height ?? 800,
         isActive: true,
       },
     });
@@ -53,20 +57,20 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
 
     return {
       success: true,
-      data: section,
+      data: sector,
     };
   } catch (error) {
-    console.error("Error creating section:", error);
+    console.error("Error creating sector:", error);
     return {
       success: false,
-      error: "Error al crear la sección",
+      error: "Error al crear el sector",
     };
   }
 }
 
-export async function getSectionsByBranch(branchId: string) {
+export async function getSectorsByBranch(branchId: string) {
   try {
-    const sections = await prisma.section.findMany({
+    const sectors = await prisma.sector.findMany({
       where: {
         branchId,
         isActive: true,
@@ -85,29 +89,31 @@ export async function getSectionsByBranch(branchId: string) {
 
     return {
       success: true,
-      data: sections,
+      data: sectors,
     };
   } catch (error) {
-    console.error("Error fetching sections:", error);
+    console.error("Error fetching sectors:", error);
     return {
       success: false,
-      error: "Error al obtener las secciones",
+      error: "Error al obtener los sectores",
       data: [],
     };
   }
 }
 
-export async function updateSection(
+export async function updateSector(
   id: string,
-  data: Partial<z.infer<typeof sectionSchema>>
+  data: Partial<z.infer<typeof sectorSchema>>
 ) {
   try {
-    const section = await prisma.section.update({
+    const sector = await prisma.sector.update({
       where: { id },
       data: {
         ...(data.name && { name: data.name }),
         ...(data.color && { color: data.color }),
         ...(data.order !== undefined && { order: data.order }),
+        ...(data.width !== undefined && { width: data.width }),
+        ...(data.height !== undefined && { height: data.height }),
       },
     });
 
@@ -115,21 +121,21 @@ export async function updateSection(
 
     return {
       success: true,
-      data: section,
+      data: sector,
     };
   } catch (error) {
-    console.error("Error updating section:", error);
+    console.error("Error updating sector:", error);
     return {
       success: false,
-      error: "Error al actualizar la sección",
+      error: "Error al actualizar el sector",
     };
   }
 }
 
-export async function deleteSection(id: string) {
+export async function deleteSector(id: string) {
   try {
-    // Check if section has tables
-    const section = await prisma.section.findUnique({
+    // Check if sector has tables
+    const sector = await prisma.sector.findUnique({
       where: { id },
       include: {
         _count: {
@@ -140,21 +146,21 @@ export async function deleteSection(id: string) {
       },
     });
 
-    if (!section) {
+    if (!sector) {
       return {
         success: false,
-        error: "Sección no encontrada",
+        error: "Sector no encontrado",
       };
     }
 
-    if (section._count.tables > 0) {
+    if (sector._count.tables > 0) {
       return {
         success: false,
-        error: "No se puede eliminar una sección que tiene mesas asignadas",
+        error: "No se puede eliminar un sector que tiene mesas asignadas",
       };
     }
 
-    await prisma.section.delete({
+    await prisma.sector.delete({
       where: { id },
     });
 
@@ -164,10 +170,10 @@ export async function deleteSection(id: string) {
       success: true,
     };
   } catch (error) {
-    console.error("Error deleting section:", error);
+    console.error("Error deleting sector:", error);
     return {
       success: false,
-      error: "Error al eliminar la sección",
+      error: "Error al eliminar el sector",
     };
   }
 }

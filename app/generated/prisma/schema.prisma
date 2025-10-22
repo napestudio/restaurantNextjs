@@ -14,6 +14,7 @@ datasource db {
 // ENUMS
 //
 enum UserRole {
+  SUPERADMIN
   ADMIN
   MANAGER
   EMPLOYEE
@@ -141,7 +142,7 @@ model Branch {
 
   reservations Reservation[]
   orders       Order[]
-  sections     Section[]
+  sectors      Sector[]
   tables       Table[]
   timeSlots    TimeSlot[]
   products     ProductOnBranch[]
@@ -172,11 +173,11 @@ model UserOnBranch {
 //
 // MESAS Y RESERVAS
 //
-model Section {
+model Sector {
   id        String   @id @default(cuid())
   name      String
-  color     String   @default("#3b82f6") // Color hex para identificar visualmente la sección
-  order     Int      @default(0) // Para ordenar las secciones en la UI
+  color     String   @default("#3b82f6") // Color hex para identificar visualmente el sector
+  order     Int      @default(0) // Para ordenar los sectores en la UI
   isActive  Boolean  @default(true)
   branch    Branch   @relation(fields: [branchId], references: [id])
   branchId  String
@@ -185,7 +186,7 @@ model Section {
   updatedAt DateTime @updatedAt
 
   /**
-   * Un nombre de sección no se repite dentro de la misma sucursal
+   * Un nombre de sector no se repite dentro de la misma sucursal
    */
   @@unique([branchId, name])
   @@index([branchId])
@@ -212,8 +213,8 @@ model Table {
 
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String
-  section      Section?           @relation(fields: [sectionId], references: [id])
-  sectionId    String?
+  sector       Sector?            @relation(fields: [sectorId], references: [id])
+  sectorId     String?
   reservations ReservationTable[]
   timeSlots    TimeSlotTable[]
 
@@ -221,7 +222,7 @@ model Table {
    * Un número de mesa no se repite dentro de la misma sucursal
    */
   @@unique([branchId, number])
-  @@index([sectionId])
+  @@index([sectorId])
 }
 
 model Reservation {
