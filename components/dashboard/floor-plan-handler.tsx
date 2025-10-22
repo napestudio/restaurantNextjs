@@ -36,11 +36,23 @@ interface FloorTable {
 }
 
 const shapeDefaults = {
-  CIRCLE: { width: 80, height: 80 },
+  CIRCLE: { width: 100, height: 100 },
   SQUARE: { width: 100, height: 100 },
-  RECTANGLE: { width: 120, height: 80 },
-  WIDE: { width: 200, height: 60 },
+  RECTANGLE: { width: 200, height: 100 },
+  WIDE: { width: 400, height: 100 },
 };
+
+// Calculate the bounding box of a rotated rectangle
+function getRotatedBounds(width: number, height: number, rotation: number) {
+  const angleRad = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(angleRad));
+  const sin = Math.abs(Math.sin(angleRad));
+
+  const boundingWidth = width * cos + height * sin;
+  const boundingHeight = width * sin + height * cos;
+
+  return { width: boundingWidth, height: boundingHeight };
+}
 
 interface TableWithReservations {
   id: string;
@@ -56,6 +68,7 @@ interface TableWithReservations {
   isActive: boolean;
   isShared: boolean;
   sectorId: string | null;
+  name?: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -313,21 +326,28 @@ export default function FloorPlanHandler({
       const y = (e.clientY - rect.top) / zoom;
 
       setTables((prevTables) =>
-        prevTables.map((table) =>
-          table.id === draggedTable
-            ? {
-                ...table,
-                x: Math.max(
-                  0,
-                  Math.min(canvasWidth - table.width, x - dragOffset.x)
-                ),
-                y: Math.max(
-                  0,
-                  Math.min(canvasHeight - table.height, y - dragOffset.y)
-                ),
-              }
-            : table
-        )
+        prevTables.map((table) => {
+          if (table.id !== draggedTable) return table;
+
+          // Allow center to reach canvas edges (table can overflow)
+          const centerX = x - dragOffset.x + table.width / 2;
+          const centerY = y - dragOffset.y + table.height / 2;
+
+          const constrainedCenterX = Math.max(
+            0,
+            Math.min(canvasWidth, centerX)
+          );
+          const constrainedCenterY = Math.max(
+            0,
+            Math.min(canvasHeight, centerY)
+          );
+
+          return {
+            ...table,
+            x: constrainedCenterX - table.width / 2,
+            y: constrainedCenterY - table.height / 2,
+          };
+        })
       );
     };
 
@@ -420,7 +440,6 @@ export default function FloorPlanHandler({
         sectorId: "",
       });
       setAddDialogOpen(false);
-
     }
   };
 
@@ -440,6 +459,7 @@ export default function FloorPlanHandler({
 
     const newRotation = (table.rotation + 45) % 360;
 
+    // No position constraints - allow table to overflow canvas if needed
     setTables((prevTables) =>
       prevTables.map((t) =>
         t.id === tableId
@@ -553,6 +573,29 @@ export default function FloorPlanHandler({
     );
   };
 
+  const updateTableSize = (tableId: string, size: "normal" | "big") => {
+    const table = tables.find((t) => t.id === tableId);
+    if (!table) return;
+
+    const defaults = shapeDefaults[table.shape];
+    const multiplier = size === "big" ? 1.5 : 1;
+
+    // Update local floor plan state with new size
+    setTables((prevTables) =>
+      prevTables.map((t) =>
+        t.id === tableId
+          ? {
+              ...t,
+              width: defaults.width * multiplier,
+              height: defaults.height * multiplier,
+            }
+          : t
+      )
+    );
+
+    setHasUnsavedChanges(true);
+  };
+
   const saveFloorPlanChanges = async () => {
     setIsSaving(true);
     try {
@@ -648,6 +691,7 @@ export default function FloorPlanHandler({
             onUpdateCapacity={updateTableCapacity}
             onUpdateStatus={updateTableStatus}
             onUpdateIsShared={updateTableIsShared}
+            onUpdateSize={updateTableSize}
             onRotate={rotateTable}
             onDelete={deleteTable}
             isEditMode={isEditMode}
@@ -670,9 +714,7 @@ export default function FloorPlanHandler({
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
-        onTableNameChange={(value) =>
-          setNewTable({ ...newTable, name: value })
-        }
+        onTableNameChange={(value) => setNewTable({ ...newTable, name: value })}
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })
         }
