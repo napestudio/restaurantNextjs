@@ -71,9 +71,10 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
       const fetchSlots = async () => {
         const result = await getAvailableTimeSlotsForDate(
           branchId,
-          new Date(formData.date)
+          formData.date
         );
         if (result.success && result.data) {
+          console.log("Turnos disponibles:", result.data);
           setAvailableSlots(result.data);
         } else {
           setAvailableSlots([]);

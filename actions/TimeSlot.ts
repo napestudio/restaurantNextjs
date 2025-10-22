@@ -290,9 +290,13 @@ export async function deleteTimeSlot(id: string, softDelete: boolean = true) {
  */
 export async function getAvailableTimeSlotsForDate(
   branchId: string,
-  date: Date
+  dateString: string // YYYY-MM-DD format
 ) {
   try {
+    // Parse the date string as local date to avoid timezone issues
+    const [year, month, day] = dateString.split("-").map(Number);
+    const localDate = new Date(year, month - 1, day);
+
     const dayOfWeek = [
       "sunday",
       "monday",
@@ -301,8 +305,7 @@ export async function getAvailableTimeSlotsForDate(
       "thursday",
       "friday",
       "saturday",
-    ][date.getDay()];
-
+    ][localDate.getDay()];
     const timeSlots = await prisma.timeSlot.findMany({
       where: {
         branchId,
@@ -315,6 +318,7 @@ export async function getAvailableTimeSlotsForDate(
         startTime: "asc",
       },
     });
+    // console.log("Fetched time slots for date:", date, timeSlots);
 
     // Serialize the data for client components
     const serializedSlots = timeSlots.map((slot) => ({
@@ -379,7 +383,8 @@ export async function getAvailableTablesForTimeSlot(params: {
   excludeTimeSlotId?: string; // For edit mode - exclude this time slot from conflict checking
 }) {
   try {
-    const { branchId, startTime, endTime, daysOfWeek, excludeTimeSlotId } = params;
+    const { branchId, startTime, endTime, daysOfWeek, excludeTimeSlotId } =
+      params;
 
     // Get all active tables for the branch (shared tables first for better UX)
     const allTables = await prisma.table.findMany({
@@ -388,8 +393,8 @@ export async function getAvailableTablesForTimeSlot(params: {
         isActive: true,
       },
       orderBy: [
-        { isShared: 'desc' }, // Show shared tables first
-        { number: 'asc' },
+        { isShared: "desc" }, // Show shared tables first
+        { number: "asc" },
       ],
     });
 
@@ -425,12 +430,17 @@ export async function getAvailableTablesForTimeSlot(params: {
 
     // Build a map of table ID to conflicting time slot
     // ALL tables (both shared and regular) are unavailable if assigned to overlapping slots
-    const tableConflicts = new Map<string, { id: string; name: string; startTime: Date; endTime: Date }>();
+    const tableConflicts = new Map<
+      string,
+      { id: string; name: string; startTime: Date; endTime: Date }
+    >();
 
     conflictingSlots.forEach((slot) => {
       slot.tables.forEach((tt) => {
         // Only add if this table's days actually overlap with requested days
-        const hasCommonDay = daysOfWeek.some((day) => slot.daysOfWeek.includes(day));
+        const hasCommonDay = daysOfWeek.some((day) =>
+          slot.daysOfWeek.includes(day)
+        );
         if (hasCommonDay) {
           tableConflicts.set(tt.tableId, {
             id: slot.id,
@@ -465,7 +475,7 @@ export async function getAvailableTablesForTimeSlot(params: {
     console.error("Error getting available tables:", error);
     return {
       success: false,
-      error: "Failed to get available tables"
+      error: "Failed to get available tables",
     };
   }
 }
