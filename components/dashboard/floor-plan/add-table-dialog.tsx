@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import type { TableShapeType } from "@/types/table";
 
-interface Section {
+interface Sector {
   id: string;
   name: string;
   color: string;
@@ -39,14 +39,14 @@ interface AddTableDialogProps {
   tableShape: TableShapeType;
   tableCapacity: string;
   isShared: boolean;
-  sectionId?: string;
-  sections?: Section[];
+  sectorId?: string;
+  sectors?: Sector[];
   onTableNumberChange: (value: string) => void;
   onTableNameChange?: (value: string) => void;
   onTableShapeChange: (value: TableShapeType) => void;
   onTableCapacityChange: (value: string) => void;
   onIsSharedChange: (value: boolean) => void;
-  onSectionChange?: (value: string) => void;
+  onSectorChange?: (value: string) => void;
   onAddTable: () => void;
 }
 
@@ -58,14 +58,14 @@ export function AddTableDialog({
   tableShape,
   tableCapacity,
   isShared,
-  sectionId,
-  sections = [],
+  sectorId,
+  sectors = [],
   onTableNumberChange,
   onTableNameChange,
   onTableShapeChange,
   onTableCapacityChange,
   onIsSharedChange,
-  onSectionChange,
+  onSectorChange,
   onAddTable,
 }: AddTableDialogProps) {
   return (
@@ -105,35 +105,35 @@ export function AddTableDialog({
             </p>
           </div>
 
-          {sections.length > 0 && (
+          {sectors.length > 0 && (
             <div>
-              <Label htmlFor="section">Sección (Opcional)</Label>
+              <Label htmlFor="sector">Sector (Opcional)</Label>
               <Select
-                value={sectionId || "none"}
+                value={sectorId || "none"}
                 onValueChange={(value) =>
-                  onSectionChange?.(value === "none" ? "" : value)
+                  onSectorChange?.(value === "none" ? "" : value)
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar sección" />
+                  <SelectValue placeholder="Seleccionar sector" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sin sección asignada</SelectItem>
-                  {sections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
+                  <SelectItem value="none">Sin sector asignado</SelectItem>
+                  {sectors.map((sector) => (
+                    <SelectItem key={sector.id} value={sector.id}>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: section.color }}
+                          style={{ backgroundColor: sector.color }}
                         />
-                        {section.name}
+                        {sector.name}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                Asigna la mesa a una sección específica del restaurante
+                Asigna la mesa a un sector específico del restaurante
               </p>
             </div>
           )}

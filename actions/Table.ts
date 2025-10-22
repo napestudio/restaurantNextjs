@@ -447,7 +447,7 @@ export async function createTable(data: {
   capacity: number;
   isActive?: boolean;
   isShared?: boolean;
-  sectionId?: string;
+  sectorId?: string;
   positionX?: number;
   positionY?: number;
   width?: number;
@@ -482,7 +482,7 @@ export async function createTable(data: {
         capacity: data.capacity,
         isActive: data.isActive ?? true,
         isShared: data.isShared ?? false,
-        sectionId: data.sectionId,
+        sectorId: data.sectorId,
         positionX: data.positionX,
         positionY: data.positionY,
         width: data.width,

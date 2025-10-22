@@ -22,25 +22,27 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateSection, deleteSection } from "@/actions/Section";
+import { updateSector, deleteSector } from "@/actions/Sector";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 
-interface Section {
+interface Sector {
   id: string;
   name: string;
   color: string;
   order: number;
+  width: number;
+  height: number;
   _count: {
     tables: number;
   };
 }
 
-interface EditSectionDialogProps {
+interface EditSectorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  section: Section | null;
-  onSectionUpdated?: () => void;
+  sector: Sector | null;
+  onSectorUpdated?: () => void;
 }
 
 const DEFAULT_COLORS = [
@@ -54,33 +56,37 @@ const DEFAULT_COLORS = [
   { name: "Índigo", value: "#6366f1" },
 ];
 
-export function EditSectionDialog({
+export function EditSectorDialog({
   open,
   onOpenChange,
-  section,
-  onSectionUpdated,
-}: EditSectionDialogProps) {
+  sector,
+  onSectorUpdated,
+}: EditSectorDialogProps) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLORS[0].value);
+  const [width, setWidth] = useState("1200");
+  const [height, setHeight] = useState("800");
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const { toast } = useToast();
 
-  // Update form when section changes
+  // Update form when sector changes
   useEffect(() => {
-    if (section) {
-      setName(section.name);
-      setColor(section.color);
+    if (sector) {
+      setName(sector.name);
+      setColor(sector.color);
+      setWidth(sector.width.toString());
+      setHeight(sector.height.toString());
     }
-  }, [section]);
+  }, [sector]);
 
   const handleSubmit = async () => {
-    if (!section) return;
+    if (!sector) return;
 
     if (!name.trim()) {
       toast({
         title: "Error",
-        description: "El nombre de la sección es requerido",
+        description: "El nombre del sector es requerido",
         variant: "destructive",
       });
       return;
@@ -89,30 +95,32 @@ export function EditSectionDialog({
     setIsLoading(true);
 
     try {
-      const result = await updateSection(section.id, {
+      const result = await updateSector(sector.id, {
         name: name.trim(),
         color,
+        width: parseInt(width) || 1200,
+        height: parseInt(height) || 800,
       });
 
       if (result.success) {
         toast({
-          title: "Sección actualizada",
-          description: `La sección ha sido actualizada exitosamente`,
+          title: "Sector actualizado",
+          description: `El sector ha sido actualizado exitosamente`,
         });
         onOpenChange(false);
-        onSectionUpdated?.();
+        onSectorUpdated?.();
       } else {
         toast({
           title: "Error",
-          description: result.error || "Error al actualizar la sección",
+          description: result.error || "Error al actualizar el sector",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error updating section:", error);
+      console.error("Error updating sector:", error);
       toast({
         title: "Error",
-        description: "Error inesperado al actualizar la sección",
+        description: "Error inesperado al actualizar el sector",
         variant: "destructive",
       });
     } finally {
@@ -121,33 +129,33 @@ export function EditSectionDialog({
   };
 
   const handleDelete = async () => {
-    if (!section) return;
+    if (!sector) return;
 
     setIsLoading(true);
 
     try {
-      const result = await deleteSection(section.id);
+      const result = await deleteSector(sector.id);
 
       if (result.success) {
         toast({
-          title: "Sección eliminada",
-          description: `La sección "${section.name}" ha sido eliminada`,
+          title: "Sector eliminado",
+          description: `El sector "${sector.name}" ha sido eliminado`,
         });
         setShowDeleteAlert(false);
         onOpenChange(false);
-        onSectionUpdated?.();
+        onSectorUpdated?.();
       } else {
         toast({
           title: "Error",
-          description: result.error || "Error al eliminar la sección",
+          description: result.error || "Error al eliminar el sector",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error deleting section:", error);
+      console.error("Error deleting sector:", error);
       toast({
         title: "Error",
-        description: "Error inesperado al eliminar la sección",
+        description: "Error inesperado al eliminar el sector",
         variant: "destructive",
       });
     } finally {
@@ -156,24 +164,24 @@ export function EditSectionDialog({
     }
   };
 
-  if (!section) return null;
+  if (!sector) return null;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Sección</DialogTitle>
+            <DialogTitle>Editar Sector</DialogTitle>
             <DialogDescription>
-              Modifica los detalles de la sección o elimínala si ya no la
+              Modifica los detalles del sector o elimínalo si ya no lo
               necesitas
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="section-name-edit">Nombre de la Sección *</Label>
+              <Label htmlFor="sector-name-edit">Nombre del Sector *</Label>
               <Input
-                id="section-name-edit"
+                id="sector-name-edit"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ej: Patio, Bar, Segundo Piso"
@@ -217,12 +225,39 @@ export function EditSectionDialog({
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sector-width-edit">Ancho del Plano (px)</Label>
+                <Input
+                  id="sector-width-edit"
+                  type="number"
+                  min="400"
+                  max="5000"
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  placeholder="1200"
+                />
+              </div>
+              <div>
+                <Label htmlFor="sector-height-edit">Alto del Plano (px)</Label>
+                <Input
+                  id="sector-height-edit"
+                  type="number"
+                  min="400"
+                  max="5000"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="800"
+                />
+              </div>
+            </div>
+
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Mesas en esta sección:
+                  Mesas en este sector:
                 </span>
-                <span className="font-semibold">{section._count.tables}</span>
+                <span className="font-semibold">{sector._count.tables}</span>
               </div>
             </div>
           </div>
@@ -230,11 +265,11 @@ export function EditSectionDialog({
             <Button
               variant="destructive"
               onClick={() => setShowDeleteAlert(true)}
-              disabled={isLoading || section._count.tables > 0}
+              disabled={isLoading || sector._count.tables > 0}
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
-              Eliminar Sección
+              Eliminar Sector
             </Button>
             <div className="flex gap-2">
               <Button
@@ -253,9 +288,9 @@ export function EditSectionDialog({
               </Button>
             </div>
           </DialogFooter>
-          {section._count.tables > 0 && (
+          {sector._count.tables > 0 && (
             <p className="text-xs text-muted-foreground mt-2">
-              * No se puede eliminar una sección que tiene mesas asignadas
+              * No se puede eliminar un sector que tiene mesas asignadas
             </p>
           )}
         </DialogContent>
@@ -266,8 +301,8 @@ export function EditSectionDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente la
-              sección &quot;{section.name}&quot;.
+              Esta acción no se puede deshacer. Se eliminará permanentemente el
+              sector &quot;{sector.name}&quot;.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

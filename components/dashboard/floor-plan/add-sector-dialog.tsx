@@ -12,14 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createSection } from "@/actions/Section";
+import { createSector } from "@/actions/Sector";
 import { useToast } from "@/hooks/use-toast";
 
-interface AddSectionDialogProps {
+interface AddSectorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   branchId: string;
-  onSectionAdded?: () => void;
+  onSectorAdded?: () => void;
 }
 
 const DEFAULT_COLORS = [
@@ -33,14 +33,16 @@ const DEFAULT_COLORS = [
   { name: "Índigo", value: "#6366f1" },
 ];
 
-export function AddSectionDialog({
+export function AddSectorDialog({
   open,
   onOpenChange,
   branchId,
-  onSectionAdded,
-}: AddSectionDialogProps) {
+  onSectorAdded,
+}: AddSectorDialogProps) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLORS[0].value);
+  const [width, setWidth] = useState("1200");
+  const [height, setHeight] = useState("800");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -48,7 +50,7 @@ export function AddSectionDialog({
     if (!name.trim()) {
       toast({
         title: "Error",
-        description: "El nombre de la sección es requerido",
+        description: "El nombre del sector es requerido",
         variant: "destructive",
       });
       return;
@@ -57,33 +59,37 @@ export function AddSectionDialog({
     setIsLoading(true);
 
     try {
-      const result = await createSection({
+      const result = await createSector({
         name: name.trim(),
         color,
         branchId,
+        width: parseInt(width) || 1200,
+        height: parseInt(height) || 800,
       });
 
       if (result.success) {
         toast({
-          title: "Sección creada",
-          description: `La sección "${name}" ha sido creada exitosamente`,
+          title: "Sector creado",
+          description: `El sector "${name}" ha sido creado exitosamente`,
         });
         setName("");
         setColor(DEFAULT_COLORS[0].value);
+        setWidth("1200");
+        setHeight("800");
         onOpenChange(false);
-        onSectionAdded?.();
+        onSectorAdded?.();
       } else {
         toast({
           title: "Error",
-          description: result.error || "Error al crear la sección",
+          description: result.error || "Error al crear el sector",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error creating section:", error);
+      console.error("Error creating sector:", error);
       toast({
         title: "Error",
-        description: "Error inesperado al crear la sección",
+        description: "Error inesperado al crear el sector",
         variant: "destructive",
       });
     } finally {
@@ -95,17 +101,17 @@ export function AddSectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Agregar Nueva Sección</DialogTitle>
+          <DialogTitle>Agregar Nuevo Sector</DialogTitle>
           <DialogDescription>
-            Crea una nueva sección para organizar tus mesas (ej: Patio, Bar,
+            Crea un nuevo sector para organizar tus mesas (ej: Patio, Bar,
             Segundo Piso)
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="section-name">Nombre de la Sección *</Label>
+            <Label htmlFor="sector-name">Nombre del Sector *</Label>
             <Input
-              id="section-name"
+              id="sector-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Patio, Bar, Segundo Piso"
@@ -132,7 +138,7 @@ export function AddSectionDialog({
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Selecciona un color para identificar visualmente esta sección
+              Selecciona un color para identificar visualmente este sector
             </p>
           </div>
 
@@ -149,6 +155,33 @@ export function AddSectionDialog({
               <span className="text-sm text-muted-foreground">{color}</span>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="sector-width">Ancho del Plano (px)</Label>
+              <Input
+                id="sector-width"
+                type="number"
+                min="400"
+                max="5000"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+                placeholder="1200"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sector-height">Alto del Plano (px)</Label>
+              <Input
+                id="sector-height"
+                type="number"
+                min="400"
+                max="5000"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="800"
+              />
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button
@@ -163,7 +196,7 @@ export function AddSectionDialog({
             className="bg-red-600 hover:bg-red-700"
             disabled={isLoading}
           >
-            {isLoading ? "Creando..." : "Agregar Sección"}
+            {isLoading ? "Creando..." : "Agregar Sector"}
           </Button>
         </DialogFooter>
       </DialogContent>

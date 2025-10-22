@@ -16,9 +16,9 @@ import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanInstructions } from "./floor-plan/floor-plan-instructions";
 import type { TableShapeType, TableStatus } from "@/types/table";
 
-// Canvas dimensions - must match floor-plan-canvas.tsx
-const CANVAS_WIDTH = 1400;
-const CANVAS_HEIGHT = 800;
+// Default canvas dimensions - can be overridden by sector dimensions
+const DEFAULT_CANVAS_WIDTH = 1200;
+const DEFAULT_CANVAS_HEIGHT = 800;
 
 interface FloorTable {
   id: string;
@@ -55,7 +55,7 @@ interface TableWithReservations {
   status: string | null;
   isActive: boolean;
   isShared: boolean;
-  sectionId: string | null;
+  sectorId: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -70,11 +70,13 @@ interface TableWithReservations {
   }>;
 }
 
-interface Section {
+interface Sector {
   id: string;
   name: string;
   color: string;
   order: number;
+  width: number;
+  height: number;
   _count: {
     tables: number;
   };
@@ -84,16 +86,16 @@ interface FloorPlanPageProps {
   branchId: string;
   tables: TableWithReservations[];
   setTables: React.Dispatch<React.SetStateAction<TableWithReservations[]>>;
-  selectedSection?: string | null;
-  sections?: Section[];
+  selectedSector?: string | null;
+  sectors?: Sector[];
 }
 
 export default function FloorPlanHandler({
   branchId,
   tables: dbTables,
   setTables: setDbTables,
-  selectedSection: externalSelectedSection,
-  sections: externalSections = [],
+  selectedSector: externalSelectedSector,
+  sectors: externalSectors = [],
 }: FloorPlanPageProps) {
   // Transform database tables to FloorTable format
   const transformTables = (dbTables: TableWithReservations[]): FloorTable[] => {
@@ -166,9 +168,9 @@ export default function FloorPlanHandler({
   const [isEditMode, setIsEditMode] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Use external sections and selectedSection if provided
-  const sections = externalSections;
-  const selectedSection = externalSelectedSection;
+  // Use external sectors and selectedSector if provided
+  const sectors = externalSectors;
+  const selectedSector = externalSelectedSector;
 
   const [newTable, setNewTable] = useState({
     number: "",
@@ -176,16 +178,23 @@ export default function FloorPlanHandler({
     shape: "CIRCLE" as TableShapeType,
     capacity: "2",
     isShared: false,
-    sectionId: "",
+    sectorId: "",
   });
 
-  // Filter tables by selected section
-  const filteredTables = selectedSection
+  // Filter tables by selected sector
+  const filteredTables = selectedSector
     ? tables.filter((table) => {
         const dbTable = dbTables.find((t) => t.id === table.id);
-        return dbTable?.sectionId === selectedSection;
+        return dbTable?.sectorId === selectedSector;
       })
     : tables;
+
+  // Get canvas dimensions from selected sector or use defaults
+  const currentSector = selectedSector
+    ? sectors.find((s) => s.id === selectedSector)
+    : null;
+  const canvasWidth = currentSector?.width ?? DEFAULT_CANVAS_WIDTH;
+  const canvasHeight = currentSector?.height ?? DEFAULT_CANVAS_HEIGHT;
 
   // Sync floor plan tables when dbTables change (e.g., new reservations)
   useEffect(() => {
@@ -310,11 +319,11 @@ export default function FloorPlanHandler({
                 ...table,
                 x: Math.max(
                   0,
-                  Math.min(CANVAS_WIDTH - table.width, x - dragOffset.x)
+                  Math.min(canvasWidth - table.width, x - dragOffset.x)
                 ),
                 y: Math.max(
                   0,
-                  Math.min(CANVAS_HEIGHT - table.height, y - dragOffset.y)
+                  Math.min(canvasHeight - table.height, y - dragOffset.y)
                 ),
               }
             : table
@@ -339,7 +348,7 @@ export default function FloorPlanHandler({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [draggedTable, dragOffset, zoom, tables]);
+  }, [draggedTable, dragOffset, zoom, canvasWidth, canvasHeight]);
 
   const addTable = async () => {
     if (!newTable.number) {
@@ -353,7 +362,7 @@ export default function FloorPlanHandler({
       number: Number.parseInt(newTable.number),
       name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
-      sectionId: newTable.sectionId || undefined,
+      sectorId: newTable.sectorId || undefined,
       positionX: 50,
       positionY: 50,
       width: defaults.width,
@@ -397,7 +406,7 @@ export default function FloorPlanHandler({
         status: null, // New tables have no manual status override
         isActive: result.data.isActive ?? true,
         isShared: result.data.isShared ?? false,
-        sectionId: result.data.sectionId ?? null,
+        sectorId: result.data.sectorId ?? null,
         reservations: [],
       };
 
@@ -408,7 +417,7 @@ export default function FloorPlanHandler({
         shape: "CIRCLE",
         capacity: "2",
         isShared: false,
-        sectionId: "",
+        sectorId: "",
       });
       setAddDialogOpen(false);
 
@@ -594,8 +603,8 @@ export default function FloorPlanHandler({
   const selectedDbTable = selectedTable
     ? dbTables.find((t) => t.id === selectedTable)
     : undefined;
-  const selectedTableSection = selectedDbTable?.sectionId
-    ? sections.find((s) => s.id === selectedDbTable.sectionId)
+  const selectedTableSector = selectedDbTable?.sectorId
+    ? sectors.find((s) => s.id === selectedDbTable.sectorId)
     : undefined;
 
   return (
@@ -620,6 +629,8 @@ export default function FloorPlanHandler({
             zoom={zoom}
             showGrid={showGrid}
             svgRef={svgRef}
+            canvasWidth={canvasWidth}
+            canvasHeight={canvasHeight}
             onTableMouseDown={handleTableMouseDown}
             onZoomIn={() => setZoom(Math.min(2, zoom + 0.1))}
             onZoomOut={() => setZoom(Math.max(0.5, zoom - 0.1))}
@@ -631,8 +642,8 @@ export default function FloorPlanHandler({
           <TablePropertiesPanel
             selectedTable={selectedTableData}
             tableName={selectedDbTable?.name}
-            sectionName={selectedTableSection?.name}
-            sectionColor={selectedTableSection?.color}
+            sectorName={selectedTableSector?.name}
+            sectorColor={selectedTableSector?.color}
             onUpdateShape={updateTableShape}
             onUpdateCapacity={updateTableCapacity}
             onUpdateStatus={updateTableStatus}
@@ -654,8 +665,8 @@ export default function FloorPlanHandler({
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
-        sectionId={newTable.sectionId}
-        sections={sections}
+        sectorId={newTable.sectorId}
+        sectors={sectors}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
@@ -671,8 +682,8 @@ export default function FloorPlanHandler({
         onIsSharedChange={(value) =>
           setNewTable({ ...newTable, isShared: value })
         }
-        onSectionChange={(value) =>
-          setNewTable({ ...newTable, sectionId: value })
+        onSectorChange={(value) =>
+          setNewTable({ ...newTable, sectorId: value })
         }
         onAddTable={addTable}
       />

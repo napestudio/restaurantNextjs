@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "public"."Sector" ADD COLUMN     "height" INTEGER NOT NULL DEFAULT 800,
+ADD COLUMN     "width" INTEGER NOT NULL DEFAULT 1200;

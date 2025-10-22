@@ -179,11 +179,13 @@ exports.Prisma.UserOnBranchScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.SectionScalarFieldEnum = {
+exports.Prisma.SectorScalarFieldEnum = {
   id: 'id',
   name: 'name',
   color: 'color',
   order: 'order',
+  width: 'width',
+  height: 'height',
   isActive: 'isActive',
   branchId: 'branchId',
   createdAt: 'createdAt',
@@ -205,7 +207,7 @@ exports.Prisma.TableScalarFieldEnum = {
   shape: 'shape',
   status: 'status',
   branchId: 'branchId',
-  sectionId: 'sectionId'
+  sectorId: 'sectorId'
 };
 
 exports.Prisma.ReservationScalarFieldEnum = {
@@ -331,6 +333,7 @@ exports.Prisma.NullsOrder = {
   last: 'last'
 };
 exports.UserRole = exports.$Enums.UserRole = {
+  SUPERADMIN: 'SUPERADMIN',
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
   EMPLOYEE: 'EMPLOYEE'
@@ -383,7 +386,7 @@ exports.Prisma.ModelName = {
   Restaurant: 'Restaurant',
   Branch: 'Branch',
   UserOnBranch: 'UserOnBranch',
-  Section: 'Section',
+  Sector: 'Sector',
   Table: 'Table',
   Reservation: 'Reservation',
   ReservationTable: 'ReservationTable',
