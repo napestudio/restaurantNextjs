@@ -241,6 +241,7 @@ exports.Prisma.TimeSlotScalarFieldEnum = {
   endTime: 'endTime',
   daysOfWeek: 'daysOfWeek',
   pricePerPerson: 'pricePerPerson',
+  capacity: 'capacity',
   notes: 'notes',
   moreInfoUrl: 'moreInfoUrl',
   isActive: 'isActive',

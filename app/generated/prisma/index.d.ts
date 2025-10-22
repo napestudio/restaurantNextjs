@@ -14791,10 +14791,12 @@ export namespace Prisma {
 
   export type TimeSlotAvgAggregateOutputType = {
     pricePerPerson: Decimal | null
+    capacity: number | null
   }
 
   export type TimeSlotSumAggregateOutputType = {
     pricePerPerson: Decimal | null
+    capacity: number | null
   }
 
   export type TimeSlotMinAggregateOutputType = {
@@ -14803,6 +14805,7 @@ export namespace Prisma {
     startTime: Date | null
     endTime: Date | null
     pricePerPerson: Decimal | null
+    capacity: number | null
     notes: string | null
     moreInfoUrl: string | null
     isActive: boolean | null
@@ -14817,6 +14820,7 @@ export namespace Prisma {
     startTime: Date | null
     endTime: Date | null
     pricePerPerson: Decimal | null
+    capacity: number | null
     notes: string | null
     moreInfoUrl: string | null
     isActive: boolean | null
@@ -14832,6 +14836,7 @@ export namespace Prisma {
     endTime: number
     daysOfWeek: number
     pricePerPerson: number
+    capacity: number
     notes: number
     moreInfoUrl: number
     isActive: number
@@ -14844,10 +14849,12 @@ export namespace Prisma {
 
   export type TimeSlotAvgAggregateInputType = {
     pricePerPerson?: true
+    capacity?: true
   }
 
   export type TimeSlotSumAggregateInputType = {
     pricePerPerson?: true
+    capacity?: true
   }
 
   export type TimeSlotMinAggregateInputType = {
@@ -14856,6 +14863,7 @@ export namespace Prisma {
     startTime?: true
     endTime?: true
     pricePerPerson?: true
+    capacity?: true
     notes?: true
     moreInfoUrl?: true
     isActive?: true
@@ -14870,6 +14878,7 @@ export namespace Prisma {
     startTime?: true
     endTime?: true
     pricePerPerson?: true
+    capacity?: true
     notes?: true
     moreInfoUrl?: true
     isActive?: true
@@ -14885,6 +14894,7 @@ export namespace Prisma {
     endTime?: true
     daysOfWeek?: true
     pricePerPerson?: true
+    capacity?: true
     notes?: true
     moreInfoUrl?: true
     isActive?: true
@@ -14987,6 +14997,7 @@ export namespace Prisma {
     endTime: Date
     daysOfWeek: string[]
     pricePerPerson: Decimal | null
+    capacity: number
     notes: string | null
     moreInfoUrl: string | null
     isActive: boolean
@@ -15021,6 +15032,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15040,6 +15052,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15056,6 +15069,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15072,6 +15086,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15080,7 +15095,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TimeSlotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "startTime" | "endTime" | "daysOfWeek" | "pricePerPerson" | "notes" | "moreInfoUrl" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["timeSlot"]>
+  export type TimeSlotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "startTime" | "endTime" | "daysOfWeek" | "pricePerPerson" | "capacity" | "notes" | "moreInfoUrl" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["timeSlot"]>
   export type TimeSlotInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | TimeSlot$reservationsArgs<ExtArgs>
@@ -15108,6 +15123,7 @@ export namespace Prisma {
       endTime: Date
       daysOfWeek: string[]
       pricePerPerson: Prisma.Decimal | null
+      capacity: number
       notes: string | null
       moreInfoUrl: string | null
       isActive: boolean
@@ -15546,6 +15562,7 @@ export namespace Prisma {
     readonly endTime: FieldRef<"TimeSlot", 'DateTime'>
     readonly daysOfWeek: FieldRef<"TimeSlot", 'String[]'>
     readonly pricePerPerson: FieldRef<"TimeSlot", 'Decimal'>
+    readonly capacity: FieldRef<"TimeSlot", 'Int'>
     readonly notes: FieldRef<"TimeSlot", 'String'>
     readonly moreInfoUrl: FieldRef<"TimeSlot", 'String'>
     readonly isActive: FieldRef<"TimeSlot", 'Boolean'>
@@ -25009,6 +25026,7 @@ export namespace Prisma {
     endTime: 'endTime',
     daysOfWeek: 'daysOfWeek',
     pricePerPerson: 'pricePerPerson',
+    capacity: 'capacity',
     notes: 'notes',
     moreInfoUrl: 'moreInfoUrl',
     isActive: 'isActive',
@@ -26121,6 +26139,7 @@ export namespace Prisma {
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFilter<"TimeSlot"> | number
     notes?: StringNullableFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableFilter<"TimeSlot"> | string | null
     isActive?: BoolFilter<"TimeSlot"> | boolean
@@ -26139,6 +26158,7 @@ export namespace Prisma {
     endTime?: SortOrder
     daysOfWeek?: SortOrder
     pricePerPerson?: SortOrderInput | SortOrder
+    capacity?: SortOrder
     notes?: SortOrderInput | SortOrder
     moreInfoUrl?: SortOrderInput | SortOrder
     isActive?: SortOrder
@@ -26160,6 +26180,7 @@ export namespace Prisma {
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFilter<"TimeSlot"> | number
     notes?: StringNullableFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableFilter<"TimeSlot"> | string | null
     isActive?: BoolFilter<"TimeSlot"> | boolean
@@ -26178,6 +26199,7 @@ export namespace Prisma {
     endTime?: SortOrder
     daysOfWeek?: SortOrder
     pricePerPerson?: SortOrderInput | SortOrder
+    capacity?: SortOrder
     notes?: SortOrderInput | SortOrder
     moreInfoUrl?: SortOrderInput | SortOrder
     isActive?: SortOrder
@@ -26201,6 +26223,7 @@ export namespace Prisma {
     endTime?: DateTimeWithAggregatesFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableWithAggregatesFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntWithAggregatesFilter<"TimeSlot"> | number
     notes?: StringNullableWithAggregatesFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableWithAggregatesFilter<"TimeSlot"> | string | null
     isActive?: BoolWithAggregatesFilter<"TimeSlot"> | boolean
@@ -27572,6 +27595,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -27589,6 +27613,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -27606,6 +27631,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -27623,6 +27649,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -27640,6 +27667,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -27655,6 +27683,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -27669,6 +27698,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -29048,6 +29078,7 @@ export namespace Prisma {
     endTime?: SortOrder
     daysOfWeek?: SortOrder
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
     notes?: SortOrder
     moreInfoUrl?: SortOrder
     isActive?: SortOrder
@@ -29058,6 +29089,7 @@ export namespace Prisma {
 
   export type TimeSlotAvgOrderByAggregateInput = {
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
   }
 
   export type TimeSlotMaxOrderByAggregateInput = {
@@ -29066,6 +29098,7 @@ export namespace Prisma {
     startTime?: SortOrder
     endTime?: SortOrder
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
     notes?: SortOrder
     moreInfoUrl?: SortOrder
     isActive?: SortOrder
@@ -29080,6 +29113,7 @@ export namespace Prisma {
     startTime?: SortOrder
     endTime?: SortOrder
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
     notes?: SortOrder
     moreInfoUrl?: SortOrder
     isActive?: SortOrder
@@ -29090,6 +29124,7 @@ export namespace Prisma {
 
   export type TimeSlotSumOrderByAggregateInput = {
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -31984,6 +32019,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32000,6 +32036,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32276,6 +32313,7 @@ export namespace Prisma {
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFilter<"TimeSlot"> | number
     notes?: StringNullableFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableFilter<"TimeSlot"> | string | null
     isActive?: BoolFilter<"TimeSlot"> | boolean
@@ -32876,6 +32914,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32892,6 +32931,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32985,6 +33025,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -33001,6 +33042,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -33387,6 +33429,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -33403,6 +33446,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -33478,6 +33522,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -33494,6 +33539,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -34663,6 +34709,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -34882,6 +34929,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -34898,6 +34946,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -34914,6 +34963,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean

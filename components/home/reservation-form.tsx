@@ -15,6 +15,7 @@ import {
 import { createReservation } from "@/actions/Reservation";
 import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
 import { WeekDatePicker } from "../week-date-picker";
+import Link from "next/link";
 
 interface ReservationFormData {
   name: string;
@@ -55,6 +56,9 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
       pricePerPerson: number;
       daysOfWeek: string[];
       moreInfoUrl: string | null;
+      notes: string | null;
+      capacity: number;
+      hasAvailability?: boolean;
     }[]
   >([]);
 
@@ -63,30 +67,38 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
     id: string;
     name: string;
     moreInfoUrl: string | null;
+    notes: string | null;
   } | null>(null);
 
-  // Fetch available time slots when date changes
+  // Fetch available time slots when date or guests change
   useEffect(() => {
     if (formData.date) {
       const fetchSlots = async () => {
+        const partySize = formData.guests
+          ? Number.parseInt(formData.guests)
+          : 1;
         const result = await getAvailableTimeSlotsForDate(
           branchId,
-          formData.date
+          formData.date,
+          true, // includeAvailability
+          partySize
         );
         if (result.success && result.data) {
-          console.log("Turnos disponibles:", result.data);
           setAvailableSlots(result.data);
         } else {
           setAvailableSlots([]);
         }
-        setFormData((prev) => ({ ...prev, time: "" }));
-        setSelectedSlotPrice(0);
-        setSelectedSlot(null);
+        // Only reset time selection if date changes, not when guests change
+        if (!formData.guests) {
+          setFormData((prev) => ({ ...prev, time: "" }));
+          setSelectedSlotPrice(0);
+          setSelectedSlot(null);
+        }
       };
 
       fetchSlots();
     }
-  }, [formData.date, branchId]);
+  }, [formData.date, formData.guests, branchId]);
 
   // Calculate which days have available slots
   const availableDays = useMemo(() => {
@@ -108,10 +120,16 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
   const handleTimeSlotChange = (value: string) => {
     setFormData((prev) => ({ ...prev, time: value }));
     const slot = availableSlots.find((s) => s.id === value);
+    console.log(slot);
     setSelectedSlotPrice(slot?.pricePerPerson || 0);
     setSelectedSlot(
       slot
-        ? { id: slot.id, name: slot.name, moreInfoUrl: slot.moreInfoUrl }
+        ? {
+            id: slot.id,
+            name: slot.name,
+            moreInfoUrl: slot.moreInfoUrl,
+            notes: slot.notes,
+          }
         : null
     );
   };
@@ -239,8 +257,8 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+      <div className="grid grid-cols-1 gap-4">
+        <div className="w-full">
           <Label htmlFor="time">Turno *</Label>
           <Select
             value={formData.time}
@@ -248,7 +266,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
             disabled={!formData.date}
             required
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full py-2">
               <SelectValue
                 placeholder={formData.date ? "Turno" : "Selecciona turno"}
               />
@@ -260,17 +278,46 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
                 </div>
               ) : (
                 availableSlots.map((slot) => (
-                  <SelectItem key={slot.id} value={slot.id}>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between w-full gap-4">
-                        <span className="font-medium">{slot.name}</span>
+                  <SelectItem
+                    key={slot.id}
+                    value={slot.id}
+                    disabled={slot.hasAvailability === false}
+                  >
+                    <div className="flex flex-col gap-1 flex-1 w-full">
+                      <div className="flex items-right justify-between w-full gap-4">
+                        <span
+                          className={`font-medium ${
+                            slot.hasAvailability === false
+                              ? "text-gray-400"
+                              : ""
+                          }`}
+                        >
+                          {slot.name}
+                          {slot.hasAvailability === false && (
+                            <span className="ml-2 text-xs text-red-500">
+                              (Completo)
+                            </span>
+                          )}
+                        </span>
                         {slot.pricePerPerson > 0 && (
-                          <span className="text-green-600 font-semibold text-xs">
-                            ${slot.pricePerPerson}/persona
+                          <span
+                            className={`font-semibold text-xs ${
+                              slot.hasAvailability === false
+                                ? "text-gray-400"
+                                : "text-green-600"
+                            }`}
+                          >
+                            ${slot.pricePerPerson}/p
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span
+                        className={`text-xs ${
+                          slot.hasAvailability === false
+                            ? "text-gray-400"
+                            : "text-gray-500"
+                        }`}
+                      >
                         {formatTime(slot.startTime)} -{" "}
                         {formatTime(slot.endTime)}
                       </span>
@@ -283,12 +330,15 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
 
           {/* Selected Slot Information */}
           {selectedSlot && (
-            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
-              <p className="text-sm font-semibold text-blue-900">
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1 col-span-2">
+              <p className="text-sm font-bold text-blue-900 w-full">
                 {selectedSlot.name}
               </p>
+              <p className="text-sm font-semibold text-blue-900 w-full">
+                {selectedSlot.notes}
+              </p>
               {selectedSlot.moreInfoUrl && (
-                <a
+                <Link
                   href={selectedSlot.moreInfoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -308,7 +358,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
                       d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                     />
                   </svg>
-                </a>
+                </Link>
               )}
             </div>
           )}
@@ -397,17 +447,17 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
 
       {selectedSlotPrice > 0 ? (
         <Button
-          type="button"
+          type="submit"
           className="w-full bg-green-600 hover:bg-green-700"
           disabled={isPending}
-          onClick={() => {
-            // TODO: Connect to payment gateway
-            console.log("Payment required:", {
-              amount: selectedSlotPrice * Number.parseInt(formData.guests),
-              guests: formData.guests,
-              pricePerPerson: selectedSlotPrice,
-            });
-          }}
+          // onClick={() => {
+          //   // TODO: Connect to payment gateway
+          //   console.log("Payment required:", {
+          //     amount: selectedSlotPrice * Number.parseInt(formData.guests),
+          //     guests: formData.guests,
+          //     pricePerPerson: selectedSlotPrice,
+          //   });
+          // }}
         >
           {isPending
             ? "Procesando pago..."

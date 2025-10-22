@@ -425,6 +425,12 @@ async function main() {
   // Use reference date for time-only values
   const referenceDate = new Date("1970-01-01");
 
+  // Get all tables with their capacities for capacity calculation
+  const allTablesWithCapacity = await prisma.table.findMany({
+    where: { branchId: branch.id },
+    select: { id: true, number: true, capacity: true },
+  });
+
   for (const slot of timeSlots) {
     const [startHour, startMin] = slot.startTime.split(":").map(Number);
     const [endHour, endMin] = slot.endTime.split(":").map(Number);
@@ -436,9 +442,13 @@ async function main() {
     endTime.setHours(endHour, endMin);
 
     // Get table IDs for this slot
-    const tableIds = createdTables
-      .filter((t) => slot.tableNumbers.includes(t.number))
-      .map((t) => t.id);
+    const slotTables = allTablesWithCapacity.filter((t) =>
+      slot.tableNumbers.includes(t.number)
+    );
+    const tableIds = slotTables.map((t) => t.id);
+
+    // Calculate total capacity for this slot (sum of all assigned table capacities)
+    const totalCapacity = slotTables.reduce((sum, t) => sum + t.capacity, 0);
 
     await prisma.timeSlot.upsert({
       where: {
@@ -452,6 +462,7 @@ async function main() {
         endTime,
         daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson,
+        capacity: totalCapacity, // Set the calculated capacity
         notes: slot.notes,
         moreInfoUrl: slot.moreInfoUrl,
         isActive: true,
@@ -463,6 +474,10 @@ async function main() {
         },
       },
     });
+
+    console.log(
+      `  ✓ Turno "${slot.name}": ${slotTables.length} mesas, capacidad total: ${totalCapacity}`
+    );
   }
   console.log("✅ Turnos creados:", timeSlots.length);
 
