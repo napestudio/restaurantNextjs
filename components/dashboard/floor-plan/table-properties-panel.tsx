@@ -51,6 +51,7 @@ interface TablePropertiesPanelProps {
   onUpdateCapacity: (tableId: string, capacity: number) => void;
   onUpdateStatus: (tableId: string, status: TableStatus) => void;
   onUpdateIsShared: (tableId: string, isShared: boolean) => void;
+  onUpdateSize: (tableId: string, size: "normal" | "big") => void;
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
   isEditMode: boolean;
@@ -65,6 +66,7 @@ export function TablePropertiesPanel({
   onUpdateCapacity,
   onUpdateStatus,
   onUpdateIsShared,
+  onUpdateSize,
   onRotate,
   onDelete,
   isEditMode,
@@ -184,6 +186,42 @@ export function TablePropertiesPanel({
             </div>
 
             <div>
+              <Label
+                htmlFor="edit-size"
+                className="text-xs text-muted-foreground mb-2 block"
+              >
+                Tamaño
+              </Label>
+              <Select
+                value={
+                  selectedTable.width >
+                  (selectedTable.shape === "WIDE"
+                    ? 400
+                    : selectedTable.shape === "RECTANGLE"
+                    ? 200
+                    : 100)
+                    ? "big"
+                    : "normal"
+                }
+                onValueChange={(value: "normal" | "big") =>
+                  onUpdateSize(selectedTable.id, value)
+                }
+                disabled={!isEditMode}
+              >
+                <SelectTrigger id="edit-size">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="big">Grande</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cambia el tamaño de la mesa
+              </p>
+            </div>
+
+            <div>
               <Label className="text-xs text-muted-foreground mb-2 block">
                 Estado
               </Label>
@@ -242,7 +280,8 @@ export function TablePropertiesPanel({
 
             {isEditMode && (
               <div className="pt-4 space-y-2">
-                {(selectedTable.shape === "RECTANGLE" || selectedTable.shape === "WIDE") && (
+                {(selectedTable.shape === "RECTANGLE" ||
+                  selectedTable.shape === "WIDE") && (
                   <Button
                     onClick={() => onRotate(selectedTable.id)}
                     variant="outline"

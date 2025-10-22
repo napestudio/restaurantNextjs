@@ -68,6 +68,7 @@ interface TableWithReservations {
   isActive: boolean;
   isShared: boolean;
   sectorId: string | null;
+  name?: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -332,8 +333,14 @@ export default function FloorPlanHandler({
           const centerX = x - dragOffset.x + table.width / 2;
           const centerY = y - dragOffset.y + table.height / 2;
 
-          const constrainedCenterX = Math.max(0, Math.min(canvasWidth, centerX));
-          const constrainedCenterY = Math.max(0, Math.min(canvasHeight, centerY));
+          const constrainedCenterX = Math.max(
+            0,
+            Math.min(canvasWidth, centerX)
+          );
+          const constrainedCenterY = Math.max(
+            0,
+            Math.min(canvasHeight, centerY)
+          );
 
           return {
             ...table,
@@ -433,7 +440,6 @@ export default function FloorPlanHandler({
         sectorId: "",
       });
       setAddDialogOpen(false);
-
     }
   };
 
@@ -567,6 +573,29 @@ export default function FloorPlanHandler({
     );
   };
 
+  const updateTableSize = (tableId: string, size: "normal" | "big") => {
+    const table = tables.find((t) => t.id === tableId);
+    if (!table) return;
+
+    const defaults = shapeDefaults[table.shape];
+    const multiplier = size === "big" ? 1.5 : 1;
+
+    // Update local floor plan state with new size
+    setTables((prevTables) =>
+      prevTables.map((t) =>
+        t.id === tableId
+          ? {
+              ...t,
+              width: defaults.width * multiplier,
+              height: defaults.height * multiplier,
+            }
+          : t
+      )
+    );
+
+    setHasUnsavedChanges(true);
+  };
+
   const saveFloorPlanChanges = async () => {
     setIsSaving(true);
     try {
@@ -662,6 +691,7 @@ export default function FloorPlanHandler({
             onUpdateCapacity={updateTableCapacity}
             onUpdateStatus={updateTableStatus}
             onUpdateIsShared={updateTableIsShared}
+            onUpdateSize={updateTableSize}
             onRotate={rotateTable}
             onDelete={deleteTable}
             isEditMode={isEditMode}
@@ -684,9 +714,7 @@ export default function FloorPlanHandler({
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
-        onTableNameChange={(value) =>
-          setNewTable({ ...newTable, name: value })
-        }
+        onTableNameChange={(value) => setNewTable({ ...newTable, name: value })}
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })
         }
