@@ -36,10 +36,10 @@ interface FloorTable {
 }
 
 const shapeDefaults = {
-  CIRCLE: { width: 80, height: 80 },
+  CIRCLE: { width: 100, height: 100 },
   SQUARE: { width: 100, height: 100 },
-  RECTANGLE: { width: 120, height: 80 },
-  WIDE: { width: 200, height: 60 },
+  RECTANGLE: { width: 200, height: 100 },
+  WIDE: { width: 400, height: 100 },
 };
 
 interface TableWithReservations {
