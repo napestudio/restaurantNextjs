@@ -60,6 +60,26 @@ enum TableStatus {
   CLEANING
 }
 
+enum UnitType {
+  UNIT      // Unidades contables (ej: 5 botellas, 3 filetes)
+  WEIGHT    // Peso (kg, g, lb, oz)
+  VOLUME    // Volumen (L, ml, gal, oz)
+}
+
+enum WeightUnit {
+  KILOGRAM  // Kilogramo
+  GRAM      // Gramo
+  POUND     // Libra
+  OUNCE     // Onza
+}
+
+enum VolumeUnit {
+  LITER         // Litro
+  MILLILITER    // Mililitro
+  GALLON        // Galón
+  FLUID_OUNCE   // Onza líquida
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -303,8 +323,20 @@ model Product {
   id            String      @id @default(cuid())
   name          String
   description   String?
+  imageUrl      String?     // URL de la imagen del producto
+  sku           String?     // Código SKU único
+
+  // Configuración de unidades de medida
+  unitType      UnitType    @default(UNIT)
+  weightUnit    WeightUnit? // Solo si unitType = WEIGHT
+  volumeUnit    VolumeUnit? // Solo si unitType = VOLUME
+
+  // Alertas de stock
+  minStockAlert Decimal?    // Alerta cuando el stock esté por debajo de este valor
+
   isActive      Boolean     @default(true)
   createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now()) @updatedAt
 
   /** NUEVO: producto pertenece a un restaurante */
   restaurantId  String
@@ -317,6 +349,7 @@ model Product {
   orderItems    OrderItem[]
 
   @@unique([restaurantId, name]) // evita duplicar nombres de producto dentro del restaurante
+  @@unique([restaurantId, sku])  // SKU único por restaurante
   @@index([restaurantId])
 }
 
@@ -327,12 +360,20 @@ model ProductOnBranch {
   branch    Branch  @relation(fields: [branchId], references: [id])
   branchId  String
 
-  stock     Int
+  // Stock con soporte para decimales (peso/volumen)
+  stock         Decimal @default(0)
+  minStock      Decimal? // Stock mínimo para esta sucursal
+  maxStock      Decimal? // Stock máximo recomendado
+  lastRestocked DateTime? // Última vez que se reabastació
+
   isActive  Boolean        @default(true)
   prices    ProductPrice[]
+  stockMovements StockMovement[]
   createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
 
   @@unique([productId, branchId])
+  @@index([branchId])
 }
 
 model ProductPrice {
@@ -343,6 +384,28 @@ model ProductPrice {
   price             Decimal
 
   @@unique([productOnBranchId, type])
+}
+
+model StockMovement {
+  id                String          @id @default(cuid())
+  productOnBranch   ProductOnBranch @relation(fields: [productOnBranchId], references: [id])
+  productOnBranchId String
+
+  // Movimiento de stock
+  quantity          Decimal         // Positivo = entrada, Negativo = salida
+  previousStock     Decimal         // Stock anterior al movimiento
+  newStock          Decimal         // Stock después del movimiento
+
+  // Información del movimiento
+  reason            String          // "Compra", "Venta", "Merma", "Ajuste", "Devolución", etc.
+  notes             String?
+  reference         String?         // Número de factura, pedido, etc.
+
+  createdAt         DateTime        @default(now())
+  createdBy         String?         // ID del usuario que hizo el movimiento
+
+  @@index([productOnBranchId])
+  @@index([createdAt])
 }
 
 //

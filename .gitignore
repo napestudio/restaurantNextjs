@@ -49,4 +49,4 @@ next-env.d.ts
 /public/worker-*.js.map
 
 # Prisma generated client
-/app/generated/prisma/
+/app/generated
