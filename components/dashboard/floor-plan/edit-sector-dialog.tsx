@@ -64,8 +64,8 @@ export function EditSectorDialog({
 }: EditSectorDialogProps) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLORS[0].value);
-  const [width, setWidth] = useState("1200");
-  const [height, setHeight] = useState("800");
+  const [width, setWidth] = useState("12");
+  const [height, setHeight] = useState("8");
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const { toast } = useToast();
@@ -75,8 +75,8 @@ export function EditSectorDialog({
     if (sector) {
       setName(sector.name);
       setColor(sector.color);
-      setWidth(sector.width.toString());
-      setHeight(sector.height.toString());
+      setWidth((sector.width / 100).toString());
+      setHeight((sector.height / 100).toString());
     }
   }, [sector]);
 
@@ -98,8 +98,8 @@ export function EditSectorDialog({
       const result = await updateSector(sector.id, {
         name: name.trim(),
         color,
-        width: parseInt(width) || 1200,
-        height: parseInt(height) || 800,
+        width: (parseFloat(width) || 12) * 100,
+        height: (parseFloat(height) || 8) * 100,
       });
 
       if (result.success) {
@@ -210,28 +210,36 @@ export function EditSectorDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="sector-width-edit">Ancho del Plano (px)</Label>
+                <Label htmlFor="sector-width-edit">Ancho del Plano (m)</Label>
                 <Input
                   id="sector-width-edit"
                   type="number"
-                  min="400"
-                  max="5000"
+                  min="1"
+                  max="50"
+                  step="0.5"
                   value={width}
                   onChange={(e) => setWidth(e.target.value)}
-                  placeholder="1200"
+                  placeholder="12"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  1-50 metros
+                </p>
               </div>
               <div>
-                <Label htmlFor="sector-height-edit">Alto del Plano (px)</Label>
+                <Label htmlFor="sector-height-edit">Alto del Plano (m)</Label>
                 <Input
                   id="sector-height-edit"
                   type="number"
-                  min="400"
-                  max="5000"
+                  min="1"
+                  max="50"
+                  step="0.5"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  placeholder="800"
+                  placeholder="8"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  1-50 metros
+                </p>
               </div>
             </div>
 
