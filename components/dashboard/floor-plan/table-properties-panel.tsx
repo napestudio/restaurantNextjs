@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,26 +5,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  RotateCw,
-  Trash2,
-  Maximize2,
-  Users,
-  Circle,
-  Square,
-  RectangleHorizontal,
-  RectangleVertical,
-} from "lucide-react";
+import { Maximize2 } from "lucide-react";
 import type { TableShapeType, TableStatus } from "@/types/table";
+import { TablePropertiesForm } from "./table-properties-form";
 
 interface FloorTable {
   id: string;
@@ -72,252 +54,42 @@ export function TablePropertiesPanel({
   isEditMode,
 }: TablePropertiesPanelProps) {
   return (
-    <Card className="sticky top-4">
+    <Card className="sticky top-4 gap-2">
       <CardHeader>
         <CardTitle className="text-lg">Propiedades de la Mesa</CardTitle>
-        <CardDescription>
-          {selectedTable
-            ? `${selectedTable.number} ${tableName || ""}`
-            : "Selecciona una mesa para editar"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {selectedTable ? (
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                Número de Mesa
-              </Label>
-              <div className="text-lg font-bold">{selectedTable.number}</div>
-            </div>
-
-            {sectorName && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Sector</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: sectorColor || "#3b82f6" }}
-                  />
-                  <span className="text-sm font-medium">{sectorName}</span>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Label
-                htmlFor="edit-shape"
-                className="text-xs text-muted-foreground mb-2 block"
-              >
-                Forma
-              </Label>
-              <Select
-                value={selectedTable.shape}
-                onValueChange={(value: TableShapeType) =>
-                  onUpdateShape(selectedTable.id, value)
-                }
-                disabled={!isEditMode}
-              >
-                <SelectTrigger id="edit-shape">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CIRCLE">
-                    <div className="flex items-center space-x-2">
-                      <Circle className="h-4 w-4" />
-                      <span>Círculo</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="SQUARE">
-                    <div className="flex items-center space-x-2">
-                      <Square className="h-4 w-4" />
-                      <span>Cuadrada</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="RECTANGLE">
-                    <div className="flex items-center space-x-2">
-                      <RectangleHorizontal className="h-4 w-4" />
-                      <span>Rectangular</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="WIDE">
-                    <div className="flex items-center space-x-2">
-                      <RectangleVertical className="h-4 w-4" />
-                      <span>Barra</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cambia la forma de la mesa
-              </p>
-            </div>
-
-            <div>
-              <Label
-                htmlFor="edit-capacity"
-                className="text-xs text-muted-foreground mb-2 block"
-              >
-                Capacidad
-              </Label>
-              <Select
-                value={selectedTable.capacity.toString()}
-                onValueChange={(value) =>
-                  onUpdateCapacity(selectedTable.id, Number.parseInt(value))
-                }
-              >
-                <SelectTrigger id="edit-capacity">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2, 4, 6, 8, 10, 12].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4" />
-                        <span>{num} comensales</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Número máximo de comensales
-              </p>
-            </div>
-
-            <div>
-              <Label
-                htmlFor="edit-size"
-                className="text-xs text-muted-foreground mb-2 block"
-              >
-                Tamaño
-              </Label>
-              <Select
-                value={
-                  selectedTable.width >
-                  (selectedTable.shape === "WIDE"
-                    ? 400
-                    : selectedTable.shape === "RECTANGLE"
-                    ? 200
-                    : 100)
-                    ? "big"
-                    : "normal"
-                }
-                onValueChange={(value: "normal" | "big") =>
-                  onUpdateSize(selectedTable.id, value)
-                }
-                disabled={!isEditMode}
-              >
-                <SelectTrigger id="edit-size">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="big">Grande</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cambia el tamaño de la mesa
-              </p>
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground mb-2 block">
-                Estado
-              </Label>
-              <Select
-                value={selectedTable.status}
-                onValueChange={(value) =>
-                  onUpdateStatus(selectedTable.id, value as TableStatus)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="empty">Disponible</SelectItem>
-                  <SelectItem value="occupied">Ocupada</SelectItem>
-                  <SelectItem value="reserved">Reservada</SelectItem>
-                  <SelectItem value="cleaning">Limpiando</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cambios manuales anulan el estado calculado de reservas
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-2 py-2">
-              <Checkbox
-                id="edit-is-shared"
-                checked={selectedTable.isShared ?? false}
-                onCheckedChange={(checked) =>
-                  onUpdateIsShared(selectedTable.id, checked === true)
-                }
-              />
-              <Label
-                htmlFor="edit-is-shared"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-              >
-                Mesa compartida
-              </Label>
-            </div>
-            <p className="text-xs text-muted-foreground -mt-2">
-              Permite múltiples reservas simultáneas
-            </p>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Posición</Label>
-              <div className="text-sm mt-1">
-                X: {Math.round(selectedTable.x)}, Y:{" "}
-                {Math.round(selectedTable.y)}
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Rotación</Label>
-              <div className="text-sm mt-1">{selectedTable.rotation}°</div>
-            </div>
-
-            {isEditMode && (
-              <div className="pt-4 space-y-2">
-                {(selectedTable.shape === "RECTANGLE" ||
-                  selectedTable.shape === "WIDE") && (
-                  <Button
-                    onClick={() => onRotate(selectedTable.id)}
-                    variant="outline"
-                    className="w-full"
-                    size="sm"
-                  >
-                    <RotateCw className="h-4 w-4 mr-2" />
-                    Rotar 45°
-                  </Button>
-                )}
-                <Button
-                  onClick={() => onDelete(selectedTable.id)}
-                  variant="destructive"
-                  className="w-full"
-                  size="sm"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar Mesa
-                </Button>
-              </div>
-            )}
-            {!isEditMode && (
-              <p className="text-xs text-muted-foreground text-center pt-4 pb-2">
-                Activa el modo edición para modificar la mesa
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Maximize2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">
-              Haz clic en una mesa para ver y editar sus propiedades
-            </p>
-          </div>
+        {!selectedTable && (
+          <CardDescription>Selecciona una mesa para editar</CardDescription>
         )}
-      </CardContent>
+      </CardHeader>
+      {isEditMode ? (
+        <CardContent>
+          {selectedTable ? (
+            <TablePropertiesForm
+              selectedTable={selectedTable}
+              tableName={tableName}
+              sectorName={sectorName}
+              sectorColor={sectorColor}
+              onUpdateShape={onUpdateShape}
+              onUpdateCapacity={onUpdateCapacity}
+              onUpdateStatus={onUpdateStatus}
+              onUpdateIsShared={onUpdateIsShared}
+              onUpdateSize={onUpdateSize}
+              onRotate={onRotate}
+              onDelete={onDelete}
+              isEditMode={isEditMode}
+            />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Maximize2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">
+                Haz clic en una mesa para ver y editar sus propiedades
+              </p>
+            </div>
+          )}
+        </CardContent>
+      ) : (
+        <div></div>
+      )}
     </Card>
   );
 }
