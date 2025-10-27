@@ -41,8 +41,8 @@ export function AddSectorDialog({
 }: AddSectorDialogProps) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLORS[0].value);
-  const [width, setWidth] = useState("1200");
-  const [height, setHeight] = useState("800");
+  const [width, setWidth] = useState("12");
+  const [height, setHeight] = useState("8");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -63,8 +63,8 @@ export function AddSectorDialog({
         name: name.trim(),
         color,
         branchId,
-        width: parseInt(width) || 1200,
-        height: parseInt(height) || 800,
+        width: (parseFloat(width) || 12) * 100,
+        height: (parseFloat(height) || 8) * 100,
       });
 
       if (result.success) {
@@ -74,8 +74,8 @@ export function AddSectorDialog({
         });
         setName("");
         setColor(DEFAULT_COLORS[0].value);
-        setWidth("1200");
-        setHeight("800");
+        setWidth("12");
+        setHeight("8");
         onOpenChange(false);
         onSectorAdded?.();
       } else {
@@ -144,28 +144,36 @@ export function AddSectorDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="sector-width">Ancho del Plano (px)</Label>
+              <Label htmlFor="sector-width">Ancho del Plano (m)</Label>
               <Input
                 id="sector-width"
                 type="number"
-                min="400"
-                max="5000"
+                min="1"
+                max="50"
+                step="0.5"
                 value={width}
                 onChange={(e) => setWidth(e.target.value)}
-                placeholder="1200"
+                placeholder="12"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                1-50 metros
+              </p>
             </div>
             <div>
-              <Label htmlFor="sector-height">Alto del Plano (px)</Label>
+              <Label htmlFor="sector-height">Alto del Plano (m)</Label>
               <Input
                 id="sector-height"
                 type="number"
-                min="400"
-                max="5000"
+                min="1"
+                max="50"
+                step="0.5"
                 value={height}
                 onChange={(e) => setHeight(e.target.value)}
-                placeholder="800"
+                placeholder="8"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                1-50 metros
+              </p>
             </div>
           </div>
         </div>
