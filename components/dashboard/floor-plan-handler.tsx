@@ -172,7 +172,7 @@ export default function FloorPlanHandler({
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [draggedTable, setDraggedTable] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.75);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

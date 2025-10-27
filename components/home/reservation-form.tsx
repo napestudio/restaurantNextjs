@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PartySizePicker } from "@/components/ui/party-size-picker";
 import { createReservation } from "@/actions/Reservation";
 import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
 import { WeekDatePicker } from "../week-date-picker";
@@ -23,7 +24,7 @@ interface ReservationFormData {
   phone: string;
   date: string;
   time: string;
-  guests: string;
+  guests: number;
   dietaryRestrictions: string;
   accessibilityNeeds: string;
   notes: string;
@@ -41,7 +42,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
     phone: "",
     date: new Date().toISOString().split("T")[0],
     time: "",
-    guests: "",
+    guests: 2,
     dietaryRestrictions: "",
     accessibilityNeeds: "",
     notes: "",
@@ -74,25 +75,16 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
   useEffect(() => {
     if (formData.date) {
       const fetchSlots = async () => {
-        const partySize = formData.guests
-          ? Number.parseInt(formData.guests)
-          : 1;
         const result = await getAvailableTimeSlotsForDate(
           branchId,
           formData.date,
           true, // includeAvailability
-          partySize
+          formData.guests
         );
         if (result.success && result.data) {
           setAvailableSlots(result.data);
         } else {
           setAvailableSlots([]);
-        }
-        // Only reset time selection if date changes, not when guests change
-        if (!formData.guests) {
-          setFormData((prev) => ({ ...prev, time: "" }));
-          setSelectedSlotPrice(0);
-          setSelectedSlot(null);
         }
       };
 
@@ -162,7 +154,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         customerPhone: formData.phone || undefined,
         date: formData.date,
         time: formData.time,
-        guests: Number.parseInt(formData.guests),
+        guests: formData.guests,
         timeSlotId: formData.time,
         dietaryRestrictions: formData.dietaryRestrictions || undefined,
         accessibilityNeeds: formData.accessibilityNeeds || undefined,
@@ -182,7 +174,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
           phone: "",
           date: "",
           time: "",
-          guests: "",
+          guests: 2,
           dietaryRestrictions: "",
           accessibilityNeeds: "",
           notes: "",
@@ -368,31 +360,21 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
               <p className="text-xs text-green-800">
                 <strong>Precio de la reserva:</strong> ${selectedSlotPrice} ×{" "}
                 {formData.guests} personas = $
-                {selectedSlotPrice * Number.parseInt(formData.guests)}
+                {selectedSlotPrice * formData.guests}
               </p>
             </div>
           )}
         </div>
         <div>
           <Label htmlFor="guests">Personas *</Label>
-          <Select
+          <PartySizePicker
             value={formData.guests}
-            onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, guests: value }))
+            onChange={(size) =>
+              setFormData((prev) => ({ ...prev, guests: size }))
             }
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Personas" />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5, 6].map((num) => (
-                <SelectItem key={num} value={num.toString()}>
-                  {num} {num === 1 ? "Persona" : "Personas"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            min={1}
+            max={20}
+          />
         </div>
       </div>
 
@@ -453,7 +435,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
           // onClick={() => {
           //   // TODO: Connect to payment gateway
           //   console.log("Payment required:", {
-          //     amount: selectedSlotPrice * Number.parseInt(formData.guests),
+          //     amount: selectedSlotPrice * formData.guests,
           //     guests: formData.guests,
           //     pricePerPerson: selectedSlotPrice,
           //   });
@@ -461,9 +443,7 @@ export function ReservationForm({ branchId }: ReservationFormProps) {
         >
           {isPending
             ? "Procesando pago..."
-            : `Pagar reserva ($${
-                selectedSlotPrice * Number.parseInt(formData.guests || "0")
-              })`}
+            : `Pagar reserva ($${selectedSlotPrice * formData.guests})`}
         </Button>
       ) : (
         <Button

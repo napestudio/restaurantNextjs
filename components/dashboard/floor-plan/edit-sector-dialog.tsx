@@ -173,8 +173,7 @@ export function EditSectorDialog({
           <DialogHeader>
             <DialogTitle>Editar Sector</DialogTitle>
             <DialogDescription>
-              Modifica los detalles del sector o elimínalo si ya no lo
-              necesitas
+              Modifica los detalles del sector o elimínalo si ya no lo necesitas
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -206,22 +205,6 @@ export function EditSectorDialog({
                     title={colorOption.name}
                   />
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="custom-color-edit">
-                Color Personalizado (Opcional)
-              </Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  id="custom-color-edit"
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-20 h-10 cursor-pointer"
-                />
-                <span className="text-sm text-muted-foreground">{color}</span>
               </div>
             </div>
 
