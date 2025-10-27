@@ -38,18 +38,32 @@ export async function createUser(data: UserRegistrationInput) {
       };
     }
 
-    const { name, email, password, role, branchId } = validation.data;
+    const { username, name, email, password, role, branchId } = validation.data;
 
-    // Check if user already exists
+    // Check if username already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { username },
     });
 
     if (existingUser) {
       return {
         success: false,
-        error: "A user with this email already exists",
+        error: "A user with this username already exists",
       };
+    }
+
+    // If email is provided, check if it already exists
+    if (email && email.trim() !== "") {
+      const existingEmail = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingEmail) {
+        return {
+          success: false,
+          error: "A user with this email already exists",
+        };
+      }
     }
 
     // Check if branch exists
@@ -70,10 +84,10 @@ export async function createUser(data: UserRegistrationInput) {
     // Create user and assign to branch
     const user = await prisma.user.create({
       data: {
+        username,
         name,
-        email,
-        // Store hashed password in a custom field (you'll need to add this to schema)
-        // For now, we'll just create the user
+        email: email && email.trim() !== "" ? email : null,
+        password: hashedPassword,
         userOnBranches: {
           create: {
             branchId,
@@ -89,8 +103,6 @@ export async function createUser(data: UserRegistrationInput) {
         },
       },
     });
-
-    // TODO: Send email notification to the new user
 
     revalidatePath("/dashboard/users");
 

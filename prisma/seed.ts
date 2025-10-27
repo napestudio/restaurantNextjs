@@ -39,19 +39,13 @@ async function main() {
   // Create Admin User
   const hashedPassword = await bcrypt.hash("Admin@123", 10);
   const adminUser = await prisma.user.upsert({
-    where: { email: "admin@kikusushi.com" },
+    where: { username: "admin" },
     update: {},
     create: {
+      username: "admin",
       email: "admin@kikusushi.com",
       name: "Administrador",
-      accounts: {
-        create: {
-          type: "credentials",
-          provider: "credentials",
-          providerAccountId: "admin@kikusushi.com",
-          refresh_token: hashedPassword,
-        },
-      },
+      password: hashedPassword,
       userOnBranches: {
         create: {
           branchId: branch.id,
@@ -60,24 +54,18 @@ async function main() {
       },
     },
   });
-  console.log("✅ Usuario administrador creado:", adminUser.email);
+  console.log("✅ Usuario administrador creado:", adminUser.username);
 
   // Create Manager User
   const managerPassword = await bcrypt.hash("Manager@123", 10);
   const managerUser = await prisma.user.upsert({
-    where: { email: "gerente@kikusushi.com" },
+    where: { username: "gerente" },
     update: {},
     create: {
+      username: "gerente",
       email: "gerente@kikusushi.com",
       name: "Gerente",
-      accounts: {
-        create: {
-          type: "credentials",
-          provider: "credentials",
-          providerAccountId: "gerente@kikusushi.com",
-          refresh_token: managerPassword,
-        },
-      },
+      password: managerPassword,
       userOnBranches: {
         create: {
           branchId: branch.id,
@@ -86,7 +74,7 @@ async function main() {
       },
     },
   });
-  console.log("✅ Usuario gerente creado:", managerUser.email);
+  console.log("✅ Usuario gerente creado:", managerUser.username);
 
   // Create Categories
   const categories = await Promise.all([
@@ -485,9 +473,11 @@ async function main() {
   console.log("\n📝 Credenciales de Acceso:");
   console.log("-----------------------------------");
   console.log("Usuario Administrador:");
+  console.log("  Username: admin");
   console.log("  Email: admin@kikusushi.com");
   console.log("  Password: Admin@123");
   console.log("\nUsuario Gerente:");
+  console.log("  Username: gerente");
   console.log("  Email: gerente@kikusushi.com");
   console.log("  Password: Manager@123");
   console.log("-----------------------------------\n");

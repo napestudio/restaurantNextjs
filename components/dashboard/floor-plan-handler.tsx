@@ -1,20 +1,19 @@
 "use client";
 
-import type React from "react";
-import { useState, useRef, useEffect } from "react";
 import {
   createTable,
+  deleteTable as deleteTableAction,
+  updateFloorPlanBatch,
   updateTable,
   updateTableFloorPlan,
-  updateFloorPlanBatch,
-  deleteTable as deleteTableAction,
 } from "@/actions/Table";
-import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
-import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
-import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
-import { AddTableDialog } from "./floor-plan/add-table-dialog";
-import { FloorPlanInstructions } from "./floor-plan/floor-plan-instructions";
 import type { TableShapeType, TableStatus } from "@/types/table";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { AddTableDialog } from "./floor-plan/add-table-dialog";
+import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
+import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
+import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 
 // Default canvas dimensions - can be overridden by sector dimensions
 const DEFAULT_CANVAS_WIDTH = 1200;
@@ -698,8 +697,6 @@ export default function FloorPlanHandler({
           />
         </div>
       </div>
-
-      <FloorPlanInstructions />
 
       <AddTableDialog
         open={addDialogOpen}
