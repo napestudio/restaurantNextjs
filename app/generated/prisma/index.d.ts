@@ -3068,7 +3068,9 @@ export namespace Prisma {
 
   export type UserMinAggregateOutputType = {
     id: string | null
+    username: string | null
     email: string | null
+    password: string | null
     name: string | null
     image: string | null
     createdAt: Date | null
@@ -3076,7 +3078,9 @@ export namespace Prisma {
 
   export type UserMaxAggregateOutputType = {
     id: string | null
+    username: string | null
     email: string | null
+    password: string | null
     name: string | null
     image: string | null
     createdAt: Date | null
@@ -3084,7 +3088,9 @@ export namespace Prisma {
 
   export type UserCountAggregateOutputType = {
     id: number
+    username: number
     email: number
+    password: number
     name: number
     image: number
     createdAt: number
@@ -3094,7 +3100,9 @@ export namespace Prisma {
 
   export type UserMinAggregateInputType = {
     id?: true
+    username?: true
     email?: true
+    password?: true
     name?: true
     image?: true
     createdAt?: true
@@ -3102,7 +3110,9 @@ export namespace Prisma {
 
   export type UserMaxAggregateInputType = {
     id?: true
+    username?: true
     email?: true
+    password?: true
     name?: true
     image?: true
     createdAt?: true
@@ -3110,7 +3120,9 @@ export namespace Prisma {
 
   export type UserCountAggregateInputType = {
     id?: true
+    username?: true
     email?: true
+    password?: true
     name?: true
     image?: true
     createdAt?: true
@@ -3191,7 +3203,9 @@ export namespace Prisma {
 
   export type UserGroupByOutputType = {
     id: string
-    email: string
+    username: string
+    email: string | null
+    password: string | null
     name: string | null
     image: string | null
     createdAt: Date
@@ -3216,7 +3230,9 @@ export namespace Prisma {
 
   export type UserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    username?: boolean
     email?: boolean
+    password?: boolean
     name?: boolean
     image?: boolean
     createdAt?: boolean
@@ -3228,7 +3244,9 @@ export namespace Prisma {
 
   export type UserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    username?: boolean
     email?: boolean
+    password?: boolean
     name?: boolean
     image?: boolean
     createdAt?: boolean
@@ -3236,7 +3254,9 @@ export namespace Prisma {
 
   export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    username?: boolean
     email?: boolean
+    password?: boolean
     name?: boolean
     image?: boolean
     createdAt?: boolean
@@ -3244,13 +3264,15 @@ export namespace Prisma {
 
   export type UserSelectScalar = {
     id?: boolean
+    username?: boolean
     email?: boolean
+    password?: boolean
     name?: boolean
     image?: boolean
     createdAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "image" | "createdAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "username" | "email" | "password" | "name" | "image" | "createdAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
@@ -3269,7 +3291,9 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      email: string
+      username: string
+      email: string | null
+      password: string | null
       name: string | null
       image: string | null
       createdAt: Date
@@ -3700,7 +3724,9 @@ export namespace Prisma {
    */
   interface UserFieldRefs {
     readonly id: FieldRef<"User", 'String'>
+    readonly username: FieldRef<"User", 'String'>
     readonly email: FieldRef<"User", 'String'>
+    readonly password: FieldRef<"User", 'String'>
     readonly name: FieldRef<"User", 'String'>
     readonly image: FieldRef<"User", 'String'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
@@ -14791,10 +14817,12 @@ export namespace Prisma {
 
   export type TimeSlotAvgAggregateOutputType = {
     pricePerPerson: Decimal | null
+    capacity: number | null
   }
 
   export type TimeSlotSumAggregateOutputType = {
     pricePerPerson: Decimal | null
+    capacity: number | null
   }
 
   export type TimeSlotMinAggregateOutputType = {
@@ -14803,6 +14831,7 @@ export namespace Prisma {
     startTime: Date | null
     endTime: Date | null
     pricePerPerson: Decimal | null
+    capacity: number | null
     notes: string | null
     moreInfoUrl: string | null
     isActive: boolean | null
@@ -14817,6 +14846,7 @@ export namespace Prisma {
     startTime: Date | null
     endTime: Date | null
     pricePerPerson: Decimal | null
+    capacity: number | null
     notes: string | null
     moreInfoUrl: string | null
     isActive: boolean | null
@@ -14832,6 +14862,7 @@ export namespace Prisma {
     endTime: number
     daysOfWeek: number
     pricePerPerson: number
+    capacity: number
     notes: number
     moreInfoUrl: number
     isActive: number
@@ -14844,10 +14875,12 @@ export namespace Prisma {
 
   export type TimeSlotAvgAggregateInputType = {
     pricePerPerson?: true
+    capacity?: true
   }
 
   export type TimeSlotSumAggregateInputType = {
     pricePerPerson?: true
+    capacity?: true
   }
 
   export type TimeSlotMinAggregateInputType = {
@@ -14856,6 +14889,7 @@ export namespace Prisma {
     startTime?: true
     endTime?: true
     pricePerPerson?: true
+    capacity?: true
     notes?: true
     moreInfoUrl?: true
     isActive?: true
@@ -14870,6 +14904,7 @@ export namespace Prisma {
     startTime?: true
     endTime?: true
     pricePerPerson?: true
+    capacity?: true
     notes?: true
     moreInfoUrl?: true
     isActive?: true
@@ -14885,6 +14920,7 @@ export namespace Prisma {
     endTime?: true
     daysOfWeek?: true
     pricePerPerson?: true
+    capacity?: true
     notes?: true
     moreInfoUrl?: true
     isActive?: true
@@ -14987,6 +15023,7 @@ export namespace Prisma {
     endTime: Date
     daysOfWeek: string[]
     pricePerPerson: Decimal | null
+    capacity: number
     notes: string | null
     moreInfoUrl: string | null
     isActive: boolean
@@ -15021,6 +15058,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15040,6 +15078,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15056,6 +15095,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15072,6 +15112,7 @@ export namespace Prisma {
     endTime?: boolean
     daysOfWeek?: boolean
     pricePerPerson?: boolean
+    capacity?: boolean
     notes?: boolean
     moreInfoUrl?: boolean
     isActive?: boolean
@@ -15080,7 +15121,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TimeSlotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "startTime" | "endTime" | "daysOfWeek" | "pricePerPerson" | "notes" | "moreInfoUrl" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["timeSlot"]>
+  export type TimeSlotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "startTime" | "endTime" | "daysOfWeek" | "pricePerPerson" | "capacity" | "notes" | "moreInfoUrl" | "isActive" | "branchId" | "createdAt" | "updatedAt", ExtArgs["result"]["timeSlot"]>
   export type TimeSlotInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     branch?: boolean | BranchDefaultArgs<ExtArgs>
     reservations?: boolean | TimeSlot$reservationsArgs<ExtArgs>
@@ -15108,6 +15149,7 @@ export namespace Prisma {
       endTime: Date
       daysOfWeek: string[]
       pricePerPerson: Prisma.Decimal | null
+      capacity: number
       notes: string | null
       moreInfoUrl: string | null
       isActive: boolean
@@ -15546,6 +15588,7 @@ export namespace Prisma {
     readonly endTime: FieldRef<"TimeSlot", 'DateTime'>
     readonly daysOfWeek: FieldRef<"TimeSlot", 'String[]'>
     readonly pricePerPerson: FieldRef<"TimeSlot", 'Decimal'>
+    readonly capacity: FieldRef<"TimeSlot", 'Int'>
     readonly notes: FieldRef<"TimeSlot", 'String'>
     readonly moreInfoUrl: FieldRef<"TimeSlot", 'String'>
     readonly isActive: FieldRef<"TimeSlot", 'Boolean'>
@@ -24860,7 +24903,9 @@ export namespace Prisma {
 
   export const UserScalarFieldEnum: {
     id: 'id',
+    username: 'username',
     email: 'email',
+    password: 'password',
     name: 'name',
     image: 'image',
     createdAt: 'createdAt'
@@ -25009,6 +25054,7 @@ export namespace Prisma {
     endTime: 'endTime',
     daysOfWeek: 'daysOfWeek',
     pricePerPerson: 'pricePerPerson',
+    capacity: 'capacity',
     notes: 'notes',
     moreInfoUrl: 'moreInfoUrl',
     isActive: 'isActive',
@@ -25325,7 +25371,9 @@ export namespace Prisma {
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
     id?: StringFilter<"User"> | string
-    email?: StringFilter<"User"> | string
+    username?: StringFilter<"User"> | string
+    email?: StringNullableFilter<"User"> | string | null
+    password?: StringNullableFilter<"User"> | string | null
     name?: StringNullableFilter<"User"> | string | null
     image?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
@@ -25336,7 +25384,9 @@ export namespace Prisma {
 
   export type UserOrderByWithRelationInput = {
     id?: SortOrder
-    email?: SortOrder
+    username?: SortOrder
+    email?: SortOrderInput | SortOrder
+    password?: SortOrderInput | SortOrder
     name?: SortOrderInput | SortOrder
     image?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -25347,21 +25397,25 @@ export namespace Prisma {
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    username?: string
     email?: string
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
+    password?: StringNullableFilter<"User"> | string | null
     name?: StringNullableFilter<"User"> | string | null
     image?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     accounts?: AccountListRelationFilter
     sessions?: SessionListRelationFilter
     userOnBranches?: UserOnBranchListRelationFilter
-  }, "id" | "email">
+  }, "id" | "username" | "email">
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder
-    email?: SortOrder
+    username?: SortOrder
+    email?: SortOrderInput | SortOrder
+    password?: SortOrderInput | SortOrder
     name?: SortOrderInput | SortOrder
     image?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -25375,7 +25429,9 @@ export namespace Prisma {
     OR?: UserScalarWhereWithAggregatesInput[]
     NOT?: UserScalarWhereWithAggregatesInput | UserScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"User"> | string
-    email?: StringWithAggregatesFilter<"User"> | string
+    username?: StringWithAggregatesFilter<"User"> | string
+    email?: StringNullableWithAggregatesFilter<"User"> | string | null
+    password?: StringNullableWithAggregatesFilter<"User"> | string | null
     name?: StringNullableWithAggregatesFilter<"User"> | string | null
     image?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
@@ -26121,6 +26177,7 @@ export namespace Prisma {
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFilter<"TimeSlot"> | number
     notes?: StringNullableFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableFilter<"TimeSlot"> | string | null
     isActive?: BoolFilter<"TimeSlot"> | boolean
@@ -26139,6 +26196,7 @@ export namespace Prisma {
     endTime?: SortOrder
     daysOfWeek?: SortOrder
     pricePerPerson?: SortOrderInput | SortOrder
+    capacity?: SortOrder
     notes?: SortOrderInput | SortOrder
     moreInfoUrl?: SortOrderInput | SortOrder
     isActive?: SortOrder
@@ -26160,6 +26218,7 @@ export namespace Prisma {
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFilter<"TimeSlot"> | number
     notes?: StringNullableFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableFilter<"TimeSlot"> | string | null
     isActive?: BoolFilter<"TimeSlot"> | boolean
@@ -26178,6 +26237,7 @@ export namespace Prisma {
     endTime?: SortOrder
     daysOfWeek?: SortOrder
     pricePerPerson?: SortOrderInput | SortOrder
+    capacity?: SortOrder
     notes?: SortOrderInput | SortOrder
     moreInfoUrl?: SortOrderInput | SortOrder
     isActive?: SortOrder
@@ -26201,6 +26261,7 @@ export namespace Prisma {
     endTime?: DateTimeWithAggregatesFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableWithAggregatesFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntWithAggregatesFilter<"TimeSlot"> | number
     notes?: StringNullableWithAggregatesFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableWithAggregatesFilter<"TimeSlot"> | string | null
     isActive?: BoolWithAggregatesFilter<"TimeSlot"> | boolean
@@ -26713,7 +26774,9 @@ export namespace Prisma {
 
   export type UserCreateInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -26724,7 +26787,9 @@ export namespace Prisma {
 
   export type UserUncheckedCreateInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -26735,7 +26800,9 @@ export namespace Prisma {
 
   export type UserUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26746,7 +26813,9 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26757,7 +26826,9 @@ export namespace Prisma {
 
   export type UserCreateManyInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -26765,7 +26836,9 @@ export namespace Prisma {
 
   export type UserUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26773,7 +26846,9 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -27572,6 +27647,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -27589,6 +27665,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -27606,6 +27683,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -27623,6 +27701,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -27640,6 +27719,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -27655,6 +27735,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -27669,6 +27750,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -28247,7 +28329,9 @@ export namespace Prisma {
 
   export type UserCountOrderByAggregateInput = {
     id?: SortOrder
+    username?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     name?: SortOrder
     image?: SortOrder
     createdAt?: SortOrder
@@ -28255,7 +28339,9 @@ export namespace Prisma {
 
   export type UserMaxOrderByAggregateInput = {
     id?: SortOrder
+    username?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     name?: SortOrder
     image?: SortOrder
     createdAt?: SortOrder
@@ -28263,7 +28349,9 @@ export namespace Prisma {
 
   export type UserMinOrderByAggregateInput = {
     id?: SortOrder
+    username?: SortOrder
     email?: SortOrder
+    password?: SortOrder
     name?: SortOrder
     image?: SortOrder
     createdAt?: SortOrder
@@ -29048,6 +29136,7 @@ export namespace Prisma {
     endTime?: SortOrder
     daysOfWeek?: SortOrder
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
     notes?: SortOrder
     moreInfoUrl?: SortOrder
     isActive?: SortOrder
@@ -29058,6 +29147,7 @@ export namespace Prisma {
 
   export type TimeSlotAvgOrderByAggregateInput = {
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
   }
 
   export type TimeSlotMaxOrderByAggregateInput = {
@@ -29066,6 +29156,7 @@ export namespace Prisma {
     startTime?: SortOrder
     endTime?: SortOrder
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
     notes?: SortOrder
     moreInfoUrl?: SortOrder
     isActive?: SortOrder
@@ -29080,6 +29171,7 @@ export namespace Prisma {
     startTime?: SortOrder
     endTime?: SortOrder
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
     notes?: SortOrder
     moreInfoUrl?: SortOrder
     isActive?: SortOrder
@@ -29090,6 +29182,7 @@ export namespace Prisma {
 
   export type TimeSlotSumOrderByAggregateInput = {
     pricePerPerson?: SortOrder
+    capacity?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -31485,7 +31578,9 @@ export namespace Prisma {
 
   export type UserCreateWithoutAccountsInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -31495,7 +31590,9 @@ export namespace Prisma {
 
   export type UserUncheckedCreateWithoutAccountsInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -31521,7 +31618,9 @@ export namespace Prisma {
 
   export type UserUpdateWithoutAccountsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31531,7 +31630,9 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31541,7 +31642,9 @@ export namespace Prisma {
 
   export type UserCreateWithoutSessionsInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -31551,7 +31654,9 @@ export namespace Prisma {
 
   export type UserUncheckedCreateWithoutSessionsInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -31577,7 +31682,9 @@ export namespace Prisma {
 
   export type UserUpdateWithoutSessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31587,7 +31694,9 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31984,6 +32093,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32000,6 +32110,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32276,6 +32387,7 @@ export namespace Prisma {
     endTime?: DateTimeFilter<"TimeSlot"> | Date | string
     daysOfWeek?: StringNullableListFilter<"TimeSlot">
     pricePerPerson?: DecimalNullableFilter<"TimeSlot"> | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFilter<"TimeSlot"> | number
     notes?: StringNullableFilter<"TimeSlot"> | string | null
     moreInfoUrl?: StringNullableFilter<"TimeSlot"> | string | null
     isActive?: BoolFilter<"TimeSlot"> | boolean
@@ -32330,7 +32442,9 @@ export namespace Prisma {
 
   export type UserCreateWithoutUserOnBranchesInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -32340,7 +32454,9 @@ export namespace Prisma {
 
   export type UserUncheckedCreateWithoutUserOnBranchesInput = {
     id?: string
-    email: string
+    username: string
+    email?: string | null
+    password?: string | null
     name?: string | null
     image?: string | null
     createdAt?: Date | string
@@ -32401,7 +32517,9 @@ export namespace Prisma {
 
   export type UserUpdateWithoutUserOnBranchesInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32411,7 +32529,9 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateWithoutUserOnBranchesInput = {
     id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: NullableStringFieldUpdateOperationsInput | string | null
     name?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32876,6 +32996,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32892,6 +33013,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -32985,6 +33107,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -33001,6 +33124,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -33387,6 +33511,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -33403,6 +33528,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -33478,6 +33604,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -33494,6 +33621,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -34663,6 +34791,7 @@ export namespace Prisma {
     endTime: Date | string
     daysOfWeek?: TimeSlotCreatedaysOfWeekInput | string[]
     pricePerPerson?: Decimal | DecimalJsLike | number | string | null
+    capacity?: number
     notes?: string | null
     moreInfoUrl?: string | null
     isActive?: boolean
@@ -34882,6 +35011,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -34898,6 +35028,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
@@ -34914,6 +35045,7 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     daysOfWeek?: TimeSlotUpdatedaysOfWeekInput | string[]
     pricePerPerson?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    capacity?: IntFieldUpdateOperationsInput | number
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     moreInfoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean

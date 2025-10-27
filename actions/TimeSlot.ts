@@ -4,6 +4,37 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 /**
+ * Calculate the total capacity for a time slot based on its assigned tables
+ * Returns 0 if no tables are assigned (unlimited - uses all branch tables)
+ */
+export async function calculateTimeSlotCapacity(
+  timeSlotId: string
+): Promise<number> {
+  const timeSlotTables = await prisma.timeSlotTable.findMany({
+    where: { timeSlotId },
+    include: { table: true },
+  });
+
+  if (timeSlotTables.length === 0) {
+    return 0; // No tables assigned = unlimited capacity
+  }
+
+  return timeSlotTables.reduce((sum, tst) => sum + tst.table.capacity, 0);
+}
+
+/**
+ * Update the capacity field for a time slot
+ */
+export async function updateTimeSlotCapacity(timeSlotId: string) {
+  const capacity = await calculateTimeSlotCapacity(timeSlotId);
+  await prisma.timeSlot.update({
+    where: { id: timeSlotId },
+    data: { capacity },
+  });
+  return capacity;
+}
+
+/**
  * Create a new time slot for a branch
  */
 export async function createTimeSlot(data: {
@@ -53,11 +84,15 @@ export async function createTimeSlot(data: {
       },
     });
 
+    // Calculate and set the capacity based on assigned tables
+    const capacity = await updateTimeSlotCapacity(timeSlot.id);
+
     revalidatePath("/dashboard/reservations/slots");
     return {
       success: true,
       data: {
         ...timeSlot,
+        capacity,
         pricePerPerson: timeSlot.pricePerPerson?.toNumber() || 0,
       },
     };
@@ -192,6 +227,7 @@ export async function updateTimeSlot(
     }
 
     // If tableIds is provided, update the table relationships
+    let capacityChanged = false;
     if (data.tableIds !== undefined) {
       // Delete existing relationships and create new ones
       await prisma.timeSlotTable.deleteMany({
@@ -206,6 +242,7 @@ export async function updateTimeSlot(
           })),
         });
       }
+      capacityChanged = true;
     }
 
     const timeSlot = await prisma.timeSlot.update({
@@ -220,11 +257,18 @@ export async function updateTimeSlot(
       },
     });
 
+    // Recalculate capacity if tables were changed
+    let capacity = timeSlot.capacity;
+    if (capacityChanged) {
+      capacity = await updateTimeSlotCapacity(id);
+    }
+
     revalidatePath("/dashboard/reservations/slots");
     return {
       success: true,
       data: {
         ...timeSlot,
+        capacity,
         pricePerPerson: timeSlot.pricePerPerson?.toNumber() || 0,
       },
     };
@@ -290,7 +334,9 @@ export async function deleteTimeSlot(id: string, softDelete: boolean = true) {
  */
 export async function getAvailableTimeSlotsForDate(
   branchId: string,
-  dateString: string // YYYY-MM-DD format
+  dateString: string, // YYYY-MM-DD format
+  includeAvailability: boolean = false,
+  partySize: number = 1
 ) {
   try {
     // Parse the date string as local date to avoid timezone issues
@@ -306,6 +352,7 @@ export async function getAvailableTimeSlotsForDate(
       "friday",
       "saturday",
     ][localDate.getDay()];
+
     const timeSlots = await prisma.timeSlot.findMany({
       where: {
         branchId,
@@ -318,23 +365,55 @@ export async function getAvailableTimeSlotsForDate(
         startTime: "asc",
       },
     });
-    // console.log("Fetched time slots for date:", date, timeSlots);
 
     // Serialize the data for client components
-    const serializedSlots = timeSlots.map((slot) => ({
-      id: slot.id,
-      name: slot.name,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      daysOfWeek: slot.daysOfWeek,
-      pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
-      notes: slot.notes,
-      moreInfoUrl: slot.moreInfoUrl,
-      isActive: slot.isActive,
-      branchId: slot.branchId,
-      createdAt: slot.createdAt,
-      updatedAt: slot.updatedAt,
-    }));
+    const serializedSlots = await Promise.all(
+      timeSlots.map(async (slot) => {
+        let hasAvailability = true;
+
+        // If availability check is requested, check capacity
+        if (includeAvailability && slot.capacity > 0) {
+          // Only check if slot has limited capacity (capacity > 0)
+          // capacity = 0 means unlimited (uses all branch tables)
+
+          // Get total booked seats for this time slot on this date
+          const bookedSeats = await prisma.reservation.aggregate({
+            where: {
+              branchId,
+              date: localDate,
+              timeSlotId: slot.id,
+              status: {
+                in: ["PENDING", "CONFIRMED"],
+              },
+            },
+            _sum: {
+              people: true,
+            },
+          });
+
+          const totalBooked = bookedSeats._sum.people || 0;
+          const remainingCapacity = slot.capacity - totalBooked;
+          hasAvailability = remainingCapacity >= partySize;
+        }
+
+        return {
+          id: slot.id,
+          name: slot.name,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          daysOfWeek: slot.daysOfWeek,
+          pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
+          notes: slot.notes,
+          moreInfoUrl: slot.moreInfoUrl,
+          isActive: slot.isActive,
+          branchId: slot.branchId,
+          createdAt: slot.createdAt,
+          updatedAt: slot.updatedAt,
+          capacity: slot.capacity,
+          hasAvailability: includeAvailability ? hasAvailability : undefined,
+        };
+      })
+    );
 
     return { success: true, data: serializedSlots };
   } catch (error) {

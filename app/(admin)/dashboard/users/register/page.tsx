@@ -113,6 +113,30 @@ export default function RegisterUserPage() {
 
                 <div>
                   <label
+                    htmlFor="username"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Usuario
+                  </label>
+                  <input
+                    type="text"
+                    id="username"
+                    {...register("username")}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="john_doe"
+                  />
+                  {errors.username && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.username.message}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Solo letras, números y guiones bajos (_)
+                  </p>
+                </div>
+
+                <div>
+                  <label
                     htmlFor="name"
                     className="block text-sm font-medium text-gray-700"
                   >
@@ -137,7 +161,7 @@ export default function RegisterUserPage() {
                     htmlFor="email"
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Email
+                    Email (opcional)
                   </label>
                   <input
                     type="email"

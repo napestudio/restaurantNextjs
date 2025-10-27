@@ -142,20 +142,6 @@ export function AddSectorDialog({
             </p>
           </div>
 
-          <div>
-            <Label htmlFor="custom-color">Color Personalizado (Opcional)</Label>
-            <div className="flex gap-2 items-center">
-              <Input
-                id="custom-color"
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-20 h-10 cursor-pointer"
-              />
-              <span className="text-sm text-muted-foreground">{color}</span>
-            </div>
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="sector-width">Ancho del Plano (px)</Label>

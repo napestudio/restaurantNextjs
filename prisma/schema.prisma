@@ -65,7 +65,9 @@ enum TableStatus {
 //
 model User {
   id        String    @id @default(cuid())
-  email     String    @unique
+  username  String    @unique
+  email     String?   @unique
+  password  String?
   name      String?
   image     String?
   accounts  Account[]
@@ -255,6 +257,7 @@ model TimeSlot {
   endTime        DateTime @db.Time
   daysOfWeek     String[]
   pricePerPerson Decimal? @default(0)
+  capacity       Int      @default(0) // Total capacity: 0 = unlimited (uses all branch tables), >0 = sum of assigned tables
   notes          String?
   moreInfoUrl    String?
   isActive       Boolean  @default(true)

@@ -198,20 +198,56 @@ export async function findAvailableTables(
   error?: string;
 }> {
   try {
-    // Get all active tables for the branch
-    const allTables = await prisma.table.findMany({
-      where: {
-        branchId,
-        isActive: true,
+    // First, check if the time slot has specific tables assigned
+    const timeSlot = await prisma.timeSlot.findUnique({
+      where: { id: timeSlotId },
+      include: {
+        tables: {
+          include: {
+            table: true,
+          },
+        },
       },
-      orderBy: [{ isShared: "desc" }, { capacity: "asc" }, { number: "asc" }],
     });
 
-    if (allTables.length === 0) {
+    if (!timeSlot) {
       return {
         success: false,
-        error: "No active tables found for this branch",
+        error: "Time slot not found",
       };
+    }
+
+    // Determine which tables to use based on TimeSlot configuration
+    let allTables;
+
+    if (timeSlot.tables.length > 0) {
+      // Use only the tables explicitly assigned to this time slot
+      allTables = timeSlot.tables
+        .map((tst) => tst.table)
+        .filter((table) => table.isActive);
+
+      if (allTables.length === 0) {
+        return {
+          success: false,
+          error: "No active tables available for this time slot",
+        };
+      }
+    } else {
+      // Fall back to all active tables in the branch if no specific tables are assigned
+      allTables = await prisma.table.findMany({
+        where: {
+          branchId,
+          isActive: true,
+        },
+        orderBy: [{ isShared: "desc" }, { capacity: "asc" }, { number: "asc" }],
+      });
+
+      if (allTables.length === 0) {
+        return {
+          success: false,
+          error: "No active tables found for this branch",
+        };
+      }
     }
 
     // Calculate remaining capacity for each table
@@ -548,6 +584,20 @@ export async function updateTable(
       where: { id },
       data: updateData,
     });
+
+    // If capacity changed, update all related TimeSlot capacities
+    if (data.capacity !== undefined) {
+      const timeSlotTables = await prisma.timeSlotTable.findMany({
+        where: { tableId: id },
+        select: { timeSlotId: true },
+      });
+
+      // Update capacity for each affected time slot
+      const { updateTimeSlotCapacity } = await import("./TimeSlot");
+      await Promise.all(
+        timeSlotTables.map((tst) => updateTimeSlotCapacity(tst.timeSlotId))
+      );
+    }
 
     return { success: true, data: table };
   } catch (error) {

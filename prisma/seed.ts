@@ -39,19 +39,13 @@ async function main() {
   // Create Admin User
   const hashedPassword = await bcrypt.hash("Admin@123", 10);
   const adminUser = await prisma.user.upsert({
-    where: { email: "admin@kikusushi.com" },
+    where: { username: "admin" },
     update: {},
     create: {
+      username: "admin",
       email: "admin@kikusushi.com",
       name: "Administrador",
-      accounts: {
-        create: {
-          type: "credentials",
-          provider: "credentials",
-          providerAccountId: "admin@kikusushi.com",
-          refresh_token: hashedPassword,
-        },
-      },
+      password: hashedPassword,
       userOnBranches: {
         create: {
           branchId: branch.id,
@@ -60,24 +54,18 @@ async function main() {
       },
     },
   });
-  console.log("✅ Usuario administrador creado:", adminUser.email);
+  console.log("✅ Usuario administrador creado:", adminUser.username);
 
   // Create Manager User
   const managerPassword = await bcrypt.hash("Manager@123", 10);
   const managerUser = await prisma.user.upsert({
-    where: { email: "gerente@kikusushi.com" },
+    where: { username: "gerente" },
     update: {},
     create: {
+      username: "gerente",
       email: "gerente@kikusushi.com",
       name: "Gerente",
-      accounts: {
-        create: {
-          type: "credentials",
-          provider: "credentials",
-          providerAccountId: "gerente@kikusushi.com",
-          refresh_token: managerPassword,
-        },
-      },
+      password: managerPassword,
       userOnBranches: {
         create: {
           branchId: branch.id,
@@ -86,7 +74,7 @@ async function main() {
       },
     },
   });
-  console.log("✅ Usuario gerente creado:", managerUser.email);
+  console.log("✅ Usuario gerente creado:", managerUser.username);
 
   // Create Categories
   const categories = await Promise.all([
@@ -425,6 +413,12 @@ async function main() {
   // Use reference date for time-only values
   const referenceDate = new Date("1970-01-01");
 
+  // Get all tables with their capacities for capacity calculation
+  const allTablesWithCapacity = await prisma.table.findMany({
+    where: { branchId: branch.id },
+    select: { id: true, number: true, capacity: true },
+  });
+
   for (const slot of timeSlots) {
     const [startHour, startMin] = slot.startTime.split(":").map(Number);
     const [endHour, endMin] = slot.endTime.split(":").map(Number);
@@ -436,9 +430,13 @@ async function main() {
     endTime.setHours(endHour, endMin);
 
     // Get table IDs for this slot
-    const tableIds = createdTables
-      .filter((t) => slot.tableNumbers.includes(t.number))
-      .map((t) => t.id);
+    const slotTables = allTablesWithCapacity.filter((t) =>
+      slot.tableNumbers.includes(t.number)
+    );
+    const tableIds = slotTables.map((t) => t.id);
+
+    // Calculate total capacity for this slot (sum of all assigned table capacities)
+    const totalCapacity = slotTables.reduce((sum, t) => sum + t.capacity, 0);
 
     await prisma.timeSlot.upsert({
       where: {
@@ -452,6 +450,7 @@ async function main() {
         endTime,
         daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson,
+        capacity: totalCapacity, // Set the calculated capacity
         notes: slot.notes,
         moreInfoUrl: slot.moreInfoUrl,
         isActive: true,
@@ -463,6 +462,10 @@ async function main() {
         },
       },
     });
+
+    console.log(
+      `  ✓ Turno "${slot.name}": ${slotTables.length} mesas, capacidad total: ${totalCapacity}`
+    );
   }
   console.log("✅ Turnos creados:", timeSlots.length);
 
@@ -470,9 +473,11 @@ async function main() {
   console.log("\n📝 Credenciales de Acceso:");
   console.log("-----------------------------------");
   console.log("Usuario Administrador:");
+  console.log("  Username: admin");
   console.log("  Email: admin@kikusushi.com");
   console.log("  Password: Admin@123");
   console.log("\nUsuario Gerente:");
+  console.log("  Username: gerente");
   console.log("  Email: gerente@kikusushi.com");
   console.log("  Password: Manager@123");
   console.log("-----------------------------------\n");

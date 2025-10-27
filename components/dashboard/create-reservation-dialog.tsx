@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PartySizePicker } from "@/components/ui/party-size-picker";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import { formatTime } from "@/app/(admin)/dashboard/reservations/lib/utils";
 import { WeekDatePicker } from "../week-date-picker";
@@ -32,7 +33,7 @@ interface NewReservation {
   phone: string;
   date: string;
   time: string;
-  guests: string;
+  guests: number;
   dietaryRestrictions: string;
   accessibilityNeeds: string;
   notes: string;
@@ -61,7 +62,7 @@ export function CreateReservationDialog({
     phone: "",
     date: new Date().toISOString().split("T")[0],
     time: "",
-    guests: "",
+    guests: 2,
     dietaryRestrictions: "",
     accessibilityNeeds: "",
     notes: "",
@@ -141,7 +142,7 @@ export function CreateReservationDialog({
           customerPhone: newReservation.phone || undefined,
           date: newReservation.date,
           time: newReservation.time,
-          guests: Number.parseInt(newReservation.guests),
+          guests: newReservation.guests,
           timeSlotId: newReservation.time,
           dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
           accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
@@ -161,7 +162,7 @@ export function CreateReservationDialog({
             phone: "",
             date: "",
             time: "",
-            guests: "",
+            guests: 2,
             dietaryRestrictions: "",
             accessibilityNeeds: "",
             notes: "",
@@ -300,30 +301,21 @@ export function CreateReservationDialog({
                   <p className="text-xs text-green-800">
                     <strong>Reservation Fee:</strong> ${selectedSlotPrice} ×{" "}
                     {newReservation.guests} guests = $
-                    {selectedSlotPrice * Number.parseInt(newReservation.guests)}
+                    {selectedSlotPrice * newReservation.guests}
                   </p>
                 </div>
               )}
             </div>
             <div>
               <Label htmlFor="new-guests">Number of Guests</Label>
-              <Select
+              <PartySizePicker
                 value={newReservation.guests}
-                onValueChange={(value) =>
-                  setNewReservation((prev) => ({ ...prev, guests: value }))
+                onChange={(size) =>
+                  setNewReservation((prev) => ({ ...prev, guests: size }))
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select guests" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 1 ? "Guest" : "Guests"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                min={1}
+                max={20}
+              />
             </div>
           </div>
 
