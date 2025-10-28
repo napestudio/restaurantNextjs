@@ -46,6 +46,7 @@ export async function createReservation(data: {
   time: string; // Time slot value "HH:mm-HH:mm"
   guests: number;
   timeSlotId?: string;
+  exactTime?: string; // ISO string for precise arrival time
   dietaryRestrictions?: string;
   accessibilityNeeds?: string;
   notes?: string;
@@ -76,6 +77,7 @@ export async function createReservation(data: {
         date: reservationDate,
         people: data.guests,
         timeSlotId: data.timeSlotId,
+        exactTime: data.exactTime ? new Date(data.exactTime) : null,
         dietaryRestrictions: data.dietaryRestrictions,
         accessibilityNeeds: data.accessibilityNeeds,
         notes: data.notes,

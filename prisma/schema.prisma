@@ -246,6 +246,7 @@ model Reservation {
   people              Int
   timeSlot            TimeSlot?          @relation(fields: [timeSlotId], references: [id])
   timeSlotId          String?
+  exactTime           DateTime?          // Precise 15-min arrival time within the slot
   status              ReservationStatus  @default(PENDING)
   dietaryRestrictions String?
   accessibilityNeeds  String?

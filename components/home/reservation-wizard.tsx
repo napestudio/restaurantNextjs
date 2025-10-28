@@ -12,6 +12,7 @@ import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { StepPartySize } from "./wizard-steps/step-party-size";
 import { StepDateTime } from "./wizard-steps/step-date-time";
 import { StepTimeSlot } from "./wizard-steps/step-time-slot";
+import { StepExactTime } from "./wizard-steps/step-exact-time";
 import { StepCustomerInfo } from "./wizard-steps/step-customer-info";
 
 interface ReservationWizardProps {
@@ -26,6 +27,8 @@ interface WizardData {
   // Step 3
   timeSlotId: string;
   // Step 4
+  exactTime: string;
+  // Step 5
   name: string;
   email: string;
   phone: string;
@@ -43,6 +46,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
     guests: 2,
     date: "",
     timeSlotId: "",
+    exactTime: "",
     name: "",
     email: "",
     phone: "",
@@ -87,6 +91,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
     { title: "Personas", description: "¿Cuántos son?" },
     { title: "Fecha", description: "¿Cuándo?" },
     { title: "Turno", description: "¿A qué hora?" },
+    { title: "Hora exacta", description: "Llegada precisa" },
     { title: "Datos", description: "Tu información" },
   ];
 
@@ -123,6 +128,8 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
       case 3:
         return wizardData.timeSlotId !== "";
       case 4:
+        return wizardData.exactTime !== "";
+      case 5:
         return (
           wizardData.name !== "" &&
           wizardData.email !== "" &&
@@ -192,6 +199,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
         time: wizardData.timeSlotId,
         guests: wizardData.guests,
         timeSlotId: wizardData.timeSlotId,
+        exactTime: wizardData.exactTime || undefined,
         dietaryRestrictions: wizardData.dietaryRestrictions || undefined,
         accessibilityNeeds: wizardData.accessibilityNeeds || undefined,
         notes: wizardData.notes || undefined,
@@ -216,6 +224,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
       guests: 2,
       date: "",
       timeSlotId: "",
+      exactTime: "",
       name: "",
       email: "",
       phone: "",
@@ -322,7 +331,18 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
           />
         )}
 
-        {currentStep === 4 && (
+        {currentStep === 4 && wizardData.timeSlotId && (
+          <StepExactTime
+            selectedSlot={
+              availableSlots.find((s) => s.id === wizardData.timeSlotId)!
+            }
+            selectedDate={wizardData.date}
+            value={wizardData.exactTime}
+            onChange={(exactTime) => updateData({ exactTime })}
+          />
+        )}
+
+        {currentStep === 5 && (
           <StepCustomerInfo
             data={{
               name: wizardData.name,

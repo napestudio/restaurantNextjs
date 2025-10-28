@@ -130,7 +130,9 @@ export function ReservationsTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{reservation.people} guests</Badge>
+                    <Badge variant="outline" className="font-bold">
+                      {reservation.people}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Select

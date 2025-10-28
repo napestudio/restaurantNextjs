@@ -560,6 +560,63 @@ async function main() {
   }
   console.log("✅ Turnos creados:", timeSlots.length);
 
+  // Create Sample Reservations with exactTime
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const allTimeSlots = await prisma.timeSlot.findMany({
+    where: { branchId: branch.id },
+  });
+
+  // Sample reservation for tomorrow lunch
+  const lunchSlot = allTimeSlots.find((s) => s.name === "Almuerzo Pico");
+  if (lunchSlot) {
+    const exactArrival = new Date(tomorrow);
+    exactArrival.setHours(12, 15, 0, 0); // 12:15 PM
+
+    await prisma.reservation.create({
+      data: {
+        branchId: branch.id,
+        customerName: "María González",
+        customerEmail: "maria.gonzalez@example.com",
+        customerPhone: "+54 11 9876-5432",
+        date: tomorrow,
+        people: 4,
+        timeSlotId: lunchSlot.id,
+        exactTime: exactArrival,
+        status: "PENDING",
+        notes: "Mesa cerca de la ventana, por favor",
+        createdBy: "SEED",
+      },
+    });
+  }
+
+  // Sample reservation for dinner
+  const dinnerSlot = allTimeSlots.find((s) => s.name === "Cena Temprana");
+  if (dinnerSlot) {
+    const exactArrival = new Date(tomorrow);
+    exactArrival.setHours(18, 30, 0, 0); // 6:30 PM
+
+    await prisma.reservation.create({
+      data: {
+        branchId: branch.id,
+        customerName: "Juan Pérez",
+        customerEmail: "juan.perez@example.com",
+        customerPhone: "+54 11 5555-1234",
+        date: tomorrow,
+        people: 2,
+        timeSlotId: dinnerSlot.id,
+        exactTime: exactArrival,
+        status: "CONFIRMED",
+        dietaryRestrictions: "Sin gluten",
+        createdBy: "SEED",
+      },
+    });
+  }
+
+  console.log("✅ Reservas de ejemplo creadas: 2");
+
   console.log("\n🎉 ¡Base de datos poblada exitosamente!");
   console.log("\n📝 Credenciales de Acceso:");
   console.log("-----------------------------------");
