@@ -12,10 +12,16 @@ import { findAvailableTables } from "./Table";
 function serializeReservation(reservation: any) {
   return {
     ...reservation,
+    date: reservation.date.toISOString(),
+    createdAt: reservation.createdAt.toISOString(),
     timeSlot: reservation.timeSlot
       ? {
           ...reservation.timeSlot,
+          startTime: reservation.timeSlot.startTime.toISOString(),
+          endTime: reservation.timeSlot.endTime.toISOString(),
           pricePerPerson: reservation.timeSlot.pricePerPerson?.toNumber() || 0,
+          createdAt: reservation.timeSlot.createdAt.toISOString(),
+          updatedAt: reservation.timeSlot.updatedAt.toISOString(),
         }
       : null,
     tables: reservation.tables

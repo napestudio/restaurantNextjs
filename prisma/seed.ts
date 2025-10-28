@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, PriceType } from "../app/generated/prisma";
+import { PrismaClient, UserRole, PriceType, UnitType, WeightUnit, VolumeUnit } from "../app/generated/prisma";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -127,73 +127,148 @@ async function main() {
       id: "prod-edamame",
       name: "Edamame",
       description: "Porotos de soja al vapor con sal marina",
+      sku: "EDM-001",
       categoryId: "cat-appetizers",
+      unitType: "WEIGHT" as UnitType,
+      weightUnit: "KILOGRAM" as WeightUnit,
       prices: { dineIn: 650, takeAway: 600, delivery: 700 },
-      stock: 50,
+      stock: 5.5,
+      minStock: 2,
+      maxStock: 10,
+      minStockAlert: 2.5,
     },
     {
       id: "prod-gyoza",
       name: "Gyoza",
       description: "Empanaditas japonesas rellenas de cerdo y vegetales",
+      sku: "GYZ-001",
       categoryId: "cat-appetizers",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 850, takeAway: 800, delivery: 900 },
       stock: 40,
+      minStock: 20,
+      maxStock: 100,
+      minStockAlert: 25,
     },
     {
       id: "prod-california-roll",
       name: "California Roll",
       description: "Roll de cangrejo, palta y pepino (8 piezas)",
+      sku: "CAL-001",
       categoryId: "cat-main-courses",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 1200, takeAway: 1100, delivery: 1300 },
       stock: 30,
+      minStock: 15,
+      maxStock: 60,
+      minStockAlert: 20,
     },
     {
       id: "prod-salmon-nigiri",
       name: "Nigiri de Salmón",
       description: "Salmón fresco sobre arroz (5 piezas)",
+      sku: "SAL-NIG-001",
       categoryId: "cat-main-courses",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 1800, takeAway: 1700, delivery: 1900 },
       stock: 45,
+      minStock: 20,
+      maxStock: 80,
+      minStockAlert: 25,
     },
     {
       id: "prod-dragon-roll",
       name: "Dragon Roll",
       description: "Roll premium con langostino tempura, palta y salsa de anguila (10 piezas)",
+      sku: "DRG-001",
       categoryId: "cat-main-courses",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 2500, takeAway: 2400, delivery: 2600 },
       stock: 20,
+      minStock: 10,
+      maxStock: 40,
+      minStockAlert: 12,
     },
     {
       id: "prod-mochi",
       name: "Mochi",
       description: "Postre japonés de arroz dulce relleno de helado (3 piezas)",
+      sku: "MCH-001",
       categoryId: "cat-desserts",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 900, takeAway: 850, delivery: 950 },
       stock: 35,
+      minStock: 15,
+      maxStock: 70,
+      minStockAlert: 20,
     },
     {
       id: "prod-dorayaki",
       name: "Dorayaki",
       description: "Panqueques japoneses rellenos con pasta de judías dulces",
+      sku: "DRY-001",
       categoryId: "cat-desserts",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 750, takeAway: 700, delivery: 800 },
       stock: 25,
+      minStock: 10,
+      maxStock: 50,
+      minStockAlert: 15,
     },
     {
       id: "prod-te-verde",
       name: "Té Verde",
       description: "Té verde japonés tradicional",
+      sku: "TEV-001",
       categoryId: "cat-beverages",
+      unitType: "VOLUME" as UnitType,
+      volumeUnit: "LITER" as VolumeUnit,
       prices: { dineIn: 400, takeAway: 350, delivery: 450 },
-      stock: 100,
+      stock: 15.5,
+      minStock: 5,
+      maxStock: 30,
+      minStockAlert: 7.5,
     },
     {
       id: "prod-ramune",
       name: "Ramune",
       description: "Bebida gaseosa japonesa con sabor a frutas",
+      sku: "RAM-001",
       categoryId: "cat-beverages",
+      unitType: "UNIT" as UnitType,
       prices: { dineIn: 500, takeAway: 450, delivery: 550 },
       stock: 60,
+      minStock: 30,
+      maxStock: 120,
+      minStockAlert: 40,
+    },
+    {
+      id: "prod-arroz-sushi",
+      name: "Arroz para Sushi",
+      description: "Arroz japonés premium para preparación de sushi",
+      sku: "ARZ-001",
+      categoryId: "cat-appetizers",
+      unitType: "WEIGHT" as UnitType,
+      weightUnit: "KILOGRAM" as WeightUnit,
+      prices: { dineIn: 0, takeAway: 0, delivery: 0 },
+      stock: 25,
+      minStock: 10,
+      maxStock: 50,
+      minStockAlert: 15,
+    },
+    {
+      id: "prod-sake",
+      name: "Sake Premium",
+      description: "Sake japonés tradicional de alta calidad",
+      sku: "SAK-001",
+      categoryId: "cat-beverages",
+      unitType: "VOLUME" as UnitType,
+      volumeUnit: "LITER" as VolumeUnit,
+      prices: { dineIn: 3500, takeAway: 3200, delivery: 3700 },
+      stock: 8.5,
+      minStock: 3,
+      maxStock: 15,
+      minStockAlert: 5,
     },
   ];
 
@@ -205,14 +280,19 @@ async function main() {
         id: productData.id,
         name: productData.name,
         description: productData.description,
+        sku: productData.sku,
         categoryId: productData.categoryId,
         restaurantId: restaurant.id,
+        unitType: productData.unitType,
+        weightUnit: productData.weightUnit || null,
+        volumeUnit: productData.volumeUnit || null,
+        minStockAlert: productData.minStockAlert,
         isActive: true,
       },
     });
 
     // Create ProductOnBranch with prices
-    await prisma.productOnBranch.upsert({
+    const productOnBranch = await prisma.productOnBranch.upsert({
       where: {
         productId_branchId: {
           productId: product.id,
@@ -224,6 +304,8 @@ async function main() {
         productId: product.id,
         branchId: branch.id,
         stock: productData.stock,
+        minStock: productData.minStock,
+        maxStock: productData.maxStock,
         isActive: true,
         prices: {
           create: [
@@ -243,6 +325,21 @@ async function main() {
         },
       },
     });
+
+    // Create initial stock movement for record keeping
+    if (productData.stock > 0) {
+      await prisma.stockMovement.create({
+        data: {
+          productOnBranchId: productOnBranch.id,
+          quantity: productData.stock,
+          previousStock: 0,
+          newStock: productData.stock,
+          reason: "Stock inicial",
+          notes: "Carga inicial de inventario durante seed",
+          createdBy: adminUser.id,
+        },
+      });
+    }
   }
   console.log("✅ Productos creados:", products.length);
 
@@ -323,12 +420,6 @@ async function main() {
     });
   }
   console.log("✅ Mesas creadas:", tables.length);
-
-  // Get created table IDs for relationships
-  const createdTables = await prisma.table.findMany({
-    where: { branchId: branch.id },
-    select: { id: true, number: true },
-  });
 
   // Create Time Slots
   const timeSlots = [

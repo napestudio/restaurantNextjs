@@ -129,8 +129,8 @@ export async function getTimeSlots(branchId: string) {
       data: timeSlots.map((slot) => ({
         id: slot.id,
         name: slot.name,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
+        startTime: slot.startTime.toISOString(),
+        endTime: slot.endTime.toISOString(),
         daysOfWeek: slot.daysOfWeek,
         pricePerPerson: slot.pricePerPerson?.toNumber() || 0,
         notes: slot.notes,
@@ -138,8 +138,8 @@ export async function getTimeSlots(branchId: string) {
         isActive: slot.isActive,
         branchId: slot.branchId,
         tables: slot.tables.map((tt) => tt.table),
-        createdAt: slot.createdAt,
-        updatedAt: slot.updatedAt,
+        createdAt: slot.createdAt.toISOString(),
+        updatedAt: slot.updatedAt.toISOString(),
       })),
     };
   } catch (error) {

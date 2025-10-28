@@ -25,7 +25,6 @@ import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/lib/reservat
 import { formatTime } from "@/app/(admin)/dashboard/reservations/lib/utils";
 import { WeekDatePicker } from "../week-date-picker";
 import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
-import { createReservation } from "@/actions/Reservation";
 
 interface NewReservation {
   name: string;
@@ -43,7 +42,18 @@ interface NewReservation {
 interface CreateReservationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (reservation: NewReservation) => void;
+  onCreate: (reservation: {
+    name: string;
+    email: string;
+    phone: string;
+    date: string;
+    time: string;
+    guests: string;
+    dietaryRestrictions: string;
+    accessibilityNeeds: string;
+    notes: string;
+    status: string;
+  }) => void;
   timeSlots: TimeSlot[];
   isPending?: boolean;
   branchId: string;
@@ -85,7 +95,7 @@ export function CreateReservationDialog({
       const fetchSlots = async () => {
         const result = await getAvailableTimeSlotsForDate(
           branchId,
-          new Date(newReservation.date)
+          newReservation.date
         );
         if (result.success && result.data) {
           setAvailableSlots(result.data);
@@ -126,60 +136,34 @@ export function CreateReservationDialog({
       return;
     }
 
-    if (
-      newReservation.name &&
-      newReservation.email &&
-      newReservation.date &&
-      newReservation.time &&
-      newReservation.guests
-    ) {
-      try {
-        //onCreate(newReservation);
-        const result = await createReservation({
-          branchId,
-          customerName: newReservation.name,
-          customerEmail: newReservation.email,
-          customerPhone: newReservation.phone || undefined,
-          date: newReservation.date,
-          time: newReservation.time,
-          guests: newReservation.guests,
-          timeSlotId: newReservation.time,
-          dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
-          accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
-          notes: newReservation.notes || undefined,
-          createdBy: "WEB",
-        });
+    // Convert newReservation to the expected format and call onCreate
+    onCreate({
+      name: newReservation.name,
+      email: newReservation.email,
+      phone: newReservation.phone,
+      date: newReservation.date,
+      time: newReservation.time,
+      guests: newReservation.guests.toString(),
+      dietaryRestrictions: newReservation.dietaryRestrictions,
+      accessibilityNeeds: newReservation.accessibilityNeeds,
+      notes: newReservation.notes,
+      status: newReservation.status,
+    });
 
-        if (result.success) {
-          // toast({
-          //   title: "Reservation Created",
-          //   description: "Your reservation has been successfully created!",
-          // });
-          // Reset form
-          setNewReservation({
-            name: "",
-            email: "",
-            phone: "",
-            date: "",
-            time: "",
-            guests: 2,
-            dietaryRestrictions: "",
-            accessibilityNeeds: "",
-            notes: "",
-            status: "confirmed",
-          });
-          setSelectedSlotPrice(0);
-        }
-      } catch (error) {
-        // toast({
-        //   title: "Error",
-        //   description: result.error || "Failed to create reservation",
-        //   variant: "destructive",
-        // });
-      } finally {
-        onOpenChange(false);
-      }
-    }
+    // Reset form
+    setNewReservation({
+      name: "",
+      email: "",
+      phone: "",
+      date: new Date().toISOString().split("T")[0],
+      time: "",
+      guests: 2,
+      dietaryRestrictions: "",
+      accessibilityNeeds: "",
+      notes: "",
+      status: "confirmed",
+    });
+    setSelectedSlotPrice(0);
   };
 
   const handleTimeSlotChange = (value: string) => {
@@ -249,8 +233,8 @@ export function CreateReservationDialog({
             <Label htmlFor="new-date">Date</Label>
             <WeekDatePicker
               value={newReservation.date}
-              onChange={(date) =>
-                setNewReservation((prev) => ({ ...prev, date: date }))
+              onChange={(date: string) =>
+                setNewReservation((prev) => ({ ...prev, date }))
               }
               availableDays={availableDays}
             />

@@ -2,10 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Plus, RefreshCw } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
-import { createTimeSlot, deleteTimeSlot } from "@/actions/TimeSlot";
+import { getTimeSlots, createTimeSlot, deleteTimeSlot } from "@/actions/TimeSlot";
 import { StatsOverview } from "./stats-overview";
 import { TimeSlotsTable } from "./time-slots-table";
 import { CreateTimeSlotDialog } from "./create-time-slot-dialog";
@@ -20,7 +19,7 @@ export function TimeSlotsManager({
   initialTimeSlots,
   branchId,
 }: TimeSlotsManagerProps) {
-  const router = useRouter();
+  const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
   const [isPending, startTransition] = useTransition();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -28,6 +27,16 @@ export function TimeSlotsManager({
     id: string;
     dbId?: string;
   } | null>(null);
+
+  // Refetch data helper
+  const mutate = () => {
+    startTransition(async () => {
+      const result = await getTimeSlots(branchId);
+      if (result.success && result.data) {
+        setTimeSlots(result.data);
+      }
+    });
+  };
 
   const handleCreate = async (newSlot: {
     timeFrom: string;
@@ -54,7 +63,7 @@ export function TimeSlotsManager({
 
       if (result.success) {
         setCreateDialogOpen(false);
-        router.refresh();
+        mutate();
       } else {
         // TODO: Show error toast/notification
         console.error("Failed to create time slot:", result.error);
@@ -64,7 +73,7 @@ export function TimeSlotsManager({
 
   const handleDeleteClick = (slotId: string) => {
     // Find the slot to get its database ID
-    const slot = initialTimeSlots.find((s) => s.id === slotId);
+    const slot = timeSlots.find((s) => s.id === slotId);
     setSlotToDelete({ id: slotId, dbId: slot?.id });
     setDeleteDialogOpen(true);
   };
@@ -79,7 +88,7 @@ export function TimeSlotsManager({
         if (result.success) {
           setDeleteDialogOpen(false);
           setSlotToDelete(null);
-          router.refresh();
+          mutate();
         } else {
           // TODO: Show error toast/notification
           console.error("Failed to delete time slot:", result.error);
@@ -89,7 +98,19 @@ export function TimeSlotsManager({
   };
 
   return (
-    <>
+    <div className="space-y-6 relative">
+      {/* Loading overlay during refetch */}
+      {isPending && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw className="w-8 h-8 text-red-600 animate-spin" />
+            <p className="text-sm font-medium text-gray-700">
+              Actualizando datos...
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -108,11 +129,11 @@ export function TimeSlotsManager({
       </div>
 
       <div className="mb-8">
-        <StatsOverview timeSlots={initialTimeSlots} />
+        <StatsOverview timeSlots={timeSlots} />
       </div>
 
       <TimeSlotsTable
-        timeSlots={initialTimeSlots}
+        timeSlots={timeSlots}
         onDelete={handleDeleteClick}
         onCreateClick={() => setCreateDialogOpen(true)}
       />
@@ -131,6 +152,6 @@ export function TimeSlotsManager({
         onConfirm={handleDeleteConfirm}
         isPending={isPending}
       />
-    </>
+    </div>
   );
 }
