@@ -261,7 +261,7 @@ export function TablePropertiesForm({
               size="sm"
             >
               <RotateCw className="h-4 w-4 mr-2" />
-              Rotar 45°
+              Rotar 90°
             </Button>
           )}
           <Button

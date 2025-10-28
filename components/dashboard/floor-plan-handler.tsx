@@ -328,23 +328,30 @@ export default function FloorPlanHandler({
         prevTables.map((table) => {
           if (table.id !== draggedTable) return table;
 
-          // Allow center to reach canvas edges (table can overflow)
-          const centerX = x - dragOffset.x + table.width / 2;
-          const centerY = y - dragOffset.y + table.height / 2;
+          // Calculate raw top-left position
+          const rawX = x - dragOffset.x;
+          const rawY = y - dragOffset.y;
 
-          const constrainedCenterX = Math.max(
+          // Snap to 100px grid (one cell at a time)
+          // All tables move in full cell increments
+          const gridSize = 100;
+          const snappedX = Math.round(rawX / gridSize) * gridSize;
+          const snappedY = Math.round(rawY / gridSize) * gridSize;
+
+          // Constrain to canvas bounds
+          const constrainedX = Math.max(
             0,
-            Math.min(canvasWidth, centerX)
+            Math.min(canvasWidth - table.width, snappedX)
           );
-          const constrainedCenterY = Math.max(
+          const constrainedY = Math.max(
             0,
-            Math.min(canvasHeight, centerY)
+            Math.min(canvasHeight - table.height, snappedY)
           );
 
           return {
             ...table,
-            x: constrainedCenterX - table.width / 2,
-            y: constrainedCenterY - table.height / 2,
+            x: constrainedX,
+            y: constrainedY,
           };
         })
       );
@@ -456,15 +463,15 @@ export default function FloorPlanHandler({
     const table = tables.find((t) => t.id === tableId);
     if (!table) return;
 
-    const newRotation = (table.rotation + 45) % 360;
-
-    // No position constraints - allow table to overflow canvas if needed
+    // Just swap width and height for 90-degree rotation effect
+    // No SVG rotation needed - the dimension swap creates the visual rotation
     setTables((prevTables) =>
       prevTables.map((t) =>
         t.id === tableId
           ? {
               ...t,
-              rotation: newRotation,
+              width: table.height,
+              height: table.width,
             }
           : t
       )
@@ -577,7 +584,7 @@ export default function FloorPlanHandler({
     if (!table) return;
 
     const defaults = shapeDefaults[table.shape];
-    const multiplier = size === "big" ? 1.5 : 1;
+    const multiplier = size === "big" ? 1.25 : 1;
 
     // Update local floor plan state with new size
     setTables((prevTables) =>

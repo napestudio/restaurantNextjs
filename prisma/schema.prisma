@@ -216,8 +216,8 @@ model Table {
   // Floor plan
   positionX    Float?             @default(0)
   positionY    Float?             @default(0)
-  width        Float?             @default(80)
-  height       Float?             @default(80)
+  width        Float?             @default(100)
+  height       Float?             @default(100)
   rotation     Float?             @default(0)
   shape        TableShape?        @default(SQUARE)
 

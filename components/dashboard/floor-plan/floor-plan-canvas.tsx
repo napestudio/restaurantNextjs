@@ -218,8 +218,8 @@ export function FloorPlanCanvas({
           </Button>
         </div>
         <div
-          className="border rounded-lg overflow-auto bg-gray-100"
-          style={{ height: `${CANVAS_CONTAINER_HEIGHT}px` }}
+          className="border rounded-lg overflow-auto bg-gray-100 p-2"
+          style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
         >
           <svg
             ref={svgRef}
@@ -234,15 +234,15 @@ export function FloorPlanCanvas({
               <defs>
                 <pattern
                   id="grid"
-                  width="50"
-                  height="50"
+                  width="100"
+                  height="100"
                   patternUnits="userSpaceOnUse"
                 >
                   <path
-                    d="M 50 0 L 0 0 0 50"
+                    d="M 100 0 L 0 0 0 100"
                     fill="none"
                     stroke="#e5e7eb"
-                    strokeWidth="1"
+                    strokeWidth="2"
                   />
                 </pattern>
               </defs>
