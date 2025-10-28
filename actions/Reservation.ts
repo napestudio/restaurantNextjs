@@ -13,6 +13,7 @@ function serializeReservation(reservation: any) {
   return {
     ...reservation,
     date: reservation.date.toISOString(),
+    exactTime: reservation.exactTime ? reservation.exactTime.toISOString() : null,
     createdAt: reservation.createdAt.toISOString(),
     timeSlot: reservation.timeSlot
       ? {
