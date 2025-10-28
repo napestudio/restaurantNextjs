@@ -262,9 +262,27 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
                   {wizardData.guests}
                 </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Fecha</p>
-                <p className="font-semibold text-gray-900">{wizardData.date}</p>
+              <div className="col-span-2">
+                <p className="text-sm text-gray-500">Fecha y Hora</p>
+                <p className="font-semibold text-gray-900">
+                  {new Date(wizardData.date).toLocaleDateString("es-ES", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  {wizardData.exactTime && (
+                    <span className="ml-2">
+                      a las{" "}
+                      {new Date(wizardData.exactTime).toLocaleTimeString(
+                        "es-ES",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </span>
+                  )}
+                </p>
               </div>
               <div className="col-span-2">
                 <p className="text-sm text-gray-500">Turno</p>

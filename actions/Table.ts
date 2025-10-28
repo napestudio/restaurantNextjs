@@ -265,9 +265,12 @@ export async function findAvailableTables(
       })
     );
 
-    // Filter to only tables with available capacity
+    // Filter to only tables with available capacity AND not manually occupied/reserved/cleaning
     const availableTables = tablesWithCapacity.filter(
-      (table) => table.remainingCapacity > 0
+      (table) =>
+        table.remainingCapacity > 0 &&
+        // Respect manual status: only allow EMPTY or null (unset) status
+        (!table.status || table.status === "EMPTY")
     );
 
     if (availableTables.length === 0) {
@@ -721,5 +724,123 @@ export async function updateFloorPlanBatch(
   } catch (error) {
     console.error("Error updating floor plan batch:", error);
     return { success: false, error: "Failed to update floor plan" };
+  }
+}
+
+/**
+ * Automatically set table status to RESERVED when reservation is created/confirmed
+ * Call this after assigning tables to a reservation
+ */
+export async function setTablesReserved(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "RESERVED",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as reserved:", error);
+    return { success: false, error: "Failed to set tables as reserved" };
+  }
+}
+
+/**
+ * Set table status to OCCUPIED when customer is seated
+ * Call this when a reservation is being seated or a walk-in arrives
+ */
+export async function setTablesOccupied(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "OCCUPIED",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as occupied:", error);
+    return { success: false, error: "Failed to set tables as occupied" };
+  }
+}
+
+/**
+ * Set table status to EMPTY when customers leave
+ * Call this when a reservation is completed or cancelled
+ */
+export async function setTablesEmpty(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "EMPTY",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as empty:", error);
+    return { success: false, error: "Failed to set tables as empty" };
+  }
+}
+
+/**
+ * Automatically manage table status based on reservation status change
+ * This is a convenience function to handle all status transitions
+ */
+export async function updateTableStatusForReservation(
+  reservationId: string,
+  newStatus: ReservationStatus
+) {
+  try {
+    // Get all tables for this reservation
+    const reservationTables = await prisma.reservationTable.findMany({
+      where: { reservationId },
+      select: { tableId: true },
+    });
+
+    const tableIds = reservationTables.map((rt) => rt.tableId);
+
+    if (tableIds.length === 0) {
+      return { success: true, message: "No tables to update" };
+    }
+
+    // Update table status based on reservation status
+    switch (newStatus) {
+      case ReservationStatus.CONFIRMED:
+      case ReservationStatus.PENDING:
+        await setTablesReserved(tableIds);
+        break;
+
+      case ReservationStatus.SEATED:
+        await setTablesOccupied(tableIds);
+        break;
+
+      case ReservationStatus.COMPLETED:
+      case ReservationStatus.CANCELED:
+      case ReservationStatus.NO_SHOW:
+        await setTablesEmpty(tableIds);
+        break;
+
+      default:
+        console.warn(`Unhandled reservation status: ${newStatus}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating table status for reservation:", error);
+    return {
+      success: false,
+      error: "Failed to update table status for reservation",
+    };
   }
 }

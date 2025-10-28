@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Trash2, Filter } from "lucide-react";
+import { Eye, Trash2, Filter, UserCheck } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 
@@ -68,7 +68,9 @@ export function ReservationsTable({
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="pending">Pendientes</SelectItem>
                 <SelectItem value="confirmed">Confirmadas</SelectItem>
-                <SelectItem value="cancelled">Completadas</SelectItem>
+                <SelectItem value="seated">Sentadas</SelectItem>
+                <SelectItem value="completed">Completadas</SelectItem>
+                <SelectItem value="canceled">Canceladas</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -147,12 +149,26 @@ export function ReservationsTable({
                       <SelectContent>
                         <SelectItem value="pending">Pendiente</SelectItem>
                         <SelectItem value="confirmed">Confirmada</SelectItem>
+                        <SelectItem value="seated">Sentada</SelectItem>
+                        <SelectItem value="completed">Completada</SelectItem>
                         <SelectItem value="canceled">Cancelada</SelectItem>
+                        <SelectItem value="no_show">No Show</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
+                      {reservation.status.toUpperCase() === "CONFIRMED" && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => onStatusUpdate(reservation.id, "seated")}
+                          title="Marcar como Sentada"
+                        >
+                          <UserCheck className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
