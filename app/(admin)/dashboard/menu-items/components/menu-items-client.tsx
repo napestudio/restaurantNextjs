@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, Filter } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Plus, Search, Filter, RefreshCw } from "lucide-react";
+import { getMenuItems } from "@/actions/menuItems";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemDialog } from "./menu-item-dialog";
 import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
@@ -74,6 +75,7 @@ export function MenuItemsClient({
   const [editingItem, setEditingItem] = useState<MenuItemWithRelations | null>(
     null
   );
+  const [isPending, startTransition] = useTransition();
 
   // Filtrar items
   const filteredItems = menuItems.filter((item) => {
@@ -104,12 +106,31 @@ export function MenuItemsClient({
   };
 
   const handleSuccess = () => {
-    // Recargar la página para obtener los datos actualizados
-    window.location.reload();
+    // Refetch data using restaurantId for better performance and UX
+    startTransition(async () => {
+      const result = await getMenuItems(restaurantId);
+
+      if (result.success && result.data) {
+        // Data is already serialized by the server action
+        setMenuItems(result.data);
+      }
+    });
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Loading overlay durante refetch */}
+      {isPending && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+            <p className="text-sm font-medium text-gray-700">
+              Actualizando datos...
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Barra de herramientas */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex-1 w-full sm:w-auto">

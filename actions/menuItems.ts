@@ -69,8 +69,16 @@ export async function createMenuItem(input: CreateMenuItemInput) {
       },
     });
 
+    // Serialize Decimal and Date fields
+    const serializedProduct = {
+      ...product,
+      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+    };
+
     revalidatePath("/dashboard/menu-items");
-    return { success: true, data: product };
+    return { success: true, data: serializedProduct };
   } catch (error) {
     console.error("Error creating menu item:", error);
     return {
@@ -104,8 +112,16 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
       },
     });
 
+    // Serialize Decimal and Date fields
+    const serializedProduct = {
+      ...product,
+      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+    };
+
     revalidatePath("/dashboard/menu-items");
-    return { success: true, data: product };
+    return { success: true, data: serializedProduct };
   } catch (error) {
     console.error("Error updating menu item:", error);
     return {
@@ -157,7 +173,30 @@ export async function getMenuItems(restaurantId: string) {
       },
     });
 
-    return { success: true, data: products };
+    // Serialize Decimal and Date fields for client components
+    const serializedProducts = products.map((product) => ({
+      ...product,
+      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+      branches: product.branches.map((branch) => ({
+        ...branch,
+        stock: Number(branch.stock),
+        minStock: branch.minStock ? Number(branch.minStock) : null,
+        maxStock: branch.maxStock ? Number(branch.maxStock) : null,
+        lastRestocked: branch.lastRestocked
+          ? branch.lastRestocked.toISOString()
+          : null,
+        createdAt: branch.createdAt.toISOString(),
+        updatedAt: branch.updatedAt.toISOString(),
+        prices: branch.prices.map((price) => ({
+          ...price,
+          price: Number(price.price),
+        })),
+      })),
+    }));
+
+    return { success: true, data: serializedProducts };
   } catch (error) {
     console.error("Error fetching menu items:", error);
     return {
@@ -261,8 +300,21 @@ export async function setProductOnBranch(input: SetProductBranchInput) {
       });
     }
 
+    // Serialize Decimal and Date fields
+    const serializedProductOnBranch = {
+      ...productOnBranch,
+      stock: Number(productOnBranch.stock),
+      minStock: productOnBranch.minStock ? Number(productOnBranch.minStock) : null,
+      maxStock: productOnBranch.maxStock ? Number(productOnBranch.maxStock) : null,
+      lastRestocked: productOnBranch.lastRestocked
+        ? productOnBranch.lastRestocked.toISOString()
+        : null,
+      createdAt: productOnBranch.createdAt.toISOString(),
+      updatedAt: productOnBranch.updatedAt.toISOString(),
+    };
+
     revalidatePath("/dashboard/menu-items");
-    return { success: true, data: productOnBranch };
+    return { success: true, data: serializedProductOnBranch };
   } catch (error) {
     console.error("Error setting product on branch:", error);
     return {

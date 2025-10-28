@@ -19,27 +19,7 @@ export default async function MenuItemsPage() {
       ? categoriesResult.data
       : [];
 
-  // Serialize Decimal fields to numbers for client components
-  const serializedMenuItems = menuItems.map((item) => ({
-    ...item,
-    minStockAlert: item.minStockAlert ? Number(item.minStockAlert) : null,
-    createdAt: item.createdAt.toISOString(),
-    updatedAt: item.updatedAt.toISOString(),
-    branches: item.branches.map((branch) => ({
-      ...branch,
-      stock: Number(branch.stock),
-      minStock: branch.minStock ? Number(branch.minStock) : null,
-      maxStock: branch.maxStock ? Number(branch.maxStock) : null,
-      lastRestocked: branch.lastRestocked ? branch.lastRestocked.toISOString() : null,
-      createdAt: branch.createdAt.toISOString(),
-      updatedAt: branch.updatedAt.toISOString(),
-      prices: branch.prices.map((price) => ({
-        ...price,
-        price: Number(price.price),
-      })),
-    })),
-  }));
-
+  // Data is already serialized by the server action
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="px-4 sm:px-6 lg:px-8 py-8">
@@ -51,7 +31,7 @@ export default async function MenuItemsPage() {
         </div>
 
         <MenuItemsClient
-          initialMenuItems={serializedMenuItems}
+          initialMenuItems={menuItems}
           categories={categories}
           restaurantId={restaurantId}
           branchId={branchId}

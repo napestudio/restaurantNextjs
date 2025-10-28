@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, Package, TrendingDown, DollarSign, Plus, Minus, RefreshCw } from "lucide-react";
-import { StockAdjustmentDialog } from "./stock-adjustment-dialog";
+import type {
+  PriceType,
+  UnitType,
+  VolumeUnit,
+  WeightUnit,
+} from "@/app/generated/prisma";
+import { AlertTriangle, Package, RefreshCw, TrendingDown } from "lucide-react";
+import { useState, useTransition } from "react";
+import { getBranchStockSummary, getLowStockAlerts } from "@/actions/stock";
 import { formatStock } from "../../menu-items/lib/units";
-import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
+import { StockAdjustmentDialog } from "./stock-adjustment-dialog";
 
 // Serialized types for client components
 type SerializedCategory = {
@@ -76,24 +82,27 @@ export function StockManagementClient({
   initialAlerts,
 }: StockManagementClientProps) {
   const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<ProductOnBranchWithRelations | null>(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductOnBranchWithRelations | null>(null);
   const [filterView, setFilterView] = useState<"all" | "low" | "out">("all");
+  const [summary, setSummary] = useState<StockSummary | null>(initialSummary);
+  const [alerts, setAlerts] =
+    useState<ProductOnBranchWithRelations[]>(initialAlerts);
+  const [isPending, startTransition] = useTransition();
 
-  if (!initialSummary) {
+  if (!summary) {
     return (
       <div className="bg-white rounded-lg shadow p-12 text-center">
         <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">
           No hay datos de stock disponibles
         </h3>
-        <p className="text-gray-500">
-          Comienza agregando productos al menú
-        </p>
+        <p className="text-gray-500">Comienza agregando productos al menú</p>
       </div>
     );
   }
 
-  const { products, stats } = initialSummary;
+  const { products, stats } = summary;
 
   // Filtrar productos según la vista seleccionada
   const filteredProducts = products.filter((product) => {
@@ -119,14 +128,40 @@ export function StockManagementClient({
   };
 
   const handleSuccess = () => {
-    // Recargar la página para obtener datos actualizados
-    window.location.reload();
+    // Refetch data using branchId for better performance and UX
+    startTransition(async () => {
+      const [summaryResult, alertsResult] = await Promise.all([
+        getBranchStockSummary(branchId),
+        getLowStockAlerts(branchId),
+      ]);
+
+      // Data is already serialized by the server actions
+      if (summaryResult.success && summaryResult.data) {
+        setSummary(summaryResult.data);
+      }
+
+      if (alertsResult.success && alertsResult.data) {
+        setAlerts(alertsResult.data);
+      }
+    });
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Loading overlay durante refetch */}
+      {isPending && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+            <p className="text-sm font-medium text-gray-700">
+              Actualizando datos...
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -162,22 +197,10 @@ export function StockManagementClient({
             <TrendingDown className="w-12 h-12 text-red-500" />
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Valor del Stock</p>
-              <p className="text-3xl font-bold text-green-600">
-                ${stats.totalStockValue.toFixed(2)}
-              </p>
-            </div>
-            <DollarSign className="w-12 h-12 text-green-500" />
-          </div>
-        </div>
       </div>
 
       {/* Alertas de Stock Bajo */}
-      {initialAlerts.length > 0 && (
+      {alerts.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
@@ -189,16 +212,17 @@ export function StockManagementClient({
                 Los siguientes productos necesitan reabastecimiento:
               </p>
               <ul className="text-sm text-yellow-800 space-y-1">
-                {initialAlerts.slice(0, 5).map((alert) => (
+                {alerts.slice(0, 5).map((alert) => (
                   <li key={alert.id}>
-                    <strong>{alert.product.name}</strong>: {alert.stock.toFixed(2)}{" "}
-                    (mínimo: {alert.product.minStockAlert?.toFixed(2) ?? "N/A"})
+                    <strong>{alert.product.name}</strong>:{" "}
+                    {alert.stock.toFixed(2)} (mínimo:{" "}
+                    {alert.product.minStockAlert?.toFixed(2) ?? "N/A"})
                   </li>
                 ))}
               </ul>
-              {initialAlerts.length > 5 && (
+              {alerts.length > 5 && (
                 <p className="text-xs text-yellow-700 mt-2">
-                  Y {initialAlerts.length - 5} productos más...
+                  Y {alerts.length - 5} productos más...
                 </p>
               )}
             </div>
@@ -272,7 +296,9 @@ export function StockManagementClient({
                 const minAlert = product.product.minStockAlert;
                 const isLowStock = minAlert && stock < minAlert && stock > 0;
                 const isOutOfStock = stock === 0;
-                const dineInPrice = product.prices.find((p) => p.type === "DINE_IN");
+                const dineInPrice = product.prices.find(
+                  (p) => p.type === "DINE_IN"
+                );
 
                 return (
                   <tr key={product.id} className="hover:bg-gray-50">

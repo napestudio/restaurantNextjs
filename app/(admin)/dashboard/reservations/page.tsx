@@ -1,7 +1,6 @@
-import { ReservationsManager } from "@/components/dashboard/reservations-manager";
-import { getTimeSlots } from "@/actions/TimeSlot";
 import { getReservations } from "@/actions/Reservation";
-import { ReservationWithRelations } from "./lib/reservations";
+import { getTimeSlots } from "@/actions/TimeSlot";
+import { ReservationsManager } from "@/components/dashboard/reservations-manager";
 
 export default async function ReservationsPage() {
   // TODO: Get branchId from user session/context

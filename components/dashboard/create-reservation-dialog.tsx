@@ -85,7 +85,7 @@ export function CreateReservationDialog({
       const fetchSlots = async () => {
         const result = await getAvailableTimeSlotsForDate(
           branchId,
-          new Date(newReservation.date)
+          newReservation.date
         );
         if (result.success && result.data) {
           setAvailableSlots(result.data);
@@ -249,8 +249,8 @@ export function CreateReservationDialog({
             <Label htmlFor="new-date">Date</Label>
             <WeekDatePicker
               value={newReservation.date}
-              onChange={(date) =>
-                setNewReservation((prev) => ({ ...prev, date: date }))
+              onChange={(date: string) =>
+                setNewReservation((prev) => ({ ...prev, date }))
               }
               availableDays={availableDays}
             />

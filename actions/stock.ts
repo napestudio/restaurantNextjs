@@ -75,9 +75,31 @@ export async function adjustStock(input: AdjustStockInput) {
       return { updatedProductOnBranch, stockMovement };
     });
 
+    // Serialize Decimal and Date fields
+    const serializedResult = {
+      updatedProductOnBranch: {
+        ...result.updatedProductOnBranch,
+        stock: Number(result.updatedProductOnBranch.stock),
+        minStock: result.updatedProductOnBranch.minStock ? Number(result.updatedProductOnBranch.minStock) : null,
+        maxStock: result.updatedProductOnBranch.maxStock ? Number(result.updatedProductOnBranch.maxStock) : null,
+        lastRestocked: result.updatedProductOnBranch.lastRestocked
+          ? result.updatedProductOnBranch.lastRestocked.toISOString()
+          : null,
+        createdAt: result.updatedProductOnBranch.createdAt.toISOString(),
+        updatedAt: result.updatedProductOnBranch.updatedAt.toISOString(),
+      },
+      stockMovement: {
+        ...result.stockMovement,
+        quantity: Number(result.stockMovement.quantity),
+        previousStock: Number(result.stockMovement.previousStock),
+        newStock: Number(result.stockMovement.newStock),
+        createdAt: result.stockMovement.createdAt.toISOString(),
+      },
+    };
+
     revalidatePath("/dashboard/menu-items");
     revalidatePath("/dashboard/stock");
-    return { success: true, data: result };
+    return { success: true, data: serializedResult };
   } catch (error) {
     console.error("Error adjusting stock:", error);
     return {
@@ -216,10 +238,31 @@ export async function getBranchStockSummary(branchId: string) {
       return sum + Number(pob.stock) * Number(dineInPrice.price);
     }, 0);
 
+    // Serialize Decimal and Date fields
+    const serializedProducts = productsOnBranch.map((pob) => ({
+      ...pob,
+      stock: Number(pob.stock),
+      minStock: pob.minStock ? Number(pob.minStock) : null,
+      maxStock: pob.maxStock ? Number(pob.maxStock) : null,
+      lastRestocked: pob.lastRestocked ? pob.lastRestocked.toISOString() : null,
+      createdAt: pob.createdAt.toISOString(),
+      updatedAt: pob.updatedAt.toISOString(),
+      product: {
+        ...pob.product,
+        minStockAlert: pob.product.minStockAlert ? Number(pob.product.minStockAlert) : null,
+        createdAt: pob.product.createdAt.toISOString(),
+        updatedAt: pob.product.updatedAt.toISOString(),
+      },
+      prices: pob.prices.map((price) => ({
+        ...price,
+        price: Number(price.price),
+      })),
+    }));
+
     return {
       success: true,
       data: {
-        products: productsOnBranch,
+        products: serializedProducts,
         stats: {
           totalProducts,
           lowStockCount: lowStockProducts.length,
@@ -314,7 +357,28 @@ export async function getLowStockAlerts(branchId: string) {
       return aRatio - bRatio;
     });
 
-    return { success: true, data: alerts };
+    // Serialize Decimal and Date fields
+    const serializedAlerts = alerts.map((alert) => ({
+      ...alert,
+      stock: Number(alert.stock),
+      minStock: alert.minStock ? Number(alert.minStock) : null,
+      maxStock: alert.maxStock ? Number(alert.maxStock) : null,
+      lastRestocked: alert.lastRestocked ? alert.lastRestocked.toISOString() : null,
+      createdAt: alert.createdAt.toISOString(),
+      updatedAt: alert.updatedAt.toISOString(),
+      product: {
+        ...alert.product,
+        minStockAlert: alert.product.minStockAlert ? Number(alert.product.minStockAlert) : null,
+        createdAt: alert.product.createdAt.toISOString(),
+        updatedAt: alert.product.updatedAt.toISOString(),
+      },
+      prices: alert.prices.map((price) => ({
+        ...price,
+        price: Number(price.price),
+      })),
+    }));
+
+    return { success: true, data: serializedAlerts };
   } catch (error) {
     console.error("Error fetching low stock alerts:", error);
     return {
