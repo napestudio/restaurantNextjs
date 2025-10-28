@@ -35,6 +35,7 @@ enum OrderType {
 enum ReservationStatus {
   PENDING
   CONFIRMED
+  SEATED
   COMPLETED
   CANCELED
   NO_SHOW
@@ -215,8 +216,8 @@ model Table {
   // Floor plan
   positionX    Float?             @default(0)
   positionY    Float?             @default(0)
-  width        Float?             @default(80)
-  height       Float?             @default(80)
+  width        Float?             @default(100)
+  height       Float?             @default(100)
   rotation     Float?             @default(0)
   shape        TableShape?        @default(SQUARE)
 
@@ -246,6 +247,7 @@ model Reservation {
   people              Int
   timeSlot            TimeSlot?          @relation(fields: [timeSlotId], references: [id])
   timeSlotId          String?
+  exactTime           DateTime?          // Precise 15-min arrival time within the slot
   status              ReservationStatus  @default(PENDING)
   dietaryRestrictions String?
   accessibilityNeeds  String?

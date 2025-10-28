@@ -52,7 +52,7 @@ export function PartySizePicker({
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
       {/* Quick size buttons */}
-      <div className="flex items-center justify-center gap-2 flex-wrap">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         {quickSizes.map((size) => (
           <button
             key={size}
@@ -72,7 +72,6 @@ export function PartySizePicker({
           </button>
         ))}
       </div>
-
       {/* Custom size controls */}
       <div className="flex items-center justify-center gap-2">
         <button

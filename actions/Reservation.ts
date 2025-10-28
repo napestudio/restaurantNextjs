@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ReservationStatus } from "@/app/generated/prisma";
-import { findAvailableTables } from "./Table";
+import { findAvailableTables, setTablesReserved, updateTableStatusForReservation } from "./Table";
 
 /**
  * Helper function to serialize reservation data for client components
@@ -13,6 +13,7 @@ function serializeReservation(reservation: any) {
   return {
     ...reservation,
     date: reservation.date.toISOString(),
+    exactTime: reservation.exactTime ? reservation.exactTime.toISOString() : null,
     createdAt: reservation.createdAt.toISOString(),
     timeSlot: reservation.timeSlot
       ? {
@@ -46,6 +47,7 @@ export async function createReservation(data: {
   time: string; // Time slot value "HH:mm-HH:mm"
   guests: number;
   timeSlotId?: string;
+  exactTime?: string; // ISO string for precise arrival time
   dietaryRestrictions?: string;
   accessibilityNeeds?: string;
   notes?: string;
@@ -76,6 +78,7 @@ export async function createReservation(data: {
         date: reservationDate,
         people: data.guests,
         timeSlotId: data.timeSlotId,
+        exactTime: data.exactTime ? new Date(data.exactTime) : null,
         dietaryRestrictions: data.dietaryRestrictions,
         accessibilityNeeds: data.accessibilityNeeds,
         notes: data.notes,
@@ -116,6 +119,9 @@ export async function createReservation(data: {
             where: { id: reservation.id },
             data: { status: ReservationStatus.CONFIRMED },
           });
+
+          // Automatically set table status to RESERVED
+          await setTablesReserved(assignmentResult.data.tableIds);
 
           finalStatus = ReservationStatus.CONFIRMED;
 
@@ -322,6 +328,9 @@ export async function updateReservationStatus(
       },
     });
 
+    // Automatically update table status based on reservation status
+    await updateTableStatusForReservation(id, status);
+
     revalidatePath("/dashboard/reservations");
     return { success: true, data: serializeReservation(reservation) };
   } catch (error) {
@@ -469,6 +478,13 @@ export async function assignTablesToReservation(
   tableIds: string[]
 ) {
   try {
+    // Get old table assignments to clear their status
+    const oldAssignments = await prisma.reservationTable.findMany({
+      where: { reservationId },
+      select: { tableId: true },
+    });
+    const oldTableIds = oldAssignments.map((a) => a.tableId);
+
     // First, remove existing table assignments
     await prisma.reservationTable.deleteMany({
       where: {
@@ -483,6 +499,17 @@ export async function assignTablesToReservation(
         tableId,
       })),
     });
+
+    // Get reservation status to set appropriate table status
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      select: { status: true },
+    });
+
+    if (reservation) {
+      // Update table status based on reservation status
+      await updateTableStatusForReservation(reservationId, reservation.status);
+    }
 
     revalidatePath("/dashboard/reservations");
     return { success: true, data: assignments };

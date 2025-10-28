@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ReservationForm } from "@/components/home/reservation-form";
+import { ReservationWizard } from "@/components/home/reservation-wizard";
 
 interface HeroProps {
   title: string;
@@ -44,12 +44,12 @@ export default function Hero({
           </div>
         </div>
 
-        {/* Reservation Form */}
+        {/* Reservation Wizard */}
         <div>
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
             {reservationTitle}
           </h2>
-          <ReservationForm branchId={branchId} />
+          <ReservationWizard branchId={branchId} />
         </div>
       </div>
     </div>

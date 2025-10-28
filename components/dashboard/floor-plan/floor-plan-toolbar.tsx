@@ -16,7 +16,7 @@ export function FloorPlanToolbar({
   onToggleEditMode,
   hasUnsavedChanges,
   isSaving = false,
-  isEditMode
+  isEditMode,
 }: FloorPlanToolbarProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
@@ -59,12 +59,17 @@ export function FloorPlanToolbar({
               onClick={onSave}
               disabled={!hasUnsavedChanges || isSaving}
               variant={hasUnsavedChanges ? "default" : "outline"}
-              className={hasUnsavedChanges ? "bg-green-600 hover:bg-green-700" : ""}
+              className={
+                hasUnsavedChanges ? "bg-green-600 hover:bg-green-700" : ""
+              }
             >
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Guardando..." : "Guardar Cambios"}
             </Button>
-            <Button onClick={onAddTable} className="bg-red-600 hover:bg-red-700">
+            <Button
+              onClick={onAddTable}
+              className="bg-red-600 hover:bg-red-700"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Agregar Mesa
             </Button>

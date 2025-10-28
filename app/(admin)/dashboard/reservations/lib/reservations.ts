@@ -18,6 +18,7 @@ export type SerializedReservation = {
   date: string; // ISO string
   people: number;
   timeSlotId: string | null;
+  exactTime: string | null; // ISO string - precise 15-min arrival time
   status: ReservationStatus;
   dietaryRestrictions: string | null;
   accessibilityNeeds: string | null;
