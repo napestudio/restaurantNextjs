@@ -70,102 +70,81 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
   const isOutOfStock = stock === 0;
 
   return (
-    <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden">
-      {/* Imagen del producto */}
-      <div className="relative h-48 bg-gray-200">
-        {item.imageUrl ? (
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-16 h-16 text-gray-400" />
-          </div>
-        )}
-
-        {/* Badge de estado */}
-        {isOutOfStock && (
-          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
-            Sin Stock
-          </div>
-        )}
-        {!isOutOfStock && hasLowStock && (
-          <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            Stock Bajo
-          </div>
-        )}
-
-        {/* Categoría */}
-        {item.category && (
-          <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-gray-700">
-            {item.category.name}
-          </div>
-        )}
-      </div>
-
-      {/* Información del producto */}
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 text-lg">
+    <div className="p-4 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center gap-4">
+        {/* Información principal */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <h3 className="font-semibold text-gray-900 text-base truncate">
               {item.name}
             </h3>
-            {item.sku && (
-              <p className="text-xs text-gray-500 mt-0.5">SKU: {item.sku}</p>
+
+            {/* Badges de estado */}
+            {isOutOfStock && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                Sin Stock
+              </span>
+            )}
+            {!isOutOfStock && hasLowStock && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                <AlertTriangle className="w-3 h-3" />
+                Stock Bajo
+              </span>
             )}
           </div>
-          <button
-            onClick={() => onEdit(item)}
-            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-            title="Editar producto"
-          >
-            <Edit className="w-5 h-5" />
-          </button>
-        </div>
 
-        {item.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {item.description}
-          </p>
-        )}
-
-        {/* Stock y precio */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div>
-            <div className="text-xs text-gray-500">Stock</div>
-            <div className={`font-semibold ${
-              isOutOfStock
-                ? "text-red-600"
-                : hasLowStock
-                ? "text-yellow-600"
-                : "text-gray-900"
-            }`}>
-              {stock} {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
-            </div>
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            {item.category && (
+              <span className="inline-flex items-center">
+                {item.category.name}
+              </span>
+            )}
+            {item.sku && (
+              <span className="text-gray-500">
+                SKU: {item.sku}
+              </span>
+            )}
           </div>
 
-          {dineInPrice && (
-            <div className="text-right">
-              <div className="text-xs text-gray-500">Precio</div>
-              <div className="font-semibold text-green-600">
-                ${dineInPrice.price.toFixed(2)}
-              </div>
-            </div>
+          {item.description && (
+            <p className="text-sm text-gray-600 mt-1 line-clamp-1">
+              {item.description}
+            </p>
           )}
         </div>
 
-        {/* Alerta de stock mínimo */}
-        {item.minStockAlert && (
-          <div className="mt-2 pt-2 border-t border-gray-100">
-            <div className="text-xs text-gray-500">
-              Alerta si &lt; {item.minStockAlert}{" "}
-              {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
+        {/* Stock */}
+        <div className="text-right min-w-[100px]">
+          <div className="text-xs text-gray-500 mb-0.5">Stock</div>
+          <div className={`font-semibold text-sm ${
+            isOutOfStock
+              ? "text-red-600"
+              : hasLowStock
+              ? "text-yellow-600"
+              : "text-gray-900"
+          }`}>
+            {stock} {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
+          </div>
+        </div>
+
+        {/* Precio */}
+        {dineInPrice && (
+          <div className="text-right min-w-[100px]">
+            <div className="text-xs text-gray-500 mb-0.5">Precio</div>
+            <div className="font-semibold text-sm text-green-600">
+              ${dineInPrice.price.toFixed(2)}
             </div>
           </div>
         )}
+
+        {/* Botón editar */}
+        <button
+          onClick={() => onEdit(item)}
+          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          title="Editar producto"
+        >
+          <Edit className="w-5 h-5" />
+        </button>
       </div>
     </div>
   );

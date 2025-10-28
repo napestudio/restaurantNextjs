@@ -407,21 +407,6 @@ export function MenuItemDialog({
                   </div>
                 </div>
 
-                {/* URL de Imagen */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    URL de Imagen
-                  </label>
-                  <input
-                    type="url"
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://ejemplo.com/imagen.jpg"
-                  />
-                </div>
-
                 {/* Tipo de Unidad */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
