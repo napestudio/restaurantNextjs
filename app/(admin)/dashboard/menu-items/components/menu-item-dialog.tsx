@@ -1,14 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Save, Loader2 } from "lucide-react";
-import { createMenuItem, updateMenuItem, setProductOnBranch } from "@/actions/menuItems";
-import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
 import {
-  UNIT_TYPE_OPTIONS,
-  WEIGHT_UNIT_OPTIONS,
-  VOLUME_UNIT_OPTIONS,
+  createMenuItem,
+  setProductOnBranch,
+  updateMenuItem,
+} from "@/actions/menuItems";
+import type {
+  PriceType,
+  UnitType,
+  VolumeUnit,
+  WeightUnit,
+} from "@/app/generated/prisma";
+import { Loader2, Save, X } from "lucide-react";
+import { useState } from "react";
+import {
   PRICE_TYPE_OPTIONS,
+  UNIT_TYPE_OPTIONS,
+  VOLUME_UNIT_OPTIONS,
+  WEIGHT_UNIT_OPTIONS,
 } from "../lib/units";
 
 // Serialized types for client components
@@ -125,14 +134,22 @@ export function MenuItemDialog({
     minStock: branchData?.minStock ? branchData.minStock.toString() : "",
     maxStock: branchData?.maxStock ? branchData.maxStock.toString() : "",
     prices: {
-      dineIn: existingPrices.dineIn?.price ? existingPrices.dineIn.price.toString() : "",
-      takeAway: existingPrices.takeAway?.price ? existingPrices.takeAway.price.toString() : "",
-      delivery: existingPrices.delivery?.price ? existingPrices.delivery.price.toString() : "",
+      dineIn: existingPrices.dineIn?.price
+        ? existingPrices.dineIn.price.toString()
+        : "",
+      takeAway: existingPrices.takeAway?.price
+        ? existingPrices.takeAway.price.toString()
+        : "",
+      delivery: existingPrices.delivery?.price
+        ? existingPrices.delivery.price.toString()
+        : "",
     },
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -186,7 +203,11 @@ export function MenuItemDialog({
     }
 
     // Validar que al menos un precio esté definido
-    if (!formData.prices.dineIn && !formData.prices.takeAway && !formData.prices.delivery) {
+    if (
+      !formData.prices.dineIn &&
+      !formData.prices.takeAway &&
+      !formData.prices.delivery
+    ) {
       return "Debe definir al menos un precio";
     }
 
@@ -220,7 +241,9 @@ export function MenuItemDialog({
           unitType: formData.unitType,
           weightUnit: formData.weightUnit || undefined,
           volumeUnit: formData.volumeUnit || undefined,
-          minStockAlert: formData.minStockAlert ? parseFloat(formData.minStockAlert) : undefined,
+          minStockAlert: formData.minStockAlert
+            ? parseFloat(formData.minStockAlert)
+            : undefined,
           categoryId: formData.categoryId || undefined,
           isActive: formData.isActive,
         });
@@ -238,7 +261,9 @@ export function MenuItemDialog({
           unitType: formData.unitType,
           weightUnit: formData.weightUnit || undefined,
           volumeUnit: formData.volumeUnit || undefined,
-          minStockAlert: formData.minStockAlert ? parseFloat(formData.minStockAlert) : undefined,
+          minStockAlert: formData.minStockAlert
+            ? parseFloat(formData.minStockAlert)
+            : undefined,
           categoryId: formData.categoryId || undefined,
           restaurantId,
           isActive: formData.isActive,
@@ -255,21 +280,34 @@ export function MenuItemDialog({
       if (productId) {
         const prices = [];
         if (formData.prices.dineIn) {
-          prices.push({ type: "DINE_IN" as const, price: parseFloat(formData.prices.dineIn) });
+          prices.push({
+            type: "DINE_IN" as const,
+            price: parseFloat(formData.prices.dineIn),
+          });
         }
         if (formData.prices.takeAway) {
-          prices.push({ type: "TAKE_AWAY" as const, price: parseFloat(formData.prices.takeAway) });
+          prices.push({
+            type: "TAKE_AWAY" as const,
+            price: parseFloat(formData.prices.takeAway),
+          });
         }
         if (formData.prices.delivery) {
-          prices.push({ type: "DELIVERY" as const, price: parseFloat(formData.prices.delivery) });
+          prices.push({
+            type: "DELIVERY" as const,
+            price: parseFloat(formData.prices.delivery),
+          });
         }
 
         const branchResult = await setProductOnBranch({
           productId,
           branchId,
           stock: parseFloat(formData.stock) || 0,
-          minStock: formData.minStock ? parseFloat(formData.minStock) : undefined,
-          maxStock: formData.maxStock ? parseFloat(formData.maxStock) : undefined,
+          minStock: formData.minStock
+            ? parseFloat(formData.minStock)
+            : undefined,
+          maxStock: formData.maxStock
+            ? parseFloat(formData.maxStock)
+            : undefined,
           isActive: formData.isActive,
           prices,
         });
@@ -281,7 +319,9 @@ export function MenuItemDialog({
 
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar el producto");
+      setError(
+        err instanceof Error ? err.message : "Error al guardar el producto"
+      );
     } finally {
       setLoading(false);
     }
@@ -329,7 +369,10 @@ export function MenuItemDialog({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-180px)]">
+        <form
+          onSubmit={handleSubmit}
+          className="overflow-y-auto max-h-[calc(90vh-180px)]"
+        >
           <div className="p-6 space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -486,7 +529,8 @@ export function MenuItemDialog({
                     placeholder="Cantidad mínima antes de alertar"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Se mostrará una alerta cuando el stock esté por debajo de este valor
+                    Se mostrará una alerta cuando el stock esté por debajo de
+                    este valor
                   </p>
                 </div>
 
@@ -500,7 +544,10 @@ export function MenuItemDialog({
                     onChange={handleChange}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
+                  <label
+                    htmlFor="isActive"
+                    className="ml-2 text-sm text-gray-700"
+                  >
                     Producto activo
                   </label>
                 </div>

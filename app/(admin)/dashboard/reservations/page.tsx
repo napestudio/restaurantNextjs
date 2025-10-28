@@ -9,29 +9,12 @@ export default async function ReservationsPage() {
   const timeSlotsResult = await getTimeSlots(branchId);
   const timeSlots = timeSlotsResult.success ? timeSlotsResult.data : [];
 
-  // Fetch reservations from database
+  // Fetch reservations from database (already serialized by the action)
   const reservationsResult = await getReservations(branchId);
-  const rawReservations =
+  const reservations =
     reservationsResult.success && Array.isArray(reservationsResult.data)
       ? reservationsResult.data
       : [];
-
-  // Serialize reservations for client component (convert Dates to strings)
-  const reservations = rawReservations.map((reservation) => ({
-    ...reservation,
-    date: reservation.date.toISOString(),
-    createdAt: reservation.createdAt.toISOString(),
-    timeSlot: reservation.timeSlot
-      ? {
-          ...reservation.timeSlot,
-          startTime: reservation.timeSlot.startTime.toISOString(),
-          endTime: reservation.timeSlot.endTime.toISOString(),
-          pricePerPerson: Number(reservation.timeSlot.pricePerPerson) || 0,
-          createdAt: reservation.timeSlot.createdAt.toISOString(),
-          updatedAt: reservation.timeSlot.updatedAt.toISOString(),
-        }
-      : null,
-  }));
 
   // Serialize time slots for client component (convert Dates to strings, Decimals to numbers)
   const serializedTimeSlots = timeSlots?.map((slot) => ({
