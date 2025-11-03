@@ -651,8 +651,8 @@ export function MenuItemDialog({
                     <p className="text-sm text-blue-700">
                       Este producto estará siempre disponible. El seguimiento de
                       stock está deshabilitado. Para habilitar el control de
-                      stock, ve a la pestaña "Información Básica" y activa la
-                      opción.
+                      stock, ve a la pestaña `&quot;`Información Básica`&quot;`
+                      y activa la opción.
                     </p>
                   </div>
                 )}
