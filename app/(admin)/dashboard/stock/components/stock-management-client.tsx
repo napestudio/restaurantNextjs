@@ -30,6 +30,7 @@ type SerializedProduct = {
   weightUnit: WeightUnit | null;
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
+  trackStock: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -108,13 +109,16 @@ export function StockManagementClient({
   const filteredProducts = products.filter((product) => {
     const stock = product.stock;
     const minAlert = product.product.minStockAlert;
+    const trackStock = product.product.trackStock;
 
     if (filterView === "out") {
-      return stock === 0;
+      // Solo productos con seguimiento de stock pueden estar "sin stock"
+      return trackStock && stock === 0;
     } else if (filterView === "low") {
-      return minAlert && stock < minAlert && stock > 0;
+      // Solo productos con seguimiento de stock pueden tener "stock bajo"
+      return trackStock && minAlert && stock < minAlert && stock > 0;
     }
-    return true;
+    return true; // "all" muestra todos los productos
   });
 
   const handleAdjustStock = (product: ProductOnBranchWithRelations) => {
@@ -294,8 +298,10 @@ export function StockManagementClient({
               {filteredProducts.map((product) => {
                 const stock = product.stock;
                 const minAlert = product.product.minStockAlert;
-                const isLowStock = minAlert && stock < minAlert && stock > 0;
-                const isOutOfStock = stock === 0;
+                const trackStock = product.product.trackStock;
+                const isLowStock = trackStock && minAlert && stock < minAlert && stock > 0;
+                const isOutOfStock = trackStock && stock === 0;
+                const isAlwaysAvailable = !trackStock;
                 const dineInPrice = product.prices.find(
                   (p) => p.type === "DINE_IN"
                 );
@@ -303,7 +309,7 @@ export function StockManagementClient({
                 return (
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-2">
                         <div>
                           <div className="font-medium text-gray-900">
                             {product.product.name}
@@ -314,50 +320,67 @@ export function StockManagementClient({
                             </div>
                           )}
                         </div>
+                        {isAlwaysAvailable && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            Siempre Disponible
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {product.product.category?.name || "Sin categoría"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span
-                        className={`font-semibold ${
-                          isOutOfStock
-                            ? "text-red-600"
-                            : isLowStock
-                            ? "text-yellow-600"
-                            : "text-gray-900"
-                        }`}
-                      >
-                        {formatStock(
-                          stock,
-                          product.product.unitType,
-                          product.product.weightUnit,
-                          product.product.volumeUnit
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                      {product.minStock
-                        ? formatStock(
-                            product.minStock,
+                      {isAlwaysAvailable ? (
+                        <span className="font-semibold text-green-600">N/A</span>
+                      ) : (
+                        <span
+                          className={`font-semibold ${
+                            isOutOfStock
+                              ? "text-red-600"
+                              : isLowStock
+                              ? "text-yellow-600"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {formatStock(
+                            stock,
                             product.product.unitType,
                             product.product.weightUnit,
                             product.product.volumeUnit
-                          )
-                        : "-"}
+                          )}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                      {isAlwaysAvailable ? (
+                        "-"
+                      ) : product.minStock ? (
+                        formatStock(
+                          product.minStock,
+                          product.product.unitType,
+                          product.product.weightUnit,
+                          product.product.volumeUnit
+                        )
+                      ) : (
+                        "-"
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
                       {dineInPrice ? `$${dineInPrice.price.toFixed(2)}` : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button
-                        onClick={() => handleAdjustStock(product)}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        Ajustar
-                      </button>
+                      {trackStock ? (
+                        <button
+                          onClick={() => handleAdjustStock(product)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Ajustar
+                        </button>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No requiere ajuste</span>
+                      )}
                     </td>
                   </tr>
                 );

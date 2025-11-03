@@ -136,6 +136,7 @@ async function main() {
       minStock: 2,
       maxStock: 10,
       minStockAlert: 2.5,
+      trackStock: true,
     },
     {
       id: "prod-gyoza",
@@ -149,6 +150,7 @@ async function main() {
       minStock: 20,
       maxStock: 100,
       minStockAlert: 25,
+      trackStock: true,
     },
     {
       id: "prod-california-roll",
@@ -162,6 +164,7 @@ async function main() {
       minStock: 15,
       maxStock: 60,
       minStockAlert: 20,
+      trackStock: true,
     },
     {
       id: "prod-salmon-nigiri",
@@ -175,6 +178,7 @@ async function main() {
       minStock: 20,
       maxStock: 80,
       minStockAlert: 25,
+      trackStock: true,
     },
     {
       id: "prod-dragon-roll",
@@ -188,6 +192,7 @@ async function main() {
       minStock: 10,
       maxStock: 40,
       minStockAlert: 12,
+      trackStock: true,
     },
     {
       id: "prod-mochi",
@@ -201,6 +206,7 @@ async function main() {
       minStock: 15,
       maxStock: 70,
       minStockAlert: 20,
+      trackStock: true,
     },
     {
       id: "prod-dorayaki",
@@ -214,6 +220,7 @@ async function main() {
       minStock: 10,
       maxStock: 50,
       minStockAlert: 15,
+      trackStock: true,
     },
     {
       id: "prod-te-verde",
@@ -228,6 +235,7 @@ async function main() {
       minStock: 5,
       maxStock: 30,
       minStockAlert: 7.5,
+      trackStock: false, // Always available - no stock tracking
     },
     {
       id: "prod-ramune",
@@ -241,6 +249,7 @@ async function main() {
       minStock: 30,
       maxStock: 120,
       minStockAlert: 40,
+      trackStock: false, // Always available - no stock tracking
     },
     {
       id: "prod-arroz-sushi",
@@ -255,6 +264,7 @@ async function main() {
       minStock: 10,
       maxStock: 50,
       minStockAlert: 15,
+      trackStock: true,
     },
     {
       id: "prod-sake",
@@ -269,6 +279,7 @@ async function main() {
       minStock: 3,
       maxStock: 15,
       minStockAlert: 5,
+      trackStock: true,
     },
   ];
 
@@ -287,6 +298,7 @@ async function main() {
         weightUnit: productData.weightUnit || null,
         volumeUnit: productData.volumeUnit || null,
         minStockAlert: productData.minStockAlert,
+        trackStock: productData.trackStock,
         isActive: true,
       },
     });

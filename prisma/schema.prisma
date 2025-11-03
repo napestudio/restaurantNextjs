@@ -335,6 +335,7 @@ model Product {
 
   // Alertas de stock
   minStockAlert Decimal?    // Alerta cuando el stock esté por debajo de este valor
+  trackStock    Boolean     @default(true) // Si es false, el producto siempre estará disponible sin importar el stock
 
   isActive      Boolean     @default(true)
   createdAt     DateTime    @default(now())

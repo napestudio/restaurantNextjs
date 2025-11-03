@@ -59,6 +59,7 @@ type MenuItemWithRelations = {
   weightUnit: WeightUnit | null;
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
+  trackStock: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -86,6 +87,7 @@ type FormData = {
   weightUnit: WeightUnit | "";
   volumeUnit: VolumeUnit | "";
   minStockAlert: string;
+  trackStock: boolean;
   categoryId: string;
   isActive: boolean;
   // Datos de sucursal
@@ -128,6 +130,7 @@ export function MenuItemDialog({
     weightUnit: item?.weightUnit ?? "",
     volumeUnit: item?.volumeUnit ?? "",
     minStockAlert: item?.minStockAlert ? item.minStockAlert.toString() : "",
+    trackStock: item?.trackStock ?? true,
     categoryId: item?.categoryId ?? "",
     isActive: item?.isActive ?? true,
     stock: branchData?.stock ? branchData.stock.toString() : "0",
@@ -244,6 +247,7 @@ export function MenuItemDialog({
           minStockAlert: formData.minStockAlert
             ? parseFloat(formData.minStockAlert)
             : undefined,
+          trackStock: formData.trackStock,
           categoryId: formData.categoryId || undefined,
           isActive: formData.isActive,
         });
@@ -264,6 +268,7 @@ export function MenuItemDialog({
           minStockAlert: formData.minStockAlert
             ? parseFloat(formData.minStockAlert)
             : undefined,
+          trackStock: formData.trackStock,
           categoryId: formData.categoryId || undefined,
           restaurantId,
           isActive: formData.isActive,
@@ -513,26 +518,54 @@ export function MenuItemDialog({
                   </div>
                 )}
 
-                {/* Alerta de Stock Mínimo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Alerta de Stock Mínimo
-                  </label>
-                  <input
-                    type="number"
-                    name="minStockAlert"
-                    value={formData.minStockAlert}
-                    onChange={handleChange}
-                    step="0.01"
-                    min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Cantidad mínima antes de alertar"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Se mostrará una alerta cuando el stock esté por debajo de
-                    este valor
-                  </p>
+                {/* Seguimiento de Stock */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      name="trackStock"
+                      id="trackStock"
+                      checked={formData.trackStock}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="trackStock"
+                        className="text-sm font-medium text-gray-900 cursor-pointer"
+                      >
+                        Habilitar seguimiento de stock
+                      </label>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Si está deshabilitado, el producto siempre estará
+                        disponible sin importar el stock.
+                      </p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Alerta de Stock Mínimo - Solo si trackStock está habilitado */}
+                {formData.trackStock && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Alerta de Stock Mínimo
+                    </label>
+                    <input
+                      type="number"
+                      name="minStockAlert"
+                      value={formData.minStockAlert}
+                      onChange={handleChange}
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Cantidad mínima antes de alertar"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Se mostrará una alerta cuando el stock esté por debajo de
+                      este valor
+                    </p>
+                  </div>
+                )}
 
                 {/* Estado Activo */}
                 <div className="flex items-center">
@@ -558,57 +591,71 @@ export function MenuItemDialog({
             {currentTab === "stock" && (
               <div className="space-y-6">
                 {/* Stock */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Control de Stock
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Actual
-                      </label>
-                      <input
-                        type="number"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleChange}
-                        step="0.01"
-                        min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
+                {formData.trackStock ? (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Control de Stock
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stock Actual
+                        </label>
+                        <input
+                          type="number"
+                          name="stock"
+                          value={formData.stock}
+                          onChange={handleChange}
+                          step="0.01"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Mínimo
-                      </label>
-                      <input
-                        type="number"
-                        name="minStock"
-                        value={formData.minStock}
-                        onChange={handleChange}
-                        step="0.01"
-                        min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stock Mínimo
+                        </label>
+                        <input
+                          type="number"
+                          name="minStock"
+                          value={formData.minStock}
+                          onChange={handleChange}
+                          step="0.01"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Máximo
-                      </label>
-                      <input
-                        type="number"
-                        name="maxStock"
-                        value={formData.maxStock}
-                        onChange={handleChange}
-                        step="0.01"
-                        min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stock Máximo
+                        </label>
+                        <input
+                          type="number"
+                          name="maxStock"
+                          value={formData.maxStock}
+                          onChange={handleChange}
+                          step="0.01"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                      Producto sin seguimiento de stock
+                    </h3>
+                    <p className="text-sm text-blue-700">
+                      Este producto estará siempre disponible. El seguimiento de
+                      stock está deshabilitado. Para habilitar el control de
+                      stock, ve a la pestaña "Información Básica" y activa la
+                      opción.
+                    </p>
+                  </div>
+                )}
 
                 {/* Precios */}
                 <div>
