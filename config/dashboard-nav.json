@@ -21,6 +21,21 @@
       "adminOnly": true
     },
     {
+      "label": "Menú",
+      "href": "/dashboard/menus",
+      "adminOnly": true
+    },
+    {
+      "label": "Productos",
+      "href": "/dashboard/menu-items",
+      "adminOnly": true
+    },
+    {
+      "label": "Stock",
+      "href": "/dashboard/stock",
+      "adminOnly": true
+    },
+    {
       "label": "Usuarios",
       "href": "/dashboard/users",
       "adminOnly": true

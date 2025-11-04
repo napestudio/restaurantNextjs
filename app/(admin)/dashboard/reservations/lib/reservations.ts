@@ -18,6 +18,7 @@ export type SerializedReservation = {
   date: string; // ISO string
   people: number;
   timeSlotId: string | null;
+  exactTime: string | null; // ISO string - precise 15-min arrival time
   status: ReservationStatus;
   dietaryRestrictions: string | null;
   accessibilityNeeds: string | null;
@@ -45,9 +46,16 @@ export type SerializedReservation = {
 // Time slot type for UI
 export interface TimeSlot {
   id: string;
-  timeFrom: string;
-  timeTo: string;
-  days: string[];
-  price: number;
+  name: string;
+  startTime: Date | string;
+  endTime: Date | string;
+  daysOfWeek: string[];
+  pricePerPerson: number | null;
+  notes: string | null;
+  moreInfoUrl: string | null;
+  isActive: boolean;
+  branchId: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 

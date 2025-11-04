@@ -16,19 +16,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Circle, Square, RectangleHorizontal } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Circle,
+  Square,
+  RectangleHorizontal,
+  RectangleVertical,
+} from "lucide-react";
+import type { TableShapeType } from "@/types/table";
 
-type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE";
+interface Sector {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface AddTableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableNumber: string;
+  tableName?: string;
   tableShape: TableShapeType;
   tableCapacity: string;
+  isShared: boolean;
+  sectorId?: string;
+  sectors?: Sector[];
   onTableNumberChange: (value: string) => void;
+  onTableNameChange?: (value: string) => void;
   onTableShapeChange: (value: TableShapeType) => void;
   onTableCapacityChange: (value: string) => void;
+  onIsSharedChange: (value: boolean) => void;
+  onSectorChange?: (value: string) => void;
   onAddTable: () => void;
 }
 
@@ -36,11 +54,18 @@ export function AddTableDialog({
   open,
   onOpenChange,
   tableNumber,
+  tableName,
   tableShape,
   tableCapacity,
+  isShared,
+  sectorId,
+  sectors = [],
   onTableNumberChange,
+  onTableNameChange,
   onTableShapeChange,
   onTableCapacityChange,
+  onIsSharedChange,
+  onSectorChange,
   onAddTable,
 }: AddTableDialogProps) {
   return (
@@ -54,14 +79,64 @@ export function AddTableDialog({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="table-number">Número de Mesa</Label>
+            <Label htmlFor="table-number">Número de Mesa *</Label>
             <Input
               id="table-number"
+              type="number"
               value={tableNumber}
               onChange={(e) => onTableNumberChange(e.target.value)}
-              placeholder="ej: T1, T2, A1"
+              placeholder="1, 2, 3..."
+              required
             />
           </div>
+
+          <div>
+            <Label htmlFor="table-name">Nombre de Mesa (Opcional)</Label>
+            <Input
+              id="table-name"
+              value={tableName || ""}
+              onChange={(e) => onTableNameChange?.(e.target.value)}
+              placeholder={`Si se deja vacío, se usará el número "${
+                tableNumber || ""
+              }"`}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Ejemplo: Barra Central
+            </p>
+          </div>
+
+          {sectors.length > 0 && (
+            <div>
+              <Label htmlFor="sector">Sector (Opcional)</Label>
+              <Select
+                value={sectorId || "none"}
+                onValueChange={(value) =>
+                  onSectorChange?.(value === "none" ? "" : value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar sector" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin sector asignado</SelectItem>
+                  {sectors.map((sector) => (
+                    <SelectItem key={sector.id} value={sector.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: sector.color }}
+                        />
+                        {sector.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Asigna la mesa a un sector específico del restaurante
+              </p>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="table-shape">Forma de la Mesa</Label>
@@ -73,19 +148,25 @@ export function AddTableDialog({
                 <SelectItem value="CIRCLE">
                   <div className="flex items-center space-x-2">
                     <Circle className="h-4 w-4" />
-                    <span>Círculo (2 asientos)</span>
+                    <span>Círculo</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="SQUARE">
                   <div className="flex items-center space-x-2">
                     <Square className="h-4 w-4" />
-                    <span>Cuadrada (4 asientos)</span>
+                    <span>Cuadrada</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="RECTANGLE">
                   <div className="flex items-center space-x-2">
                     <RectangleHorizontal className="h-4 w-4" />
-                    <span>Rectangular (6+ asientos)</span>
+                    <span>Rectangular</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="WIDE">
+                  <div className="flex items-center space-x-2">
+                    <RectangleVertical className="h-4 w-4" />
+                    <span>Barra</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -106,6 +187,20 @@ export function AddTableDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is-shared"
+              checked={isShared}
+              onCheckedChange={(checked) => onIsSharedChange(checked === true)}
+            />
+            <Label
+              htmlFor="is-shared"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Mesa compartida (puede tener múltiples reservas)
+            </Label>
           </div>
         </div>
         <DialogFooter>

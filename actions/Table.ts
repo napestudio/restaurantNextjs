@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { ReservationStatus } from "@/app/generated/prisma";
+import { TableShapeType } from "@/types/table";
 
 /**
  * Get all tables for a branch
@@ -103,30 +104,78 @@ export async function getTableById(id: string) {
 }
 
 /**
- * Check if a specific table is available for a given date and time slot
+ * Get remaining capacity for a table (handles both shared and regular tables)
+ * For regular tables: returns 0 if occupied, full capacity if available
+ * For shared tables: returns remaining capacity after accounting for existing reservations
  */
-export async function isTableAvailable(
+export async function getRemainingCapacity(
   tableId: string,
   date: Date,
   timeSlotId: string
-): Promise<boolean> {
+): Promise<number> {
   try {
-    // Find any conflicting reservations for this table at the same date/time
-    const conflict = await prisma.reservationTable.findFirst({
+    // Get the table details
+    const table = await prisma.table.findUnique({
+      where: { id: tableId },
+      select: { capacity: true, isShared: true },
+    });
+
+    if (!table) {
+      return 0;
+    }
+
+    // Get all active reservations for this table at the same date/time
+    const reservations = await prisma.reservationTable.findMany({
       where: {
         tableId,
         reservation: {
           date,
           timeSlotId,
           status: {
-            // Only consider active reservations (exclude CANCELED, NO_SHOW, COMPLETED)
             in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
           },
         },
       },
+      include: {
+        reservation: {
+          select: { people: true },
+        },
+      },
     });
 
-    return !conflict;
+    // For regular (non-shared) tables
+    if (!table.isShared) {
+      // If there are any reservations, the table is fully occupied
+      return reservations.length > 0 ? 0 : table.capacity;
+    }
+
+    // For shared tables: calculate remaining capacity
+    const occupiedSeats = reservations.reduce(
+      (sum, rt) => sum + rt.reservation.people,
+      0
+    );
+
+    return Math.max(0, table.capacity - occupiedSeats);
+  } catch (error) {
+    console.error("Error calculating remaining capacity:", error);
+    return 0;
+  }
+}
+
+/**
+ * Check if a specific table is available for a given date and time slot
+ * For shared tables, checks if there's any remaining capacity
+ * For regular tables, checks if it's completely unoccupied
+ */
+export async function isTableAvailable(
+  tableId: string,
+  date: Date,
+  timeSlotId: string,
+  requiredCapacity: number = 1
+): Promise<boolean> {
+  try {
+    const remainingCapacity = await getRemainingCapacity(tableId, date, timeSlotId);
+    return remainingCapacity >= requiredCapacity;
   } catch (error) {
     console.error("Error checking table availability:", error);
     return false;
@@ -135,6 +184,7 @@ export async function isTableAvailable(
 
 /**
  * Find available tables for a given date, time slot, and party size
+ * Handles both shared and regular tables with capacity-based logic
  * Returns tables that can accommodate the party (single table or combination)
  */
 export async function findAvailableTables(
@@ -148,46 +198,79 @@ export async function findAvailableTables(
   error?: string;
 }> {
   try {
-    // Get all active tables for the branch
-    const allTables = await prisma.table.findMany({
-      where: {
-        branchId,
-        isActive: true,
-      },
-      orderBy: [{ capacity: "asc" }, { number: "asc" }],
-    });
-
-    if (allTables.length === 0) {
-      return {
-        success: false,
-        error: "No active tables found for this branch",
-      };
-    }
-
-    // Get all reservations that conflict with this date/time
-    const conflictingReservations = await prisma.reservationTable.findMany({
-      where: {
-        reservation: {
-          branchId,
-          date,
-          timeSlotId,
-          status: {
-            in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+    // First, check if the time slot has specific tables assigned
+    const timeSlot = await prisma.timeSlot.findUnique({
+      where: { id: timeSlotId },
+      include: {
+        tables: {
+          include: {
+            table: true,
           },
         },
       },
-      select: {
-        tableId: true,
-      },
     });
 
-    const occupiedTableIds = new Set(
-      conflictingReservations.map((rt) => rt.tableId)
+    if (!timeSlot) {
+      return {
+        success: false,
+        error: "Time slot not found",
+      };
+    }
+
+    // Determine which tables to use based on TimeSlot configuration
+    let allTables;
+
+    if (timeSlot.tables.length > 0) {
+      // Use only the tables explicitly assigned to this time slot
+      allTables = timeSlot.tables
+        .map((tst) => tst.table)
+        .filter((table) => table.isActive);
+
+      if (allTables.length === 0) {
+        return {
+          success: false,
+          error: "No active tables available for this time slot",
+        };
+      }
+    } else {
+      // Fall back to all active tables in the branch if no specific tables are assigned
+      allTables = await prisma.table.findMany({
+        where: {
+          branchId,
+          isActive: true,
+        },
+        orderBy: [{ isShared: "desc" }, { capacity: "asc" }, { number: "asc" }],
+      });
+
+      if (allTables.length === 0) {
+        return {
+          success: false,
+          error: "No active tables found for this branch",
+        };
+      }
+    }
+
+    // Calculate remaining capacity for each table
+    const tablesWithCapacity = await Promise.all(
+      allTables.map(async (table) => {
+        const remainingCapacity = await getRemainingCapacity(
+          table.id,
+          date,
+          timeSlotId
+        );
+        return {
+          ...table,
+          remainingCapacity,
+        };
+      })
     );
 
-    // Filter to only available tables
-    const availableTables = allTables.filter(
-      (table) => !occupiedTableIds.has(table.id)
+    // Filter to only tables with available capacity AND not manually occupied/reserved/cleaning
+    const availableTables = tablesWithCapacity.filter(
+      (table) =>
+        table.remainingCapacity > 0 &&
+        // Respect manual status: only allow EMPTY or null (unset) status
+        (!table.status || table.status === "EMPTY")
     );
 
     if (availableTables.length === 0) {
@@ -197,38 +280,60 @@ export async function findAvailableTables(
       };
     }
 
-    // Strategy 1: Try to find a single table that fits
-    const singleTable = availableTables.find(
-      (table) => table.capacity >= partySize
+    // Strategy 1: Try to find a single shared table with enough remaining capacity
+    const sharedTable = availableTables.find(
+      (table) => table.isShared && table.remainingCapacity >= partySize
     );
 
-    if (singleTable) {
+    if (sharedTable) {
       return {
         success: true,
         data: {
-          tableIds: [singleTable.id],
-          totalCapacity: singleTable.capacity,
+          tableIds: [sharedTable.id],
+          totalCapacity: sharedTable.capacity,
         },
       };
     }
 
-    // Strategy 2: Combine multiple tables
-    // Sort by capacity to optimize combinations
-    const sortedTables = [...availableTables].sort(
-      (a, b) => b.capacity - a.capacity
+    // Strategy 2: Try to find a single regular table that fits
+    const singleRegularTable = availableTables.find(
+      (table) => !table.isShared && table.remainingCapacity >= partySize
     );
 
-    // Try to find the smallest combination that fits
-    const combination = findTableCombination(sortedTables, partySize);
-
-    if (combination) {
+    if (singleRegularTable) {
       return {
         success: true,
         data: {
-          tableIds: combination.map((t) => t.id),
-          totalCapacity: combination.reduce((sum, t) => sum + t.capacity, 0),
+          tableIds: [singleRegularTable.id],
+          totalCapacity: singleRegularTable.capacity,
         },
       };
+    }
+
+    // Strategy 3: Combine multiple REGULAR tables (don't combine shared tables)
+    const regularTables = availableTables.filter((t) => !t.isShared);
+
+    if (regularTables.length > 0) {
+      // Sort by capacity to optimize combinations
+      const sortedTables = [...regularTables].sort(
+        (a, b) => b.capacity - a.capacity
+      );
+
+      // Try to find the smallest combination that fits
+      const combination = findTableCombination(
+        sortedTables.map((t) => ({ id: t.id, capacity: t.capacity })),
+        partySize
+      );
+
+      if (combination) {
+        return {
+          success: true,
+          data: {
+            tableIds: combination.map((t) => t.id),
+            totalCapacity: combination.reduce((sum, t) => sum + t.capacity, 0),
+          },
+        };
+      }
     }
 
     return {
@@ -255,7 +360,11 @@ function findTableCombination(
 ): { id: string; capacity: number }[] | null {
   // Try combinations of 2 tables first, then 3
   for (let numTables = 2; numTables <= maxTables; numTables++) {
-    const combination = findCombinationOfSize(tables, targetCapacity, numTables);
+    const combination = findCombinationOfSize(
+      tables,
+      targetCapacity,
+      numTables
+    );
     if (combination) {
       return combination;
     }
@@ -373,14 +482,17 @@ export async function getAvailableCapacity(
 export async function createTable(data: {
   branchId: string;
   number: number;
+  name?: string;
   capacity: number;
   isActive?: boolean;
+  isShared?: boolean;
+  sectorId?: string;
   positionX?: number;
   positionY?: number;
   width?: number;
   height?: number;
   rotation?: number;
-  shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+  shape?: TableShapeType;
 }) {
   try {
     // Check if table number already exists in this branch
@@ -398,12 +510,18 @@ export async function createTable(data: {
       };
     }
 
+    // If name is not provided, use the number as name
+    const tableName = data.name || data.number.toString();
+
     const table = await prisma.table.create({
       data: {
         branchId: data.branchId,
         number: data.number,
+        name: tableName,
         capacity: data.capacity,
         isActive: data.isActive ?? true,
+        isShared: data.isShared ?? false,
+        sectorId: data.sectorId,
         positionX: data.positionX,
         positionY: data.positionY,
         width: data.width,
@@ -427,8 +545,10 @@ export async function updateTable(
   id: string,
   data: {
     number?: number;
+    name?: string;
     capacity?: number;
     isActive?: boolean;
+    isShared?: boolean;
   }
 ) {
   try {
@@ -455,10 +575,32 @@ export async function updateTable(
       }
     }
 
+    // If name is being set to empty, use the number (or current number if not being updated)
+    const updateData = { ...data };
+    if (updateData.name === "") {
+      const currentTable = await prisma.table.findUnique({ where: { id } });
+      const numberToUse = updateData.number ?? currentTable?.number ?? 0;
+      updateData.name = numberToUse.toString();
+    }
+
     const table = await prisma.table.update({
       where: { id },
-      data,
+      data: updateData,
     });
+
+    // If capacity changed, update all related TimeSlot capacities
+    if (data.capacity !== undefined) {
+      const timeSlotTables = await prisma.timeSlotTable.findMany({
+        where: { tableId: id },
+        select: { timeSlotId: true },
+      });
+
+      // Update capacity for each affected time slot
+      const { updateTimeSlotCapacity } = await import("./TimeSlot");
+      await Promise.all(
+        timeSlotTables.map((tst) => updateTimeSlotCapacity(tst.timeSlotId))
+      );
+    }
 
     return { success: true, data: table };
   } catch (error) {
@@ -529,6 +671,7 @@ export async function updateTableFloorPlan(
     height?: number;
     rotation?: number;
     shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+    status?: "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING";
   }
 ) {
   try {
@@ -556,7 +699,7 @@ export async function updateFloorPlanBatch(
     width?: number;
     height?: number;
     rotation?: number;
-    shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
+    shape?: TableShapeType;
   }>
 ) {
   try {
@@ -581,5 +724,123 @@ export async function updateFloorPlanBatch(
   } catch (error) {
     console.error("Error updating floor plan batch:", error);
     return { success: false, error: "Failed to update floor plan" };
+  }
+}
+
+/**
+ * Automatically set table status to RESERVED when reservation is created/confirmed
+ * Call this after assigning tables to a reservation
+ */
+export async function setTablesReserved(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "RESERVED",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as reserved:", error);
+    return { success: false, error: "Failed to set tables as reserved" };
+  }
+}
+
+/**
+ * Set table status to OCCUPIED when customer is seated
+ * Call this when a reservation is being seated or a walk-in arrives
+ */
+export async function setTablesOccupied(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "OCCUPIED",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as occupied:", error);
+    return { success: false, error: "Failed to set tables as occupied" };
+  }
+}
+
+/**
+ * Set table status to EMPTY when customers leave
+ * Call this when a reservation is completed or cancelled
+ */
+export async function setTablesEmpty(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "EMPTY",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as empty:", error);
+    return { success: false, error: "Failed to set tables as empty" };
+  }
+}
+
+/**
+ * Automatically manage table status based on reservation status change
+ * This is a convenience function to handle all status transitions
+ */
+export async function updateTableStatusForReservation(
+  reservationId: string,
+  newStatus: ReservationStatus
+) {
+  try {
+    // Get all tables for this reservation
+    const reservationTables = await prisma.reservationTable.findMany({
+      where: { reservationId },
+      select: { tableId: true },
+    });
+
+    const tableIds = reservationTables.map((rt) => rt.tableId);
+
+    if (tableIds.length === 0) {
+      return { success: true, message: "No tables to update" };
+    }
+
+    // Update table status based on reservation status
+    switch (newStatus) {
+      case ReservationStatus.CONFIRMED:
+      case ReservationStatus.PENDING:
+        await setTablesReserved(tableIds);
+        break;
+
+      case ReservationStatus.SEATED:
+        await setTablesOccupied(tableIds);
+        break;
+
+      case ReservationStatus.COMPLETED:
+      case ReservationStatus.CANCELED:
+      case ReservationStatus.NO_SHOW:
+        await setTablesEmpty(tableIds);
+        break;
+
+      default:
+        console.warn(`Unhandled reservation status: ${newStatus}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating table status for reservation:", error);
+    return {
+      success: false,
+      error: "Failed to update table status for reservation",
+    };
   }
 }

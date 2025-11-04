@@ -1,0 +1,192 @@
+import type { TableShapeType, TableStatus } from "@/types/table";
+
+/**
+ * Default shape dimensions for different table types
+ */
+export const shapeDefaults = {
+  CIRCLE: { width: 100, height: 100 },
+  SQUARE: { width: 100, height: 100 },
+  RECTANGLE: { width: 200, height: 100 },
+  WIDE: { width: 400, height: 100 },
+} as const;
+
+/**
+ * Map Prisma status enum to frontend status type
+ */
+export const statusMap: Record<string, TableStatus> = {
+  EMPTY: "empty",
+  OCCUPIED: "occupied",
+  RESERVED: "reserved",
+  CLEANING: "cleaning",
+};
+
+/**
+ * Map frontend status to Prisma enum
+ */
+export const reverseStatusMap: Record<
+  TableStatus,
+  "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING"
+> = {
+  empty: "EMPTY",
+  occupied: "OCCUPIED",
+  reserved: "RESERVED",
+  cleaning: "CLEANING",
+};
+
+/**
+ * FloorTable interface - represents a table in the floor plan UI
+ */
+export interface FloorTable {
+  id: string;
+  number: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  shape: TableShapeType;
+  capacity: number;
+  status: TableStatus;
+  currentGuests: number;
+  isShared: boolean;
+}
+
+/**
+ * TableWithReservations interface - represents a table from the database with reservations
+ */
+export interface TableWithReservations {
+  id: string;
+  number: number;
+  capacity: number;
+  positionX: number | null;
+  positionY: number | null;
+  width: number | null;
+  height: number | null;
+  rotation: number | null;
+  shape: string | null;
+  status: string | null;
+  isActive: boolean;
+  isShared: boolean;
+  sectorId: string | null;
+  name?: string | null;
+  reservations: Array<{
+    reservation: {
+      customerName: string;
+      people: number;
+      status: string;
+      date: string;
+      timeSlot: {
+        startTime: string;
+        endTime: string;
+      } | null;
+    };
+  }>;
+}
+
+/**
+ * Calculate table status based on reservations and manual status
+ */
+export function calculateTableStatus(
+  dbTable: TableWithReservations
+): { status: TableStatus; currentGuests: number } {
+  let status: TableStatus = "empty";
+  let currentGuests = 0;
+
+  if (dbTable.status) {
+    // Use manual status from database
+    status = statusMap[dbTable.status] || "empty";
+  } else if (dbTable.reservations.length > 0) {
+    // Calculate status from reservations
+    const reservation = dbTable.reservations[0].reservation;
+    currentGuests = reservation.people;
+
+    const reservationDate = new Date(reservation.date);
+    const today = new Date();
+    const isToday =
+      reservationDate.getDate() === today.getDate() &&
+      reservationDate.getMonth() === today.getMonth() &&
+      reservationDate.getFullYear() === today.getFullYear();
+
+    if (isToday) {
+      status = reservation.status === "CONFIRMED" ? "occupied" : "reserved";
+    } else {
+      status = "reserved";
+    }
+  }
+
+  // Set currentGuests from reservations if available
+  if (dbTable.reservations.length > 0) {
+    currentGuests = dbTable.reservations[0].reservation.people;
+  }
+
+  return { status, currentGuests };
+}
+
+/**
+ * Transform database table to FloorTable format
+ */
+export function transformTableToFloorTable(
+  dbTable: TableWithReservations
+): FloorTable {
+  const { status, currentGuests } = calculateTableStatus(dbTable);
+
+  return {
+    id: dbTable.id,
+    number: dbTable.number,
+    x: dbTable.positionX ?? 100,
+    y: dbTable.positionY ?? 100,
+    width: dbTable.width ?? 80,
+    height: dbTable.height ?? 80,
+    rotation: dbTable.rotation ?? 0,
+    shape: (dbTable.shape ?? "SQUARE") as TableShapeType,
+    capacity: dbTable.capacity,
+    status,
+    currentGuests,
+    isShared: dbTable.isShared,
+  };
+}
+
+/**
+ * Transform array of database tables to FloorTable format
+ */
+export function transformTables(
+  dbTables: TableWithReservations[]
+): FloorTable[] {
+  return dbTables.map(transformTableToFloorTable);
+}
+
+/**
+ * Calculate the bounding box of a rotated rectangle
+ */
+export function getRotatedBounds(
+  width: number,
+  height: number,
+  rotation: number
+) {
+  const angleRad = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(angleRad));
+  const sin = Math.abs(Math.sin(angleRad));
+
+  const boundingWidth = width * cos + height * sin;
+  const boundingHeight = width * sin + height * cos;
+
+  return { width: boundingWidth, height: boundingHeight };
+}
+
+/**
+ * Snap coordinate to grid
+ */
+export function snapToGrid(value: number, gridSize = 100): number {
+  return Math.round(value / gridSize) * gridSize;
+}
+
+/**
+ * Constrain value to bounds
+ */
+export function constrainToBounds(
+  value: number,
+  min: number,
+  max: number
+): number {
+  return Math.max(min, Math.min(max, value));
+}

@@ -1,7 +1,5 @@
 import { getTablesWithStatus } from "@/actions/Table";
-import { TablesTabs } from "@/components/dashboard/tables-tabs";
-import { TablesSimpleView } from "@/components/dashboard/tables-simple-view";
-import FloorPlanPage from "@/components/dashboard/floor-plan";
+import { TablesClientWrapper } from "@/components/dashboard/tables-client-wrapper";
 
 export default async function TablesPage() {
   // TODO: Get branchId from user session/context
@@ -40,11 +38,10 @@ export default async function TablesPage() {
           </p>
         </div>
 
-        <TablesTabs>
-          <TablesSimpleView tables={serializedTables} />
-          {/* Floor plan view - placeholder for future implementation */}
-          <FloorPlanPage branchId={process.env.BRANCH_ID || ""} />
-        </TablesTabs>
+        <TablesClientWrapper
+          branchId={branchId}
+          initialTables={serializedTables}
+        />
       </main>
     </div>
   );

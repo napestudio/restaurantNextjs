@@ -28,22 +28,20 @@ export function CancelReservationDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar reserva?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently cancel and remove this reservation. This
-            action cannot be undone.
+            Esta acción no se puede deshacer. ¿Estás seguro de que deseas
+            cancelar esta reserva?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>
-            No, keep it
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>No, volver</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700"
             disabled={isPending}
           >
-            Yes, cancel reservation
+            Si, cancelar reserva
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

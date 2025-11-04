@@ -11,8 +11,8 @@ interface StatsOverviewProps {
 export function StatsOverview({ timeSlots }: StatsOverviewProps) {
   const stats = {
     total: timeSlots.length,
-    paid: timeSlots.filter((s) => s.price > 0).length,
-    free: timeSlots.filter((s) => s.price === 0).length,
+    paid: timeSlots.filter((s) => s.pricePerPerson && s.pricePerPerson > 0).length,
+    free: timeSlots.filter((s) => !s.pricePerPerson || s.pricePerPerson === 0).length,
   };
 
   return (

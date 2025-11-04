@@ -22,9 +22,10 @@ export default async function Navbar({ logo, loginButton }: NavbarProps) {
           <div>
             {session ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-700">
+                <Link href={"/dashboard"} className="text-sm text-gray-700">
                   {session.user?.name || session.user?.email}
-                </span>
+                </Link>
+
                 <LogoutButton />
               </div>
             ) : (

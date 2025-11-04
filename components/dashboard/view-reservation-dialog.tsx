@@ -49,7 +49,7 @@ export function ViewReservationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detalles de la reserva</DialogTitle>
           <DialogDescription>
@@ -109,6 +109,11 @@ export function ViewReservationDialog({
                       )} - ${reservation.timeSlot.endTime.slice(11, 16)}`
                     : "No time slot"}
                 </p>
+                {reservation.exactTime && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Llegada: {format(parseISO(reservation.exactTime), "HH:mm")}
+                  </p>
+                )}
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
@@ -118,6 +123,29 @@ export function ViewReservationDialog({
                   {reservation.people} comensales
                 </p>
               </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">
+                Mesas Asignadas
+              </h3>
+              {reservation.tables && reservation.tables.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {reservation.tables.map((rt) => (
+                    <Badge
+                      key={rt.tableId}
+                      variant="outline"
+                      className="text-sm font-semibold bg-blue-50 border-blue-300"
+                    >
+                      Mesa {rt.table.number} (Capacidad: {rt.table.capacity})
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  Sin mesas asignadas
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-6">

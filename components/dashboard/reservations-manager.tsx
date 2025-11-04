@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type {
   TimeSlot,
   SerializedReservation,
 } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import {
+  getReservations,
   createReservation,
   updateReservationStatus,
   cancelReservation,
@@ -31,7 +31,7 @@ export function ReservationsManager({
   timeSlots,
   branchId,
 }: ReservationsManagerProps) {
-  const router = useRouter();
+  const [reservations, setReservations] = useState(initialReservations);
   const [isPending, startTransition] = useTransition();
   const [selectedReservation, setSelectedReservation] =
     useState<SerializedReservation | null>(null);
@@ -43,6 +43,16 @@ export function ReservationsManager({
   );
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  // Refetch data helper
+  const mutate = () => {
+    startTransition(async () => {
+      const result = await getReservations(branchId);
+      if (result.success && result.data) {
+        setReservations(result.data);
+      }
+    });
+  };
+
   const handleStatusUpdate = async (id: string, status: string) => {
     console.log(status, "status");
     startTransition(async () => {
@@ -52,7 +62,7 @@ export function ReservationsManager({
       );
 
       if (result.success) {
-        router.refresh();
+        mutate();
       } else {
         console.error("Failed to update reservation status:", result.error);
         // TODO: Show error toast/notification
@@ -78,7 +88,7 @@ export function ReservationsManager({
         if (result.success) {
           setCancelDialogOpen(false);
           setReservationToCancel(null);
-          router.refresh();
+          mutate();
         } else {
           console.error("Failed to cancel reservation:", result.error);
           // TODO: Show error toast/notification
@@ -100,11 +110,7 @@ export function ReservationsManager({
     status: string;
   }) => {
     startTransition(async () => {
-      // Find the time slot ID based on the time value
-      const timeSlot = timeSlots.find(
-        (slot) => `${slot.timeFrom}-${slot.timeTo}` === newReservation.time
-      );
-
+      // newReservation.time is actually the timeSlotId from the select
       const result = await createReservation({
         branchId,
         customerName: newReservation.name,
@@ -113,7 +119,7 @@ export function ReservationsManager({
         date: newReservation.date,
         time: newReservation.time,
         guests: Number.parseInt(newReservation.guests),
-        timeSlotId: timeSlot?.id,
+        timeSlotId: newReservation.time, // This is the timeSlot ID
         dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
         accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
         notes: newReservation.notes || undefined,
@@ -122,7 +128,7 @@ export function ReservationsManager({
 
       if (result.success) {
         setCreateDialogOpen(false);
-        router.refresh();
+        mutate();
       } else {
         console.error("Failed to create reservation:", result.error);
         // TODO: Show error toast/notification
@@ -131,7 +137,19 @@ export function ReservationsManager({
   };
 
   return (
-    <>
+    <div className="space-y-6 relative">
+      {/* Loading overlay during refetch */}
+      {isPending && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw className="w-8 h-8 text-red-600 animate-spin" />
+            <p className="text-sm font-medium text-gray-700">
+              Actualizando datos...
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -152,11 +170,11 @@ export function ReservationsManager({
       </div>
 
       <div className="mb-8">
-        <ReservationStatsOverview reservations={initialReservations} />
+        <ReservationStatsOverview reservations={reservations} />
       </div>
 
       <ReservationsTable
-        reservations={initialReservations}
+        reservations={reservations}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         onStatusUpdate={handleStatusUpdate}
@@ -176,6 +194,7 @@ export function ReservationsManager({
         onCreate={handleCreate}
         timeSlots={timeSlots}
         isPending={isPending}
+        branchId={branchId}
       />
 
       <CancelReservationDialog
@@ -184,6 +203,6 @@ export function ReservationsManager({
         onConfirm={handleCancelConfirm}
         isPending={isPending}
       />
-    </>
+    </div>
   );
 }

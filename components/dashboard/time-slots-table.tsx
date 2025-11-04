@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Plus, Trash2, Calendar, Users } from "lucide-react";
+import { Clock, Plus, Trash2, Calendar, Users, Tag } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
 import {
   formatTime,
@@ -69,18 +69,22 @@ export function TimeSlotsTable({
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="h-5 w-5 text-red-600" />
+                      <CardTitle className="text-xl">{slot.name}</CardTitle>
+                    </div>
                     <div className="flex items-center space-x-3 mb-2">
                       <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-500" />
                         <span className="font-bold text-lg">
-                          {formatTime(slot.timeFrom)} -{" "}
-                          {formatTime(slot.timeTo)}
+                          {formatTime(slot.startTime)} -{" "}
+                          {formatTime(slot.endTime)}
                         </span>
                       </div>
 
-                      {slot.price > 0 ? (
+                      {slot.pricePerPerson && slot.pricePerPerson > 0 ? (
                         <Badge variant="default" className="bg-green-600">
-                          ${slot.price}/<Users />
+                          ${slot.pricePerPerson}/<Users />
                         </Badge>
                       ) : (
                         <Badge variant="secondary">Gratis</Badge>
@@ -90,7 +94,7 @@ export function TimeSlotsTable({
                     <div className="flex items-center space-x-2 mb-2">
                       <Calendar className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-700">
-                        {getDayBadges(slot.days)}
+                        {getDayBadges(slot.daysOfWeek)}
                       </span>
                     </div>
 
