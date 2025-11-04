@@ -139,6 +139,7 @@ model Restaurant {
   /** Los menús/categorías quedan aislados por restaurante */
   categories  Category[]
   products    Product[]
+  menus       Menu[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -164,6 +165,7 @@ model Branch {
   timeSlots    TimeSlot[]
   products     ProductOnBranch[]
   userAccess   UserOnBranch[]
+  menus        Menu[]
 
   /** Evita duplicar nombres de sucursal dentro del mismo restaurante */
   @@unique([restaurantId, name])
@@ -321,6 +323,77 @@ model Category {
   @@index([restaurantId])
 }
 
+//
+// MENÚS PÚBLICOS (para clientes)
+//
+model Menu {
+  id              String        @id @default(cuid())
+  name            String        // "Breakfast Menu", "Weekend Special", etc.
+  description     String?
+  slug            String        @db.Citext
+  isActive        Boolean       @default(true)
+
+  // Scheduling - cuando está disponible este menú
+  availableFrom   DateTime?     @db.Time  // e.g., 08:00
+  availableUntil  DateTime?     @db.Time  // e.g., 11:30
+  daysOfWeek      String[]      // ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+  // Scoping
+  restaurant      Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId    String
+  branch          Branch?       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId        String?       // null = disponible para todas las sucursales
+
+  // Organization
+  menuSections    MenuSection[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([restaurantId, slug])
+  @@index([restaurantId, isActive])
+  @@index([branchId])
+}
+
+model MenuSection {
+  id              String        @id @default(cuid())
+  name            String        // "Appetizers", "Main Courses", "Desserts"
+  description     String?
+  order           Int           @default(0)  // Para ordenar las secciones dentro del menú
+
+  menu            Menu          @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  menuId          String
+
+  menuItems       MenuItem[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([menuId, order])
+}
+
+model MenuItem {
+  id              String        @id @default(cuid())
+
+  menuSection     MenuSection   @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
+  menuSectionId   String
+
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId       String
+
+  order           Int           @default(0)       // Orden dentro de la sección
+  isAvailable     Boolean       @default(true)    // Override de disponibilidad del producto
+  isFeatured      Boolean       @default(false)   // Destacar en el menú (chef's special, etc.)
+  customPrice     Decimal?                        // Override de precio (opcional, para promociones)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([menuSectionId, productId])
+  @@index([menuSectionId, order])
+  @@index([productId])
+}
+
 model Product {
   id            String      @id @default(cuid())
   name          String
@@ -350,6 +423,7 @@ model Product {
 
   branches      ProductOnBranch[]
   orderItems    OrderItem[]
+  menuItems     MenuItem[]
 
   @@unique([restaurantId, name]) // evita duplicar nombres de producto dentro del restaurante
   @@unique([restaurantId, sku])  // SKU único por restaurante

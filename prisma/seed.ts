@@ -629,6 +629,287 @@ async function main() {
 
   console.log("✅ Reservas de ejemplo creadas: 2");
 
+  // Create Menus
+  console.log("\n📋 Creando menús...");
+
+  // Main Menu (Restaurant-wide, all day)
+  const mainMenu = await prisma.menu.upsert({
+    where: { id: "menu-main" },
+    update: {},
+    create: {
+      id: "menu-main",
+      name: "Menú Principal",
+      slug: "menu-principal",
+      description: "Nuestra carta completa con todos nuestros platos disponibles",
+      restaurantId: restaurant.id,
+      branchId: null, // Available for all branches
+      isActive: true,
+      daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    },
+  });
+  console.log("  ✓ Menú Principal creado");
+
+  // Lunch Menu (weekdays only)
+  const lunchMenu = await prisma.menu.upsert({
+    where: { id: "menu-lunch" },
+    update: {},
+    create: {
+      id: "menu-lunch",
+      name: "Menú Ejecutivo",
+      slug: "menu-ejecutivo",
+      description: "Opciones especiales para el almuerzo de lunes a viernes",
+      restaurantId: restaurant.id,
+      branchId: null,
+      isActive: true,
+      availableFrom: new Date("1970-01-01T11:00:00"),
+      availableUntil: new Date("1970-01-01T15:00:00"),
+      daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    },
+  });
+  console.log("  ✓ Menú Ejecutivo creado");
+
+  // Weekend Special Menu
+  const weekendMenu = await prisma.menu.upsert({
+    where: { id: "menu-weekend" },
+    update: {},
+    create: {
+      id: "menu-weekend",
+      name: "Especiales de Fin de Semana",
+      slug: "especiales-weekend",
+      description: "Platos premium exclusivos para sábados y domingos",
+      restaurantId: restaurant.id,
+      branchId: null,
+      isActive: true,
+      daysOfWeek: ["saturday", "sunday"],
+    },
+  });
+  console.log("  ✓ Especiales de Fin de Semana creado");
+
+  console.log("✅ Menús creados: 3");
+
+  // Create Menu Sections and Items for Main Menu
+  console.log("\n📑 Creando secciones y productos del Menú Principal...");
+
+  const mainAppetizers = await prisma.menuSection.create({
+    data: {
+      id: "section-main-appetizers",
+      menuId: mainMenu.id,
+      name: "Entradas",
+      description: "Comienza tu experiencia con nuestras deliciosas entradas",
+      order: 1,
+    },
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        menuSectionId: mainAppetizers.id,
+        productId: "prod-edamame",
+        order: 1,
+        isAvailable: true,
+        isFeatured: false,
+      },
+      {
+        menuSectionId: mainAppetizers.id,
+        productId: "prod-gyoza",
+        order: 2,
+        isAvailable: true,
+        isFeatured: true, // Featured item
+      },
+    ],
+  });
+
+  const mainCourses = await prisma.menuSection.create({
+    data: {
+      id: "section-main-courses",
+      menuId: mainMenu.id,
+      name: "Platos Principales",
+      description: "Nuestras especialidades de sushi y rolls",
+      order: 2,
+    },
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        menuSectionId: mainCourses.id,
+        productId: "prod-california-roll",
+        order: 1,
+        isAvailable: true,
+        isFeatured: false,
+      },
+      {
+        menuSectionId: mainCourses.id,
+        productId: "prod-salmon-nigiri",
+        order: 2,
+        isAvailable: true,
+        isFeatured: true, // Featured
+      },
+      {
+        menuSectionId: mainCourses.id,
+        productId: "prod-dragon-roll",
+        order: 3,
+        isAvailable: true,
+        isFeatured: true, // Premium featured item
+      },
+    ],
+  });
+
+  const mainDesserts = await prisma.menuSection.create({
+    data: {
+      id: "section-main-desserts",
+      menuId: mainMenu.id,
+      name: "Postres",
+      description: "Dulces tradicionales japoneses",
+      order: 3,
+    },
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        menuSectionId: mainDesserts.id,
+        productId: "prod-mochi",
+        order: 1,
+        isAvailable: true,
+        isFeatured: true,
+      },
+      {
+        menuSectionId: mainDesserts.id,
+        productId: "prod-dorayaki",
+        order: 2,
+        isAvailable: true,
+        isFeatured: false,
+      },
+    ],
+  });
+
+  const mainBeverages = await prisma.menuSection.create({
+    data: {
+      id: "section-main-beverages",
+      menuId: mainMenu.id,
+      name: "Bebidas",
+      description: "Bebidas tradicionales y refrescantes",
+      order: 4,
+    },
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        menuSectionId: mainBeverages.id,
+        productId: "prod-te-verde",
+        order: 1,
+        isAvailable: true,
+        isFeatured: false,
+      },
+      {
+        menuSectionId: mainBeverages.id,
+        productId: "prod-ramune",
+        order: 2,
+        isAvailable: true,
+        isFeatured: false,
+      },
+      {
+        menuSectionId: mainBeverages.id,
+        productId: "prod-sake",
+        order: 3,
+        isAvailable: true,
+        isFeatured: true, // Premium beverage
+      },
+    ],
+  });
+
+  console.log("✅ Secciones del Menú Principal: 4");
+  console.log("✅ Items del Menú Principal: 10");
+
+  // Create Menu Sections and Items for Lunch Menu (Executive)
+  console.log("\n📑 Creando secciones del Menú Ejecutivo...");
+
+  const lunchQuick = await prisma.menuSection.create({
+    data: {
+      id: "section-lunch-quick",
+      menuId: lunchMenu.id,
+      name: "Opciones Rápidas",
+      description: "Perfectas para tu pausa del almuerzo",
+      order: 1,
+    },
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        menuSectionId: lunchQuick.id,
+        productId: "prod-california-roll",
+        order: 1,
+        isAvailable: true,
+        isFeatured: false,
+        customPrice: 1000, // Special lunch pricing
+      },
+      {
+        menuSectionId: lunchQuick.id,
+        productId: "prod-salmon-nigiri",
+        order: 2,
+        isAvailable: true,
+        isFeatured: true,
+        customPrice: 1500, // Special lunch pricing
+      },
+      {
+        menuSectionId: lunchQuick.id,
+        productId: "prod-gyoza",
+        order: 3,
+        isAvailable: true,
+        isFeatured: false,
+        customPrice: 700, // Special lunch pricing
+      },
+    ],
+  });
+
+  console.log("✅ Secciones del Menú Ejecutivo: 1");
+  console.log("✅ Items del Menú Ejecutivo: 3");
+
+  // Create Menu Sections for Weekend Special
+  console.log("\n📑 Creando secciones de Especiales de Fin de Semana...");
+
+  const weekendSpecials = await prisma.menuSection.create({
+    data: {
+      id: "section-weekend-specials",
+      menuId: weekendMenu.id,
+      name: "Especiales del Chef",
+      description: "Creaciones exclusivas disponibles solo en fin de semana",
+      order: 1,
+    },
+  });
+
+  await prisma.menuItem.createMany({
+    data: [
+      {
+        menuSectionId: weekendSpecials.id,
+        productId: "prod-dragon-roll",
+        order: 1,
+        isAvailable: true,
+        isFeatured: true,
+      },
+      {
+        menuSectionId: weekendSpecials.id,
+        productId: "prod-salmon-nigiri",
+        order: 2,
+        isAvailable: true,
+        isFeatured: true,
+      },
+      {
+        menuSectionId: weekendSpecials.id,
+        productId: "prod-sake",
+        order: 3,
+        isAvailable: true,
+        isFeatured: true,
+      },
+    ],
+  });
+
+  console.log("✅ Secciones de Especiales Weekend: 1");
+  console.log("✅ Items de Especiales Weekend: 3");
+
   console.log("\n🎉 ¡Base de datos poblada exitosamente!");
   console.log("\n📝 Credenciales de Acceso:");
   console.log("-----------------------------------");
@@ -640,6 +921,11 @@ async function main() {
   console.log("  Username: gerente");
   console.log("  Email: gerente@kikusushi.com");
   console.log("  Password: Manager@123");
+  console.log("-----------------------------------");
+  console.log("\n📋 Menús Creados:");
+  console.log("  • Menú Principal (todos los días)");
+  console.log("  • Menú Ejecutivo (lunes-viernes, 11:00-15:00)");
+  console.log("  • Especiales de Fin de Semana (sábado-domingo)");
   console.log("-----------------------------------\n");
 }
 
