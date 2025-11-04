@@ -49,7 +49,7 @@ export const WIZARD_STEPS = [
   { title: "Turno", description: "¿A qué hora?" },
   { title: "Hora exacta", description: "Llegada precisa" },
   { title: "Datos", description: "Tu información" },
-] as const;
+];
 
 export const INITIAL_WIZARD_DATA: WizardData = {
   guests: 2,
@@ -79,9 +79,7 @@ export function validateStep(step: number, data: WizardData): boolean {
       return data.exactTime !== "";
     case 5:
       return (
-        data.name !== "" &&
-        data.email !== "" &&
-        /\S+@\S+\.\S+/.test(data.email)
+        data.name !== "" && data.email !== "" && /\S+@\S+\.\S+/.test(data.email)
       );
     default:
       return false;

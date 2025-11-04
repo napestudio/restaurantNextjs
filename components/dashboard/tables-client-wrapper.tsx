@@ -1,180 +1,72 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { TablesTabs } from "./tables-tabs";
 import { TablesSimpleView } from "./tables-simple-view";
 import FloorPlanHandler from "./floor-plan-handler";
-import { getSectorsByBranch } from "@/actions/Sector";
-import { Button } from "@/components/ui/button";
-import { Settings2, Plus } from "lucide-react";
 import { AddSectorDialog } from "./floor-plan/add-sector-dialog";
 import { EditSectorDialog } from "./floor-plan/edit-sector-dialog";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
-import { createTable } from "@/actions/Table";
-import type { TableShapeType } from "@/types/table";
+import { useSectors } from "@/hooks/use-sectors";
+import { useDialogs } from "@/hooks/use-dialogs";
+import { useTableForm } from "@/hooks/use-table-form";
+import type { TableWithReservations } from "@/types/tables-client";
 
-export interface TableWithReservations {
-  id: string;
-  number: number;
-  capacity: number;
-  positionX: number | null;
-  positionY: number | null;
-  width: number | null;
-  height: number | null;
-  rotation: number | null;
-  shape: string | null;
-  status: string | null;
-  isActive: boolean;
-  isShared: boolean;
-  sectorId: string | null;
-  reservations: Array<{
-    reservation: {
-      customerName: string;
-      people: number;
-      status: string;
-      date: string;
-      timeSlot: {
-        startTime: string;
-        endTime: string;
-      } | null;
-    };
-  }>;
-}
+// Re-export for backward compatibility
+export type { TableWithReservations };
 
 interface TablesClientWrapperProps {
   branchId: string;
   initialTables: TableWithReservations[];
 }
 
-interface Sector {
-  id: string;
-  name: string;
-  color: string;
-  order: number;
-  width: number;
-  height: number;
-  _count: {
-    tables: number;
-  };
-}
-
-const shapeDefaults = {
-  CIRCLE: { width: 80, height: 80 },
-  SQUARE: { width: 100, height: 100 },
-  RECTANGLE: { width: 120, height: 80 },
-  WIDE: { width: 200, height: 60 },
-};
-
 export function TablesClientWrapper({
   branchId,
   initialTables,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [selectedSector, setSelectedSector] = useState<string | null>(null);
-  const [sectorsLoaded, setSectorsLoaded] = useState(false);
-  const [addSectorDialogOpen, setAddSectorDialogOpen] = useState(false);
-  const [editSectorDialogOpen, setEditSectorDialogOpen] = useState(false);
-  const [editingSector, setEditingSector] = useState<Sector | null>(null);
-  const [addTableDialogOpen, setAddTableDialogOpen] = useState(false);
-  const [newTable, setNewTable] = useState({
-    number: "",
-    name: "",
-    shape: "CIRCLE" as TableShapeType,
-    capacity: "2",
-    isShared: false,
-    sectorId: "",
-  });
 
-  // Fetch sectors on mount and set first sector as default immediately
-  useEffect(() => {
-    const fetchSectors = async () => {
-      const result = await getSectorsByBranch(branchId);
-      if (result.success && result.data) {
-        setSectors(result.data);
-        // Set the first sector as default IMMEDIATELY to prevent flicker
-        if (result.data.length > 0) {
-          setSelectedSector(result.data[0].id);
-        }
-        setSectorsLoaded(true);
-      }
-    };
-    fetchSectors();
-  }, [branchId]);
+  // Custom hooks for state management
+  const {
+    sectors,
+    selectedSector,
+    setSelectedSector,
+    sectorsLoaded,
+    refreshSectors,
+  } = useSectors(branchId);
 
-  const refreshSectors = async () => {
-    const result = await getSectorsByBranch(branchId);
-    if (result.success && result.data) {
-      setSectors(result.data);
-      // If current selected sector no longer exists, switch to the first one
-      if (result.data.length > 0) {
-        const stillExists = result.data.some((s) => s.id === selectedSector);
-        if (!stillExists) {
-          setSelectedSector(result.data[0].id);
-        }
-      }
-    }
-  };
+  const {
+    state: dialogState,
+    openAddSector,
+    closeAddSector,
+    openEditSector,
+    closeEditSector,
+    openAddTable,
+    closeAddTable,
+  } = useDialogs();
 
-  const addTable = async () => {
-    if (!newTable.number) {
-      return;
-    }
+  const { formState, updateField, submitTable } = useTableForm(branchId);
 
-    const defaults = shapeDefaults[newTable.shape];
+  // Memoized filtered tables calculation
+  const filteredTables = useMemo(
+    () =>
+      selectedSector
+        ? tables.filter((table) => table.sectorId === selectedSector)
+        : tables,
+    [tables, selectedSector]
+  );
 
-    const result = await createTable({
-      branchId,
-      number: Number.parseInt(newTable.number),
-      name: newTable.name || undefined,
-      capacity: Number.parseInt(newTable.capacity),
-      sectorId: newTable.sectorId || undefined,
-      positionX: 50,
-      positionY: 50,
-      width: defaults.width,
-      height: defaults.height,
-      rotation: 0,
-      shape: newTable.shape,
-      isActive: true,
-      isShared: newTable.isShared,
+  // Memoized callback for adding table
+  const handleAddTable = useCallback(async () => {
+    const success = await submitTable((newTable) => {
+      setTables((prevTables) => [...prevTables, newTable]);
     });
 
-    if (result.success && result.data) {
-      const newDbTable: TableWithReservations = {
-        id: result.data.id,
-        number: result.data.number,
-        capacity: result.data.capacity,
-        positionX: result.data.positionX ?? 50,
-        positionY: result.data.positionY ?? 50,
-        width: result.data.width ?? defaults.width,
-        height: result.data.height ?? defaults.height,
-        rotation: result.data.rotation ?? 0,
-        shape: result.data.shape ?? newTable.shape,
-        status: null,
-        isActive: result.data.isActive ?? true,
-        isShared: result.data.isShared ?? false,
-        sectorId: result.data.sectorId ?? null,
-        reservations: [],
-      };
-
-      setTables((prevTables) => [...prevTables, newDbTable]);
-      setNewTable({
-        number: "",
-        name: "",
-        shape: "CIRCLE",
-        capacity: "2",
-        isShared: false,
-        sectorId: "",
-      });
-      setAddTableDialogOpen(false);
+    if (success) {
+      closeAddTable();
       refreshSectors();
     }
-  };
-
-  // Filter tables by selected sector
-  const filteredTables = selectedSector
-    ? tables.filter((table) => table.sectorId === selectedSector)
-    : tables;
+  }, [submitTable, closeAddTable, refreshSectors]);
 
   return (
     <>
@@ -188,12 +80,9 @@ export function TablesClientWrapper({
             selectedSector={selectedSector}
             setSelectedSector={setSelectedSector}
             sectors={sectors}
-            onAddSector={() => setAddSectorDialogOpen(true)}
-            onEditSector={(sector) => {
-              setEditingSector(sector);
-              setEditSectorDialogOpen(true);
-            }}
-            onAddTable={() => setAddTableDialogOpen(true)}
+            onAddSector={openAddSector}
+            onEditSector={openEditSector}
+            onAddTable={openAddTable}
           />
         ) : (
           <div className="flex items-center justify-center h-96">
@@ -204,47 +93,37 @@ export function TablesClientWrapper({
       </TablesTabs>
 
       <AddSectorDialog
-        open={addSectorDialogOpen}
-        onOpenChange={setAddSectorDialogOpen}
+        open={dialogState.addSector}
+        onOpenChange={closeAddSector}
         branchId={branchId}
         onSectorAdded={refreshSectors}
       />
 
       <EditSectorDialog
-        open={editSectorDialogOpen}
-        onOpenChange={setEditSectorDialogOpen}
-        sector={editingSector}
+        open={dialogState.editSector}
+        onOpenChange={closeEditSector}
+        sector={dialogState.editingSector}
         onSectorUpdated={refreshSectors}
         totalSectors={sectors.length}
       />
 
       <AddTableDialog
-        open={addTableDialogOpen}
-        onOpenChange={setAddTableDialogOpen}
-        tableNumber={newTable.number}
-        tableName={newTable.name}
-        tableShape={newTable.shape}
-        tableCapacity={newTable.capacity}
-        isShared={newTable.isShared}
-        sectorId={newTable.sectorId}
+        open={dialogState.addTable}
+        onOpenChange={closeAddTable}
+        tableNumber={formState.number}
+        tableName={formState.name}
+        tableShape={formState.shape}
+        tableCapacity={formState.capacity}
+        isShared={formState.isShared}
+        sectorId={formState.sectorId}
         sectors={sectors}
-        onTableNumberChange={(value) =>
-          setNewTable({ ...newTable, number: value })
-        }
-        onTableNameChange={(value) => setNewTable({ ...newTable, name: value })}
-        onTableShapeChange={(value) =>
-          setNewTable({ ...newTable, shape: value })
-        }
-        onTableCapacityChange={(value) =>
-          setNewTable({ ...newTable, capacity: value })
-        }
-        onIsSharedChange={(value) =>
-          setNewTable({ ...newTable, isShared: value })
-        }
-        onSectorChange={(value) =>
-          setNewTable({ ...newTable, sectorId: value })
-        }
-        onAddTable={addTable}
+        onTableNumberChange={(value) => updateField("number", value)}
+        onTableNameChange={(value) => updateField("name", value)}
+        onTableShapeChange={(value) => updateField("shape", value)}
+        onTableCapacityChange={(value) => updateField("capacity", value)}
+        onIsSharedChange={(value) => updateField("isShared", value)}
+        onSectorChange={(value) => updateField("sectorId", value)}
+        onAddTable={handleAddTable}
       />
     </>
   );

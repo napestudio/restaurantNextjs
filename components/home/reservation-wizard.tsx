@@ -60,7 +60,10 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
 
     // Step 2 → Step 3: Fetch available time slots
     if (currentStep === 2) {
-      const slots = await fetchAvailableSlots(wizardData.date, wizardData.guests);
+      const slots = await fetchAvailableSlots(
+        wizardData.date,
+        wizardData.guests
+      );
       setAvailableSlots(slots);
     }
 
@@ -123,7 +126,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Stepper */}
-      <Stepper steps={WIZARD_STEPS} currentStep={currentStep} />
+      {/* <Stepper steps={WIZARD_STEPS} currentStep={currentStep} /> */}
 
       {/* Step Content */}
       <Card className="p-8">
