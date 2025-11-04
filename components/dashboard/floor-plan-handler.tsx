@@ -679,20 +679,6 @@ export default function FloorPlanHandler({
         isEditMode={isEditMode}
       />
       <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          variant={selectedSector === null ? "default" : "outline"}
-          onClick={() => externalSetSelectedSector?.(null)}
-          className={
-            selectedSector === null
-              ? "bg-gray-600 hover:bg-gray-700"
-              : "hover:bg-gray-100"
-          }
-        >
-          Todas las Mesas
-          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
-            {dbTables.length}
-          </span>
-        </Button>
         {sectors.map((sector) => (
           <div key={sector.id} className="relative group">
             <Button

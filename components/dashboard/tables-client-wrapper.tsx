@@ -91,6 +91,10 @@ export function TablesClientWrapper({
       const result = await getSectorsByBranch(branchId);
       if (result.success && result.data) {
         setSectors(result.data);
+        // Set the first sector as default if not already selected
+        if (result.data.length > 0 && !selectedSector) {
+          setSelectedSector(result.data[0].id);
+        }
       }
     };
     fetchSectors();
@@ -100,6 +104,13 @@ export function TablesClientWrapper({
     const result = await getSectorsByBranch(branchId);
     if (result.success && result.data) {
       setSectors(result.data);
+      // If current selected sector no longer exists, switch to the first one
+      if (result.data.length > 0) {
+        const stillExists = result.data.some((s) => s.id === selectedSector);
+        if (!stillExists) {
+          setSelectedSector(result.data[0].id);
+        }
+      }
     }
   };
 
@@ -195,6 +206,7 @@ export function TablesClientWrapper({
         onOpenChange={setEditSectorDialogOpen}
         sector={editingSector}
         onSectorUpdated={refreshSectors}
+        totalSectors={sectors.length}
       />
 
       <AddTableDialog

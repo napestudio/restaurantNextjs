@@ -274,10 +274,10 @@ export function FloorPlanCanvas({
             <div className="w-4 h-4 rounded-full bg-blue-500" />
             <span>Reservada</span>
           </div>
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-yellow-500" />
             <span>Limpiando</span>
-          </div>
+          </div> */}
         </div>
       </CardContent>
     </Card>
