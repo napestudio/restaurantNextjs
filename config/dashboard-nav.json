@@ -22,6 +22,11 @@
     },
     {
       "label": "Menú",
+      "href": "/dashboard/menus",
+      "adminOnly": true
+    },
+    {
+      "label": "Productos",
       "href": "/dashboard/menu-items",
       "adminOnly": true
     },

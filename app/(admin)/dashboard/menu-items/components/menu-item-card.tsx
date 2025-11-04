@@ -43,6 +43,7 @@ type MenuItemWithRelations = {
   weightUnit: WeightUnit | null;
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
+  trackStock: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -64,10 +65,11 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
   const stock = branchData ? branchData.stock : 0;
   const dineInPrice = branchData?.prices.find((p) => p.type === "DINE_IN");
 
-  // Verificar si hay alerta de stock bajo
+  // Verificar si hay alerta de stock bajo (solo para productos con trackStock = true)
   const hasLowStock =
-    item.minStockAlert && stock < item.minStockAlert;
-  const isOutOfStock = stock === 0;
+    item.trackStock && item.minStockAlert && stock < item.minStockAlert;
+  const isOutOfStock = item.trackStock && stock === 0;
+  const isAlwaysAvailable = !item.trackStock;
 
   return (
     <div className="p-4 hover:bg-gray-50 transition-colors">
@@ -80,12 +82,17 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
             </h3>
 
             {/* Badges de estado */}
-            {isOutOfStock && (
+            {isAlwaysAvailable && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                Siempre Disponible
+              </span>
+            )}
+            {!isAlwaysAvailable && isOutOfStock && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                 Sin Stock
               </span>
             )}
-            {!isOutOfStock && hasLowStock && (
+            {!isAlwaysAvailable && !isOutOfStock && hasLowStock && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                 <AlertTriangle className="w-3 h-3" />
                 Stock Bajo
@@ -116,15 +123,21 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
         {/* Stock */}
         <div className="text-right min-w-[100px]">
           <div className="text-xs text-gray-500 mb-0.5">Stock</div>
-          <div className={`font-semibold text-sm ${
-            isOutOfStock
-              ? "text-red-600"
-              : hasLowStock
-              ? "text-yellow-600"
-              : "text-gray-900"
-          }`}>
-            {stock} {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
-          </div>
+          {isAlwaysAvailable ? (
+            <div className="font-semibold text-sm text-green-600">
+              N/A
+            </div>
+          ) : (
+            <div className={`font-semibold text-sm ${
+              isOutOfStock
+                ? "text-red-600"
+                : hasLowStock
+                ? "text-yellow-600"
+                : "text-gray-900"
+            }`}>
+              {stock} {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
+            </div>
+          )}
         </div>
 
         {/* Precio */}

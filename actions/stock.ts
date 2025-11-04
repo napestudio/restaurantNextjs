@@ -41,6 +41,11 @@ export async function adjustStock(input: AdjustStockInput) {
         throw new Error("Producto no encontrado en la sucursal");
       }
 
+      // Validar que el producto tenga seguimiento de stock habilitado
+      if (!productOnBranch.product.trackStock) {
+        throw new Error("Este producto no tiene seguimiento de stock habilitado");
+      }
+
       const previousStock = Number(productOnBranch.stock);
       const newStock = previousStock + input.quantity;
 
@@ -219,19 +224,25 @@ export async function getBranchStockSummary(branchId: string) {
       },
     });
 
-    // Calcular estadísticas
+    // Calcular estadísticas (solo para productos con trackStock = true)
     const totalProducts = productsOnBranch.length;
     const lowStockProducts = productsOnBranch.filter(pob => {
+      // Ignorar productos sin seguimiento de stock
+      if (!pob.product.trackStock) return false;
       const minAlert = pob.product.minStockAlert;
       if (!minAlert) return false;
       return Number(pob.stock) < Number(minAlert);
     });
 
-    const outOfStockProducts = productsOnBranch.filter(
-      pob => Number(pob.stock) === 0
-    );
+    const outOfStockProducts = productsOnBranch.filter(pob => {
+      // Ignorar productos sin seguimiento de stock
+      if (!pob.product.trackStock) return false;
+      return Number(pob.stock) === 0;
+    });
 
     const totalStockValue = productsOnBranch.reduce((sum, pob) => {
+      // Solo calcular valor de productos con seguimiento de stock
+      if (!pob.product.trackStock) return sum;
       // Usar precio de comida en local (DINE_IN) para el cálculo del valor
       const dineInPrice = pob.prices.find(p => p.type === "DINE_IN");
       if (!dineInPrice) return sum;
@@ -330,6 +341,7 @@ export async function getLowStockAlerts(branchId: string) {
         isActive: true,
         product: {
           minStockAlert: { not: null },
+          trackStock: true, // Solo productos con seguimiento de stock
           isActive: true,
         },
       },

@@ -104,7 +104,11 @@ export function CreateReservationDialog({
     // 1. We have a date
     // 2. The date is different from the last fetch
     // 3. We're not already fetching
-    if (!selectedDate || selectedDate === lastFetchedRef.current || isFetchingRef.current) {
+    if (
+      !selectedDate ||
+      selectedDate === lastFetchedRef.current ||
+      isFetchingRef.current
+    ) {
       return;
     }
 
@@ -201,7 +205,7 @@ export function CreateReservationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crear reserva</DialogTitle>
           <DialogDescription>

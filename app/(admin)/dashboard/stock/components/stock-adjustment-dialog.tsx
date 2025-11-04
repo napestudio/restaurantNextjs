@@ -87,6 +87,28 @@ export function StockAdjustmentDialog({
   const [notes, setNotes] = useState("");
   const [reference, setReference] = useState("");
 
+  // Verificar si el producto tiene seguimiento de stock
+  if (!productOnBranch.product.trackStock) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Ajuste no disponible
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Este producto no tiene seguimiento de stock habilitado y siempre está disponible.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentStock = productOnBranch.stock;
   const unit = getUnitLabel(
     productOnBranch.product.unitType,

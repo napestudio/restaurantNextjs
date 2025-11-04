@@ -14,6 +14,8 @@ import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
 import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
+import { Button } from "@/components/ui/button";
+import { Settings2, Plus } from "lucide-react";
 
 // Default canvas dimensions - can be overridden by sector dimensions
 const DEFAULT_CANVAS_WIDTH = 1200;
@@ -99,7 +101,11 @@ interface FloorPlanPageProps {
   tables: TableWithReservations[];
   setTables: React.Dispatch<React.SetStateAction<TableWithReservations[]>>;
   selectedSector?: string | null;
+  setSelectedSector?: (sectorId: string | null) => void;
   sectors?: Sector[];
+  onAddSector?: () => void;
+  onEditSector?: (sector: Sector) => void;
+  onAddTable?: () => void;
 }
 
 export default function FloorPlanHandler({
@@ -107,7 +113,11 @@ export default function FloorPlanHandler({
   tables: dbTables,
   setTables: setDbTables,
   selectedSector: externalSelectedSector,
+  setSelectedSector: externalSetSelectedSector,
   sectors: externalSectors = [],
+  onAddSector,
+  onEditSector,
+  onAddTable,
 }: FloorPlanPageProps) {
   // Transform database tables to FloorTable format
   const transformTables = (dbTables: TableWithReservations[]): FloorTable[] => {
@@ -658,6 +668,8 @@ export default function FloorPlanHandler({
 
   return (
     <div className="space-y-6">
+      {/* Sector Selector */}
+
       <FloorPlanToolbar
         onAddTable={() => setAddDialogOpen(true)}
         onSave={saveFloorPlanChanges}
@@ -666,7 +678,76 @@ export default function FloorPlanHandler({
         isSaving={isSaving}
         isEditMode={isEditMode}
       />
-
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button
+          variant={selectedSector === null ? "default" : "outline"}
+          onClick={() => externalSetSelectedSector?.(null)}
+          className={
+            selectedSector === null
+              ? "bg-gray-600 hover:bg-gray-700"
+              : "hover:bg-gray-100"
+          }
+        >
+          Todas las Mesas
+          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
+            {dbTables.length}
+          </span>
+        </Button>
+        {sectors.map((sector) => (
+          <div key={sector.id} className="relative group">
+            <Button
+              variant={selectedSector === sector.id ? "default" : "outline"}
+              onClick={() => externalSetSelectedSector?.(sector.id)}
+              className={
+                selectedSector === sector.id
+                  ? "pr-10"
+                  : "hover:bg-gray-100 border-2 pr-10"
+              }
+              style={{
+                backgroundColor:
+                  selectedSector === sector.id ? sector.color : "transparent",
+                borderColor: sector.color,
+                color: selectedSector === sector.id ? "white" : sector.color,
+              }}
+            >
+              <div
+                className="w-3 h-3 rounded-full mr-2"
+                style={{ backgroundColor: sector.color }}
+              />
+              {sector.name}
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
+                {sector._count.tables}
+              </span>
+            </Button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditSector?.(sector);
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/20 opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{
+                color: selectedSector === sector.id ? "white" : sector.color,
+              }}
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <Button
+          variant="outline"
+          onClick={() => onAddSector?.()}
+          className="border-dashed"
+        >
+          + Nuevo Sector
+        </Button>
+        <Button
+          onClick={() => onAddTable?.()}
+          className="bg-red-600 hover:bg-red-700 ml-auto gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Agregar Mesa
+        </Button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Floor Plan Canvas */}
 

@@ -13,6 +13,7 @@ export type CreateMenuItemInput = {
   weightUnit?: WeightUnit;
   volumeUnit?: VolumeUnit;
   minStockAlert?: number;
+  trackStock?: boolean;
   categoryId?: string;
   restaurantId: string;
   isActive?: boolean;
@@ -28,6 +29,7 @@ export type UpdateMenuItemInput = {
   weightUnit?: WeightUnit;
   volumeUnit?: VolumeUnit;
   minStockAlert?: number;
+  trackStock?: boolean;
   categoryId?: string;
   isActive?: boolean;
 };
@@ -60,6 +62,7 @@ export async function createMenuItem(input: CreateMenuItemInput) {
         weightUnit: input.weightUnit,
         volumeUnit: input.volumeUnit,
         minStockAlert: input.minStockAlert,
+        trackStock: input.trackStock ?? true,
         categoryId: input.categoryId,
         restaurantId: input.restaurantId,
         isActive: input.isActive ?? true,
@@ -104,6 +107,7 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
         weightUnit: input.weightUnit,
         volumeUnit: input.volumeUnit,
         minStockAlert: input.minStockAlert,
+        trackStock: input.trackStock,
         categoryId: input.categoryId,
         isActive: input.isActive,
       },
