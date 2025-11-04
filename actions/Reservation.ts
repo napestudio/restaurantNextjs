@@ -200,7 +200,8 @@ export async function getReservations(branchId: string) {
 
     return {
       success: true,
-      data: reservations.map((r) => serializeReservation(r)),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: reservations.map((r: any) => serializeReservation(r)),
     };
   } catch (error) {
     console.error("Error fetching reservations:", error);
@@ -484,13 +485,6 @@ export async function assignTablesToReservation(
   tableIds: string[]
 ) {
   try {
-    // Get old table assignments to clear their status
-    const oldAssignments = await prisma.reservationTable.findMany({
-      where: { reservationId },
-      select: { tableId: true },
-    });
-    const oldTableIds = oldAssignments.map((a) => a.tableId);
-
     // First, remove existing table assignments
     await prisma.reservationTable.deleteMany({
       where: {
