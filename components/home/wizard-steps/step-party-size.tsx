@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { PartySizePicker } from "@/components/ui/party-size-picker";
 
 interface StepPartySizeProps {
@@ -7,7 +8,7 @@ interface StepPartySizeProps {
   onChange: (value: number) => void;
 }
 
-export function StepPartySize({ value, onChange }: StepPartySizeProps) {
+export const StepPartySize = memo(function StepPartySize({ value, onChange }: StepPartySizeProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
@@ -30,4 +31,4 @@ export function StepPartySize({ value, onChange }: StepPartySizeProps) {
       </div>
     </div>
   );
-}
+});

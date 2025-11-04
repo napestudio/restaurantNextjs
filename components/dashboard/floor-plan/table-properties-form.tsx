@@ -66,9 +66,7 @@ export function TablePropertiesForm({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-muted-foreground">
-          Número de Mesa
-        </Label>
+        <Label className="text-xs text-muted-foreground">Número de Mesa</Label>
         <div className="text-lg font-bold">
           {selectedTable.number} {tableName || ""}
         </div>
@@ -76,9 +74,7 @@ export function TablePropertiesForm({
 
       {sectorName && (
         <div>
-          <Label className="text-xs text-muted-foreground">
-            Sector
-          </Label>
+          <Label className="text-xs text-muted-foreground">Sector</Label>
           <div className="flex items-center gap-2 mt-1">
             <div
               className="w-3 h-3 rounded-full"
@@ -223,7 +219,7 @@ export function TablePropertiesForm({
             <SelectItem value="empty">Disponible</SelectItem>
             <SelectItem value="occupied">Ocupada</SelectItem>
             <SelectItem value="reserved">Reservada</SelectItem>
-            <SelectItem value="cleaning">Limpiando</SelectItem>
+            {/* <SelectItem value="cleaning">Limpiando</SelectItem> */}
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground mt-1">

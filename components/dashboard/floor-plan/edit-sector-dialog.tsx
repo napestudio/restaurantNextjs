@@ -43,6 +43,7 @@ interface EditSectorDialogProps {
   onOpenChange: (open: boolean) => void;
   sector: Sector | null;
   onSectorUpdated?: () => void;
+  totalSectors?: number;
 }
 
 const DEFAULT_COLORS = [
@@ -61,6 +62,7 @@ export function EditSectorDialog({
   onOpenChange,
   sector,
   onSectorUpdated,
+  totalSectors = 1,
 }: EditSectorDialogProps) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLORS[0].value);
@@ -256,7 +258,7 @@ export function EditSectorDialog({
             <Button
               variant="destructive"
               onClick={() => setShowDeleteAlert(true)}
-              disabled={isLoading || sector._count.tables > 0}
+              disabled={isLoading || sector._count.tables > 0 || totalSectors <= 1}
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
@@ -279,9 +281,11 @@ export function EditSectorDialog({
               </Button>
             </div>
           </DialogFooter>
-          {sector._count.tables > 0 && (
+          {(sector._count.tables > 0 || totalSectors <= 1) && (
             <p className="text-xs text-muted-foreground mt-2">
-              * No se puede eliminar un sector que tiene mesas asignadas
+              {sector._count.tables > 0 && "* No se puede eliminar un sector que tiene mesas asignadas"}
+              {totalSectors <= 1 && sector._count.tables === 0 && "* Debe haber al menos un sector"}
+              {sector._count.tables > 0 && totalSectors <= 1 && " y debe haber al menos un sector"}
             </p>
           )}
         </DialogContent>

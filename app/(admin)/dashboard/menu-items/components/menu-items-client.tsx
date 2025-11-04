@@ -5,7 +5,12 @@ import { Plus, Search, Filter, RefreshCw } from "lucide-react";
 import { getMenuItems } from "@/actions/menuItems";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemDialog } from "./menu-item-dialog";
-import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
+import type {
+  UnitType,
+  WeightUnit,
+  VolumeUnit,
+  PriceType,
+} from "@/app/generated/prisma";
 
 // Serialized types for client components (Decimal -> number, Date -> string)
 type SerializedProductPrice = {
@@ -46,6 +51,7 @@ type MenuItemWithRelations = {
   weightUnit: WeightUnit | null;
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
+  trackStock: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -172,7 +178,7 @@ export function MenuItemsClient({
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-sm text-gray-600">Total de Productos</div>
           <div className="text-2xl font-bold text-gray-900">
@@ -191,7 +197,7 @@ export function MenuItemsClient({
             {menuItems.filter((item) => item.isActive).length}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Lista de productos */}
       {filteredItems.length === 0 ? (

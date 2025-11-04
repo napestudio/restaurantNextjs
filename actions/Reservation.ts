@@ -3,7 +3,11 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ReservationStatus } from "@/app/generated/prisma";
-import { findAvailableTables, setTablesReserved, updateTableStatusForReservation } from "./Table";
+import {
+  findAvailableTables,
+  setTablesReserved,
+  updateTableStatusForReservation,
+} from "./Table";
 
 /**
  * Helper function to serialize reservation data for client components
@@ -13,7 +17,9 @@ function serializeReservation(reservation: any) {
   return {
     ...reservation,
     date: reservation.date.toISOString(),
-    exactTime: reservation.exactTime ? reservation.exactTime.toISOString() : null,
+    exactTime: reservation.exactTime
+      ? reservation.exactTime.toISOString()
+      : null,
     createdAt: reservation.createdAt.toISOString(),
     timeSlot: reservation.timeSlot
       ? {
@@ -188,7 +194,7 @@ export async function getReservations(branchId: string) {
         },
       },
       orderBy: {
-        date: "desc",
+        createdAt: "desc",
       },
     });
 
