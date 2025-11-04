@@ -1,100 +1,21 @@
 "use client";
 
-import {
-  createTable,
-  deleteTable as deleteTableAction,
-  updateFloorPlanBatch,
-  updateTable,
-  updateTableFloorPlan,
-} from "@/actions/Table";
-import type { TableShapeType, TableStatus } from "@/types/table";
-import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { createTable } from "@/actions/Table";
+import type { TableShapeType } from "@/types/table";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { TableWithReservations } from "@/lib/floor-plan-utils";
+import { shapeDefaults } from "@/lib/floor-plan-utils";
+import { useFloorPlanState } from "@/hooks/use-floor-plan-state";
+import { useFloorPlanActions } from "@/hooks/use-floor-plan-actions";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
 import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
-import { Button } from "@/components/ui/button";
-import { Settings2, Plus } from "lucide-react";
+import { SectorSelector, type Sector } from "./floor-plan/sector-selector";
 
 // Default canvas dimensions - can be overridden by sector dimensions
 const DEFAULT_CANVAS_WIDTH = 1200;
 const DEFAULT_CANVAS_HEIGHT = 800;
-
-interface FloorTable {
-  id: string;
-  number: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  shape: TableShapeType;
-  capacity: number;
-  status: TableStatus;
-  currentGuests: number;
-  isShared: boolean;
-}
-
-const shapeDefaults = {
-  CIRCLE: { width: 100, height: 100 },
-  SQUARE: { width: 100, height: 100 },
-  RECTANGLE: { width: 200, height: 100 },
-  WIDE: { width: 400, height: 100 },
-};
-
-// Calculate the bounding box of a rotated rectangle
-function getRotatedBounds(width: number, height: number, rotation: number) {
-  const angleRad = (rotation * Math.PI) / 180;
-  const cos = Math.abs(Math.cos(angleRad));
-  const sin = Math.abs(Math.sin(angleRad));
-
-  const boundingWidth = width * cos + height * sin;
-  const boundingHeight = width * sin + height * cos;
-
-  return { width: boundingWidth, height: boundingHeight };
-}
-
-interface TableWithReservations {
-  id: string;
-  number: number;
-  capacity: number;
-  positionX: number | null;
-  positionY: number | null;
-  width: number | null;
-  height: number | null;
-  rotation: number | null;
-  shape: string | null;
-  status: string | null;
-  isActive: boolean;
-  isShared: boolean;
-  sectorId: string | null;
-  name?: string | null;
-  reservations: Array<{
-    reservation: {
-      customerName: string;
-      people: number;
-      status: string;
-      date: string;
-      timeSlot: {
-        startTime: string;
-        endTime: string;
-      } | null;
-    };
-  }>;
-}
-
-interface Sector {
-  id: string;
-  name: string;
-  color: string;
-  order: number;
-  width: number;
-  height: number;
-  _count: {
-    tables: number;
-  };
-}
 
 interface FloorPlanPageProps {
   branchId: string;
@@ -119,69 +40,7 @@ export default function FloorPlanHandler({
   onEditSector,
   onAddTable,
 }: FloorPlanPageProps) {
-  // Transform database tables to FloorTable format
-  const transformTables = (dbTables: TableWithReservations[]): FloorTable[] => {
-    return dbTables.map((table) => {
-      // Map Prisma status enum to frontend status
-      const statusMap: Record<string, TableStatus> = {
-        EMPTY: "empty",
-        OCCUPIED: "occupied",
-        RESERVED: "reserved",
-        CLEANING: "cleaning",
-      };
-
-      // Prioritize manual status from DB, otherwise calculate from reservations
-      let status: TableStatus = "empty";
-      let currentGuests = 0;
-
-      if (table.status) {
-        // Use manual status from database
-        status = statusMap[table.status] || "empty";
-      } else if (table.reservations.length > 0) {
-        // Calculate status from reservations
-        const reservation = table.reservations[0].reservation;
-        currentGuests = reservation.people;
-
-        const reservationDate = new Date(reservation.date);
-        const today = new Date();
-        const isToday =
-          reservationDate.getDate() === today.getDate() &&
-          reservationDate.getMonth() === today.getMonth() &&
-          reservationDate.getFullYear() === today.getFullYear();
-
-        if (isToday) {
-          status = reservation.status === "CONFIRMED" ? "occupied" : "reserved";
-        } else {
-          status = "reserved";
-        }
-      }
-
-      // Set currentGuests from reservations if available
-      if (table.reservations.length > 0) {
-        currentGuests = table.reservations[0].reservation.people;
-      }
-
-      return {
-        id: table.id,
-        number: table.number,
-        x: table.positionX ?? 100,
-        y: table.positionY ?? 100,
-        width: table.width ?? 80,
-        height: table.height ?? 80,
-        rotation: table.rotation ?? 0,
-        shape: (table.shape ?? "SQUARE") as TableShapeType,
-        capacity: table.capacity,
-        status,
-        currentGuests,
-        isShared: table.isShared,
-      };
-    });
-  };
-
-  const [tables, setTables] = useState<FloorTable[]>(transformTables(dbTables));
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [draggedTable, setDraggedTable] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // UI State
   const [zoom, setZoom] = useState(0.75);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -190,10 +49,61 @@ export default function FloorPlanHandler({
   const [isEditMode, setIsEditMode] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Use external sectors and selectedSector if provided
+  // Use external sectors and selectedSector
   const sectors = externalSectors;
   const selectedSector = externalSelectedSector;
 
+  // Get canvas dimensions from selected sector or use defaults
+  const { canvasWidth, canvasHeight } = useMemo(() => {
+    const currentSector = selectedSector
+      ? sectors.find((s) => s.id === selectedSector)
+      : null;
+    return {
+      canvasWidth: currentSector?.width ?? DEFAULT_CANVAS_WIDTH,
+      canvasHeight: currentSector?.height ?? DEFAULT_CANVAS_HEIGHT,
+    };
+  }, [selectedSector, sectors]);
+
+  // Use custom hook for floor plan state management
+  const {
+    tables,
+    setTables,
+    filteredTables,
+    selectedTable,
+    setSelectedTable,
+    selectedTableData,
+    draggedTable,
+    setDraggedTable,
+    dragOffset,
+    setDragOffset,
+    handleTableDrag,
+  } = useFloorPlanState({
+    dbTables,
+    selectedSector,
+    canvasWidth,
+    canvasHeight,
+    zoom,
+  });
+
+  // Use custom hook for table actions
+  const {
+    deleteTable,
+    rotateTable,
+    updateTableStatus,
+    updateTableCapacity,
+    updateTableShape,
+    updateTableIsShared,
+    updateTableSize,
+    saveFloorPlanChanges,
+  } = useFloorPlanActions({
+    tables,
+    setTables,
+    setDbTables,
+    setSelectedTable,
+    setHasUnsavedChanges,
+  });
+
+  // New table form state
   const [newTable, setNewTable] = useState({
     number: "",
     name: "",
@@ -203,129 +113,18 @@ export default function FloorPlanHandler({
     sectorId: "",
   });
 
-  // Filter tables by selected sector
-  const filteredTables = selectedSector
-    ? tables.filter((table) => {
-        const dbTable = dbTables.find((t) => t.id === table.id);
-        return dbTable?.sectorId === selectedSector;
-      })
-    : tables;
+  // Handle table mouse down - memoized
+  const handleTableMouseDown = useCallback(
+    (e: React.MouseEvent, tableId: string) => {
+      e.stopPropagation();
 
-  // Get canvas dimensions from selected sector or use defaults
-  const currentSector = selectedSector
-    ? sectors.find((s) => s.id === selectedSector)
-    : null;
-  const canvasWidth = currentSector?.width ?? DEFAULT_CANVAS_WIDTH;
-  const canvasHeight = currentSector?.height ?? DEFAULT_CANVAS_HEIGHT;
+      // Always allow selecting tables, but only allow dragging in edit mode
+      setSelectedTable(tableId);
 
-  // Sync floor plan tables when dbTables change (e.g., new reservations)
-  useEffect(() => {
-    setTables((prevTables) => {
-      return dbTables.map((dbTable) => {
-        // Find existing floor table to preserve position/UI state
-        const existingFloorTable = prevTables.find((t) => t.id === dbTable.id);
+      if (!isEditMode) return;
 
-        // Map Prisma status enum to frontend status
-        const statusMap: Record<string, TableStatus> = {
-          EMPTY: "empty",
-          OCCUPIED: "occupied",
-          RESERVED: "reserved",
-          CLEANING: "cleaning",
-        };
-
-        // Prioritize manual status from DB, otherwise calculate from reservations
-        let status: TableStatus = "empty";
-        let currentGuests = 0;
-
-        if (dbTable.status) {
-          // Use manual status from database
-          status = statusMap[dbTable.status] || "empty";
-        } else if (dbTable.reservations.length > 0) {
-          // Calculate status from reservations
-          const reservation = dbTable.reservations[0].reservation;
-          currentGuests = reservation.people;
-
-          const reservationDate = new Date(reservation.date);
-          const today = new Date();
-          const isToday =
-            reservationDate.getDate() === today.getDate() &&
-            reservationDate.getMonth() === today.getMonth() &&
-            reservationDate.getFullYear() === today.getFullYear();
-
-          if (isToday) {
-            status =
-              reservation.status === "CONFIRMED" ? "occupied" : "reserved";
-          } else {
-            status = "reserved";
-          }
-        }
-
-        // Set currentGuests from reservations if available
-        if (dbTable.reservations.length > 0) {
-          currentGuests = dbTable.reservations[0].reservation.people;
-        }
-
-        // If table exists, preserve floor plan properties but update status
-        if (existingFloorTable) {
-          return {
-            ...existingFloorTable,
-            number: dbTable.number,
-            capacity: dbTable.capacity,
-            status,
-            currentGuests,
-            isShared: dbTable.isShared,
-          };
-        }
-
-        // New table - use transform logic
-        return {
-          id: dbTable.id,
-          number: dbTable.number,
-          x: dbTable.positionX ?? 100,
-          y: dbTable.positionY ?? 100,
-          width: dbTable.width ?? 80,
-          height: dbTable.height ?? 80,
-          rotation: dbTable.rotation ?? 0,
-          shape: (dbTable.shape ?? "SQUARE") as TableShapeType,
-          capacity: dbTable.capacity,
-          status,
-          currentGuests,
-          isShared: dbTable.isShared,
-        };
-      });
-    });
-  }, [dbTables]);
-
-  // Handle mouse down on table
-  const handleTableMouseDown = (e: React.MouseEvent, tableId: string) => {
-    e.stopPropagation();
-
-    // Always allow selecting tables, but only allow dragging in edit mode
-    setSelectedTable(tableId);
-
-    if (!isEditMode) return;
-
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
-
-    const svg = svgRef.current;
-    if (!svg) return;
-
-    const rect = svg.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoom;
-    const y = (e.clientY - rect.top) / zoom;
-
-    setDraggedTable(tableId);
-    setDragOffset({
-      x: x - table.x,
-      y: y - table.y,
-    });
-  };
-
-  // Handle mouse move
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!draggedTable) return;
+      const table = tables.find((t) => t.id === tableId);
+      if (!table) return;
 
       const svg = svgRef.current;
       if (!svg) return;
@@ -334,40 +133,28 @@ export default function FloorPlanHandler({
       const x = (e.clientX - rect.left) / zoom;
       const y = (e.clientY - rect.top) / zoom;
 
-      setTables((prevTables) =>
-        prevTables.map((table) => {
-          if (table.id !== draggedTable) return table;
+      setDraggedTable(tableId);
+      setDragOffset({
+        x: x - table.x,
+        y: y - table.y,
+      });
+    },
+    [isEditMode, tables, zoom, setSelectedTable, setDraggedTable, setDragOffset]
+  );
 
-          // Calculate raw top-left position
-          const rawX = x - dragOffset.x;
-          const rawY = y - dragOffset.y;
+  // Handle mouse move and mouse up for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggedTable) return;
 
-          // Snap to 100px grid (one cell at a time)
-          // All tables move in full cell increments
-          const gridSize = 100;
-          const snappedX = Math.round(rawX / gridSize) * gridSize;
-          const snappedY = Math.round(rawY / gridSize) * gridSize;
+      const svg = svgRef.current;
+      if (!svg) return;
 
-          // Constrain to canvas bounds
-          const constrainedX = Math.max(
-            0,
-            Math.min(canvasWidth - table.width, snappedX)
-          );
-          const constrainedY = Math.max(
-            0,
-            Math.min(canvasHeight - table.height, snappedY)
-          );
-
-          return {
-            ...table,
-            x: constrainedX,
-            y: constrainedY,
-          };
-        })
-      );
+      const rect = svg.getBoundingClientRect();
+      handleTableDrag(e.clientX, e.clientY, rect);
     };
 
-    const handleMouseUp = async () => {
+    const handleMouseUp = () => {
       if (!draggedTable) return;
 
       // Mark as having unsaved changes instead of saving immediately
@@ -384,9 +171,10 @@ export default function FloorPlanHandler({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [draggedTable, dragOffset, zoom, canvasWidth, canvasHeight]);
+  }, [draggedTable, handleTableDrag, setDraggedTable]);
 
-  const addTable = async () => {
+  // Add table handler - memoized
+  const addTable = useCallback(async () => {
     if (!newTable.number) {
       return;
     }
@@ -411,7 +199,7 @@ export default function FloorPlanHandler({
 
     if (result.success && result.data) {
       // Add the new table to local floor plan state
-      const newFloorTable: FloorTable = {
+      const newFloorTable = {
         id: result.data.id,
         number: result.data.number,
         x: result.data.positionX ?? 50,
@@ -421,7 +209,7 @@ export default function FloorPlanHandler({
         rotation: result.data.rotation ?? 0,
         shape: (result.data.shape ?? newTable.shape) as TableShapeType,
         capacity: result.data.capacity,
-        status: "empty" as TableStatus,
+        status: "empty" as const,
         currentGuests: 0,
         isShared: result.data.isShared ?? false,
       };
@@ -439,7 +227,7 @@ export default function FloorPlanHandler({
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
         shape: result.data.shape ?? newTable.shape,
-        status: null, // New tables have no manual status override
+        status: null,
         isActive: result.data.isActive ?? true,
         isShared: result.data.isShared ?? false,
         sectorId: result.data.sectorId ?? null,
@@ -457,286 +245,64 @@ export default function FloorPlanHandler({
       });
       setAddDialogOpen(false);
     }
-  };
+  }, [newTable, branchId, setTables, setDbTables]);
 
-  const deleteTable = async (tableId: string) => {
-    const result = await deleteTableAction(tableId);
+  // Save handler - memoized
+  const handleSave = useCallback(() => {
+    saveFloorPlanChanges(setIsSaving, setHasUnsavedChanges);
+  }, [saveFloorPlanChanges]);
 
-    if (result.success) {
-      setTables(tables.filter((t) => t.id !== tableId));
-      setDbTables((prevTables) => prevTables.filter((t) => t.id !== tableId));
-      setSelectedTable(null);
-    }
-  };
+  // Zoom handlers - memoized
+  const handleZoomIn = useCallback(() => {
+    setZoom((prev) => Math.min(2, prev + 0.1));
+  }, []);
 
-  const rotateTable = (tableId: string) => {
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
+  const handleZoomOut = useCallback(() => {
+    setZoom((prev) => Math.max(0.5, prev - 0.1));
+  }, []);
 
-    // Just swap width and height for 90-degree rotation effect
-    // No SVG rotation needed - the dimension swap creates the visual rotation
-    setTables((prevTables) =>
-      prevTables.map((t) =>
-        t.id === tableId
-          ? {
-              ...t,
-              width: table.height,
-              height: table.width,
-            }
-          : t
-      )
-    );
+  // Toggle handlers - memoized
+  const handleToggleGrid = useCallback(() => {
+    setShowGrid((prev) => !prev);
+  }, []);
 
-    setHasUnsavedChanges(true);
-  };
+  const handleToggleEditMode = useCallback(() => {
+    setIsEditMode((prev) => !prev);
+  }, []);
 
-  const updateTableStatus = async (tableId: string, status: TableStatus) => {
-    // Map frontend status to Prisma enum
-    const statusMap: Record<
-      TableStatus,
-      "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING"
-    > = {
-      empty: "EMPTY",
-      occupied: "OCCUPIED",
-      reserved: "RESERVED",
-      cleaning: "CLEANING",
-    };
+  // Get additional table info for properties panel - memoized
+  const selectedDbTable = useMemo(() => {
+    return selectedTable ? dbTables.find((t) => t.id === selectedTable) : undefined;
+  }, [selectedTable, dbTables]);
 
-    // Update local floor plan state
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId
-          ? {
-              ...table,
-              status,
-              currentGuests:
-                status === "empty" || status === "cleaning"
-                  ? 0
-                  : table.currentGuests,
-            }
-          : table
-      )
-    );
-
-    // Update database
-    await updateTableFloorPlan(tableId, {
-      status: statusMap[status],
-    });
-
-    // Update parent state for simple view
-    setDbTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId ? { ...table, status: statusMap[status] } : table
-      )
-    );
-  };
-
-  const updateTableCapacity = async (tableId: string, capacity: number) => {
-    // Update local floor plan state
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId ? { ...table, capacity } : table
-      )
-    );
-
-    // Update database
-    await updateTable(tableId, { capacity });
-
-    // Update parent state for simple view
-    setDbTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId ? { ...table, capacity } : table
-      )
-    );
-  };
-
-  const updateTableShape = (tableId: string, shape: TableShapeType) => {
-    const defaults = shapeDefaults[shape];
-
-    // Update local floor plan state
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId
-          ? {
-              ...table,
-              shape,
-              width: defaults.width,
-              height: defaults.height,
-            }
-          : table
-      )
-    );
-
-    setHasUnsavedChanges(true);
-  };
-
-  const updateTableIsShared = async (tableId: string, isShared: boolean) => {
-    // Update local floor plan state
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId ? { ...table, isShared } : table
-      )
-    );
-
-    // Update database
-    await updateTable(tableId, { isShared });
-
-    // Update parent state for simple view
-    setDbTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === tableId ? { ...table, isShared } : table
-      )
-    );
-  };
-
-  const updateTableSize = (tableId: string, size: "normal" | "big") => {
-    const table = tables.find((t) => t.id === tableId);
-    if (!table) return;
-
-    const defaults = shapeDefaults[table.shape];
-    const multiplier = size === "big" ? 1.25 : 1;
-
-    // Update local floor plan state with new size
-    setTables((prevTables) =>
-      prevTables.map((t) =>
-        t.id === tableId
-          ? {
-              ...t,
-              width: defaults.width * multiplier,
-              height: defaults.height * multiplier,
-            }
-          : t
-      )
-    );
-
-    setHasUnsavedChanges(true);
-  };
-
-  const saveFloorPlanChanges = async () => {
-    setIsSaving(true);
-    try {
-      // Prepare batch update data
-      const updates = tables.map((table) => ({
-        id: table.id,
-        positionX: table.x,
-        positionY: table.y,
-        width: table.width,
-        height: table.height,
-        rotation: table.rotation,
-        shape: table.shape,
-      }));
-
-      // Batch update all tables
-      await updateFloorPlanBatch(updates);
-
-      // Update parent state for simple view
-      setDbTables((prevTables) =>
-        prevTables.map((table) => {
-          const updatedTable = tables.find((t) => t.id === table.id);
-          if (updatedTable) {
-            return {
-              ...table,
-              positionX: updatedTable.x,
-              positionY: updatedTable.y,
-              width: updatedTable.width,
-              height: updatedTable.height,
-              rotation: updatedTable.rotation,
-              shape: updatedTable.shape,
-            };
-          }
-          return table;
-        })
-      );
-
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.error("Error saving floor plan changes:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const selectedTableData = tables.find((t) => t.id === selectedTable);
-
-  // Get additional table info for properties panel
-  const selectedDbTable = selectedTable
-    ? dbTables.find((t) => t.id === selectedTable)
-    : undefined;
-  const selectedTableSector = selectedDbTable?.sectorId
-    ? sectors.find((s) => s.id === selectedDbTable.sectorId)
-    : undefined;
+  const selectedTableSector = useMemo(() => {
+    return selectedDbTable?.sectorId
+      ? sectors.find((s) => s.id === selectedDbTable.sectorId)
+      : undefined;
+  }, [selectedDbTable?.sectorId, sectors]);
 
   return (
     <div className="space-y-6">
-      {/* Sector Selector */}
-
       <FloorPlanToolbar
         onAddTable={() => setAddDialogOpen(true)}
-        onSave={saveFloorPlanChanges}
-        onToggleEditMode={() => setIsEditMode(!isEditMode)}
+        onSave={handleSave}
+        onToggleEditMode={handleToggleEditMode}
         hasUnsavedChanges={hasUnsavedChanges}
         isSaving={isSaving}
         isEditMode={isEditMode}
       />
-      <div className="flex items-center gap-2 flex-wrap">
-        {sectors.map((sector) => (
-          <div key={sector.id} className="relative group">
-            <Button
-              variant={selectedSector === sector.id ? "default" : "outline"}
-              onClick={() => externalSetSelectedSector?.(sector.id)}
-              className={
-                selectedSector === sector.id
-                  ? "pr-10"
-                  : "hover:bg-gray-100 border-2 pr-10"
-              }
-              style={{
-                backgroundColor:
-                  selectedSector === sector.id ? sector.color : "transparent",
-                borderColor: sector.color,
-                color: selectedSector === sector.id ? "white" : sector.color,
-              }}
-            >
-              <div
-                className="w-3 h-3 rounded-full mr-2"
-                style={{ backgroundColor: sector.color }}
-              />
-              {sector.name}
-              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-background/20">
-                {sector._count.tables}
-              </span>
-            </Button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditSector?.(sector);
-              }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/20 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{
-                color: selectedSector === sector.id ? "white" : sector.color,
-              }}
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-        <Button
-          variant="outline"
-          onClick={() => onAddSector?.()}
-          className="border-dashed"
-        >
-          + Nuevo Sector
-        </Button>
-        <Button
-          onClick={() => onAddTable?.()}
-          className="bg-red-600 hover:bg-red-700 ml-auto gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Agregar Mesa
-        </Button>
-      </div>
+
+      <SectorSelector
+        sectors={sectors}
+        selectedSector={selectedSector ?? null}
+        onSelectSector={(sectorId) => externalSetSelectedSector?.(sectorId)}
+        onAddSector={onAddSector}
+        onEditSector={onEditSector}
+        onAddTable={onAddTable}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Floor Plan Canvas */}
-
         <div className="lg:col-span-3 relative">
           <FloorPlanCanvas
             tables={filteredTables}
@@ -748,11 +314,12 @@ export default function FloorPlanHandler({
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
             onTableMouseDown={handleTableMouseDown}
-            onZoomIn={() => setZoom(Math.min(2, zoom + 0.1))}
-            onZoomOut={() => setZoom(Math.max(0.5, zoom - 0.1))}
-            onToggleGrid={() => setShowGrid(!showGrid)}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onToggleGrid={handleToggleGrid}
           />
         </div>
+
         {/* Properties Panel */}
         <div className="lg:col-span-1">
           <TablePropertiesPanel

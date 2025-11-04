@@ -1,23 +1,9 @@
 import type React from "react";
+import { memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZoomIn, ZoomOut, Grid3x3 } from "lucide-react";
-import type { TableShapeType, TableStatus } from "@/types/table";
-
-interface FloorTable {
-  id: string;
-  number: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  shape: TableShapeType;
-  capacity: number;
-  status: TableStatus;
-  currentGuests: number;
-  isShared?: boolean;
-}
+import type { FloorTable } from "@/lib/floor-plan-utils";
 
 interface FloorPlanCanvasProps {
   tables: FloorTable[];
@@ -50,7 +36,133 @@ const statusStrokeColors = {
 
 const CANVAS_CONTAINER_HEIGHT = 600; // Height of the scrollable container
 
-export function FloorPlanCanvas({
+// Memoized Table Shape Component
+const TableShape = memo(function TableShape({
+  table,
+  isSelected,
+}: {
+  table: FloorTable;
+  isSelected: boolean;
+}) {
+  const centerX = table.x + table.width / 2;
+  const centerY = table.y + table.height / 2;
+
+  return (
+    <g transform={`rotate(${table.rotation} ${centerX} ${centerY})`}>
+      {/* Table shape */}
+      {table.shape === "CIRCLE" && (
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r={table.width / 2}
+          fill={statusColors[table.status]}
+          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          strokeWidth={isSelected ? 3 : 2}
+          opacity={0.9}
+        />
+      )}
+
+      {table.shape === "SQUARE" && (
+        <rect
+          x={table.x}
+          y={table.y}
+          width={table.width}
+          height={table.height}
+          fill={statusColors[table.status]}
+          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          strokeWidth={isSelected ? 3 : 2}
+          rx={8}
+          opacity={0.9}
+        />
+      )}
+
+      {table.shape === "RECTANGLE" && (
+        <rect
+          x={table.x}
+          y={table.y}
+          width={table.width}
+          height={table.height}
+          fill={statusColors[table.status]}
+          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          strokeWidth={isSelected ? 3 : 2}
+          rx={8}
+          opacity={0.9}
+        />
+      )}
+
+      {table.shape === "WIDE" && (
+        <rect
+          x={table.x}
+          y={table.y}
+          width={table.width}
+          height={table.height}
+          fill={statusColors[table.status]}
+          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          strokeWidth={isSelected ? 3 : 2}
+          rx={8}
+          opacity={0.9}
+        />
+      )}
+
+      {/* Table number - counter-rotated to stay upright */}
+      <text
+        x={centerX}
+        y={centerY - 5}
+        textAnchor="middle"
+        fill="#fff"
+        fontSize="16"
+        fontWeight="bold"
+        style={{ pointerEvents: "none", userSelect: "none" }}
+        transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
+      >
+        {table.number}
+      </text>
+
+      {/* Capacity - counter-rotated to stay upright */}
+      <text
+        x={centerX}
+        y={centerY + 15}
+        textAnchor="middle"
+        fill="#fff"
+        fontSize="12"
+        style={{ pointerEvents: "none", userSelect: "none" }}
+        transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
+      >
+        {table.currentGuests}/{table.capacity}
+      </text>
+
+      {/* Shared table indicator - rotates with table, text stays upright */}
+      {table.isShared && (
+        <>
+          <circle
+            cx={table.x + table.width - 15}
+            cy={table.y + 15}
+            r="10"
+            fill="#fff"
+            opacity={0.9}
+            style={{ pointerEvents: "none" }}
+          />
+          <text
+            x={table.x + table.width - 15}
+            y={table.y + 19}
+            textAnchor="middle"
+            fill="#000"
+            fontSize="14"
+            fontWeight="bold"
+            style={{ pointerEvents: "none", userSelect: "none" }}
+            transform={`rotate(${-table.rotation} ${
+              table.x + table.width - 15
+            } ${table.y + 15})`}
+          >
+            C
+          </text>
+        </>
+      )}
+    </g>
+  );
+});
+
+export const FloorPlanCanvas = memo(function FloorPlanCanvas({
   tables,
   selectedTable,
   draggedTable,
@@ -64,130 +176,14 @@ export function FloorPlanCanvas({
   onZoomOut,
   onToggleGrid,
 }: FloorPlanCanvasProps) {
-  const renderTable = (table: FloorTable) => {
-    const isSelected = selectedTable === table.id;
-    const centerX = table.x + table.width / 2;
-    const centerY = table.y + table.height / 2;
+  // Memoize zoom percentage display
+  const zoomPercentage = useMemo(() => Math.round(zoom * 100), [zoom]);
 
-    return (
-      <g
-        key={table.id}
-        onMouseDown={(e) => onTableMouseDown(e, table.id)}
-        style={{ cursor: "move" }}
-        transform={`rotate(${table.rotation} ${centerX} ${centerY})`}
-      >
-        {/* Table shape */}
-        {table.shape === "CIRCLE" && (
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={table.width / 2}
-            fill={statusColors[table.status]}
-            stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
-            strokeWidth={isSelected ? 3 : 2}
-            opacity={0.9}
-          />
-        )}
-
-        {table.shape === "SQUARE" && (
-          <rect
-            x={table.x}
-            y={table.y}
-            width={table.width}
-            height={table.height}
-            fill={statusColors[table.status]}
-            stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
-            strokeWidth={isSelected ? 3 : 2}
-            rx={8}
-            opacity={0.9}
-          />
-        )}
-
-        {table.shape === "RECTANGLE" && (
-          <rect
-            x={table.x}
-            y={table.y}
-            width={table.width}
-            height={table.height}
-            fill={statusColors[table.status]}
-            stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
-            strokeWidth={isSelected ? 3 : 2}
-            rx={8}
-            opacity={0.9}
-          />
-        )}
-
-        {table.shape === "WIDE" && (
-          <rect
-            x={table.x}
-            y={table.y}
-            width={table.width}
-            height={table.height}
-            fill={statusColors[table.status]}
-            stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
-            strokeWidth={isSelected ? 3 : 2}
-            rx={8}
-            opacity={0.9}
-          />
-        )}
-
-        {/* Table number - counter-rotated to stay upright */}
-        <text
-          x={centerX}
-          y={centerY - 5}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize="16"
-          fontWeight="bold"
-          style={{ pointerEvents: "none", userSelect: "none" }}
-          transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
-        >
-          {table.number}
-        </text>
-
-        {/* Capacity - counter-rotated to stay upright */}
-        <text
-          x={centerX}
-          y={centerY + 15}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize="12"
-          style={{ pointerEvents: "none", userSelect: "none" }}
-          transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
-        >
-          {table.currentGuests}/{table.capacity}
-        </text>
-
-        {/* Shared table indicator - rotates with table, text stays upright */}
-        {table.isShared && (
-          <>
-            <circle
-              cx={table.x + table.width - 15}
-              cy={table.y + 15}
-              r="10"
-              fill="#fff"
-              opacity={0.9}
-              style={{ pointerEvents: "none" }}
-            />
-            <text
-              x={table.x + table.width - 15}
-              y={table.y + 19}
-              textAnchor="middle"
-              fill="#000"
-              fontSize="14"
-              fontWeight="bold"
-              style={{ pointerEvents: "none", userSelect: "none" }}
-              transform={`rotate(${-table.rotation} ${
-                table.x + table.width - 15
-              } ${table.y + 15})`}
-            >
-              C
-            </text>
-          </>
-        )}
-      </g>
-    );
-  };
+  // Memoize cursor style
+  const cursorStyle = useMemo(
+    () => (draggedTable ? "grabbing" : "default"),
+    [draggedTable]
+  );
 
   return (
     <Card>
@@ -211,7 +207,7 @@ export function FloorPlanCanvas({
             <ZoomOut className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium min-w-12 text-center">
-            {Math.round(zoom * 100)}%
+            {zoomPercentage}%
           </span>
           <Button size="sm" variant="outline" onClick={onZoomIn}>
             <ZoomIn className="h-4 w-4" />
@@ -227,7 +223,7 @@ export function FloorPlanCanvas({
             height={canvasHeight * zoom}
             viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
             className="bg-white"
-            style={{ cursor: draggedTable ? "grabbing" : "default" }}
+            style={{ cursor: cursorStyle }}
           >
             {/* Grid */}
             {showGrid && (
@@ -256,7 +252,18 @@ export function FloorPlanCanvas({
             )}
 
             {/* Tables */}
-            {tables.map((table) => renderTable(table))}
+            {tables.map((table) => (
+              <g
+                key={table.id}
+                onMouseDown={(e) => onTableMouseDown(e, table.id)}
+                style={{ cursor: "move" }}
+              >
+                <TableShape
+                  table={table}
+                  isSelected={selectedTable === table.id}
+                />
+              </g>
+            ))}
           </svg>
         </div>
 
@@ -282,4 +289,4 @@ export function FloorPlanCanvas({
       </CardContent>
     </Card>
   );
-}
+});
