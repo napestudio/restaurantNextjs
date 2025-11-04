@@ -22,7 +22,8 @@ export function useFloorPlanState({
   canvasHeight,
   zoom,
 }: UseFloorPlanStateProps) {
-  const [tables, setTables] = useState<FloorTable[]>(
+  // Initialize tables state with a function to avoid computing on every render
+  const [tables, setTables] = useState<FloorTable[]>(() =>
     transformTables(dbTables)
   );
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export function useFloorPlanState({
   }, [dbTables]);
 
   // Filter tables by selected sector - memoized
+  // Apply filter eagerly to prevent flickering on first render
   const filteredTables = useMemo(() => {
     if (!selectedSector) return tables;
 
@@ -77,6 +79,9 @@ export function useFloorPlanState({
       return dbTable?.sectorId === selectedSector;
     });
   }, [tables, selectedSector, dbTables]);
+
+  // IMPORTANT: Return filtered tables directly in the canvas to avoid flicker
+  // The canvas should always receive pre-filtered tables based on selectedSector
 
   // Get selected table data - memoized
   const selectedTableData = useMemo(() => {

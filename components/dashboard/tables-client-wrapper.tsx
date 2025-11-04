@@ -72,6 +72,7 @@ export function TablesClientWrapper({
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [sectorsLoaded, setSectorsLoaded] = useState(false);
   const [addSectorDialogOpen, setAddSectorDialogOpen] = useState(false);
   const [editSectorDialogOpen, setEditSectorDialogOpen] = useState(false);
   const [editingSector, setEditingSector] = useState<Sector | null>(null);
@@ -85,16 +86,17 @@ export function TablesClientWrapper({
     sectorId: "",
   });
 
-  // Fetch sectors on mount
+  // Fetch sectors on mount and set first sector as default immediately
   useEffect(() => {
     const fetchSectors = async () => {
       const result = await getSectorsByBranch(branchId);
       if (result.success && result.data) {
         setSectors(result.data);
-        // Set the first sector as default if not already selected
-        if (result.data.length > 0 && !selectedSector) {
+        // Set the first sector as default IMMEDIATELY to prevent flicker
+        if (result.data.length > 0) {
           setSelectedSector(result.data[0].id);
         }
+        setSectorsLoaded(true);
       }
     };
     fetchSectors();
@@ -177,20 +179,27 @@ export function TablesClientWrapper({
   return (
     <>
       <TablesTabs>
-        <FloorPlanHandler
-          branchId={branchId}
-          tables={tables}
-          setTables={setTables}
-          selectedSector={selectedSector}
-          setSelectedSector={setSelectedSector}
-          sectors={sectors}
-          onAddSector={() => setAddSectorDialogOpen(true)}
-          onEditSector={(sector) => {
-            setEditingSector(sector);
-            setEditSectorDialogOpen(true);
-          }}
-          onAddTable={() => setAddTableDialogOpen(true)}
-        />
+        {/* Only render FloorPlanHandler after sectors are loaded to prevent flicker */}
+        {sectorsLoaded ? (
+          <FloorPlanHandler
+            branchId={branchId}
+            tables={tables}
+            setTables={setTables}
+            selectedSector={selectedSector}
+            setSelectedSector={setSelectedSector}
+            sectors={sectors}
+            onAddSector={() => setAddSectorDialogOpen(true)}
+            onEditSector={(sector) => {
+              setEditingSector(sector);
+              setEditSectorDialogOpen(true);
+            }}
+            onAddTable={() => setAddTableDialogOpen(true)}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-96">
+            <div className="text-muted-foreground">Cargando plano...</div>
+          </div>
+        )}
         <TablesSimpleView tables={tables} sectors={sectors} />
       </TablesTabs>
 
