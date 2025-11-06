@@ -53,11 +53,12 @@ export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
     <div className="space-y-8">
       {/* Header with Create Button */}
       <div className="flex justify-between items-center">
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div></div>
+        {/* <div className="flex gap-4 text-sm text-gray-600">
           <span>Total: {menus.length}</span>
           <span>Activos: {activeMenus.length}</span>
           <span>Inactivos: {inactiveMenus.length}</span>
-        </div>
+        </div> */}
         <Button onClick={handleCreateMenu}>
           <Plus className="mr-2 h-4 w-4" />
           Crear Menú

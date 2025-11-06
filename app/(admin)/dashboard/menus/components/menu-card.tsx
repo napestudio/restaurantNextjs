@@ -30,7 +30,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Pencil, Trash2, Eye, EyeOff, Calendar, Clock } from "lucide-react";
+import {
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Eye,
+  EyeOff,
+  Calendar,
+  Clock,
+} from "lucide-react";
 
 interface MenuCardProps {
   menu: SerializedMenu;
@@ -175,7 +183,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
           </div>
 
           {/* Schedule Info */}
-          {(menu.availableFrom || menu.availableUntil || menu.daysOfWeek.length > 0) && (
+          {/* {(menu.availableFrom || menu.availableUntil || menu.daysOfWeek.length > 0) && (
             <div className="space-y-2 text-sm">
               {(menu.availableFrom || menu.availableUntil) && (
                 <div className="flex items-center gap-2 text-gray-600">
@@ -193,7 +201,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
                 </div>
               )}
             </div>
-          )}
+          )} */}
 
           {/* Status Badge */}
           <div className="flex gap-2">
@@ -220,17 +228,22 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar menú?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará el menú "{menu.name}" y
-              todas sus secciones y productos asociados.
+              Esta acción no se puede deshacer. Se eliminará el menú &quot;
+              {menu.name}&quot; y todas sus secciones y productos asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
