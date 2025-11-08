@@ -17,8 +17,8 @@ import {
   removeOrderItem,
   updatePartySize,
   closeTable,
-  getAvailableProductsForOrder,
 } from "@/actions/Order";
+import { useProducts } from "@/contexts/products-context";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -26,7 +26,7 @@ interface TableOrderSidebarProps {
   tableIsShared?: boolean;
   branchId: string;
   onClose: () => void;
-  onOrderUpdated: () => void;
+  onOrderUpdated: (tableId: string) => void;
 }
 
 type Product = {
@@ -62,10 +62,12 @@ export function TableOrderSidebar({
   const [partySize, setPartySize] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
-  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load order and products when table is selected
+  // Use cached products from context
+  const { products } = useProducts();
+
+  // Load order when table is selected (products come from context now)
   useEffect(() => {
     if (tableId) {
       // Reset state when switching tables
@@ -74,7 +76,6 @@ export function TableOrderSidebar({
       setActiveOrdersCount(0);
 
       loadTableOrder();
-      loadProducts();
       if (tableIsShared) {
         loadActiveOrdersCount();
       }
@@ -100,12 +101,6 @@ export function TableOrderSidebar({
     }
   };
 
-  const loadProducts = async () => {
-    const availableProducts = await getAvailableProductsForOrder(branchId);
-    // Products already have number prices from server action
-    setProducts(availableProducts);
-  };
-
   const handleCreateOrder = async () => {
     if (!tableId || !partySize || parseInt(partySize) <= 0) {
       alert("Por favor ingresa el número de comensales");
@@ -124,7 +119,8 @@ export function TableOrderSidebar({
       if (tableIsShared) {
         await loadActiveOrdersCount();
       }
-      onOrderUpdated();
+      // Only update the specific table that changed
+      onOrderUpdated(tableId);
     } else {
       alert(result.error || "Error al crear la orden");
     }
@@ -141,7 +137,20 @@ export function TableOrderSidebar({
   };
 
   const handleSelectProduct = async (product: Product) => {
-    if (!order) return;
+    if (!order || !tableId) return;
+
+    // Optimistic update: add item to local state immediately
+    const optimisticItem = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      itemName: product.name,
+      quantity: 1,
+      price: Number(product.price),
+      originalPrice: Number(product.price),
+    };
+
+    setOrder((prev) =>
+      prev ? { ...prev, items: [...prev.items, optimisticItem] } : prev
+    );
 
     setIsLoading(true);
     const result = await addOrderItem(order.id, {
@@ -153,41 +162,78 @@ export function TableOrderSidebar({
     });
 
     if (result.success) {
+      // Replace optimistic data with real data from server
       await loadTableOrder();
-      onOrderUpdated();
+      onOrderUpdated(tableId);
     } else {
+      // Rollback on error
+      setOrder((prev) =>
+        prev
+          ? { ...prev, items: prev.items.filter((item) => item.id !== optimisticItem.id) }
+          : prev
+      );
       alert(result.error || "Error al agregar el producto");
     }
     setIsLoading(false);
   };
 
   const handleUpdatePrice = async (itemId: string, price: number) => {
+    if (!tableId) return;
+
+    // Optimistic update
+    const previousOrder = order;
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((item) =>
+              item.id === itemId ? { ...item, price } : item
+            ),
+          }
+        : prev
+    );
+
     setIsLoading(true);
     const result = await updateOrderItemPrice(itemId, price);
 
     if (result.success) {
       await loadTableOrder();
+      onOrderUpdated(tableId);
     } else {
+      // Rollback on error
+      setOrder(previousOrder);
       alert(result.error || "Error al actualizar el precio");
     }
     setIsLoading(false);
   };
 
   const handleRemoveItem = async (itemId: string) => {
+    if (!tableId) return;
+
+    // Optimistic update
+    const previousOrder = order;
+    setOrder((prev) =>
+      prev
+        ? { ...prev, items: prev.items.filter((item) => item.id !== itemId) }
+        : prev
+    );
+
     setIsLoading(true);
     const result = await removeOrderItem(itemId);
 
     if (result.success) {
       await loadTableOrder();
-      onOrderUpdated();
+      onOrderUpdated(tableId);
     } else {
+      // Rollback on error
+      setOrder(previousOrder);
       alert(result.error || "Error al eliminar el producto");
     }
     setIsLoading(false);
   };
 
   const handleCloseTable = async () => {
-    if (!order) return;
+    if (!order || !tableId) return;
 
     if (order.items.length === 0) {
       alert("No se puede cerrar una mesa sin productos en la orden");
@@ -216,7 +262,7 @@ export function TableOrderSidebar({
         alert("Mesa cerrada exitosamente");
         onClose();
       }
-      onOrderUpdated();
+      onOrderUpdated(tableId);
     } else {
       alert(result.error || "Error al cerrar la orden");
     }

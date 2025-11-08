@@ -10,8 +10,9 @@ import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { useSectors } from "@/hooks/use-sectors";
 import { useDialogs } from "@/hooks/use-dialogs";
 import { useTableForm } from "@/hooks/use-table-form";
-import { getTablesWithStatus } from "@/actions/Table";
+import { getTablesWithStatus, getTableWithStatus } from "@/actions/Table";
 import type { TableWithReservations } from "@/types/tables-client";
+import { ProductsProvider } from "@/contexts/products-context";
 
 // Re-export for backward compatibility
 export type { TableWithReservations };
@@ -82,6 +83,37 @@ export function TablesClientWrapper({
     }
   }, [branchId]);
 
+  // Refresh only a specific table (more efficient than refreshing all)
+  const refreshSingleTable = useCallback(async (tableId: string) => {
+    const tableResult = await getTableWithStatus(tableId);
+    if (tableResult.success && tableResult.data) {
+      const updatedTable = tableResult.data;
+
+      // Serialize the updated table
+      const serializedTable = {
+        ...updatedTable,
+        reservations: updatedTable.reservations.map((res) => ({
+          ...res,
+          reservation: {
+            ...res.reservation,
+            date: res.reservation.date.toISOString(),
+            timeSlot: res.reservation.timeSlot
+              ? {
+                  startTime: res.reservation.timeSlot.startTime.toISOString(),
+                  endTime: res.reservation.timeSlot.endTime.toISOString(),
+                }
+              : null,
+          },
+        })),
+      };
+
+      // Update only the specific table in state
+      setTables((prevTables) =>
+        prevTables.map((t) => (t.id === tableId ? serializedTable : t))
+      );
+    }
+  }, []);
+
   // Memoized callback for adding table
   const handleAddTable = useCallback(async () => {
     const success = await submitTable((newTable) => {
@@ -95,7 +127,7 @@ export function TablesClientWrapper({
   }, [submitTable, closeAddTable, refreshSectors]);
 
   return (
-    <>
+    <ProductsProvider branchId={branchId}>
       <TablesTabs>
         {/* Only render FloorPlanHandler after sectors are loaded to prevent flicker */}
         {sectorsLoaded ? (
@@ -110,6 +142,7 @@ export function TablesClientWrapper({
             onEditSector={openEditSector}
             onAddTable={openAddTable}
             onRefreshTables={refreshTables}
+            onRefreshSingleTable={refreshSingleTable}
           />
         ) : (
           <div className="flex items-center justify-center h-96">
@@ -152,6 +185,6 @@ export function TablesClientWrapper({
         onSectorChange={(value) => updateField("sectorId", value)}
         onAddTable={handleAddTable}
       />
-    </>
+    </ProductsProvider>
   );
 }

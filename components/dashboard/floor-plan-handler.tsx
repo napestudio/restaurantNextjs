@@ -29,6 +29,7 @@ interface FloorPlanPageProps {
   onEditSector?: (sector: Sector) => void;
   onAddTable?: () => void;
   onRefreshTables?: () => Promise<void>;
+  onRefreshSingleTable?: (tableId: string) => Promise<void>;
 }
 
 export default function FloorPlanHandler({
@@ -42,6 +43,7 @@ export default function FloorPlanHandler({
   onEditSector,
   onAddTable,
   onRefreshTables,
+  onRefreshSingleTable,
 }: FloorPlanPageProps) {
   // UI State
   const [zoom, setZoom] = useState(0.75);
@@ -281,12 +283,15 @@ export default function FloorPlanHandler({
     }
   }, [isEditMode]);
 
-  const handleOrderUpdated = useCallback(async () => {
-    // Refresh tables data to show updated status
-    if (onRefreshTables) {
+  const handleOrderUpdated = useCallback(async (tableId: string) => {
+    // Refresh only the specific table that was updated (more efficient)
+    if (onRefreshSingleTable) {
+      await onRefreshSingleTable(tableId);
+    } else if (onRefreshTables) {
+      // Fallback to full refresh if single table refresh not available
       await onRefreshTables();
     }
-  }, [onRefreshTables]);
+  }, [onRefreshSingleTable, onRefreshTables]);
 
   const handleCloseSidebar = useCallback(() => {
     setSelectedTableForOrder(null);
