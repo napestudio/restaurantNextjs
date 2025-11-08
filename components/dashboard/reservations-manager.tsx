@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import type {
@@ -32,6 +32,7 @@ export function ReservationsManager({
   branchId,
 }: ReservationsManagerProps) {
   const [reservations, setReservations] = useState(initialReservations);
+  const [filteredReservations, setFilteredReservations] = useState(initialReservations);
   const [isPending, startTransition] = useTransition();
   const [selectedReservation, setSelectedReservation] =
     useState<SerializedReservation | null>(null);
@@ -42,6 +43,16 @@ export function ReservationsManager({
     null
   );
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+
+  // Memoized callback to prevent infinite loops
+  const handleFilteredReservationsChange = useCallback(
+    (filtered: SerializedReservation[]) => {
+      setFilteredReservations(filtered);
+    },
+    []
+  );
 
   // Refetch data helper
   const mutate = () => {
@@ -170,7 +181,7 @@ export function ReservationsManager({
       </div>
 
       <div className="mb-8">
-        <ReservationStatsOverview reservations={reservations} />
+        <ReservationStatsOverview reservations={filteredReservations} />
       </div>
 
       <ReservationsTable
@@ -180,6 +191,11 @@ export function ReservationsManager({
         onStatusUpdate={handleStatusUpdate}
         onView={handleView}
         onCancel={handleCancelClick}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onFilteredReservationsChange={handleFilteredReservationsChange}
       />
 
       <ViewReservationDialog
