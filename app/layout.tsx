@@ -15,8 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Kiku Sushi",
-  description:
-    "Manage your restaurant operations - reservations, orders, tables, and more",
+  description: "Kiku Sushi - Rosario, Argentina",
   // manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

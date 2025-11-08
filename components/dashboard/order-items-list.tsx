@@ -1,0 +1,140 @@
+"use client";
+
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+
+export type OrderItemType = {
+  id: string;
+  itemName: string;
+  quantity: number;
+  price: number;
+  originalPrice: number | null;
+};
+
+interface OrderItemsListProps {
+  items: OrderItemType[];
+  onUpdatePrice: (itemId: string, price: number) => Promise<void>;
+  onRemoveItem: (itemId: string) => Promise<void>;
+  disabled?: boolean;
+}
+
+export function OrderItemsList({
+  items,
+  onUpdatePrice,
+  onRemoveItem,
+  disabled = false,
+}: OrderItemsListProps) {
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [tempPrice, setTempPrice] = useState("");
+
+  const handlePriceClick = (itemId: string, currentPrice: number) => {
+    setEditingItemId(itemId);
+    setTempPrice(currentPrice.toString());
+  };
+
+  const handlePriceChange = async (itemId: string) => {
+    const newPrice = parseFloat(tempPrice);
+    if (!isNaN(newPrice) && newPrice >= 0) {
+      await onUpdatePrice(itemId, newPrice);
+    }
+    setEditingItemId(null);
+    setTempPrice("");
+  };
+
+  const handlePriceBlur = (itemId: string) => {
+    handlePriceChange(itemId);
+  };
+
+  const handlePriceKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    itemId: string
+  ) => {
+    if (e.key === "Enter") {
+      handlePriceChange(itemId);
+    } else if (e.key === "Escape") {
+      setEditingItemId(null);
+      setTempPrice("");
+    }
+  };
+
+  const calculateTotal = () => {
+    return items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 text-sm">
+        No hay productos en la orden
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"
+          >
+            <div className="flex-1">
+              <div className="font-medium text-sm">{item.itemName}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                Cantidad: {item.quantity}
+              </div>
+              {item.originalPrice &&
+                item.price !== item.originalPrice && (
+                  <div className="text-xs text-amber-600 mt-1">
+                    Precio original: ${Number(item.originalPrice).toFixed(2)}
+                  </div>
+                )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {editingItemId === item.id ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={tempPrice}
+                  onChange={(e) => setTempPrice(e.target.value)}
+                  onBlur={() => handlePriceBlur(item.id)}
+                  onKeyDown={(e) => handlePriceKeyDown(e, item.id)}
+                  className="w-20 h-8 text-sm"
+                  autoFocus
+                  disabled={disabled}
+                />
+              ) : (
+                <button
+                  onClick={() => handlePriceClick(item.id, item.price)}
+                  className="w-20 h-8 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded border border-gray-300 px-2"
+                  disabled={disabled}
+                >
+                  ${Number(item.price).toFixed(2)}
+                </button>
+              )}
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-600"
+                onClick={() => onRemoveItem(item.id)}
+                disabled={disabled}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t pt-3">
+        <div className="flex justify-between items-center text-lg font-bold">
+          <span>Total:</span>
+          <span>${calculateTotal().toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}

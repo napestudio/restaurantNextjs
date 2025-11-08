@@ -10,6 +10,7 @@ import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { useSectors } from "@/hooks/use-sectors";
 import { useDialogs } from "@/hooks/use-dialogs";
 import { useTableForm } from "@/hooks/use-table-form";
+import { getTablesWithStatus } from "@/actions/Table";
 import type { TableWithReservations } from "@/types/tables-client";
 
 // Re-export for backward compatibility
@@ -56,6 +57,31 @@ export function TablesClientWrapper({
     [tables, selectedSector]
   );
 
+  // Refresh tables data from server
+  const refreshTables = useCallback(async () => {
+    const tablesResult = await getTablesWithStatus(branchId);
+    if (tablesResult.success && tablesResult.data) {
+      // Serialize dates for client components
+      const serializedTables = tablesResult.data.map((table) => ({
+        ...table,
+        reservations: table.reservations.map((res) => ({
+          ...res,
+          reservation: {
+            ...res.reservation,
+            date: res.reservation.date.toISOString(),
+            timeSlot: res.reservation.timeSlot
+              ? {
+                  startTime: res.reservation.timeSlot.startTime.toISOString(),
+                  endTime: res.reservation.timeSlot.endTime.toISOString(),
+                }
+              : null,
+          },
+        })),
+      }));
+      setTables(serializedTables);
+    }
+  }, [branchId]);
+
   // Memoized callback for adding table
   const handleAddTable = useCallback(async () => {
     const success = await submitTable((newTable) => {
@@ -83,6 +109,7 @@ export function TablesClientWrapper({
             onAddSector={openAddSector}
             onEditSector={openEditSector}
             onAddTable={openAddTable}
+            onRefreshTables={refreshTables}
           />
         ) : (
           <div className="flex items-center justify-center h-96">
