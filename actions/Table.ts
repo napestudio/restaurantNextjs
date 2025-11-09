@@ -104,6 +104,64 @@ export async function getTableById(id: string) {
 }
 
 /**
+ * Get a single table with its current reservation status
+ * More efficient than fetching all tables when only one needs updating
+ */
+export async function getTableWithStatus(tableId: string) {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const table = await prisma.table.findUnique({
+      where: { id: tableId },
+      include: {
+        reservations: {
+          where: {
+            reservation: {
+              date: {
+                gte: today,
+                lt: tomorrow,
+              },
+              status: {
+                in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+              },
+            },
+          },
+          include: {
+            reservation: {
+              select: {
+                id: true,
+                customerName: true,
+                people: true,
+                status: true,
+                date: true,
+                timeSlot: {
+                  select: {
+                    startTime: true,
+                    endTime: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!table) {
+      return { success: false, error: "Table not found" };
+    }
+
+    return { success: true, data: table };
+  } catch (error) {
+    console.error("Error fetching table with status:", error);
+    return { success: false, error: "Failed to fetch table with status" };
+  }
+}
+
+/**
  * Get remaining capacity for a table (handles both shared and regular tables)
  * For regular tables: returns 0 if occupied, full capacity if available
  * For shared tables: returns remaining capacity after accounting for existing reservations

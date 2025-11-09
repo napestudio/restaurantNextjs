@@ -84,6 +84,24 @@ export interface TableWithReservations {
 }
 
 /**
+ * Check if the current time falls within a reservation's time slot
+ */
+function isWithinTimeSlot(
+  timeSlot: { startTime: string; endTime: string } | null,
+  now: Date = new Date()
+): boolean {
+  if (!timeSlot) {
+    // If no time slot is assigned, treat as all-day reservation
+    return true;
+  }
+
+  const startTime = new Date(timeSlot.startTime);
+  const endTime = new Date(timeSlot.endTime);
+
+  return now >= startTime && now <= endTime;
+}
+
+/**
  * Calculate table status based on reservations and manual status
  */
 export function calculateTableStatus(
@@ -107,11 +125,14 @@ export function calculateTableStatus(
       reservationDate.getMonth() === today.getMonth() &&
       reservationDate.getFullYear() === today.getFullYear();
 
-    if (isToday) {
+    if (isToday && isWithinTimeSlot(reservation.timeSlot)) {
+      // Only show as reserved/occupied if current time is within the time slot
       status = reservation.status === "CONFIRMED" ? "occupied" : "reserved";
-    } else {
+    } else if (!isToday) {
+      // Future reservations show as reserved
       status = "reserved";
     }
+    // If isToday but NOT within time slot, status remains "empty"
   }
 
   // Set currentGuests from reservations if available
