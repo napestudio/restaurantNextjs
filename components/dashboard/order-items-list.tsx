@@ -77,43 +77,44 @@ export function OrderItemsList({
         {items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"
+            className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg"
           >
             <div className="flex-1">
               <div className="font-medium text-sm">{item.itemName}</div>
               <div className="text-xs text-gray-500 mt-1">
                 Cantidad: {item.quantity}
               </div>
-              {item.originalPrice &&
-                item.price !== item.originalPrice && (
-                  <div className="text-xs text-amber-600 mt-1">
-                    Precio original: ${Number(item.originalPrice).toFixed(2)}
-                  </div>
-                )}
             </div>
 
             <div className="flex items-center gap-2">
-              {editingItemId === item.id ? (
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={tempPrice}
-                  onChange={(e) => setTempPrice(e.target.value)}
-                  onBlur={() => handlePriceBlur(item.id)}
-                  onKeyDown={(e) => handlePriceKeyDown(e, item.id)}
-                  className="w-20 h-8 text-sm"
-                  autoFocus
-                  disabled={disabled}
-                />
-              ) : (
-                <button
-                  onClick={() => handlePriceClick(item.id, item.price)}
-                  className="w-20 h-8 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded border border-gray-300 px-2"
-                  disabled={disabled}
-                >
-                  ${Number(item.price).toFixed(2)}
-                </button>
-              )}
+              <div>
+                {editingItemId === item.id ? (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={tempPrice}
+                    onChange={(e) => setTempPrice(e.target.value)}
+                    onBlur={() => handlePriceBlur(item.id)}
+                    onKeyDown={(e) => handlePriceKeyDown(e, item.id)}
+                    className="w-20 h-8 text-sm"
+                    autoFocus
+                    disabled={disabled}
+                  />
+                ) : (
+                  <button
+                    onClick={() => handlePriceClick(item.id, item.price)}
+                    className="w-20 h-8 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded border border-gray-300 px-2"
+                    disabled={disabled}
+                  >
+                    ${Number(item.price).toFixed(2)}
+                  </button>
+                )}
+                {item.originalPrice && item.price !== item.originalPrice && (
+                  <div className="text-xs text-amber-600 mt-1 w-full text-right">
+                    ${Number(item.originalPrice).toFixed(2)}
+                  </div>
+                )}
+              </div>
 
               <Button
                 variant="ghost"

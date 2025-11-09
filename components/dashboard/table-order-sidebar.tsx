@@ -46,8 +46,8 @@ type Order = {
     id: string;
     itemName: string;
     quantity: number;
-    price: any;
-    originalPrice: any;
+    price: number;
+    originalPrice: number | null;
   }>;
 };
 
