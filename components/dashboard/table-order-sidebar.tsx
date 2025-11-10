@@ -14,6 +14,7 @@ import {
   getTableOrders,
   addOrderItem,
   updateOrderItemPrice,
+  updateOrderItemQuantity,
   removeOrderItem,
   updatePartySize,
   closeTable,
@@ -161,17 +162,35 @@ export function TableOrderSidebar({
       originalPrice: Number(product.price),
     });
 
-    if (result.success) {
-      // Replace optimistic data with real data from server
-      await loadTableOrder();
+    if (result.success && result.data) {
+      // Replace optimistic item with real data from server
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((item) =>
+                item.id === optimisticItem.id
+                  ? {
+                      id: result.data.id,
+                      itemName: result.data.itemName,
+                      quantity: result.data.quantity,
+                      price: result.data.price,
+                      originalPrice: result.data.originalPrice,
+                    }
+                  : item
+              ),
+            }
+          : prev
+      );
       onOrderUpdated(tableId);
     } else {
-      // Rollback on error
+      // Rollback on error and reload to sync with server
       setOrder((prev) =>
         prev
           ? { ...prev, items: prev.items.filter((item) => item.id !== optimisticItem.id) }
           : prev
       );
+      await loadTableOrder();
       alert(result.error || "Error al agregar el producto");
     }
     setIsLoading(false);
@@ -197,12 +216,44 @@ export function TableOrderSidebar({
     const result = await updateOrderItemPrice(itemId, price);
 
     if (result.success) {
-      await loadTableOrder();
+      // No need to reload - optimistic update already applied
       onOrderUpdated(tableId);
     } else {
-      // Rollback on error
+      // Rollback on error and reload to sync with server
       setOrder(previousOrder);
+      await loadTableOrder();
       alert(result.error || "Error al actualizar el precio");
+    }
+    setIsLoading(false);
+  };
+
+  const handleUpdateQuantity = async (itemId: string, quantity: number) => {
+    if (!tableId) return;
+
+    // Optimistic update
+    const previousOrder = order;
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((item) =>
+              item.id === itemId ? { ...item, quantity } : item
+            ),
+          }
+        : prev
+    );
+
+    setIsLoading(true);
+    const result = await updateOrderItemQuantity(itemId, quantity);
+
+    if (result.success) {
+      // No need to reload - optimistic update already applied
+      onOrderUpdated(tableId);
+    } else {
+      // Rollback on error and reload to sync with server
+      setOrder(previousOrder);
+      await loadTableOrder();
+      alert(result.error || "Error al actualizar la cantidad");
     }
     setIsLoading(false);
   };
@@ -222,11 +273,12 @@ export function TableOrderSidebar({
     const result = await removeOrderItem(itemId);
 
     if (result.success) {
-      await loadTableOrder();
+      // No need to reload - optimistic update already applied
       onOrderUpdated(tableId);
     } else {
-      // Rollback on error
+      // Rollback on error and reload to sync with server
       setOrder(previousOrder);
+      await loadTableOrder();
       alert(result.error || "Error al eliminar el producto");
     }
     setIsLoading(false);
@@ -370,6 +422,7 @@ export function TableOrderSidebar({
                     : null,
                 }))}
                 onUpdatePrice={handleUpdatePrice}
+                onUpdateQuantity={handleUpdateQuantity}
                 onRemoveItem={handleRemoveItem}
                 disabled={isLoading}
               />

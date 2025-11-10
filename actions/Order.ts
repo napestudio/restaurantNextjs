@@ -79,6 +79,9 @@ export async function createTableOrder(
             include: {
               product: true,
             },
+            orderBy: {
+              id: "asc",
+            },
           },
         },
       });
@@ -132,6 +135,9 @@ export async function getTableOrder(tableId: string) {
           include: {
             product: true,
           },
+          orderBy: {
+            id: "asc",
+          },
         },
       },
       orderBy: {
@@ -146,7 +152,9 @@ export async function getTableOrder(tableId: string) {
           items: order.items.map((item) => ({
             ...item,
             price: Number(item.price),
-            originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+            originalPrice: item.originalPrice
+              ? Number(item.originalPrice)
+              : null,
             product: serializeProduct(item.product),
           })),
         }
@@ -179,6 +187,9 @@ export async function getTableOrders(tableId: string) {
         items: {
           include: {
             product: true,
+          },
+          orderBy: {
+            id: "asc",
           },
         },
       },
@@ -232,7 +243,9 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
     const serializedItem = {
       ...orderItem,
       price: Number(orderItem.price),
-      originalPrice: orderItem.originalPrice ? Number(orderItem.originalPrice) : null,
+      originalPrice: orderItem.originalPrice
+        ? Number(orderItem.originalPrice)
+        : null,
       product: serializeProduct(orderItem.product),
     };
 
@@ -277,6 +290,49 @@ export async function updateOrderItemPrice(itemId: string, price: number) {
     return {
       success: false,
       error: "Error al actualizar el precio",
+    };
+  }
+}
+
+// Update order item quantity
+export async function updateOrderItemQuantity(
+  itemId: string,
+  quantity: number
+) {
+  try {
+    // Validate quantity is positive
+    if (quantity < 1) {
+      return {
+        success: false,
+        error: "La cantidad debe ser mayor a 0",
+      };
+    }
+
+    const item = await prisma.orderItem.update({
+      where: { id: itemId },
+      data: { quantity },
+      include: {
+        product: true,
+      },
+    });
+
+    // Convert Decimal to number
+    const serializedItem = {
+      ...item,
+      price: Number(item.price),
+      originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+      product: serializeProduct(item.product),
+    };
+
+    return {
+      success: true,
+      data: serializedItem,
+    };
+  } catch (error) {
+    console.error("Error updating order item quantity:", error);
+    return {
+      success: false,
+      error: "Error al actualizar la cantidad",
     };
   }
 }
@@ -336,6 +392,9 @@ export async function closeTable(orderId: string) {
           items: {
             include: {
               product: true,
+            },
+            orderBy: {
+              id: "asc",
             },
           },
           table: true,
