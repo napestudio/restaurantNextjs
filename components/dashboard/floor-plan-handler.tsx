@@ -1,6 +1,7 @@
 "use client";
 
 import { createTable } from "@/actions/Table";
+import { tableHasActiveOrders } from "@/actions/Order";
 import type { TableShapeType } from "@/types/table";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TableWithReservations } from "@/lib/floor-plan-utils";
@@ -52,7 +53,10 @@ export default function FloorPlanHandler({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedTableForOrder, setSelectedTableForOrder] = useState<string | null>(null);
+  const [selectedTableForOrder, setSelectedTableForOrder] = useState<
+    string | null
+  >(null);
+  const [selectedTableHasOrders, setSelectedTableHasOrders] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Use external sectors and selectedSector
@@ -118,6 +122,24 @@ export default function FloorPlanHandler({
     isShared: false,
     sectorId: "",
   });
+
+  // Check if selected table has active orders
+  useEffect(() => {
+    const checkActiveOrders = async () => {
+      if (selectedTable) {
+        const result = await tableHasActiveOrders(selectedTable);
+        if (result.success) {
+          setSelectedTableHasOrders(result.hasActiveOrders);
+        } else {
+          setSelectedTableHasOrders(false);
+        }
+      } else {
+        setSelectedTableHasOrders(false);
+      }
+    };
+
+    checkActiveOrders();
+  }, [selectedTable]);
 
   // Handle table mouse down - memoized
   const handleTableMouseDown = useCallback(
@@ -283,15 +305,18 @@ export default function FloorPlanHandler({
     }
   }, [isEditMode]);
 
-  const handleOrderUpdated = useCallback(async (tableId: string) => {
-    // Refresh only the specific table that was updated (more efficient)
-    if (onRefreshSingleTable) {
-      await onRefreshSingleTable(tableId);
-    } else if (onRefreshTables) {
-      // Fallback to full refresh if single table refresh not available
-      await onRefreshTables();
-    }
-  }, [onRefreshSingleTable, onRefreshTables]);
+  const handleOrderUpdated = useCallback(
+    async (tableId: string) => {
+      // Refresh only the specific table that was updated (more efficient)
+      if (onRefreshSingleTable) {
+        await onRefreshSingleTable(tableId);
+      } else if (onRefreshTables) {
+        // Fallback to full refresh if single table refresh not available
+        await onRefreshTables();
+      }
+    },
+    [onRefreshSingleTable, onRefreshTables]
+  );
 
   const handleCloseSidebar = useCallback(() => {
     setSelectedTableForOrder(null);
@@ -299,7 +324,9 @@ export default function FloorPlanHandler({
 
   // Get additional table info for properties panel - memoized
   const selectedDbTable = useMemo(() => {
-    return selectedTable ? dbTables.find((t) => t.id === selectedTable) : undefined;
+    return selectedTable
+      ? dbTables.find((t) => t.id === selectedTable)
+      : undefined;
   }, [selectedTable, dbTables]);
 
   const selectedTableSector = useMemo(() => {
@@ -328,9 +355,9 @@ export default function FloorPlanHandler({
         onAddTable={onAddTable}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
         {/* Floor Plan Canvas */}
-        <div className="lg:col-span-3 relative">
+        <div className="lg:col-span-4 relative">
           <FloorPlanCanvas
             tables={filteredTables}
             selectedTable={selectedTable}
@@ -348,15 +375,17 @@ export default function FloorPlanHandler({
         </div>
 
         {/* Right Sidebar - Order Management or Properties Panel */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-2">
           {selectedTableForOrder && !isEditMode ? (
             <TableOrderSidebar
               tableId={selectedTableForOrder}
               tableNumber={
-                dbTables.find((t) => t.id === selectedTableForOrder)?.number ?? null
+                dbTables.find((t) => t.id === selectedTableForOrder)?.number ??
+                null
               }
               tableIsShared={
-                dbTables.find((t) => t.id === selectedTableForOrder)?.isShared ?? false
+                dbTables.find((t) => t.id === selectedTableForOrder)
+                  ?.isShared ?? false
               }
               branchId={branchId}
               onClose={handleCloseSidebar}
@@ -376,6 +405,7 @@ export default function FloorPlanHandler({
               onRotate={rotateTable}
               onDelete={deleteTable}
               isEditMode={isEditMode}
+              hasActiveOrders={selectedTableHasOrders}
             />
           )}
         </div>

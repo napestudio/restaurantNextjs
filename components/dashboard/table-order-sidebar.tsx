@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Printer, DollarSign } from "lucide-react";
-import { ProductPicker } from "./product-picker";
-import { OrderItemsList, type OrderItemType } from "./order-items-list";
-import { OrderTabs } from "./order-tabs";
 import {
+  addOrderItem,
+  closeTable,
   createTableOrder,
   getTableOrder,
   getTableOrders,
-  addOrderItem,
+  removeOrderItem,
   updateOrderItemPrice,
   updateOrderItemQuantity,
-  removeOrderItem,
   updatePartySize,
-  closeTable,
 } from "@/actions/Order";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
+import { DollarSign, Printer, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { OrderItemsList } from "./order-items-list";
+import { OrderTabs } from "./order-tabs";
+import { ProductPicker } from "./product-picker";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -215,7 +215,10 @@ export function TableOrderSidebar({
       // Rollback on error and reload to sync with server
       setOrder((prev) =>
         prev
-          ? { ...prev, items: prev.items.filter((item) => item.id !== optimisticItem.id) }
+          ? {
+              ...prev,
+              items: prev.items.filter((item) => item.id !== optimisticItem.id),
+            }
           : prev
       );
       if (tableIsShared) {
@@ -356,7 +359,9 @@ export function TableOrderSidebar({
         if (remainingOrders.length > 0) {
           // Switch to the first remaining order
           setSelectedOrderId(remainingOrders[0].id);
-          alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
+          alert(
+            "Orden cerrada. Esta mesa compartida tiene más órdenes activas."
+          );
         } else {
           // Last order closed, close sidebar
           alert("Última orden cerrada exitosamente");
@@ -394,7 +399,11 @@ export function TableOrderSidebar({
     };
 
     console.log("Print Check:", checkData);
-    alert(`Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(2)}\n\nVer consola para detalles completos`);
+    alert(
+      `Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(
+        2
+      )}\n\nVer consola para detalles completos`
+    );
   };
 
   if (!tableId) {
@@ -402,7 +411,7 @@ export function TableOrderSidebar({
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col gap-0">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div>
           <CardTitle className="text-xl">

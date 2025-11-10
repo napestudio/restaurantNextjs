@@ -448,6 +448,33 @@ export async function closeTable(orderId: string) {
   }
 }
 
+// Check if table has active orders
+export async function tableHasActiveOrders(tableId: string) {
+  try {
+    const count = await prisma.order.count({
+      where: {
+        tableId,
+        status: {
+          in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+        },
+      },
+    });
+
+    return {
+      success: true,
+      hasActiveOrders: count > 0,
+      count,
+    };
+  } catch (error) {
+    console.error("Error checking table orders:", error);
+    return {
+      success: false,
+      hasActiveOrders: false,
+      count: 0,
+    };
+  }
+}
+
 // Get products available for ordering (branch-specific with prices)
 export async function getAvailableProductsForOrder(branchId: string) {
   try {
