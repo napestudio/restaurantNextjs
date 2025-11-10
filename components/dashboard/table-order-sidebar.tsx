@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Printer, DollarSign } from "lucide-react";
 import { ProductPicker } from "./product-picker";
 import { OrderItemsList, type OrderItemType } from "./order-items-list";
+import { OrderTabs } from "./order-tabs";
 import {
   createTableOrder,
   getTableOrder,
@@ -62,45 +63,65 @@ export function TableOrderSidebar({
 }: TableOrderSidebarProps) {
   const [partySize, setPartySize] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
-  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Use cached products from context
   const { products } = useProducts();
 
-  // Load order when table is selected (products come from context now)
-  useEffect(() => {
-    if (tableId) {
-      // Reset state when switching tables
-      setOrder(null);
-      setPartySize("");
-      setActiveOrdersCount(0);
-
-      loadTableOrder();
-      if (tableIsShared) {
-        loadActiveOrdersCount();
-      }
-    }
-  }, [tableId, tableIsShared]);
-
-  const loadActiveOrdersCount = async () => {
+  const loadAllOrders = useCallback(async () => {
     if (!tableId) return;
 
     const result = await getTableOrders(tableId);
     if (result.success && result.data) {
-      setActiveOrdersCount(result.data.length);
+      setAllOrders(result.data);
+      // Select the most recent order by default
+      if (result.data.length > 0) {
+        setSelectedOrderId(result.data[0].id);
+      }
     }
-  };
+  }, [tableId]);
 
-  const loadTableOrder = async () => {
+  const loadSingleOrder = useCallback(async () => {
     if (!tableId) return;
 
     const result = await getTableOrder(tableId);
     if (result.success && result.data) {
       setOrder(result.data);
       setPartySize(result.data.partySize?.toString() || "");
+      setAllOrders([result.data]);
+      setSelectedOrderId(result.data.id);
     }
-  };
+  }, [tableId]);
+
+  // Load orders when table is selected
+  useEffect(() => {
+    if (tableId) {
+      // Reset state when switching tables
+      setOrder(null);
+      setPartySize("");
+      setAllOrders([]);
+      setSelectedOrderId(null);
+
+      if (tableIsShared) {
+        loadAllOrders();
+      } else {
+        loadSingleOrder();
+      }
+    }
+  }, [tableId, tableIsShared, loadAllOrders, loadSingleOrder]);
+
+  // Update current order when selection changes
+  useEffect(() => {
+    if (selectedOrderId && allOrders.length > 0) {
+      const selected = allOrders.find((o) => o.id === selectedOrderId);
+      if (selected) {
+        setOrder(selected);
+        setPartySize(selected.partySize?.toString() || "");
+      }
+    }
+  }, [selectedOrderId, allOrders]);
 
   const handleCreateOrder = async () => {
     if (!tableId || !partySize || parseInt(partySize) <= 0) {
@@ -116,10 +137,17 @@ export function TableOrderSidebar({
     );
 
     if (result.success && result.data) {
-      setOrder(result.data);
+      // Reload all orders and select the new one
       if (tableIsShared) {
-        await loadActiveOrdersCount();
+        await loadAllOrders();
+        setSelectedOrderId(result.data.id);
+      } else {
+        setOrder(result.data);
+        setAllOrders([result.data]);
+        setSelectedOrderId(result.data.id);
       }
+      // Reset party size input for next order
+      setPartySize("");
       // Only update the specific table that changed
       onOrderUpdated(tableId);
     } else {
@@ -190,7 +218,11 @@ export function TableOrderSidebar({
           ? { ...prev, items: prev.items.filter((item) => item.id !== optimisticItem.id) }
           : prev
       );
-      await loadTableOrder();
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al agregar el producto");
     }
     setIsLoading(false);
@@ -221,7 +253,11 @@ export function TableOrderSidebar({
     } else {
       // Rollback on error and reload to sync with server
       setOrder(previousOrder);
-      await loadTableOrder();
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al actualizar el precio");
     }
     setIsLoading(false);
@@ -252,7 +288,11 @@ export function TableOrderSidebar({
     } else {
       // Rollback on error and reload to sync with server
       setOrder(previousOrder);
-      await loadTableOrder();
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al actualizar la cantidad");
     }
     setIsLoading(false);
@@ -278,7 +318,11 @@ export function TableOrderSidebar({
     } else {
       // Rollback on error and reload to sync with server
       setOrder(previousOrder);
-      await loadTableOrder();
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al eliminar el producto");
     }
     setIsLoading(false);
@@ -288,7 +332,7 @@ export function TableOrderSidebar({
     if (!order || !tableId) return;
 
     if (order.items.length === 0) {
-      alert("No se puede cerrar una mesa sin productos en la orden");
+      alert("No se puede cerrar una orden sin productos");
       return;
     }
 
@@ -300,21 +344,29 @@ export function TableOrderSidebar({
     const result = await closeTable(order.id);
 
     if (result.success) {
+      onOrderUpdated(tableId);
+
       if (tableIsShared) {
-        // For shared tables, check if there are more orders
-        await loadActiveOrdersCount();
-        await loadTableOrder();
-        if (activeOrdersCount > 1) {
+        // Reload all orders to get updated list
+        await loadAllOrders();
+
+        // Check if there are more active orders
+        const remainingOrders = allOrders.filter((o) => o.id !== order.id);
+
+        if (remainingOrders.length > 0) {
+          // Switch to the first remaining order
+          setSelectedOrderId(remainingOrders[0].id);
           alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
         } else {
-          alert("Orden cerrada exitosamente");
+          // Last order closed, close sidebar
+          alert("Última orden cerrada exitosamente");
           onClose();
         }
       } else {
+        // Non-shared table, close sidebar
         alert("Mesa cerrada exitosamente");
         onClose();
       }
-      onOrderUpdated(tableId);
     } else {
       alert(result.error || "Error al cerrar la orden");
     }
@@ -361,11 +413,6 @@ export function TableOrderSidebar({
               </span>
             )}
           </CardTitle>
-          {tableIsShared && activeOrdersCount > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
-              {activeOrdersCount} {activeOrdersCount === 1 ? "orden activa" : "órdenes activas"}
-            </p>
-          )}
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
@@ -373,6 +420,20 @@ export function TableOrderSidebar({
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto space-y-6">
+        {/* Order Tabs for Shared Tables */}
+        {tableIsShared && allOrders.length > 0 && (
+          <OrderTabs
+            orders={allOrders}
+            selectedOrderId={selectedOrderId}
+            onSelectOrder={setSelectedOrderId}
+            onCreateOrder={() => {
+              // Reset party size to allow entering new order details
+              setPartySize("");
+              setOrder(null);
+            }}
+            disabled={isLoading}
+          />
+        )}
         {/* Party Size */}
         <div className="space-y-2">
           <Label htmlFor="party-size">
