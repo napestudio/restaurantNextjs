@@ -1,24 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Printer, DollarSign } from "lucide-react";
-import { ProductPicker } from "./product-picker";
-import { OrderItemsList, type OrderItemType } from "./order-items-list";
 import {
+  addOrderItem,
+  closeTable,
   createTableOrder,
+  getAvailableTablesForMove,
   getTableOrder,
   getTableOrders,
-  addOrderItem,
-  updateOrderItemPrice,
+  moveOrderToTable,
   removeOrderItem,
+  updateOrderItemPrice,
+  updateOrderItemQuantity,
   updatePartySize,
-  closeTable,
 } from "@/actions/Order";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
+import { ArrowRightLeft, DollarSign, Printer, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { MoveOrderDialog } from "./move-order-dialog";
+import { OrderItemsList } from "./order-items-list";
+import { OrderTabs } from "./order-tabs";
+import { ProductPicker } from "./product-picker";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -46,8 +51,8 @@ type Order = {
     id: string;
     itemName: string;
     quantity: number;
-    price: any;
-    originalPrice: any;
+    price: number;
+    originalPrice: number | null;
   }>;
 };
 
@@ -61,45 +66,76 @@ export function TableOrderSidebar({
 }: TableOrderSidebarProps) {
   const [partySize, setPartySize] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
-  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [availableTables, setAvailableTables] = useState<
+    Array<{
+      id: string;
+      number: number;
+      name: string | null;
+      capacity: number;
+      isShared: boolean;
+      sectorId: string | null;
+    }>
+  >([]);
 
   // Use cached products from context
   const { products } = useProducts();
 
-  // Load order when table is selected (products come from context now)
-  useEffect(() => {
-    if (tableId) {
-      // Reset state when switching tables
-      setOrder(null);
-      setPartySize("");
-      setActiveOrdersCount(0);
-
-      loadTableOrder();
-      if (tableIsShared) {
-        loadActiveOrdersCount();
-      }
-    }
-  }, [tableId, tableIsShared]);
-
-  const loadActiveOrdersCount = async () => {
+  const loadAllOrders = useCallback(async () => {
     if (!tableId) return;
 
     const result = await getTableOrders(tableId);
     if (result.success && result.data) {
-      setActiveOrdersCount(result.data.length);
+      setAllOrders(result.data);
+      // Select the most recent order by default
+      if (result.data.length > 0) {
+        setSelectedOrderId(result.data[0].id);
+      }
     }
-  };
+  }, [tableId]);
 
-  const loadTableOrder = async () => {
+  const loadSingleOrder = useCallback(async () => {
     if (!tableId) return;
 
     const result = await getTableOrder(tableId);
     if (result.success && result.data) {
       setOrder(result.data);
       setPartySize(result.data.partySize?.toString() || "");
+      setAllOrders([result.data]);
+      setSelectedOrderId(result.data.id);
     }
-  };
+  }, [tableId]);
+
+  // Load orders when table is selected
+  useEffect(() => {
+    if (tableId) {
+      // Reset state when switching tables
+      setOrder(null);
+      setPartySize("");
+      setAllOrders([]);
+      setSelectedOrderId(null);
+
+      if (tableIsShared) {
+        loadAllOrders();
+      } else {
+        loadSingleOrder();
+      }
+    }
+  }, [tableId, tableIsShared, loadAllOrders, loadSingleOrder]);
+
+  // Update current order when selection changes
+  useEffect(() => {
+    if (selectedOrderId && allOrders.length > 0) {
+      const selected = allOrders.find((o) => o.id === selectedOrderId);
+      if (selected) {
+        setOrder(selected);
+        setPartySize(selected.partySize?.toString() || "");
+      }
+    }
+  }, [selectedOrderId, allOrders]);
 
   const handleCreateOrder = async () => {
     if (!tableId || !partySize || parseInt(partySize) <= 0) {
@@ -115,10 +151,17 @@ export function TableOrderSidebar({
     );
 
     if (result.success && result.data) {
-      setOrder(result.data);
+      // Reload all orders and select the new one
       if (tableIsShared) {
-        await loadActiveOrdersCount();
+        await loadAllOrders();
+        setSelectedOrderId(result.data.id);
+      } else {
+        setOrder(result.data);
+        setAllOrders([result.data]);
+        setSelectedOrderId(result.data.id);
       }
+      // Reset party size input for next order
+      setPartySize("");
       // Only update the specific table that changed
       onOrderUpdated(tableId);
     } else {
@@ -161,17 +204,42 @@ export function TableOrderSidebar({
       originalPrice: Number(product.price),
     });
 
-    if (result.success) {
-      // Replace optimistic data with real data from server
-      await loadTableOrder();
-      onOrderUpdated(tableId);
-    } else {
-      // Rollback on error
+    if (result.success && result.data) {
+      // Replace optimistic item with real data from server
       setOrder((prev) =>
         prev
-          ? { ...prev, items: prev.items.filter((item) => item.id !== optimisticItem.id) }
+          ? {
+              ...prev,
+              items: prev.items.map((item) =>
+                item.id === optimisticItem.id
+                  ? {
+                      id: result.data.id,
+                      itemName: result.data.itemName,
+                      quantity: result.data.quantity,
+                      price: result.data.price,
+                      originalPrice: result.data.originalPrice,
+                    }
+                  : item
+              ),
+            }
           : prev
       );
+      onOrderUpdated(tableId);
+    } else {
+      // Rollback on error and reload to sync with server
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.filter((item) => item.id !== optimisticItem.id),
+            }
+          : prev
+      );
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al agregar el producto");
     }
     setIsLoading(false);
@@ -197,12 +265,52 @@ export function TableOrderSidebar({
     const result = await updateOrderItemPrice(itemId, price);
 
     if (result.success) {
-      await loadTableOrder();
+      // No need to reload - optimistic update already applied
       onOrderUpdated(tableId);
     } else {
-      // Rollback on error
+      // Rollback on error and reload to sync with server
       setOrder(previousOrder);
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al actualizar el precio");
+    }
+    setIsLoading(false);
+  };
+
+  const handleUpdateQuantity = async (itemId: string, quantity: number) => {
+    if (!tableId) return;
+
+    // Optimistic update
+    const previousOrder = order;
+    setOrder((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((item) =>
+              item.id === itemId ? { ...item, quantity } : item
+            ),
+          }
+        : prev
+    );
+
+    setIsLoading(true);
+    const result = await updateOrderItemQuantity(itemId, quantity);
+
+    if (result.success) {
+      // No need to reload - optimistic update already applied
+      onOrderUpdated(tableId);
+    } else {
+      // Rollback on error and reload to sync with server
+      setOrder(previousOrder);
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
+      alert(result.error || "Error al actualizar la cantidad");
     }
     setIsLoading(false);
   };
@@ -222,11 +330,16 @@ export function TableOrderSidebar({
     const result = await removeOrderItem(itemId);
 
     if (result.success) {
-      await loadTableOrder();
+      // No need to reload - optimistic update already applied
       onOrderUpdated(tableId);
     } else {
-      // Rollback on error
+      // Rollback on error and reload to sync with server
       setOrder(previousOrder);
+      if (tableIsShared) {
+        await loadAllOrders();
+      } else {
+        await loadSingleOrder();
+      }
       alert(result.error || "Error al eliminar el producto");
     }
     setIsLoading(false);
@@ -236,7 +349,7 @@ export function TableOrderSidebar({
     if (!order || !tableId) return;
 
     if (order.items.length === 0) {
-      alert("No se puede cerrar una mesa sin productos en la orden");
+      alert("No se puede cerrar una orden sin productos");
       return;
     }
 
@@ -248,21 +361,31 @@ export function TableOrderSidebar({
     const result = await closeTable(order.id);
 
     if (result.success) {
+      onOrderUpdated(tableId);
+
       if (tableIsShared) {
-        // For shared tables, check if there are more orders
-        await loadActiveOrdersCount();
-        await loadTableOrder();
-        if (activeOrdersCount > 1) {
-          alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
+        // Reload all orders to get updated list
+        await loadAllOrders();
+
+        // Check if there are more active orders
+        const remainingOrders = allOrders.filter((o) => o.id !== order.id);
+
+        if (remainingOrders.length > 0) {
+          // Switch to the first remaining order
+          setSelectedOrderId(remainingOrders[0].id);
+          alert(
+            "Orden cerrada. Esta mesa compartida tiene más órdenes activas."
+          );
         } else {
-          alert("Orden cerrada exitosamente");
+          // Last order closed, close sidebar
+          alert("Última orden cerrada exitosamente");
           onClose();
         }
       } else {
+        // Non-shared table, close sidebar
         alert("Mesa cerrada exitosamente");
         onClose();
       }
-      onOrderUpdated(tableId);
     } else {
       alert(result.error || "Error al cerrar la orden");
     }
@@ -290,7 +413,41 @@ export function TableOrderSidebar({
     };
 
     console.log("Print Check:", checkData);
-    alert(`Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(2)}\n\nVer consola para detalles completos`);
+    alert(
+      `Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(
+        2
+      )}\n\nVer consola para detalles completos`
+    );
+  };
+
+  const handleOpenMoveDialog = async () => {
+    setIsLoading(true);
+    const tables = await getAvailableTablesForMove(branchId);
+    setAvailableTables(tables);
+    setShowMoveDialog(true);
+    setIsLoading(false);
+  };
+
+  const handleMoveOrder = async (targetTableId: string) => {
+    if (!order || !tableId) return;
+
+    setIsLoading(true);
+    const result = await moveOrderToTable(order.id, targetTableId);
+
+    if (result.success) {
+      alert("Orden movida exitosamente");
+      setShowMoveDialog(false);
+
+      // Update both tables
+      onOrderUpdated(tableId);
+      onOrderUpdated(targetTableId);
+
+      // Close the sidebar since the order is no longer on this table
+      onClose();
+    } else {
+      alert(result.error || "Error al mover la orden");
+    }
+    setIsLoading(false);
   };
 
   if (!tableId) {
@@ -298,7 +455,7 @@ export function TableOrderSidebar({
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col gap-0">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div>
           <CardTitle className="text-xl">
@@ -309,11 +466,6 @@ export function TableOrderSidebar({
               </span>
             )}
           </CardTitle>
-          {tableIsShared && activeOrdersCount > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
-              {activeOrdersCount} {activeOrdersCount === 1 ? "orden activa" : "órdenes activas"}
-            </p>
-          )}
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
@@ -321,6 +473,20 @@ export function TableOrderSidebar({
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto space-y-6">
+        {/* Order Tabs for Shared Tables */}
+        {tableIsShared && allOrders.length > 0 && (
+          <OrderTabs
+            orders={allOrders}
+            selectedOrderId={selectedOrderId}
+            onSelectOrder={setSelectedOrderId}
+            onCreateOrder={() => {
+              // Reset party size to allow entering new order details
+              setPartySize("");
+              setOrder(null);
+            }}
+            disabled={isLoading}
+          />
+        )}
         {/* Party Size */}
         <div className="space-y-2">
           <Label htmlFor="party-size">
@@ -370,6 +536,7 @@ export function TableOrderSidebar({
                     : null,
                 }))}
                 onUpdatePrice={handleUpdatePrice}
+                onUpdateQuantity={handleUpdateQuantity}
                 onRemoveItem={handleRemoveItem}
                 disabled={isLoading}
               />
@@ -388,6 +555,16 @@ export function TableOrderSidebar({
               </Button>
 
               <Button
+                onClick={handleOpenMoveDialog}
+                variant="outline"
+                className="w-full"
+                disabled={isLoading}
+              >
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Mover a Otra Mesa
+              </Button>
+
+              <Button
                 onClick={handleCloseTable}
                 className="w-full"
                 disabled={isLoading || order.items.length === 0}
@@ -399,6 +576,16 @@ export function TableOrderSidebar({
           </>
         )}
       </CardContent>
+
+      {/* Move Order Dialog */}
+      <MoveOrderDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        availableTables={availableTables}
+        currentTableNumber={tableNumber}
+        onConfirm={handleMoveOrder}
+        isLoading={isLoading}
+      />
     </Card>
   );
 }

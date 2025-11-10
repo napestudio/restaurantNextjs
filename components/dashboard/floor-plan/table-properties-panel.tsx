@@ -37,6 +37,7 @@ interface TablePropertiesPanelProps {
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
   isEditMode: boolean;
+  hasActiveOrders?: boolean;
 }
 
 export function TablePropertiesPanel({
@@ -52,6 +53,7 @@ export function TablePropertiesPanel({
   onRotate,
   onDelete,
   isEditMode,
+  hasActiveOrders = false,
 }: TablePropertiesPanelProps) {
   return (
     <Card className="sticky top-4 gap-2">
@@ -77,6 +79,7 @@ export function TablePropertiesPanel({
               onRotate={onRotate}
               onDelete={onDelete}
               isEditMode={isEditMode}
+              hasActiveOrders={hasActiveOrders}
             />
           ) : (
             <div className="text-center py-8 text-muted-foreground">

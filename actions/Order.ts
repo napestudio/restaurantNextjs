@@ -79,6 +79,9 @@ export async function createTableOrder(
             include: {
               product: true,
             },
+            orderBy: {
+              id: "asc",
+            },
           },
         },
       });
@@ -132,6 +135,9 @@ export async function getTableOrder(tableId: string) {
           include: {
             product: true,
           },
+          orderBy: {
+            id: "asc",
+          },
         },
       },
       orderBy: {
@@ -146,7 +152,9 @@ export async function getTableOrder(tableId: string) {
           items: order.items.map((item) => ({
             ...item,
             price: Number(item.price),
-            originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+            originalPrice: item.originalPrice
+              ? Number(item.originalPrice)
+              : null,
             product: serializeProduct(item.product),
           })),
         }
@@ -179,6 +187,9 @@ export async function getTableOrders(tableId: string) {
         items: {
           include: {
             product: true,
+          },
+          orderBy: {
+            id: "asc",
           },
         },
       },
@@ -232,7 +243,9 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
     const serializedItem = {
       ...orderItem,
       price: Number(orderItem.price),
-      originalPrice: orderItem.originalPrice ? Number(orderItem.originalPrice) : null,
+      originalPrice: orderItem.originalPrice
+        ? Number(orderItem.originalPrice)
+        : null,
       product: serializeProduct(orderItem.product),
     };
 
@@ -277,6 +290,49 @@ export async function updateOrderItemPrice(itemId: string, price: number) {
     return {
       success: false,
       error: "Error al actualizar el precio",
+    };
+  }
+}
+
+// Update order item quantity
+export async function updateOrderItemQuantity(
+  itemId: string,
+  quantity: number
+) {
+  try {
+    // Validate quantity is positive
+    if (quantity < 1) {
+      return {
+        success: false,
+        error: "La cantidad debe ser mayor a 0",
+      };
+    }
+
+    const item = await prisma.orderItem.update({
+      where: { id: itemId },
+      data: { quantity },
+      include: {
+        product: true,
+      },
+    });
+
+    // Convert Decimal to number
+    const serializedItem = {
+      ...item,
+      price: Number(item.price),
+      originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+      product: serializeProduct(item.product),
+    };
+
+    return {
+      success: true,
+      data: serializedItem,
+    };
+  } catch (error) {
+    console.error("Error updating order item quantity:", error);
+    return {
+      success: false,
+      error: "Error al actualizar la cantidad",
     };
   }
 }
@@ -337,6 +393,9 @@ export async function closeTable(orderId: string) {
             include: {
               product: true,
             },
+            orderBy: {
+              id: "asc",
+            },
           },
           table: true,
         },
@@ -385,6 +444,33 @@ export async function closeTable(orderId: string) {
     return {
       success: false,
       error: "Error al cerrar la mesa",
+    };
+  }
+}
+
+// Check if table has active orders
+export async function tableHasActiveOrders(tableId: string) {
+  try {
+    const count = await prisma.order.count({
+      where: {
+        tableId,
+        status: {
+          in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+        },
+      },
+    });
+
+    return {
+      success: true,
+      hasActiveOrders: count > 0,
+      count,
+    };
+  } catch (error) {
+    console.error("Error checking table orders:", error);
+    return {
+      success: false,
+      hasActiveOrders: false,
+      count: 0,
     };
   }
 }
@@ -447,5 +533,233 @@ export async function getAvailableProductsForOrder(branchId: string) {
   } catch (error) {
     console.error("Error getting available products:", error);
     return [];
+  }
+}
+
+// Get available tables to move an order to
+// Only returns tables that are free (EMPTY status) and not reserved
+export async function getAvailableTablesForMove(branchId: string) {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const tables = await prisma.table.findMany({
+      where: {
+        branchId,
+        isActive: true,
+        OR: [
+          { status: "EMPTY" },
+          { status: null }, // Tables with no manual status override
+        ],
+      },
+      include: {
+        reservations: {
+          where: {
+            reservation: {
+              date: {
+                gte: today,
+                lt: tomorrow,
+              },
+              status: {
+                in: ["CONFIRMED", "SEATED"],
+              },
+            },
+          },
+          include: {
+            reservation: {
+              include: {
+                timeSlot: true,
+              },
+            },
+          },
+        },
+        orders: {
+          where: {
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        },
+      },
+      orderBy: {
+        number: "asc",
+      },
+    });
+
+    // Filter out tables that have active orders or are currently reserved
+    const now = new Date();
+    const availableTables = tables.filter((table) => {
+      // Table must not have active orders
+      if (table.orders.length > 0) {
+        return false;
+      }
+
+      // Table must not have active reservations for current time
+      const hasActiveReservation = table.reservations.some((rt) => {
+        const reservation = rt.reservation;
+        if (!reservation.timeSlot) return false;
+
+        const timeSlotStart = new Date(reservation.timeSlot.startTime);
+        const timeSlotEnd = new Date(reservation.timeSlot.endTime);
+
+        const startHour = timeSlotStart.getUTCHours();
+        const startMinute = timeSlotStart.getUTCMinutes();
+        const endHour = timeSlotEnd.getUTCHours();
+        const endMinute = timeSlotEnd.getUTCMinutes();
+
+        const reservationDate = new Date(reservation.date);
+        const startTime = new Date(reservationDate);
+        startTime.setHours(startHour, startMinute, 0, 0);
+
+        const endTime = new Date(reservationDate);
+        endTime.setHours(endHour, endMinute, 0, 0);
+
+        return now >= startTime && now <= endTime;
+      });
+
+      return !hasActiveReservation;
+    });
+
+    // Return simplified table data
+    return availableTables.map((table) => ({
+      id: table.id,
+      number: table.number,
+      name: table.name,
+      capacity: table.capacity,
+      isShared: table.isShared,
+      sectorId: table.sectorId,
+    }));
+  } catch (error) {
+    console.error("Error getting available tables for move:", error);
+    return [];
+  }
+}
+
+// Move an order to a different table
+export async function moveOrderToTable(orderId: string, targetTableId: string) {
+  try {
+    // Validate the order exists and is active
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        table: true,
+      },
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        error: "Orden no encontrada",
+      };
+    }
+
+    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELED) {
+      return {
+        success: false,
+        error: "No se puede mover una orden completada o cancelada",
+      };
+    }
+
+    if (!order.tableId) {
+      return {
+        success: false,
+        error: "Esta orden no está asignada a ninguna mesa",
+      };
+    }
+
+    if (order.tableId === targetTableId) {
+      return {
+        success: false,
+        error: "La orden ya está en esta mesa",
+      };
+    }
+
+    // Validate target table exists and is available
+    const targetTable = await prisma.table.findUnique({
+      where: { id: targetTableId },
+      include: {
+        orders: {
+          where: {
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        },
+      },
+    });
+
+    if (!targetTable) {
+      return {
+        success: false,
+        error: "Mesa de destino no encontrada",
+      };
+    }
+
+    if (!targetTable.isActive) {
+      return {
+        success: false,
+        error: "Mesa de destino no está activa",
+      };
+    }
+
+    // For non-shared tables, check if it already has an active order
+    if (!targetTable.isShared && targetTable.orders.length > 0) {
+      return {
+        success: false,
+        error: "La mesa de destino ya tiene una orden activa",
+      };
+    }
+
+    const sourceTableId = order.tableId;
+
+    // Move order in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Update order to new table
+      await tx.order.update({
+        where: { id: orderId },
+        data: { tableId: targetTableId },
+      });
+
+      // Update target table status to OCCUPIED
+      await tx.table.update({
+        where: { id: targetTableId },
+        data: { status: "OCCUPIED" },
+      });
+
+      // Check if source table has any other active orders
+      const remainingOrders = await tx.order.count({
+        where: {
+          tableId: sourceTableId,
+          status: {
+            in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+          },
+        },
+      });
+
+      // If no more active orders on source table, set it to EMPTY
+      if (remainingOrders === 0) {
+        await tx.table.update({
+          where: { id: sourceTableId },
+          data: { status: "EMPTY" },
+        });
+      }
+    });
+
+    return {
+      success: true,
+      data: {
+        orderId,
+        sourceTableId,
+        targetTableId,
+      },
+    };
+  } catch (error) {
+    console.error("Error moving order to table:", error);
+    return {
+      success: false,
+      error: "Error al mover la orden",
+    };
   }
 }

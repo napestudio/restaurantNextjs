@@ -87,16 +87,11 @@ export function ProductPicker({
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{product.name}</div>
-                      {product.category && (
+                      {/* {product.category && (
                         <div className="text-xs text-gray-500 mt-0.5">
                           {product.category.name}
                         </div>
-                      )}
-                      {product.description && (
-                        <div className="text-xs text-gray-400 truncate mt-0.5">
-                          {product.description}
-                        </div>
-                      )}
+                      )} */}
                     </div>
                     <div className="text-sm font-semibold text-gray-700">
                       ${Number(product.price).toFixed(2)}
