@@ -51,7 +51,7 @@ export default function FloorPlanHandler({
 
   // Use external sectors and selectedSector
   const sectors = externalSectors;
-  const selectedSector = externalSelectedSector;
+  const selectedSector = externalSelectedSector ?? null;
 
   // Get canvas dimensions from selected sector or use defaults
   const { canvasWidth, canvasHeight } = useMemo(() => {
