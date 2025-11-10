@@ -24,6 +24,7 @@ type SerializedProduct = {
   weightUnit: WeightUnit | null;
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
+  trackStock: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -1,9 +1,9 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import type { FloorTable } from "@/lib/floor-plan-utils";
+import { Grid3x3, ZoomIn, ZoomOut } from "lucide-react";
 import type React from "react";
 import { memo, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ZoomIn, ZoomOut, Grid3x3 } from "lucide-react";
-import type { FloorTable } from "@/lib/floor-plan-utils";
 
 interface FloorPlanCanvasProps {
   tables: FloorTable[];
@@ -107,10 +107,10 @@ const TableShape = memo(function TableShape({
       {/* Table number - counter-rotated to stay upright */}
       <text
         x={centerX}
-        y={centerY - 5}
+        y={centerY + 5}
         textAnchor="middle"
         fill="#fff"
-        fontSize="16"
+        fontSize="24"
         fontWeight="bold"
         style={{ pointerEvents: "none", userSelect: "none" }}
         transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
@@ -119,7 +119,7 @@ const TableShape = memo(function TableShape({
       </text>
 
       {/* Capacity - counter-rotated to stay upright */}
-      <text
+      {/* <text
         x={centerX}
         y={centerY + 15}
         textAnchor="middle"
@@ -129,7 +129,7 @@ const TableShape = memo(function TableShape({
         transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
       >
         {table.currentGuests}/{table.capacity}
-      </text>
+      </text> */}
 
       {/* Shared table indicator - rotates with table, text stays upright */}
       {table.isShared && (
@@ -187,11 +187,6 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Plano del Salón</CardTitle>
-        </div>
-      </CardHeader>
       <CardContent className="relative">
         {/* Floating toolbar in top right - fixed position */}
         <div className="absolute top-4 right-12 z-10 flex items-center space-x-2 bg-white rounded-lg shadow-lg p-2 opacity-65 hover:opacity-100 transition-opacity pointer-events-auto">
@@ -214,7 +209,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           </Button>
         </div>
         <div
-          className="border rounded-lg overflow-auto bg-gray-100 p-2"
+          className="border rounded-lg overflow-auto bg-gray-100 "
           style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
         >
           <svg

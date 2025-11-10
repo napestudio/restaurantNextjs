@@ -28,6 +28,7 @@ enum OrderStatus {
 }
 
 enum OrderType {
+  DINE_IN
   TAKE_AWAY
   DELIVERY
 }
@@ -232,6 +233,7 @@ model Table {
   sectorId     String?
   reservations ReservationTable[]
   timeSlots    TimeSlotTable[]
+  orders       Order[]
 
   /** Un número de mesa no se repite dentro de la misma sucursal */
   @@unique([branchId, number])
@@ -493,8 +495,13 @@ model Order {
   branch     Branch   @relation(fields: [branchId], references: [id])
   branchId   String
 
-  customerName  String
-  customerEmail String
+  // For DINE_IN orders
+  table        Table?   @relation(fields: [tableId], references: [id])
+  tableId      String?
+  partySize    Int?
+
+  customerName  String?
+  customerEmail String?
   type          OrderType
   description   String?
   courierName   String?
@@ -506,17 +513,20 @@ model Order {
   updatedBy String?
 
   items OrderItem[]
+
+  @@index([tableId])
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  order     Order    @relation(fields: [orderId], references: [id])
-  orderId   String
-  product   Product? @relation(fields: [productId], references: [id])
-  productId String?
-  itemName  String
-  quantity  Int
-  price     Decimal
+  id            String   @id @default(cuid())
+  order         Order    @relation(fields: [orderId], references: [id])
+  orderId       String
+  product       Product? @relation(fields: [productId], references: [id])
+  productId     String?
+  itemName      String
+  quantity      Int
+  price         Decimal  // Current price (can be modified)
+  originalPrice Decimal? // Original price from product
 }
 
 //
