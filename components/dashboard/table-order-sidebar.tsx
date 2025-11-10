@@ -4,8 +4,10 @@ import {
   addOrderItem,
   closeTable,
   createTableOrder,
+  getAvailableTablesForMove,
   getTableOrder,
   getTableOrders,
+  moveOrderToTable,
   removeOrderItem,
   updateOrderItemPrice,
   updateOrderItemQuantity,
@@ -16,8 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
-import { DollarSign, Printer, X } from "lucide-react";
+import { ArrowRightLeft, DollarSign, Printer, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { MoveOrderDialog } from "./move-order-dialog";
 import { OrderItemsList } from "./order-items-list";
 import { OrderTabs } from "./order-tabs";
 import { ProductPicker } from "./product-picker";
@@ -66,6 +69,17 @@ export function TableOrderSidebar({
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [availableTables, setAvailableTables] = useState<
+    Array<{
+      id: string;
+      number: number;
+      name: string | null;
+      capacity: number;
+      isShared: boolean;
+      sectorId: string | null;
+    }>
+  >([]);
 
   // Use cached products from context
   const { products } = useProducts();
@@ -406,6 +420,36 @@ export function TableOrderSidebar({
     );
   };
 
+  const handleOpenMoveDialog = async () => {
+    setIsLoading(true);
+    const tables = await getAvailableTablesForMove(branchId);
+    setAvailableTables(tables);
+    setShowMoveDialog(true);
+    setIsLoading(false);
+  };
+
+  const handleMoveOrder = async (targetTableId: string) => {
+    if (!order || !tableId) return;
+
+    setIsLoading(true);
+    const result = await moveOrderToTable(order.id, targetTableId);
+
+    if (result.success) {
+      alert("Orden movida exitosamente");
+      setShowMoveDialog(false);
+
+      // Update both tables
+      onOrderUpdated(tableId);
+      onOrderUpdated(targetTableId);
+
+      // Close the sidebar since the order is no longer on this table
+      onClose();
+    } else {
+      alert(result.error || "Error al mover la orden");
+    }
+    setIsLoading(false);
+  };
+
   if (!tableId) {
     return null;
   }
@@ -511,6 +555,16 @@ export function TableOrderSidebar({
               </Button>
 
               <Button
+                onClick={handleOpenMoveDialog}
+                variant="outline"
+                className="w-full"
+                disabled={isLoading}
+              >
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Mover a Otra Mesa
+              </Button>
+
+              <Button
                 onClick={handleCloseTable}
                 className="w-full"
                 disabled={isLoading || order.items.length === 0}
@@ -522,6 +576,16 @@ export function TableOrderSidebar({
           </>
         )}
       </CardContent>
+
+      {/* Move Order Dialog */}
+      <MoveOrderDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        availableTables={availableTables}
+        currentTableNumber={tableNumber}
+        onConfirm={handleMoveOrder}
+        isLoading={isLoading}
+      />
     </Card>
   );
 }

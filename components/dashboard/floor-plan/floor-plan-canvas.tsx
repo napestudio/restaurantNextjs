@@ -107,10 +107,10 @@ const TableShape = memo(function TableShape({
       {/* Table number - counter-rotated to stay upright */}
       <text
         x={centerX}
-        y={centerY - 5}
+        y={centerY + 5}
         textAnchor="middle"
         fill="#fff"
-        fontSize="16"
+        fontSize="24"
         fontWeight="bold"
         style={{ pointerEvents: "none", userSelect: "none" }}
         transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
@@ -119,7 +119,7 @@ const TableShape = memo(function TableShape({
       </text>
 
       {/* Capacity - counter-rotated to stay upright */}
-      <text
+      {/* <text
         x={centerX}
         y={centerY + 15}
         textAnchor="middle"
@@ -129,7 +129,7 @@ const TableShape = memo(function TableShape({
         transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
       >
         {table.currentGuests}/{table.capacity}
-      </text>
+      </text> */}
 
       {/* Shared table indicator - rotates with table, text stays upright */}
       {table.isShared && (
