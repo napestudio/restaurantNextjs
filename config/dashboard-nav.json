@@ -21,6 +21,11 @@
       "adminOnly": true
     },
     {
+      "label": "Ordenes",
+      "href": "/dashboard/orders",
+      "adminOnly": true
+    },
+    {
       "label": "Menú",
       "href": "/dashboard/menus",
       "adminOnly": true

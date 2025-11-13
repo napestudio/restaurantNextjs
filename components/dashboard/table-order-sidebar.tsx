@@ -507,14 +507,14 @@ export function TableOrderSidebar({
               disabled={isLoading}
               className="w-full"
             >
-              Crear Orden
+              Abrir Mesa
             </Button>
           )}
         </div>
 
         {/* Only show product picker and items if order exists */}
         {order && (
-          <>
+          <div className="flex flex-col items-stretch  h-full">
             {/* Product Picker */}
             <ProductPicker
               products={products}
@@ -525,7 +525,7 @@ export function TableOrderSidebar({
             />
 
             {/* Order Items */}
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1">
               <Label>Productos en la Orden</Label>
               <OrderItemsList
                 items={order.items.map((item) => ({
@@ -573,7 +573,7 @@ export function TableOrderSidebar({
                 Cerrar Mesa
               </Button>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
 

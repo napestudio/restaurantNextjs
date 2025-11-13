@@ -209,8 +209,8 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           </Button>
         </div>
         <div
-          className="border rounded-lg overflow-auto bg-gray-100 "
-          style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
+          className="border rounded-lg overflow-auto bg-gray-100 max-h-svh"
+          // style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
         >
           <svg
             ref={svgRef}

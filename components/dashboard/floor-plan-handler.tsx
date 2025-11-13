@@ -355,9 +355,9 @@ export default function FloorPlanHandler({
         onAddTable={onAddTable}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 ">
         {/* Floor Plan Canvas */}
-        <div className="lg:col-span-4 relative">
+        <div className="lg:col-span-4 relative max-h-svh">
           <FloorPlanCanvas
             tables={filteredTables}
             selectedTable={selectedTable}
@@ -375,7 +375,7 @@ export default function FloorPlanHandler({
         </div>
 
         {/* Right Sidebar - Order Management or Properties Panel */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 max-h-svh">
           {selectedTableForOrder && !isEditMode ? (
             <TableOrderSidebar
               tableId={selectedTableForOrder}

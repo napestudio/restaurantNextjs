@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { OrderStatus, OrderType, type Product } from "@/app/generated/prisma";
+import { OrderStatus, OrderType, PaymentMethod, type Product } from "@/app/generated/prisma";
 
 export type OrderItemInput = {
   productId: string;
@@ -98,6 +98,7 @@ export async function createTableOrder(
     // Convert Decimal fields to numbers (empty items array for new order, but keep consistency)
     const serializedOrder = {
       ...order,
+      discountPercentage: Number(order.discountPercentage),
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -149,6 +150,7 @@ export async function getTableOrder(tableId: string) {
     const serializedOrder = order
       ? {
           ...order,
+          discountPercentage: Number(order.discountPercentage),
           items: order.items.map((item) => ({
             ...item,
             price: Number(item.price),
@@ -201,6 +203,7 @@ export async function getTableOrders(tableId: string) {
     // Convert Decimal fields to numbers for client components
     const serializedOrders = orders.map((order) => ({
       ...order,
+      discountPercentage: Number(order.discountPercentage),
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -366,7 +369,10 @@ export async function updatePartySize(orderId: string, partySize: number) {
 
     return {
       success: true,
-      data: order,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
     };
   } catch (error) {
     console.error("Error updating party size:", error);
@@ -427,6 +433,7 @@ export async function closeTable(orderId: string) {
     // Convert Decimal fields to numbers
     const serializedOrder = {
       ...order,
+      discountPercentage: Number(order.discountPercentage),
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -760,6 +767,364 @@ export async function moveOrderToTable(orderId: string, targetTableId: string) {
     return {
       success: false,
       error: "Error al mover la orden",
+    };
+  }
+}
+
+// Filters for getting orders
+export type OrderFilters = {
+  branchId: string;
+  startDate?: Date;
+  endDate?: Date;
+  status?: OrderStatus;
+  tableId?: string;
+  type?: OrderType;
+};
+
+// Get orders with filters
+export async function getOrders(filters: OrderFilters) {
+  try {
+    const { branchId, startDate, endDate, status, tableId, type } = filters;
+
+    // Build where clause
+    type WhereClause = {
+      branchId: string;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+      };
+      status?: OrderStatus;
+      tableId?: string;
+      type?: OrderType;
+    };
+
+    const where: WhereClause = {
+      branchId,
+    };
+
+    // Date range filter
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = startDate;
+      }
+      if (endDate) {
+        // Set to end of day
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endOfDay;
+      }
+    }
+
+    // Status filter
+    if (status) {
+      where.status = status;
+    }
+
+    // Table filter
+    if (tableId) {
+      where.tableId = tableId;
+    }
+
+    // Type filter
+    if (type) {
+      where.type = type;
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        table: {
+          select: {
+            number: true,
+            name: true,
+          },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                categoryId: true,
+              },
+            },
+          },
+          orderBy: {
+            id: "asc",
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Serialize Decimal fields to numbers
+    const serializedOrders = orders.map((order) => ({
+      ...order,
+      discountPercentage: Number(order.discountPercentage),
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+      })),
+    }));
+
+    return {
+      success: true,
+      data: serializedOrders,
+    };
+  } catch (error) {
+    console.error("Error getting orders:", error);
+    return {
+      success: false,
+      error: "Error al obtener las órdenes",
+      data: [],
+    };
+  }
+}
+
+// Update payment method
+export async function updatePaymentMethod(orderId: string, paymentMethod: PaymentMethod) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { paymentMethod },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating payment method:", error);
+    return {
+      success: false,
+      error: "Error al actualizar el método de pago",
+    };
+  }
+}
+
+// Update discount percentage
+export async function updateDiscount(orderId: string, discountPercentage: number) {
+  try {
+    // Validate discount percentage (0-100)
+    if (discountPercentage < 0 || discountPercentage > 100) {
+      return {
+        success: false,
+        error: "El descuento debe estar entre 0 y 100",
+      };
+    }
+
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { discountPercentage },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating discount:", error);
+    return {
+      success: false,
+      error: "Error al actualizar el descuento",
+    };
+  }
+}
+
+// Assign staff to order
+export async function assignStaffToOrder(orderId: string, userId: string | null) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { assignedToId: userId },
+      include: {
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error assigning staff to order:", error);
+    return {
+      success: false,
+      error: "Error al asignar personal a la orden",
+    };
+  }
+}
+
+// Mark order as needing invoice
+export async function setNeedsInvoice(orderId: string, needsInvoice: boolean) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { needsInvoice },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating invoice flag:", error);
+    return {
+      success: false,
+      error: "Error al actualizar la solicitud de factura",
+    };
+  }
+}
+
+// Create invoice for an order
+export async function createInvoice(data: {
+  orderId: string;
+  name: string;
+  cuit?: string;
+  description?: string;
+  customItem?: string;
+  updatedBy?: string;
+}) {
+  try {
+    // Verify order exists
+    const order = await prisma.order.findUnique({
+      where: { id: data.orderId },
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        error: "Orden no encontrada",
+      };
+    }
+
+    const invoice = await prisma.invoice.create({
+      data: {
+        orderId: data.orderId,
+        name: data.name,
+        cuit: data.cuit,
+        description: data.description,
+        customItem: data.customItem,
+        updatedBy: data.updatedBy,
+      },
+    });
+
+    return {
+      success: true,
+      data: invoice,
+    };
+  } catch (error) {
+    console.error("Error creating invoice:", error);
+    return {
+      success: false,
+      error: "Error al crear la factura",
+    };
+  }
+}
+
+// Get invoice for an order
+export async function getInvoiceByOrderId(orderId: string) {
+  try {
+    const invoice = await prisma.invoice.findFirst({
+      where: { orderId },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return {
+        success: false,
+        error: "Factura no encontrada",
+      };
+    }
+
+    // Serialize Decimal fields
+    const serializedInvoice = {
+      ...invoice,
+      order: {
+        ...invoice.order,
+        discountPercentage: Number(invoice.order.discountPercentage),
+        items: invoice.order.items.map((item) => ({
+          ...item,
+          price: Number(item.price),
+          originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        })),
+      },
+    };
+
+    return {
+      success: true,
+      data: serializedInvoice,
+    };
+  } catch (error) {
+    console.error("Error getting invoice:", error);
+    return {
+      success: false,
+      error: "Error al obtener la factura",
+    };
+  }
+}
+
+// Update invoice
+export async function updateInvoice(
+  invoiceId: string,
+  data: {
+    name?: string;
+    cuit?: string;
+    description?: string;
+    customItem?: string;
+    updatedBy?: string;
+  }
+) {
+  try {
+    const invoice = await prisma.invoice.update({
+      where: { id: invoiceId },
+      data,
+    });
+
+    return {
+      success: true,
+      data: invoice,
+    };
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    return {
+      success: false,
+      error: "Error al actualizar la factura",
     };
   }
 }

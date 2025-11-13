@@ -1,12 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../app/generated/prisma"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [citext]
 }
 
@@ -31,6 +31,12 @@ enum OrderType {
   DINE_IN
   TAKE_AWAY
   DELIVERY
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
 }
 
 enum ReservationStatus {
@@ -63,23 +69,23 @@ enum TableStatus {
 }
 
 enum UnitType {
-  UNIT      // Unidades contables (ej: 5 botellas, 3 filetes)
-  WEIGHT    // Peso (kg, g, lb, oz)
-  VOLUME    // Volumen (L, ml, gal, oz)
+  UNIT // Unidades contables (ej: 5 botellas, 3 filetes)
+  WEIGHT // Peso (kg, g, lb, oz)
+  VOLUME // Volumen (L, ml, gal, oz)
 }
 
 enum WeightUnit {
-  KILOGRAM  // Kilogramo
-  GRAM      // Gramo
-  POUND     // Libra
-  OUNCE     // Onza
+  KILOGRAM // Kilogramo
+  GRAM // Gramo
+  POUND // Libra
+  OUNCE // Onza
 }
 
 enum VolumeUnit {
-  LITER         // Litro
-  MILLILITER    // Mililitro
-  GALLON        // Galón
-  FLUID_OUNCE   // Onza líquida
+  LITER // Litro
+  MILLILITER // Mililitro
+  GALLON // Galón
+  FLUID_OUNCE // Onza líquida
 }
 
 //
@@ -97,6 +103,7 @@ model User {
   createdAt DateTime  @default(now())
 
   userOnBranches UserOnBranch[]
+  assignedOrders Order[]        @relation("StaffAssignment")
 }
 
 model Account {
@@ -127,23 +134,27 @@ model Session {
 // ORGANIZACIÓN GENERAL
 //
 model Restaurant {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  /** NUEVO: slug único público (case-insensitive) para misitio.com/[slug] */
-  slug        String   @unique @db.Citext
+  /**
+   * NUEVO: slug único público (case-insensitive) para misitio.com/[slug]
+   */
+  slug        String  @unique @db.Citext
   description String?
   phone       String?
   logoUrl     String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean @default(true)
 
-  branches    Branch[]
-  /** Los menús/categorías quedan aislados por restaurante */
-  categories  Category[]
-  products    Product[]
-  menus       Menu[]
+  branches   Branch[]
+  /**
+   * Los menús/categorías quedan aislados por restaurante
+   */
+  categories Category[]
+  products   Product[]
+  menus      Menu[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slug])
 }
@@ -156,8 +167,10 @@ model Branch {
   restaurantId String
   createdAt    DateTime   @default(now())
 
-  /** OPCIONAL: slug por sucursal para futuro /[restaurantSlug]/[branchSlug] */
-  slug         String?    @db.Citext
+  /**
+   * OPCIONAL: slug por sucursal para futuro /[restaurantSlug]/[branchSlug]
+   */
+  slug String? @db.Citext
 
   reservations Reservation[]
   orders       Order[]
@@ -168,9 +181,13 @@ model Branch {
   userAccess   UserOnBranch[]
   menus        Menu[]
 
-  /** Evita duplicar nombres de sucursal dentro del mismo restaurante */
+  /**
+   * Evita duplicar nombres de sucursal dentro del mismo restaurante
+   */
   @@unique([restaurantId, name])
-  /** Si usás slug por sucursal, garantiza unicidad dentro del restaurante */
+  /**
+   * Si usás slug por sucursal, garantiza unicidad dentro del restaurante
+   */
   @@unique([restaurantId, slug])
 }
 
@@ -203,29 +220,31 @@ model Sector {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  /** Un nombre de sector no se repite dentro de la misma sucursal */
+  /**
+   * Un nombre de sector no se repite dentro de la misma sucursal
+   */
   @@unique([branchId, name])
   @@index([branchId])
 }
 
 model Table {
-  id           String             @id @default(cuid())
-  number       Int
-  name         String?
-  capacity     Int
-  isActive     Boolean            @default(true)
-  isShared     Boolean            @default(false)
+  id       String  @id @default(cuid())
+  number   Int
+  name     String?
+  capacity Int
+  isActive Boolean @default(true)
+  isShared Boolean @default(false)
 
   // Floor plan
-  positionX    Float?             @default(0)
-  positionY    Float?             @default(0)
-  width        Float?             @default(100)
-  height       Float?             @default(100)
-  rotation     Float?             @default(0)
-  shape        TableShape?        @default(SQUARE)
+  positionX Float?      @default(0)
+  positionY Float?      @default(0)
+  width     Float?      @default(100)
+  height    Float?      @default(100)
+  rotation  Float?      @default(0)
+  shape     TableShape? @default(SQUARE)
 
   // Manual status override
-  status       TableStatus?
+  status TableStatus?
 
   branch       Branch             @relation(fields: [branchId], references: [id])
   branchId     String
@@ -235,7 +254,9 @@ model Table {
   timeSlots    TimeSlotTable[]
   orders       Order[]
 
-  /** Un número de mesa no se repite dentro de la misma sucursal */
+  /**
+   * Un número de mesa no se repite dentro de la misma sucursal
+   */
   @@unique([branchId, number])
   @@index([sectorId])
 }
@@ -251,7 +272,7 @@ model Reservation {
   people              Int
   timeSlot            TimeSlot?          @relation(fields: [timeSlotId], references: [id])
   timeSlotId          String?
-  exactTime           DateTime?          // Precise 15-min arrival time within the slot
+  exactTime           DateTime? // Precise 15-min arrival time within the slot
   status              ReservationStatus  @default(PENDING)
   dietaryRestrictions String?
   accessibilityNeeds  String?
@@ -292,8 +313,8 @@ model TimeSlot {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  reservations   Reservation[]
-  tables         TimeSlotTable[]
+  reservations Reservation[]
+  tables       TimeSlotTable[]
 }
 
 model TimeSlotTable {
@@ -311,15 +332,17 @@ model TimeSlotTable {
 // PRODUCTOS Y MENÚ (aislados por restaurante)
 //
 model Category {
-  id            String      @id @default(cuid())
-  name          String
-  order         Int         @default(0)
+  id    String @id @default(cuid())
+  name  String
+  order Int    @default(0)
 
-  /** NUEVO: categoría pertenece a un restaurante */
-  restaurantId  String
-  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  /**
+   * NUEVO: categoría pertenece a un restaurante
+   */
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
-  products      Product[]
+  products Product[]
 
   @@unique([restaurantId, name]) // mismo nombre no se repite dentro del restaurante
   @@index([restaurantId])
@@ -329,28 +352,28 @@ model Category {
 // MENÚS PÚBLICOS (para clientes)
 //
 model Menu {
-  id              String        @id @default(cuid())
-  name            String        // "Breakfast Menu", "Weekend Special", etc.
-  description     String?
-  slug            String        @db.Citext
-  isActive        Boolean       @default(true)
+  id          String  @id @default(cuid())
+  name        String // "Breakfast Menu", "Weekend Special", etc.
+  description String?
+  slug        String  @db.Citext
+  isActive    Boolean @default(true)
 
   // Scheduling - cuando está disponible este menú
-  availableFrom   DateTime?     @db.Time  // e.g., 08:00
-  availableUntil  DateTime?     @db.Time  // e.g., 11:30
-  daysOfWeek      String[]      // ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+  availableFrom  DateTime? @db.Time // e.g., 08:00
+  availableUntil DateTime? @db.Time // e.g., 11:30
+  daysOfWeek     String[] // ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
   // Scoping
-  restaurant      Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  restaurantId    String
-  branch          Branch?       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  branchId        String?       // null = disponible para todas las sucursales
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId String
+  branch       Branch?    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId     String? // null = disponible para todas las sucursales
 
   // Organization
-  menuSections    MenuSection[]
+  menuSections MenuSection[]
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([restaurantId, slug])
   @@index([restaurantId, isActive])
@@ -358,38 +381,38 @@ model Menu {
 }
 
 model MenuSection {
-  id              String        @id @default(cuid())
-  name            String        // "Appetizers", "Main Courses", "Desserts"
-  description     String?
-  order           Int           @default(0)  // Para ordenar las secciones dentro del menú
+  id          String  @id @default(cuid())
+  name        String // "Appetizers", "Main Courses", "Desserts"
+  description String?
+  order       Int     @default(0) // Para ordenar las secciones dentro del menú
 
-  menu            Menu          @relation(fields: [menuId], references: [id], onDelete: Cascade)
-  menuId          String
+  menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  menuId String
 
-  menuItems       MenuItem[]
+  menuItems MenuItem[]
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([menuId, order])
 }
 
 model MenuItem {
-  id              String        @id @default(cuid())
+  id String @id @default(cuid())
 
-  menuSection     MenuSection   @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
-  menuSectionId   String
+  menuSection   MenuSection @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
+  menuSectionId String
 
-  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId       String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
 
-  order           Int           @default(0)       // Orden dentro de la sección
-  isAvailable     Boolean       @default(true)    // Override de disponibilidad del producto
-  isFeatured      Boolean       @default(false)   // Destacar en el menú (chef's special, etc.)
-  customPrice     Decimal?                        // Override de precio (opcional, para promociones)
+  order       Int      @default(0) // Orden dentro de la sección
+  isAvailable Boolean  @default(true) // Override de disponibilidad del producto
+  isFeatured  Boolean  @default(false) // Destacar en el menú (chef's special, etc.)
+  customPrice Decimal? // Override de precio (opcional, para promociones)
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([menuSectionId, productId])
   @@index([menuSectionId, order])
@@ -397,38 +420,40 @@ model MenuItem {
 }
 
 model Product {
-  id            String      @id @default(cuid())
-  name          String
-  description   String?
-  imageUrl      String?     // URL de la imagen del producto
-  sku           String?     // Código SKU único
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String? // URL de la imagen del producto
+  sku         String? // Código SKU único
 
   // Configuración de unidades de medida
-  unitType      UnitType    @default(UNIT)
-  weightUnit    WeightUnit? // Solo si unitType = WEIGHT
-  volumeUnit    VolumeUnit? // Solo si unitType = VOLUME
+  unitType   UnitType    @default(UNIT)
+  weightUnit WeightUnit? // Solo si unitType = WEIGHT
+  volumeUnit VolumeUnit? // Solo si unitType = VOLUME
 
   // Alertas de stock
-  minStockAlert Decimal?    // Alerta cuando el stock esté por debajo de este valor
-  trackStock    Boolean     @default(true) // Si es false, el producto siempre estará disponible sin importar el stock
+  minStockAlert Decimal? // Alerta cuando el stock esté por debajo de este valor
+  trackStock    Boolean  @default(true) // Si es false, el producto siempre estará disponible sin importar el stock
 
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @default(now()) @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  /** NUEVO: producto pertenece a un restaurante */
-  restaurantId  String
-  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  /**
+   * NUEVO: producto pertenece a un restaurante
+   */
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
-  categoryId    String?
-  category      Category?   @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
 
-  branches      ProductOnBranch[]
-  orderItems    OrderItem[]
-  menuItems     MenuItem[]
+  branches   ProductOnBranch[]
+  orderItems OrderItem[]
+  menuItems  MenuItem[]
 
   @@unique([restaurantId, name]) // evita duplicar nombres de producto dentro del restaurante
-  @@unique([restaurantId, sku])  // SKU único por restaurante
+  @@unique([restaurantId, sku]) // SKU único por restaurante
   @@index([restaurantId])
 }
 
@@ -440,16 +465,16 @@ model ProductOnBranch {
   branchId  String
 
   // Stock con soporte para decimales (peso/volumen)
-  stock         Decimal @default(0)
+  stock         Decimal   @default(0)
   minStock      Decimal? // Stock mínimo para esta sucursal
   maxStock      Decimal? // Stock máximo recomendado
   lastRestocked DateTime? // Última vez que se reabastació
 
-  isActive  Boolean        @default(true)
-  prices    ProductPrice[]
+  isActive       Boolean         @default(true)
+  prices         ProductPrice[]
   stockMovements StockMovement[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @default(now()) @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
 
   @@unique([productId, branchId])
   @@index([branchId])
@@ -471,17 +496,17 @@ model StockMovement {
   productOnBranchId String
 
   // Movimiento de stock
-  quantity          Decimal         // Positivo = entrada, Negativo = salida
-  previousStock     Decimal         // Stock anterior al movimiento
-  newStock          Decimal         // Stock después del movimiento
+  quantity      Decimal // Positivo = entrada, Negativo = salida
+  previousStock Decimal // Stock anterior al movimiento
+  newStock      Decimal // Stock después del movimiento
 
   // Información del movimiento
-  reason            String          // "Compra", "Venta", "Merma", "Ajuste", "Devolución", etc.
-  notes             String?
-  reference         String?         // Número de factura, pedido, etc.
+  reason    String // "Compra", "Venta", "Merma", "Ajuste", "Devolución", etc.
+  notes     String?
+  reference String? // Número de factura, pedido, etc.
 
-  createdAt         DateTime        @default(now())
-  createdBy         String?         // ID del usuario que hizo el movimiento
+  createdAt DateTime @default(now())
+  createdBy String? // ID del usuario que hizo el movimiento
 
   @@index([productOnBranchId])
   @@index([createdAt])
@@ -491,14 +516,14 @@ model StockMovement {
 // PEDIDOS
 //
 model Order {
-  id         String   @id @default(cuid())
-  branch     Branch   @relation(fields: [branchId], references: [id])
-  branchId   String
+  id       String @id @default(cuid())
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
 
   // For DINE_IN orders
-  table        Table?   @relation(fields: [tableId], references: [id])
-  tableId      String?
-  partySize    Int?
+  table     Table?  @relation(fields: [tableId], references: [id])
+  tableId   String?
+  partySize Int?
 
   customerName  String?
   customerEmail String?
@@ -507,14 +532,25 @@ model Order {
   courierName   String?
   publicCode    String    @unique
 
+  // Payment and billing
+  paymentMethod      PaymentMethod @default(CASH)
+  discountPercentage Decimal       @default(0) @db.Decimal(5, 2) // Max 999.99%
+  needsInvoice       Boolean       @default(false)
+
+  // Staff assignment
+  assignedTo   User?   @relation("StaffAssignment", fields: [assignedToId], references: [id])
+  assignedToId String?
+
   status    OrderStatus @default(PENDING)
   createdAt DateTime    @default(now())
   createdBy String?
   updatedBy String?
 
-  items OrderItem[]
+  items    OrderItem[]
+  invoices Invoice[]
 
   @@index([tableId])
+  @@index([assignedToId])
 }
 
 model OrderItem {
@@ -525,15 +561,35 @@ model OrderItem {
   productId     String?
   itemName      String
   quantity      Int
-  price         Decimal  // Current price (can be modified)
+  price         Decimal // Current price (can be modified)
   originalPrice Decimal? // Original price from product
+}
+
+//
+// FACTURAS
+//
+model Invoice {
+  id      String @id @default(cuid())
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String
+
+  // Invoice details
+  name        String // Customer/Business name
+  cuit        String? // Tax ID (CUIT/CUIL in Argentina)
+  description String? // Additional notes or description
+  customItem  String? // Optional custom item not in the order
+
+  createdAt DateTime @default(now())
+  updatedBy String?
+
+  @@index([orderId])
 }
 
 //
 // Slugs reservados para rutas del sistema (admin, api, auth, etc.)
 //
 model ReservedSlug {
-  slug       String   @id @db.Citext
-  reason     String?
-  createdAt  DateTime @default(now())
+  slug      String   @id @db.Citext
+  reason    String?
+  createdAt DateTime @default(now())
 }

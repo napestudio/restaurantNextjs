@@ -30,7 +30,9 @@ export function OrderItemsList({
 }: OrderItemsListProps) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState("");
-  const [editingQuantityId, setEditingQuantityId] = useState<string | null>(null);
+  const [editingQuantityId, setEditingQuantityId] = useState<string | null>(
+    null
+  );
   const [tempQuantity, setTempQuantity] = useState("");
 
   const handlePriceClick = (itemId: string, currentPrice: number) => {
@@ -107,7 +109,7 @@ export function OrderItemsList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 flex-1 h-full">
       <div className="space-y-2">
         {items.map((item) => (
           <div
@@ -123,7 +125,9 @@ export function OrderItemsList({
                   variant="outline"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                  onClick={() =>
+                    handleQuantityChange(item.id, item.quantity - 1)
+                  }
                   disabled={disabled || item.quantity <= 1}
                 >
                   <Minus className="h-3 w-3" />
@@ -134,7 +138,9 @@ export function OrderItemsList({
                     type="number"
                     min="1"
                     value={tempQuantity}
-                    onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
+                    onChange={(e) =>
+                      handleQuantityInputChange(item.id, e.target.value)
+                    }
                     onBlur={() => handleQuantityInputBlur(item.id)}
                     onKeyDown={(e) => handleQuantityKeyDown(e, item.id)}
                     className="w-14 h-7 text-center text-sm"
@@ -158,7 +164,9 @@ export function OrderItemsList({
                   variant="outline"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                  onClick={() =>
+                    handleQuantityChange(item.id, item.quantity + 1)
+                  }
                   disabled={disabled}
                 >
                   <Plus className="h-3 w-3" />
