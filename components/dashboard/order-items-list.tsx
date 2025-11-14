@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Minus, Plus } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export type OrderItemType = {
   id: string;
@@ -35,6 +36,20 @@ export function OrderItemsList({
   );
   const [tempQuantity, setTempQuantity] = useState("");
 
+  // Track pending updates to show optimistic UI
+  const pendingUpdatesRef = useRef<Map<string, number>>(new Map());
+  const [, forceUpdate] = useState({});
+
+  // Debounced quantity update - waits 800ms after last change
+  const debouncedQuantityUpdate = useDebounce(
+    async (itemId: string, quantity: number) => {
+      await onUpdateQuantity(itemId, quantity);
+      pendingUpdatesRef.current.delete(itemId);
+      forceUpdate({});
+    },
+    800
+  );
+
   const handlePriceClick = (itemId: string, currentPrice: number) => {
     setEditingItemId(itemId);
     setTempPrice(currentPrice.toString());
@@ -65,11 +80,19 @@ export function OrderItemsList({
     }
   };
 
-  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
-    if (newQuantity >= 1) {
-      await onUpdateQuantity(itemId, newQuantity);
-    }
-  };
+  const handleQuantityChange = useCallback(
+    (itemId: string, newQuantity: number) => {
+      if (newQuantity >= 1) {
+        // Store pending quantity optimistically
+        pendingUpdatesRef.current.set(itemId, newQuantity);
+        forceUpdate({});
+
+        // Trigger debounced update
+        debouncedQuantityUpdate(itemId, newQuantity);
+      }
+    },
+    [debouncedQuantityUpdate]
+  );
 
   const handleQuantityInputChange = (itemId: string, value: string) => {
     setTempQuantity(value);
@@ -111,68 +134,81 @@ export function OrderItemsList({
   return (
     <div className="space-y-3 flex-1 h-full">
       <div className="space-y-2">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg"
-          >
-            <div className="flex-1">
-              <div className="font-medium text-sm">{item.itemName}</div>
+        {items.map((item) => {
+          // Use pending quantity if available (optimistic UI)
+          const displayQuantity =
+            pendingUpdatesRef.current.get(item.id) ?? item.quantity;
+          const isPending = pendingUpdatesRef.current.has(item.id);
 
-              {/* Quantity Controls */}
-              <div className="flex items-center gap-1 mt-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() =>
-                    handleQuantityChange(item.id, item.quantity - 1)
-                  }
-                  disabled={disabled || item.quantity <= 1}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
+          return (
+            <div
+              key={item.id}
+              className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="flex-1">
+                <div className="font-medium text-sm">
+                  {item.itemName}
+                  {isPending && (
+                    <span className="ml-2 text-xs text-amber-600">
+                      (guardando...)
+                    </span>
+                  )}
+                </div>
 
-                {editingQuantityId === item.id ? (
-                  <Input
-                    type="number"
-                    min="1"
-                    value={tempQuantity}
-                    onChange={(e) =>
-                      handleQuantityInputChange(item.id, e.target.value)
+                {/* Quantity Controls */}
+                <div className="flex items-center gap-1 mt-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() =>
+                      handleQuantityChange(item.id, displayQuantity - 1)
                     }
-                    onBlur={() => handleQuantityInputBlur(item.id)}
-                    onKeyDown={(e) => handleQuantityKeyDown(e, item.id)}
-                    className="w-14 h-7 text-center text-sm"
-                    autoFocus
-                    disabled={disabled}
-                  />
-                ) : (
-                  <button
-                    onClick={() => {
-                      setEditingQuantityId(item.id);
-                      setTempQuantity(item.quantity.toString());
-                    }}
-                    className="w-14 h-7 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border border-gray-300"
+                    disabled={disabled || displayQuantity <= 1}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+
+                  {editingQuantityId === item.id ? (
+                    <Input
+                      type="number"
+                      min="1"
+                      value={tempQuantity}
+                      onChange={(e) =>
+                        handleQuantityInputChange(item.id, e.target.value)
+                      }
+                      onBlur={() => handleQuantityInputBlur(item.id)}
+                      onKeyDown={(e) => handleQuantityKeyDown(e, item.id)}
+                      className="w-14 h-7 text-center text-sm"
+                      autoFocus
+                      disabled={disabled}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditingQuantityId(item.id);
+                        setTempQuantity(displayQuantity.toString());
+                      }}
+                      className="w-14 h-7 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border border-gray-300"
+                      disabled={disabled}
+                    >
+                      {displayQuantity}
+                    </button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() =>
+                      handleQuantityChange(item.id, displayQuantity + 1)
+                    }
                     disabled={disabled}
                   >
-                    {item.quantity}
-                  </button>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() =>
-                    handleQuantityChange(item.id, item.quantity + 1)
-                  }
-                  disabled={disabled}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
-            </div>
 
             <div className="flex items-center gap-2">
               <div>
@@ -215,7 +251,8 @@ export function OrderItemsList({
               </Button>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <div className="border-t pt-3">
