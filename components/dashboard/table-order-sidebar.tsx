@@ -466,6 +466,31 @@ export function TableOrderSidebar({
                 disabled={isLoading || order.items.length === 0}
               >
                 <Printer className="h-4 w-4" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="128"
+                  height="128"
+                  viewBox="0 0 48 48"
+                >
+                  <g fill="none" stroke="currentColor" strokeWidth="4">
+                    <path
+                      strokeLinecap="round"
+                      d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
+                    />
+                    <rect width="36" height="22" x="6" y="20" rx="2" />
+                    <path
+                      fill="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M20 34h15v8H20z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 26h3"
+                    />
+                  </g>
+                </svg>
                 {/* Imprimir Cuenta */}
               </Button>
 

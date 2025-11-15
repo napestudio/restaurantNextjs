@@ -29,7 +29,7 @@ export default async function TablesPage() {
   }));
 
   return (
-    <div className="bg-neutral-800 px-4">
+    <div className="bg-neutral-800 min-h-screen">
       {/* <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Mesas</h1>
           <p className="mt-2 text-sm text-gray-600">
