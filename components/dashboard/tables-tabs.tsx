@@ -19,7 +19,7 @@ export function TablesTabs({ children, defaultTab = "floor-plan" }: TabsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200">
+      {/* <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => (
             <button
@@ -38,9 +38,9 @@ export function TablesTabs({ children, defaultTab = "floor-plan" }: TabsProps) {
             </button>
           ))}
         </nav>
-      </div>
+      </div> */}
 
-      <div className="mt-6">
+      <div className="mt-0">
         {Array.isArray(children)
           ? children[tabs.findIndex((t) => t.id === activeTab)]
           : children}

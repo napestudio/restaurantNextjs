@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings2, Plus } from "lucide-react";
+import { Settings2 } from "lucide-react";
 
 export interface Sector {
   id: string;
@@ -20,7 +20,6 @@ interface SectorSelectorProps {
   onSelectSector: (sectorId: string | null) => void;
   onAddSector?: () => void;
   onEditSector?: (sector: Sector) => void;
-  onAddTable?: () => void;
 }
 
 export const SectorSelector = memo(function SectorSelector({
@@ -29,7 +28,6 @@ export const SectorSelector = memo(function SectorSelector({
   onSelectSector,
   onAddSector,
   onEditSector,
-  onAddTable,
 }: SectorSelectorProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -80,13 +78,6 @@ export const SectorSelector = memo(function SectorSelector({
         aria-label="Agregar Sector"
       >
         +
-      </Button>
-      <Button
-        onClick={() => onAddTable?.()}
-        className="bg-red-600 hover:bg-red-700 ml-auto gap-2"
-      >
-        <Plus className="h-4 w-4" />
-        Agregar Mesa
       </Button>
     </div>
   );

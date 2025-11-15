@@ -10,7 +10,7 @@ import { useFloorPlanState } from "@/hooks/use-floor-plan-state";
 import { useFloorPlanActions } from "@/hooks/use-floor-plan-actions";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
-import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
+import { FloorPlanActions } from "./floor-plan/floor-plan-actions";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { SectorSelector, type Sector } from "./floor-plan/sector-selector";
 import { TableOrderSidebar } from "./table-order-sidebar";
@@ -337,23 +337,24 @@ export default function FloorPlanHandler({
 
   return (
     <div className="space-y-6">
-      <FloorPlanToolbar
-        onAddTable={onAddTable}
-        onSave={handleSave}
-        onToggleEditMode={handleToggleEditMode}
-        hasUnsavedChanges={hasUnsavedChanges}
-        isSaving={isSaving}
-        isEditMode={isEditMode}
-      />
+      <div className="flex items-center justify-between gap-4">
+        <SectorSelector
+          sectors={sectors}
+          selectedSector={selectedSector ?? null}
+          onSelectSector={(sectorId) => externalSetSelectedSector?.(sectorId)}
+          onAddSector={onAddSector}
+          onEditSector={onEditSector}
+        />
 
-      <SectorSelector
-        sectors={sectors}
-        selectedSector={selectedSector ?? null}
-        onSelectSector={(sectorId) => externalSetSelectedSector?.(sectorId)}
-        onAddSector={onAddSector}
-        onEditSector={onEditSector}
-        onAddTable={onAddTable}
-      />
+        <FloorPlanActions
+          onAddTable={onAddTable}
+          onSave={handleSave}
+          onToggleEditMode={handleToggleEditMode}
+          hasUnsavedChanges={hasUnsavedChanges}
+          isSaving={isSaving}
+          isEditMode={isEditMode}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-6 gap-0 shadow-md">
         {/* Floor Plan Canvas */}
