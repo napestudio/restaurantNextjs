@@ -34,18 +34,20 @@ export function FloorPlanToolbar({
         <div className="flex items-center gap-2">
           <Button
             onClick={onToggleEditMode}
-            variant={isEditMode ? "default" : "outline"}
-            className={isEditMode ? "bg-blue-600 hover:bg-blue-700" : ""}
+            className={
+              isEditMode
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-neutral-50 hover:bg-neutral-50/80"
+            }
           >
             {isEditMode ? (
               <>
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4" />
                 Modo Vista
               </>
             ) : (
               <>
-                <Edit3 className="h-4 w-4 mr-2" />
-                Modo Edición
+                <Edit3 className="h-4 w-4 text-neutral-800" />
               </>
             )}
           </Button>
