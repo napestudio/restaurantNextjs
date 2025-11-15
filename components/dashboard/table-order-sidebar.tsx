@@ -84,7 +84,7 @@ export function TableOrderSidebar({
 
   // Derive current order from allOrders (for shared) or singleOrder (for non-shared)
   const order = tableIsShared
-    ? allOrders?.find((o) => o.id === selectedOrderId) || null
+    ? (Array.isArray(allOrders) ? allOrders.find((o) => o.id === selectedOrderId) : null) || null
     : singleOrder;
 
   // Combined loading state
@@ -100,7 +100,7 @@ export function TableOrderSidebar({
 
   // Auto-select first order when orders load
   useEffect(() => {
-    if (tableIsShared && allOrders && allOrders.length > 0 && !selectedOrderId) {
+    if (tableIsShared && Array.isArray(allOrders) && allOrders.length > 0 && !selectedOrderId) {
       setSelectedOrderId(allOrders[0].id);
     }
   }, [tableIsShared, allOrders, selectedOrderId]);
@@ -244,7 +244,9 @@ export function TableOrderSidebar({
         await refresh();
 
         // Check if there are more active orders after refresh
-        const remainingOrders = allOrders?.filter((o) => o.id !== order.id) || [];
+        const remainingOrders = Array.isArray(allOrders)
+          ? allOrders.filter((o) => o.id !== order.id)
+          : [];
 
         if (remainingOrders.length > 0) {
           // Switch to the first remaining order
@@ -272,7 +274,7 @@ export function TableOrderSidebar({
     if (!order) return;
 
     const total = order.items.reduce(
-      (sum, item) => sum + item.unitPrice * item.quantity,
+      (sum, item) => sum + item.price * item.quantity,
       0
     );
 
@@ -282,8 +284,8 @@ export function TableOrderSidebar({
       items: order.items.map((item) => ({
         name: item.product.name,
         quantity: item.quantity,
-        price: item.unitPrice,
-        total: item.unitPrice * item.quantity,
+        price: item.price,
+        total: item.price * item.quantity,
       })),
       total,
     };
@@ -359,7 +361,7 @@ export function TableOrderSidebar({
 
       <CardContent className="flex-1 overflow-y-auto space-y-6">
         {/* Order Tabs for Shared Tables */}
-        {tableIsShared && allOrders && allOrders.length > 0 && (
+        {tableIsShared && Array.isArray(allOrders) && allOrders.length > 0 && (
           <OrderTabs
             orders={allOrders.map((o) => ({
               id: o.id,
@@ -369,8 +371,8 @@ export function TableOrderSidebar({
                 id: item.id,
                 itemName: item.product.name,
                 quantity: item.quantity,
-                price: item.unitPrice,
-                originalPrice: item.unitPrice,
+                price: item.price,
+                originalPrice: item.originalPrice,
               })),
             }))}
             selectedOrderId={selectedOrderId}
@@ -429,8 +431,8 @@ export function TableOrderSidebar({
                   id: item.id,
                   itemName: item.product.name,
                   quantity: item.quantity,
-                  price: item.unitPrice,
-                  originalPrice: item.unitPrice,
+                  price: item.price,
+                  originalPrice: item.originalPrice,
                 }))}
                 onUpdatePrice={handleUpdatePrice}
                 onUpdateQuantity={handleUpdateQuantity}

@@ -186,8 +186,8 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
   );
 
   return (
-    <Card>
-      <CardContent className="relative">
+    <div>
+      <div className="relative">
         {/* Floating toolbar in top right - fixed position */}
         <div className="absolute top-4 right-12 z-10 flex items-center space-x-2 bg-white rounded-lg shadow-lg p-2 opacity-65 hover:opacity-100 transition-opacity pointer-events-auto">
           <Button
@@ -281,7 +281,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
             <span>Limpiando</span>
           </div> */}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 });

@@ -77,8 +77,9 @@ export const SectorSelector = memo(function SectorSelector({
         variant="outline"
         onClick={() => onAddSector?.()}
         className="border-dashed"
+        aria-label="Agregar Sector"
       >
-        + Nuevo Sector
+        +
       </Button>
       <Button
         onClick={() => onAddTable?.()}

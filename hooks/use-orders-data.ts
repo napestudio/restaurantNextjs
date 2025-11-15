@@ -10,7 +10,8 @@ type OrderWithItems = Order & {
     orderId: string;
     productId: string;
     quantity: number;
-    unitPrice: number;
+    price: number;
+    originalPrice: number | null;
     product: {
       id: string;
       name: string;
