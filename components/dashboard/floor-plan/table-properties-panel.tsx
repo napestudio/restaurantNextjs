@@ -50,7 +50,7 @@ export function TablePropertiesPanel({
   hasActiveOrders = false,
 }: TablePropertiesPanelProps) {
   return (
-    <div className="sticky top-4 gap-2 h-[calc(100svh-80px)] bg-neutral-50 ">
+    <div className="sticky top-4 gap-2 h-[calc(100svh-120px)] bg-neutral-50 ">
       <div>
         <div className="text-lg bg-amber-100  py-1.5">
           Propiedades de la Mesa

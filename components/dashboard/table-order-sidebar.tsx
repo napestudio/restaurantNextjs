@@ -159,10 +159,12 @@ export function TableOrderSidebar({
     setPartySize(newSize);
 
     // If order exists, update it
-    if (order && newSize && parseInt(newSize) > 0) {
+    if (order && newSize && parseInt(newSize) > 0 && tableId) {
       await updatePartySize(order.id, parseInt(newSize));
       // Refresh to get updated data
       refresh();
+      // Update the floor plan to reflect the new party size
+      onOrderUpdated(tableId);
     }
   };
 
@@ -346,7 +348,7 @@ export function TableOrderSidebar({
 
   return (
     <div className="h-full flex flex-col gap-0 bg-neutral-50">
-      <div className="flex flex-row items-center space-y-0 bg-amber-100">
+      <div className="flex flex-row items-center justify-between space-y-0 bg-neutral-200 shadow-sm">
         <div className="flex items-center gap-2 px-2 ">
           <div className="text-xl">
             Mesa {tableNumber}
@@ -403,7 +405,7 @@ export function TableOrderSidebar({
         {/* Party Size */}
         <div className="space-y-2">
           <Label htmlFor="party-size">
-            Número de Comensales <span className="text-red-500">*</span>
+            Personas <span className="text-red-500">*</span>
           </Label>
           <Input
             id="party-size"
@@ -443,13 +445,15 @@ export function TableOrderSidebar({
                 <Label>Productos en la Orden</Label>
                 <div className="bg-amber-500">
                   <OrderItemsList
-                    items={order.items?.map((item) => ({
-                      id: item.id,
-                      itemName: item.product.name,
-                      quantity: item.quantity,
-                      price: item.price,
-                      originalPrice: item.originalPrice,
-                    }))}
+                    items={
+                      order.items?.map((item) => ({
+                        id: item.id,
+                        itemName: item.product.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        originalPrice: item.originalPrice,
+                      })) || []
+                    }
                     onUpdatePrice={handleUpdatePrice}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemoveItem={handleRemoveItem}

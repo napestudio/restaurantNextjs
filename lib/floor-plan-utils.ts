@@ -81,6 +81,11 @@ export interface TableWithReservations {
       } | null;
     };
   }>;
+  orders?: Array<{
+    id: string;
+    partySize: number | null;
+    status: string;
+  }>;
 }
 
 /**
@@ -102,7 +107,7 @@ function isWithinTimeSlot(
 }
 
 /**
- * Calculate table status based on reservations and manual status
+ * Calculate table status based on reservations, orders, and manual status
  */
 export function calculateTableStatus(
   dbTable: TableWithReservations
@@ -110,7 +115,16 @@ export function calculateTableStatus(
   let status: TableStatus = "empty";
   let currentGuests = 0;
 
-  if (dbTable.status) {
+  // First, check if there are active orders (highest priority for current guests)
+  if (dbTable.orders && dbTable.orders.length > 0) {
+    // Sum up party sizes from all active orders (for shared tables)
+    currentGuests = dbTable.orders.reduce(
+      (sum, order) => sum + (order.partySize || 0),
+      0
+    );
+    // If there are active orders, table is occupied
+    status = "occupied";
+  } else if (dbTable.status) {
     // Use manual status from database
     status = statusMap[dbTable.status] || "empty";
   } else if (dbTable.reservations.length > 0) {
@@ -135,8 +149,8 @@ export function calculateTableStatus(
     // If isToday but NOT within time slot, status remains "empty"
   }
 
-  // Set currentGuests from reservations if available
-  if (dbTable.reservations.length > 0) {
+  // Fallback: Set currentGuests from reservations if no orders and reservations exist
+  if (currentGuests === 0 && dbTable.reservations.length > 0) {
     currentGuests = dbTable.reservations[0].reservation.people;
   }
 

@@ -69,6 +69,18 @@ export async function getTablesWithStatus(branchId: string) {
             },
           },
         },
+        orders: {
+          where: {
+            status: {
+              in: ["PENDING", "IN_PROGRESS"],
+            },
+          },
+          select: {
+            id: true,
+            partySize: true,
+            status: true,
+          },
+        },
       },
       orderBy: [{ number: "asc" }],
     });
@@ -145,6 +157,18 @@ export async function getTableWithStatus(tableId: string) {
                 },
               },
             },
+          },
+        },
+        orders: {
+          where: {
+            status: {
+              in: ["PENDING", "IN_PROGRESS"],
+            },
+          },
+          select: {
+            id: true,
+            partySize: true,
+            status: true,
           },
         },
       },
@@ -232,7 +256,11 @@ export async function isTableAvailable(
   requiredCapacity: number = 1
 ): Promise<boolean> {
   try {
-    const remainingCapacity = await getRemainingCapacity(tableId, date, timeSlotId);
+    const remainingCapacity = await getRemainingCapacity(
+      tableId,
+      date,
+      timeSlotId
+    );
     return remainingCapacity >= requiredCapacity;
   } catch (error) {
     console.error("Error checking table availability:", error);
@@ -614,7 +642,7 @@ export async function updateTable(
     if (data.number !== undefined) {
       const table = await prisma.table.findUnique({ where: { id } });
       if (!table) {
-        return { success: false, error: "Table not found" };
+        return { success: false, error: "Mesa no encontrada" };
       }
 
       const existing = await prisma.table.findFirst({
@@ -628,7 +656,7 @@ export async function updateTable(
       if (existing) {
         return {
           success: false,
-          error: `Table number ${data.number} already exists in this branch`,
+          error: `La mesa nro ${data.number} ya existe`,
         };
       }
     }

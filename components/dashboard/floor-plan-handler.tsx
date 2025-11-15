@@ -252,8 +252,8 @@ export default function FloorPlanHandler({
         id: result.data.id,
         number: result.data.number,
         capacity: result.data.capacity,
-        positionX: result.data.positionX ?? 50,
-        positionY: result.data.positionY ?? 50,
+        positionX: result.data.positionX ?? 0,
+        positionY: result.data.positionY ?? 0,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
@@ -269,7 +269,7 @@ export default function FloorPlanHandler({
       setNewTable({
         number: "",
         name: "",
-        shape: "CIRCLE",
+        shape: "SQUARE",
         capacity: "2",
         isShared: false,
         sectorId: "",
@@ -280,7 +280,7 @@ export default function FloorPlanHandler({
 
   // Save handler - memoized
   const handleSave = useCallback(() => {
-    saveFloorPlanChanges(setIsSaving, setHasUnsavedChanges);
+    saveFloorPlanChanges(setIsSaving, setHasUnsavedChanges, setIsEditMode);
   }, [saveFloorPlanChanges]);
 
   // Zoom handlers - memoized
@@ -336,8 +336,8 @@ export default function FloorPlanHandler({
   }, [selectedDbTable?.sectorId, sectors]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+    <div>
+      <div className="flex items-center justify-between gap-4 px-2 py-2 bg-neutral-50">
         <SectorSelector
           sectors={sectors}
           selectedSector={selectedSector ?? null}

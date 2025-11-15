@@ -56,17 +56,17 @@ export interface DialogState {
 }
 
 export const SHAPE_DEFAULTS = {
-  CIRCLE: { width: 80, height: 80 },
+  CIRCLE: { width: 100, height: 100 },
   SQUARE: { width: 100, height: 100 },
-  RECTANGLE: { width: 120, height: 80 },
-  WIDE: { width: 200, height: 60 },
+  RECTANGLE: { width: 200, height: 100 },
+  WIDE: { width: 300, height: 100 },
 } as const;
 
 export const INITIAL_TABLE_FORM: NewTableFormState = {
   number: "",
   name: "",
-  shape: "CIRCLE",
-  capacity: "2",
+  shape: "SQUARE",
+  capacity: "4",
   isShared: false,
   sectorId: "",
 };

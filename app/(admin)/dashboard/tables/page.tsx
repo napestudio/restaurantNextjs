@@ -29,13 +29,13 @@ export default async function TablesPage() {
   }));
 
   return (
-    <div className="bg-neutral-800 min-h-screen">
+    <div className="bg-neutral-50 min-h-screen pt-15">
       {/* <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mesas</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Gestiona el estado de las mesas de tu restaurante
-          </p>
-        </div> */}
+        <h1 className="text-3xl font-bold text-gray-900">Mesas</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          Gestiona el estado de las mesas de tu restaurante
+        </p>
+      </div> */}
 
       <TablesClientWrapper
         branchId={branchId}

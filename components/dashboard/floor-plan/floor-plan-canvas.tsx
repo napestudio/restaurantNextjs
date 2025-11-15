@@ -106,7 +106,7 @@ const TableShape = memo(function TableShape({
       {/* Table number - counter-rotated to stay upright */}
       <text
         x={centerX}
-        y={centerY + 5}
+        y={centerY}
         textAnchor="middle"
         fill="#fff"
         fontSize="24"
@@ -117,18 +117,38 @@ const TableShape = memo(function TableShape({
         {table.number}
       </text>
 
-      {/* Capacity - counter-rotated to stay upright */}
-      {/* <text
-        x={centerX}
-        y={centerY + 15}
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="12"
-        style={{ pointerEvents: "none", userSelect: "none" }}
-        transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
-      >
-        {table.currentGuests}/{table.capacity}
-      </text> */}
+      {/* Party size with Users icon - counter-rotated to stay upright */}
+      {table.currentGuests > 0 && (
+        <g transform={`rotate(${-table.rotation} ${centerX} ${centerY + 20})`}>
+          {/* Users icon (SVG path) */}
+          <g
+            transform={`translate(${centerX - 10}, ${centerY + 10})`}
+            style={{ pointerEvents: "none" }}
+          >
+            <path
+              d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              transform="scale(0.5)"
+            />
+          </g>
+          {/* Party size text */}
+          <text
+            x={centerX + 8}
+            y={centerY + 22}
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="16"
+            fontWeight="600"
+            style={{ pointerEvents: "none", userSelect: "none" }}
+          >
+            {table.currentGuests}
+          </text>
+        </g>
+      )}
 
       {/* Shared table indicator - rotates with table, text stays upright */}
       {table.isShared && (
@@ -208,7 +228,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           </Button>
         </div>
         <div
-          className="border overflow-auto bg-gray-100 h-[calc(100svh-80px)]"
+          className="border overflow-auto bg-gray-100 h-[calc(100svh-120px)]"
           // style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
         >
           <svg
