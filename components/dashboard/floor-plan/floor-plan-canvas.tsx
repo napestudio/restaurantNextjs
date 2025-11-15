@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { FloorTable } from "@/lib/floor-plan-utils";
 import { Grid3x3, ZoomIn, ZoomOut } from "lucide-react";
 import type React from "react";
@@ -209,7 +208,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           </Button>
         </div>
         <div
-          className="border rounded-lg overflow-auto bg-gray-100 max-h-svh"
+          className="border overflow-auto bg-gray-100 h-[calc(100svh-50px)]"
           // style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
         >
           <svg
@@ -263,7 +262,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
         </div>
 
         {/* Legend */}
-        <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+        {/* <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-green-500" />
             <span>Disponible</span>
@@ -275,12 +274,12 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-blue-500" />
             <span>Reservada</span>
-          </div>
-          {/* <div className="flex items-center space-x-2">
+          </div> */}
+        {/* <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-yellow-500" />
             <span>Limpiando</span>
           </div> */}
-        </div>
+        {/* </div> */}
       </div>
     </div>
   );

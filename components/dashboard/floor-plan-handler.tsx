@@ -338,7 +338,7 @@ export default function FloorPlanHandler({
   return (
     <div className="space-y-6">
       <FloorPlanToolbar
-        onAddTable={() => setAddDialogOpen(true)}
+        onAddTable={onAddTable}
         onSave={handleSave}
         onToggleEditMode={handleToggleEditMode}
         hasUnsavedChanges={hasUnsavedChanges}
@@ -355,7 +355,7 @@ export default function FloorPlanHandler({
         onAddTable={onAddTable}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 ">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-0 shadow-md">
         {/* Floor Plan Canvas */}
         <div className="lg:col-span-4 relative max-h-svh">
           <FloorPlanCanvas
@@ -375,7 +375,7 @@ export default function FloorPlanHandler({
         </div>
 
         {/* Right Sidebar - Order Management or Properties Panel */}
-        <div className="lg:col-span-2 max-h-svh">
+        <div className="lg:col-span-2 relative">
           {selectedTableForOrder && !isEditMode ? (
             <TableOrderSidebar
               tableId={selectedTableForOrder}

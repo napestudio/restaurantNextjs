@@ -12,12 +12,17 @@ import {
   updatePartySize,
 } from "@/actions/Order";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
-import { ArrowRightLeft, DollarSign, Printer, RefreshCw, X } from "lucide-react";
+import {
+  ArrowRightLeft,
+  DollarSign,
+  Printer,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { MoveOrderDialog } from "./move-order-dialog";
 import { OrderItemsList } from "./order-items-list";
@@ -84,7 +89,9 @@ export function TableOrderSidebar({
 
   // Derive current order from allOrders (for shared) or singleOrder (for non-shared)
   const order = tableIsShared
-    ? (Array.isArray(allOrders) ? allOrders.find((o) => o.id === selectedOrderId) : null) || null
+    ? (Array.isArray(allOrders)
+        ? allOrders.find((o) => o.id === selectedOrderId)
+        : null) || null
     : singleOrder;
 
   // Combined loading state
@@ -100,7 +107,12 @@ export function TableOrderSidebar({
 
   // Auto-select first order when orders load
   useEffect(() => {
-    if (tableIsShared && Array.isArray(allOrders) && allOrders.length > 0 && !selectedOrderId) {
+    if (
+      tableIsShared &&
+      Array.isArray(allOrders) &&
+      allOrders.length > 0 &&
+      !selectedOrderId
+    ) {
       setSelectedOrderId(allOrders[0].id);
     }
   }, [tableIsShared, allOrders, selectedOrderId]);
@@ -333,17 +345,17 @@ export function TableOrderSidebar({
   }
 
   return (
-    <Card className="h-full flex flex-col gap-0">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-xl">
+    <div className="h-full flex flex-col gap-0 bg-neutral-50">
+      <div className="flex flex-row items-center space-y-0 bg-amber-100">
+        <div className="flex items-center gap-2 px-2 ">
+          <div className="text-xl">
             Mesa {tableNumber}
             {tableIsShared && (
               <span className="ml-2 text-sm font-normal text-gray-500">
                 (Compartida)
               </span>
             )}
-          </CardTitle>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -351,17 +363,19 @@ export function TableOrderSidebar({
             disabled={isLoading}
             title="Actualizar datos"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </Button>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 overflow-y-auto space-y-6">
+      <div className="space-y-6 p-2 h-full">
         {/* Order Tabs for Shared Tables */}
-        {tableIsShared && Array.isArray(allOrders) && allOrders.length > 0 && (
+        {Array.isArray(allOrders) && allOrders.length > 0 && (
           <OrderTabs
             orders={allOrders.map((o) => ({
               id: o.id,
@@ -413,68 +427,68 @@ export function TableOrderSidebar({
 
         {/* Only show product picker and items if order exists */}
         {order && (
-          <div className="flex flex-col items-stretch h-full">
-            {/* Product Picker */}
-            <ProductPicker
-              products={products}
-              onSelectProduct={handleSelectProduct}
-              label="Agregar Producto"
-              placeholder="Buscar producto..."
-              disabled={isLoading}
-            />
-
-            {/* Order Items */}
-            <div className="space-y-2 flex-1">
-              <Label>Productos en la Orden</Label>
-              <OrderItemsList
-                items={order.items.map((item) => ({
-                  id: item.id,
-                  itemName: item.product.name,
-                  quantity: item.quantity,
-                  price: item.price,
-                  originalPrice: item.originalPrice,
-                }))}
-                onUpdatePrice={handleUpdatePrice}
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveItem={handleRemoveItem}
+          <div className="flex flex-col bg-red-300">
+            <div className="flex flex-col flex-1">
+              {/* Product Picker */}
+              <ProductPicker
+                products={products}
+                onSelectProduct={handleSelectProduct}
+                label="Agregar Producto"
+                placeholder="Buscar producto..."
                 disabled={isLoading}
               />
-            </div>
 
+              {/* Order Items */}
+              <div className="space-y-2">
+                <Label>Productos en la Orden</Label>
+                <div className="bg-amber-500">
+                  <OrderItemsList
+                    items={order.items?.map((item) => ({
+                      id: item.id,
+                      itemName: item.product.name,
+                      quantity: item.quantity,
+                      price: item.price,
+                      originalPrice: item.originalPrice,
+                    }))}
+                    onUpdatePrice={handleUpdatePrice}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onRemoveItem={handleRemoveItem}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </div>
             {/* Action Buttons */}
-            <div className="space-y-2 pt-4 border-t">
+            <div className="left-0 flex gap-2 w-full items-center justify-end p-2 bg-purple-400 absolute bottom-0">
               <Button
                 onClick={handlePrintCheck}
                 variant="outline"
-                className="w-full"
                 disabled={isLoading || order.items.length === 0}
               >
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimir Cuenta
+                <Printer className="h-4 w-4" />
+                {/* Imprimir Cuenta */}
               </Button>
 
               <Button
                 onClick={handleOpenMoveDialog}
                 variant="outline"
-                className="w-full"
                 disabled={isLoading}
               >
-                <ArrowRightLeft className="mr-2 h-4 w-4" />
-                Mover a Otra Mesa
+                <ArrowRightLeft className="h-4 w-4" />
+                {/* Mover a Otra Mesa */}
               </Button>
 
               <Button
                 onClick={handleCloseTable}
-                className="w-full"
                 disabled={isLoading || order.items.length === 0}
               >
-                <DollarSign className="mr-2 h-4 w-4" />
-                Cerrar Mesa
+                <DollarSign className="h-4 w-4" />
+                {/* Cerrar Mesa */}
               </Button>
             </div>
           </div>
         )}
-      </CardContent>
+      </div>
 
       {/* Move Order Dialog */}
       <MoveOrderDialog
@@ -485,6 +499,6 @@ export function TableOrderSidebar({
         onConfirm={handleMoveOrder}
         isLoading={isLoading}
       />
-    </Card>
+    </div>
   );
 }

@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Save, Edit3, Eye } from "lucide-react";
+import { Edit3, Eye, Save } from "lucide-react";
 
 interface FloorPlanToolbarProps {
-  onAddTable: () => void;
+  onAddTable?: () => void;
   onSave: () => void;
   onToggleEditMode: () => void;
   hasUnsavedChanges: boolean;

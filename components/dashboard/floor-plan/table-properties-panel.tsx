@@ -1,12 +1,6 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Maximize2 } from "lucide-react";
+import { CardDescription, CardTitle } from "@/components/ui/card";
 import type { TableShapeType, TableStatus } from "@/types/table";
+import { Maximize2 } from "lucide-react";
 import { TablePropertiesForm } from "./table-properties-form";
 
 interface FloorTable {
@@ -56,15 +50,17 @@ export function TablePropertiesPanel({
   hasActiveOrders = false,
 }: TablePropertiesPanelProps) {
   return (
-    <Card className="sticky top-4 gap-2">
-      <CardHeader>
-        <CardTitle className="text-lg">Propiedades de la Mesa</CardTitle>
+    <div className="sticky top-4 gap-2 h-full bg-neutral-50 ">
+      <div>
+        <div className="text-lg bg-amber-100  py-1.5">
+          Propiedades de la Mesa
+        </div>
         {!selectedTable && (
-          <CardDescription>Selecciona una mesa para editar</CardDescription>
+          <div className="px-2">Selecciona una mesa para editar</div>
         )}
-      </CardHeader>
+      </div>
       {isEditMode ? (
-        <CardContent>
+        <div>
           {selectedTable ? (
             <TablePropertiesForm
               selectedTable={selectedTable}
@@ -89,10 +85,10 @@ export function TablePropertiesPanel({
               </p>
             </div>
           )}
-        </CardContent>
+        </div>
       ) : (
         <div></div>
       )}
-    </Card>
+    </div>
   );
 }
