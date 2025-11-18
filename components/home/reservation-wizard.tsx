@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Stepper } from "@/components/ui/stepper";
-import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
-import { WIZARD_STEPS } from "@/lib/reservation-wizard-utils";
-import { useWizardState } from "@/hooks/use-wizard-state";
 import { useWizardData } from "@/hooks/use-wizard-data";
+import { useWizardState } from "@/hooks/use-wizard-state";
+import { WIZARD_STEPS } from "@/lib/reservation-wizard-utils";
+import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { useCallback, useEffect } from "react";
 import { WizardSuccessScreen } from "./wizard-success-screen";
 
 // Step Components
-import { StepPartySize } from "./wizard-steps/step-party-size";
-import { StepDateTime } from "./wizard-steps/step-date-time";
-import { StepTimeSlot } from "./wizard-steps/step-time-slot";
-import { StepExactTime } from "./wizard-steps/step-exact-time";
 import { StepCustomerInfo } from "./wizard-steps/step-customer-info";
+import { StepDateTime } from "./wizard-steps/step-date-time";
+import { StepExactTime } from "./wizard-steps/step-exact-time";
+import { StepPartySize } from "./wizard-steps/step-party-size";
+import { StepTimeSlot } from "./wizard-steps/step-time-slot";
 
 interface ReservationWizardProps {
   branchId: string;

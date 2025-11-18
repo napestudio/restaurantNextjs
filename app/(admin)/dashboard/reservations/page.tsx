@@ -8,7 +8,8 @@ export default async function ReservationsPage() {
 
   // Fetch time slots and reservations (both already serialized by actions)
   const timeSlotsResult = await getTimeSlots(branchId);
-  const timeSlots = timeSlotsResult.success && timeSlotsResult.data ? timeSlotsResult.data : [];
+  const timeSlots =
+    timeSlotsResult.success && timeSlotsResult.data ? timeSlotsResult.data : [];
 
   const reservationsResult = await getReservations(branchId);
   const reservations =
@@ -18,7 +19,7 @@ export default async function ReservationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="px-4 sm:px-6 lg:px-8 py-8">
+      <main className="px-4 sm:px-6 lg:px-8 py-16">
         <ReservationsManager
           initialReservations={reservations}
           timeSlots={timeSlots}

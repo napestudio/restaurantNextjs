@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { WeekDatePicker } from "@/components/week-date-picker";
-import { Calendar } from "lucide-react";
+import { useMemo } from "react";
 
 interface StepDateTimeProps {
   value: string;
