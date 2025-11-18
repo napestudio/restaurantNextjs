@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import type { FloorTable } from "@/lib/floor-plan-utils";
 import { Grid3x3, ZoomIn, ZoomOut } from "lucide-react";
 import type React from "react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 
 interface FloorPlanCanvasProps {
   tables: FloorTable[];
@@ -13,7 +13,9 @@ interface FloorPlanCanvasProps {
   svgRef: React.RefObject<SVGSVGElement | null>;
   canvasWidth: number;
   canvasHeight: number;
+  isEditMode: boolean;
   onTableMouseDown: (e: React.MouseEvent, tableId: string) => void;
+  onCanvasClick: (x: number, y: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleGrid: () => void;
@@ -190,19 +192,81 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
   svgRef,
   canvasWidth,
   canvasHeight,
+  isEditMode,
   onTableMouseDown,
+  onCanvasClick,
   onZoomIn,
   onZoomOut,
   onToggleGrid,
 }: FloorPlanCanvasProps) {
+  // Track mouse position for hover effect
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
+    null
+  );
+
   // Memoize zoom percentage display
   const zoomPercentage = useMemo(() => Math.round(zoom * 100), [zoom]);
 
   // Memoize cursor style
   const cursorStyle = useMemo(
-    () => (draggedTable ? "grabbing" : "default"),
-    [draggedTable]
+    () => {
+      if (draggedTable) return "grabbing";
+      if (isEditMode && !draggedTable) return "crosshair";
+      return "default";
+    },
+    [draggedTable, isEditMode]
   );
+
+  // Handle mouse move on SVG
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isEditMode || draggedTable) {
+      setMousePos(null);
+      return;
+    }
+
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    // Snap to 100px grid intervals - show icon at center of grid cell
+    const GRID_SIZE = 100;
+    const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+    const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+
+    setMousePos({ x: snappedX, y: snappedY });
+  };
+
+  // Handle mouse leave
+  const handleMouseLeave = () => {
+    setMousePos(null);
+  };
+
+  // Handle canvas click
+  const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isEditMode || draggedTable) return;
+
+    // Don't open dialog if clicking on a table or any interactive element
+    const target = e.target as SVGElement;
+    // Only allow clicks on the SVG itself or the grid rect
+    if (target.tagName !== "svg" && target.getAttribute("id") !== "grid-background") return;
+
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    // Snap to 100px grid intervals - return top-left corner for table placement
+    const GRID_SIZE = 100;
+    const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE;
+    const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE;
+
+    onCanvasClick(snappedX, snappedY);
+  };
 
   return (
     <div>
@@ -238,6 +302,9 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
             viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
             className="bg-white"
             style={{ cursor: cursorStyle }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleCanvasClick}
           >
             {/* Grid */}
             {showGrid && (
@@ -259,6 +326,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
             )}
             {showGrid && (
               <rect
+                id="grid-background"
                 width={canvasWidth}
                 height={canvasHeight}
                 fill="url(#grid)"
@@ -278,6 +346,43 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
                 />
               </g>
             ))}
+
+            {/* Plus icon hover indicator in edit mode */}
+            {isEditMode && mousePos && !draggedTable && (
+              <g
+                style={{ pointerEvents: "none" }}
+                opacity={0.6}
+              >
+                {/* Circle background */}
+                <circle
+                  cx={mousePos.x}
+                  cy={mousePos.y}
+                  r={20}
+                  fill="#ef4444"
+                  stroke="#dc2626"
+                  strokeWidth={2}
+                />
+                {/* Plus icon */}
+                <line
+                  x1={mousePos.x}
+                  y1={mousePos.y - 10}
+                  x2={mousePos.x}
+                  y2={mousePos.y + 10}
+                  stroke="white"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={mousePos.x - 10}
+                  y1={mousePos.y}
+                  x2={mousePos.x + 10}
+                  y2={mousePos.y}
+                  stroke="white"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
           </svg>
         </div>
 

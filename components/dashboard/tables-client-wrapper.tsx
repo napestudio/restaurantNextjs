@@ -140,7 +140,6 @@ export function TablesClientWrapper({
             sectors={sectors}
             onAddSector={openAddSector}
             onEditSector={openEditSector}
-            onAddTable={openAddTable}
             onRefreshTables={refreshTables}
             onRefreshSingleTable={refreshSingleTable}
           />

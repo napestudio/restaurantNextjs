@@ -28,7 +28,6 @@ interface FloorPlanPageProps {
   sectors?: Sector[];
   onAddSector?: () => void;
   onEditSector?: (sector: Sector) => void;
-  onAddTable?: () => void;
   onRefreshTables?: () => Promise<void>;
   onRefreshSingleTable?: (tableId: string) => Promise<void>;
 }
@@ -42,7 +41,6 @@ export default function FloorPlanHandler({
   sectors: externalSectors = [],
   onAddSector,
   onEditSector,
-  onAddTable,
   onRefreshTables,
   onRefreshSingleTable,
 }: FloorPlanPageProps) {
@@ -50,6 +48,10 @@ export default function FloorPlanHandler({
   const [zoom, setZoom] = useState(0.75);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [clickPosition, setClickPosition] = useState<{ x: number; y: number }>({
+    x: 50,
+    y: 50,
+  });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -218,8 +220,8 @@ export default function FloorPlanHandler({
       name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
       sectorId: newTable.sectorId || undefined,
-      positionX: 50,
-      positionY: 50,
+      positionX: clickPosition.x,
+      positionY: clickPosition.y,
       width: defaults.width,
       height: defaults.height,
       rotation: 0,
@@ -233,8 +235,8 @@ export default function FloorPlanHandler({
       const newFloorTable = {
         id: result.data.id,
         number: result.data.number,
-        x: result.data.positionX ?? 50,
-        y: result.data.positionY ?? 50,
+        x: result.data.positionX ?? clickPosition.x,
+        y: result.data.positionY ?? clickPosition.y,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
@@ -252,8 +254,8 @@ export default function FloorPlanHandler({
         id: result.data.id,
         number: result.data.number,
         capacity: result.data.capacity,
-        positionX: result.data.positionX ?? 0,
-        positionY: result.data.positionY ?? 0,
+        positionX: result.data.positionX ?? clickPosition.x,
+        positionY: result.data.positionY ?? clickPosition.y,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
@@ -276,7 +278,7 @@ export default function FloorPlanHandler({
       });
       setAddDialogOpen(false);
     }
-  }, [newTable, branchId, setTables, setDbTables]);
+  }, [newTable, branchId, setTables, setDbTables, clickPosition]);
 
   // Save handler - memoized
   const handleSave = useCallback(() => {
@@ -322,6 +324,12 @@ export default function FloorPlanHandler({
     setSelectedTableForOrder(null);
   }, []);
 
+  // Handle canvas click to add table
+  const handleCanvasClick = useCallback((x: number, y: number) => {
+    setClickPosition({ x, y });
+    setAddDialogOpen(true);
+  }, []);
+
   // Get additional table info for properties panel - memoized
   const selectedDbTable = useMemo(() => {
     return selectedTable
@@ -347,7 +355,6 @@ export default function FloorPlanHandler({
         />
 
         <FloorPlanActions
-          onAddTable={onAddTable}
           onSave={handleSave}
           onToggleEditMode={handleToggleEditMode}
           hasUnsavedChanges={hasUnsavedChanges}
@@ -368,7 +375,9 @@ export default function FloorPlanHandler({
             svgRef={svgRef}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
+            isEditMode={isEditMode}
             onTableMouseDown={handleTableMouseDown}
+            onCanvasClick={handleCanvasClick}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onToggleGrid={handleToggleGrid}

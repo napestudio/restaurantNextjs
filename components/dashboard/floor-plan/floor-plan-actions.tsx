@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Edit3, Eye, Save, Plus } from "lucide-react";
+import { Edit3, Eye, Save } from "lucide-react";
 
 interface FloorPlanActionsProps {
-  onAddTable?: () => void;
   onSave: () => void;
   onToggleEditMode: () => void;
   hasUnsavedChanges: boolean;
@@ -11,7 +10,6 @@ interface FloorPlanActionsProps {
 }
 
 export function FloorPlanActions({
-  onAddTable,
   onSave,
   onToggleEditMode,
   hasUnsavedChanges,
@@ -26,16 +24,6 @@ export function FloorPlanActions({
           <span className="text-amber-600 font-medium">
             • Cambios sin guardar
           </span>
-        )}
-        {/* Add Table Button - Always visible */}
-        {isEditMode && onAddTable && (
-          <Button
-            onClick={onAddTable}
-            className="bg-red-600 hover:bg-red-700 gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Agregar Mesa
-          </Button>
         )}
 
         {/* Save Button - Only in edit mode */}
