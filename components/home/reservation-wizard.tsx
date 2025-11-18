@@ -124,12 +124,12 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="space-y-8 ">
       {/* Stepper */}
       {/* <Stepper steps={WIZARD_STEPS} currentStep={currentStep} /> */}
 
       {/* Step Content */}
-      <Card className="p-8">
+      <div className="">
         {currentStep === 1 && (
           <StepPartySize
             value={wizardData.guests}
@@ -181,7 +181,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
             guests={wizardData.guests}
           />
         )}
-      </Card>
+      </div>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between">

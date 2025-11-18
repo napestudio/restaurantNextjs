@@ -52,17 +52,15 @@ export function StepTimeSlot({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <div className="flex justify-center mb-4">
+        {/* <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
             <Clock className="w-8 h-8 text-red-600" />
           </div>
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          Elige tu horario preferido
-        </h2>
-        <p className="text-gray-600">
+        </div> */}
+        <h2 className="text-2xl font-bold text-gray-900">Elegí un turno</h2>
+        {/* <p className="text-gray-600">
           Selecciona el turno que mejor se ajuste a tus planes
-        </p>
+        </p> */}
       </div>
 
       {isLoading ? (
@@ -191,8 +189,7 @@ export function StepTimeSlot({
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm text-green-800">
             <strong>Total a pagar:</strong> ${selectedSlot.pricePerPerson} ×{" "}
-            {guests} personas = $
-            {selectedSlot.pricePerPerson * guests}
+            {guests} personas = ${selectedSlot.pricePerPerson * guests}
           </p>
         </div>
       )}

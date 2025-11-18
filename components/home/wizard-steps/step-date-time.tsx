@@ -29,18 +29,16 @@ export function StepDateTime({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <div className="flex justify-center mb-4">
+        {/* <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
             <Calendar className="w-8 h-8 text-red-600" />
           </div>
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          ¿Qué día te gustaría venir?
-        </h2>
+        </div> */}
+        <h2 className="text-2xl font-bold text-gray-900">Elegí una fecha</h2>
         <p className="text-gray-600">Selecciona la fecha de tu visita</p>
       </div>
 
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center pt-4 pb-12">
         <WeekDatePicker
           value={value}
           onChange={onChange}
@@ -48,7 +46,7 @@ export function StepDateTime({
         />
       </div>
 
-      {value && (
+      {/* {value && (
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Fecha seleccionada:{" "}
@@ -62,7 +60,7 @@ export function StepDateTime({
             </span>
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
