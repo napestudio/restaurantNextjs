@@ -8,6 +8,7 @@ import {
   updateFloorPlanBatch,
   deleteTable as deleteTableAction,
 } from "@/actions/Table";
+import { set } from "zod";
 
 interface UseFloorPlanActionsProps {
   tables: FloorTable[];
@@ -191,7 +192,8 @@ export function useFloorPlanActions({
   const saveFloorPlanChanges = useCallback(
     async (
       setIsSaving: (value: boolean) => void,
-      setHasUnsavedChangesLocal: (value: boolean) => void
+      setHasUnsavedChangesLocal: (value: boolean) => void,
+      setIsEditMode: (value: boolean) => void
     ) => {
       setIsSaving(true);
       try {
@@ -233,6 +235,7 @@ export function useFloorPlanActions({
         console.error("Error saving floor plan changes:", error);
       } finally {
         setIsSaving(false);
+        setIsEditMode(false);
       }
     },
     [tables, setDbTables]

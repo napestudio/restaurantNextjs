@@ -11,7 +11,7 @@ import { SHAPE_DEFAULTS } from "@/types/tables-client";
 const initialFormState: NewTableFormState = {
   number: "",
   name: "",
-  shape: "CIRCLE",
+  shape: "SQUARE",
   capacity: "2",
   isShared: false,
   sectorId: "",
@@ -22,7 +22,10 @@ export function useTableForm(branchId: string) {
     useState<NewTableFormState>(initialFormState);
 
   const updateField = useCallback(
-    <K extends keyof NewTableFormState>(key: K, value: NewTableFormState[K]) => {
+    <K extends keyof NewTableFormState>(
+      key: K,
+      value: NewTableFormState[K]
+    ) => {
       setFormState((prev) => ({ ...prev, [key]: value }));
     },
     []

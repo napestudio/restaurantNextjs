@@ -10,7 +10,7 @@ import { useFloorPlanState } from "@/hooks/use-floor-plan-state";
 import { useFloorPlanActions } from "@/hooks/use-floor-plan-actions";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
-import { FloorPlanToolbar } from "./floor-plan/floor-plan-toolbar";
+import { FloorPlanActions } from "./floor-plan/floor-plan-actions";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { SectorSelector, type Sector } from "./floor-plan/sector-selector";
 import { TableOrderSidebar } from "./table-order-sidebar";
@@ -28,7 +28,6 @@ interface FloorPlanPageProps {
   sectors?: Sector[];
   onAddSector?: () => void;
   onEditSector?: (sector: Sector) => void;
-  onAddTable?: () => void;
   onRefreshTables?: () => Promise<void>;
   onRefreshSingleTable?: (tableId: string) => Promise<void>;
 }
@@ -42,7 +41,6 @@ export default function FloorPlanHandler({
   sectors: externalSectors = [],
   onAddSector,
   onEditSector,
-  onAddTable,
   onRefreshTables,
   onRefreshSingleTable,
 }: FloorPlanPageProps) {
@@ -50,6 +48,10 @@ export default function FloorPlanHandler({
   const [zoom, setZoom] = useState(0.75);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [clickPosition, setClickPosition] = useState<{ x: number; y: number }>({
+    x: 50,
+    y: 50,
+  });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -61,7 +63,7 @@ export default function FloorPlanHandler({
 
   // Use external sectors and selectedSector
   const sectors = externalSectors;
-  const selectedSector = externalSelectedSector;
+  const selectedSector = externalSelectedSector ?? null;
 
   // Get canvas dimensions from selected sector or use defaults
   const { canvasWidth, canvasHeight } = useMemo(() => {
@@ -218,8 +220,8 @@ export default function FloorPlanHandler({
       name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
       sectorId: newTable.sectorId || undefined,
-      positionX: 50,
-      positionY: 50,
+      positionX: clickPosition.x,
+      positionY: clickPosition.y,
       width: defaults.width,
       height: defaults.height,
       rotation: 0,
@@ -233,8 +235,8 @@ export default function FloorPlanHandler({
       const newFloorTable = {
         id: result.data.id,
         number: result.data.number,
-        x: result.data.positionX ?? 50,
-        y: result.data.positionY ?? 50,
+        x: result.data.positionX ?? clickPosition.x,
+        y: result.data.positionY ?? clickPosition.y,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
@@ -252,8 +254,8 @@ export default function FloorPlanHandler({
         id: result.data.id,
         number: result.data.number,
         capacity: result.data.capacity,
-        positionX: result.data.positionX ?? 50,
-        positionY: result.data.positionY ?? 50,
+        positionX: result.data.positionX ?? clickPosition.x,
+        positionY: result.data.positionY ?? clickPosition.y,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
@@ -269,18 +271,18 @@ export default function FloorPlanHandler({
       setNewTable({
         number: "",
         name: "",
-        shape: "CIRCLE",
+        shape: "SQUARE",
         capacity: "2",
         isShared: false,
         sectorId: "",
       });
       setAddDialogOpen(false);
     }
-  }, [newTable, branchId, setTables, setDbTables]);
+  }, [newTable, branchId, setTables, setDbTables, clickPosition]);
 
   // Save handler - memoized
   const handleSave = useCallback(() => {
-    saveFloorPlanChanges(setIsSaving, setHasUnsavedChanges);
+    saveFloorPlanChanges(setIsSaving, setHasUnsavedChanges, setIsEditMode);
   }, [saveFloorPlanChanges]);
 
   // Zoom handlers - memoized
@@ -322,6 +324,12 @@ export default function FloorPlanHandler({
     setSelectedTableForOrder(null);
   }, []);
 
+  // Handle canvas click to add table
+  const handleCanvasClick = useCallback((x: number, y: number) => {
+    setClickPosition({ x, y });
+    setAddDialogOpen(true);
+  }, []);
+
   // Get additional table info for properties panel - memoized
   const selectedDbTable = useMemo(() => {
     return selectedTable
@@ -336,28 +344,28 @@ export default function FloorPlanHandler({
   }, [selectedDbTable?.sectorId, sectors]);
 
   return (
-    <div className="space-y-6">
-      <FloorPlanToolbar
-        onAddTable={() => setAddDialogOpen(true)}
-        onSave={handleSave}
-        onToggleEditMode={handleToggleEditMode}
-        hasUnsavedChanges={hasUnsavedChanges}
-        isSaving={isSaving}
-        isEditMode={isEditMode}
-      />
+    <div>
+      <div className="flex items-center justify-between gap-4 px-2 py-2 bg-neutral-50">
+        <SectorSelector
+          sectors={sectors}
+          selectedSector={selectedSector ?? null}
+          onSelectSector={(sectorId) => externalSetSelectedSector?.(sectorId)}
+          onAddSector={onAddSector}
+          onEditSector={onEditSector}
+        />
 
-      <SectorSelector
-        sectors={sectors}
-        selectedSector={selectedSector ?? null}
-        onSelectSector={(sectorId) => externalSetSelectedSector?.(sectorId)}
-        onAddSector={onAddSector}
-        onEditSector={onEditSector}
-        onAddTable={onAddTable}
-      />
+        <FloorPlanActions
+          onSave={handleSave}
+          onToggleEditMode={handleToggleEditMode}
+          hasUnsavedChanges={hasUnsavedChanges}
+          isSaving={isSaving}
+          isEditMode={isEditMode}
+        />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-0 shadow-md">
         {/* Floor Plan Canvas */}
-        <div className="lg:col-span-4 relative">
+        <div className="lg:col-span-4 relative max-h-svh">
           <FloorPlanCanvas
             tables={filteredTables}
             selectedTable={selectedTable}
@@ -367,7 +375,9 @@ export default function FloorPlanHandler({
             svgRef={svgRef}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
+            isEditMode={isEditMode}
             onTableMouseDown={handleTableMouseDown}
+            onCanvasClick={handleCanvasClick}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onToggleGrid={handleToggleGrid}
@@ -375,7 +385,7 @@ export default function FloorPlanHandler({
         </div>
 
         {/* Right Sidebar - Order Management or Properties Panel */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 relative">
           {selectedTableForOrder && !isEditMode ? (
             <TableOrderSidebar
               tableId={selectedTableForOrder}
