@@ -1,12 +1,10 @@
-import { useState, useCallback } from "react";
 import { createTable } from "@/actions/Table";
-import type { TableShapeType } from "@/types/table";
 import type {
   NewTableFormState,
   TableWithReservations,
-  INITIAL_TABLE_FORM,
 } from "@/types/tables-client";
 import { SHAPE_DEFAULTS } from "@/types/tables-client";
+import { useCallback, useState } from "react";
 
 const initialFormState: NewTableFormState = {
   number: "",

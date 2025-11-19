@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Edit3, Eye, Save } from "lucide-react";
+import { Edit3, Save } from "lucide-react";
 
 interface FloorPlanActionsProps {
   onSave: () => void;

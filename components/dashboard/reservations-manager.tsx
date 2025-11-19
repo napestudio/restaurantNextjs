@@ -1,24 +1,23 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import {
+  cancelReservation,
+  createReservation,
+  getReservations,
+  updateReservationStatus,
+} from "@/actions/Reservation";
+import type {
+  SerializedReservation,
+  TimeSlot,
+} from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
-import type {
-  TimeSlot,
-  SerializedReservation,
-} from "@/app/(admin)/dashboard/reservations/lib/reservations";
-import {
-  getReservations,
-  createReservation,
-  updateReservationStatus,
-  cancelReservation,
-} from "@/actions/Reservation";
-import { ReservationStatus } from "@/app/generated/prisma";
-import { ReservationStatsOverview } from "./reservation-stats-overview";
+import { useCallback, useState, useTransition } from "react";
+import { CancelReservationDialog } from "./cancel-reservation-dialog";
+import { CreateReservationDialog } from "./create-reservation-dialog";
 import { ReservationsTable } from "./reservations-table";
 import { ViewReservationDialog } from "./view-reservation-dialog";
-import { CreateReservationDialog } from "./create-reservation-dialog";
-import { CancelReservationDialog } from "./cancel-reservation-dialog";
 
 interface ReservationsManagerProps {
   initialReservations: SerializedReservation[];
@@ -32,7 +31,8 @@ export function ReservationsManager({
   branchId,
 }: ReservationsManagerProps) {
   const [reservations, setReservations] = useState(initialReservations);
-  const [filteredReservations, setFilteredReservations] = useState(initialReservations);
+  const [filteredReservations, setFilteredReservations] =
+    useState(initialReservations);
   const [isPending, startTransition] = useTransition();
   const [selectedReservation, setSelectedReservation] =
     useState<SerializedReservation | null>(null);
@@ -180,9 +180,9 @@ export function ReservationsManager({
         </Button>
       </div>
 
-      <div className="mb-8">
+      {/* <div className="mb-8">
         <ReservationStatsOverview reservations={filteredReservations} />
-      </div>
+      </div> */}
 
       <ReservationsTable
         reservations={reservations}
