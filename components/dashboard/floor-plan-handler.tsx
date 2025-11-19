@@ -214,14 +214,22 @@ export default function FloorPlanHandler({
 
     const defaults = shapeDefaults[newTable.shape];
 
+    // Calculate position to center table in grid cell
+    // clickPosition is top-left of grid cell, cell center is at +50
+    const GRID_SIZE = 100;
+    const cellCenterX = clickPosition.x + GRID_SIZE / 2;
+    const cellCenterY = clickPosition.y + GRID_SIZE / 2;
+    const tableX = cellCenterX - defaults.width / 2;
+    const tableY = cellCenterY - defaults.height / 2;
+
     const result = await createTable({
       branchId,
       number: Number.parseInt(newTable.number),
       name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
       sectorId: newTable.sectorId || undefined,
-      positionX: clickPosition.x,
-      positionY: clickPosition.y,
+      positionX: tableX,
+      positionY: tableY,
       width: defaults.width,
       height: defaults.height,
       rotation: 0,
@@ -235,8 +243,8 @@ export default function FloorPlanHandler({
       const newFloorTable = {
         id: result.data.id,
         number: result.data.number,
-        x: result.data.positionX ?? clickPosition.x,
-        y: result.data.positionY ?? clickPosition.y,
+        x: result.data.positionX ?? tableX,
+        y: result.data.positionY ?? tableY,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,
@@ -254,8 +262,8 @@ export default function FloorPlanHandler({
         id: result.data.id,
         number: result.data.number,
         capacity: result.data.capacity,
-        positionX: result.data.positionX ?? clickPosition.x,
-        positionY: result.data.positionY ?? clickPosition.y,
+        positionX: result.data.positionX ?? tableX,
+        positionY: result.data.positionY ?? tableY,
         width: result.data.width ?? defaults.width,
         height: result.data.height ?? defaults.height,
         rotation: result.data.rotation ?? 0,

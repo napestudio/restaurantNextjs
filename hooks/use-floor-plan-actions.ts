@@ -169,16 +169,30 @@ export function useFloorPlanActions({
       if (!table) return;
 
       const defaults = shapeDefaults[table.shape];
-      const multiplier = size === "big" ? 1.25 : 1;
+      // Big tables use full scale (1x), normal tables are smaller (0.75x)
+      const multiplier = size === "big" ? 1 : 0.75;
 
-      // Update local floor plan state with new size
+      const newWidth = defaults.width * multiplier;
+      const newHeight = defaults.height * multiplier;
+
+      // Calculate current center position
+      const centerX = table.x + table.width / 2;
+      const centerY = table.y + table.height / 2;
+
+      // Calculate new top-left position to keep the table centered
+      const newX = centerX - newWidth / 2;
+      const newY = centerY - newHeight / 2;
+
+      // Update local floor plan state with new size and recalculated position
       setTables((prevTables) =>
         prevTables.map((t) =>
           t.id === tableId
             ? {
                 ...t,
-                width: defaults.width * multiplier,
-                height: defaults.height * multiplier,
+                x: newX,
+                y: newY,
+                width: newWidth,
+                height: newHeight,
               }
             : t
         )

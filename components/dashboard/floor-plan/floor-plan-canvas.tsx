@@ -217,6 +217,22 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     [draggedTable, isEditMode]
   );
 
+  // Check if a grid cell contains any table (table's center is in the cell)
+  const isGridCellOccupied = (cellCenterX: number, cellCenterY: number): boolean => {
+    const GRID_SIZE = 100;
+    return tables.some((table) => {
+      // Calculate table's center
+      const tableCenterX = table.x + table.width / 2;
+      const tableCenterY = table.y + table.height / 2;
+
+      // Check if table center is in the same grid cell
+      const tableCellX = Math.floor(tableCenterX / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+      const tableCellY = Math.floor(tableCenterY / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+
+      return tableCellX === cellCenterX && tableCellY === cellCenterY;
+    });
+  };
+
   // Handle mouse move on SVG
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!isEditMode || draggedTable) {
@@ -235,6 +251,12 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     const GRID_SIZE = 100;
     const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+
+    // Don't show cursor if grid cell is occupied by a table
+    if (isGridCellOccupied(snappedX, snappedY)) {
+      setMousePos(null);
+      return;
+    }
 
     setMousePos({ x: snappedX, y: snappedY });
   };

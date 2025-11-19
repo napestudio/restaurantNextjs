@@ -88,7 +88,7 @@ export function useFloorPlanState({
     return tables.find((t) => t.id === selectedTable);
   }, [tables, selectedTable]);
 
-  // Handle table drag
+  // Handle table drag - snap center to grid cell center like a videogame
   const handleTableDrag = useCallback(
     (clientX: number, clientY: number, svgRect: DOMRect) => {
       if (!draggedTable) return;
@@ -104,9 +104,41 @@ export function useFloorPlanState({
           const rawX = x - dragOffset.x;
           const rawY = y - dragOffset.y;
 
-          // Snap to 100px grid (one cell at a time)
-          const snappedX = snapToGrid(rawX);
-          const snappedY = snapToGrid(rawY);
+          // Calculate table center position
+          const centerX = rawX + table.width / 2;
+          const centerY = rawY + table.height / 2;
+
+          // Snap center to grid cell center (50, 150, 250, ...)
+          const GRID_SIZE = 100;
+
+          // For tables that span multiple cells, snap to appropriate grid positions
+          // If table width is greater than grid size, snap center to grid line (0, 100, 200...)
+          // Otherwise snap to cell center (50, 150, 250...)
+          const tableSpansMultipleCellsX = table.width > GRID_SIZE;
+          const tableSpansMultipleCellsY = table.height > GRID_SIZE;
+
+          let snappedCenterX: number;
+          let snappedCenterY: number;
+
+          if (tableSpansMultipleCellsX) {
+            // Snap to grid lines for wide tables
+            snappedCenterX = Math.round(centerX / GRID_SIZE) * GRID_SIZE;
+          } else {
+            // Snap to cell center for narrow tables
+            snappedCenterX = Math.floor(centerX / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+          }
+
+          if (tableSpansMultipleCellsY) {
+            // Snap to grid lines for tall tables
+            snappedCenterY = Math.round(centerY / GRID_SIZE) * GRID_SIZE;
+          } else {
+            // Snap to cell center for short tables
+            snappedCenterY = Math.floor(centerY / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+          }
+
+          // Convert back to top-left position
+          const snappedX = snappedCenterX - table.width / 2;
+          const snappedY = snappedCenterY - table.height / 2;
 
           // Constrain to canvas bounds
           const constrainedX = constrainToBounds(

@@ -189,12 +189,14 @@ export function TablePropertiesForm({
         </Label>
         <Select
           value={
+            // Big tables use full scale (1x), normal tables use 0.75x
+            // Check if width is greater than 0.875x of default (midpoint between 0.75x and 1x)
             selectedTable.width >
             (selectedTable.shape === "WIDE"
-              ? 400
+              ? 350
               : selectedTable.shape === "RECTANGLE"
-              ? 200
-              : 100)
+              ? 175
+              : 87.5)
               ? "big"
               : "normal"
           }
