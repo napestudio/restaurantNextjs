@@ -20,7 +20,7 @@ export function PartySizePicker({
 }: PartySizePickerProps) {
   const [showCustomInput, setShowCustomInput] = useState(false);
 
-  const quickSizes = [1, 2, 3, 4, 5, 6];
+  const quickSizes = [1, 2, 3, 4];
 
   const handleQuickSelect = (size: number) => {
     setShowCustomInput(false);
@@ -34,7 +34,7 @@ export function PartySizePicker({
   const handleIncrement = () => {
     if (value < max) {
       onChange(value + 1);
-      if (value + 1 > 6) {
+      if (value + 1 > 4) {
         setShowCustomInput(true);
       }
     }
@@ -43,7 +43,7 @@ export function PartySizePicker({
   const handleDecrement = () => {
     if (value > min) {
       onChange(value - 1);
-      if (value - 1 <= 6) {
+      if (value - 1 <= 4) {
         setShowCustomInput(false);
       }
     }

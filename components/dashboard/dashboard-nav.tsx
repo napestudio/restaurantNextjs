@@ -3,6 +3,7 @@ import { getNavItems } from "@/lib/dashboard-nav";
 import { isUserAdmin } from "@/lib/permissions";
 import StarIcon from "../ui/star-icon";
 import DashBoardNavItems from "./dashboard-nav-items";
+import LogoutButton from "../logout-button";
 
 export async function DashboardNav() {
   const session = await auth();
@@ -27,7 +28,7 @@ export async function DashboardNav() {
             </div>
           </div>
           <DashBoardNavItems navItems={navItems} />
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <div className="flex-shrink-0">
               <span className="text-sm text-gray-700 relative flex items-center gap-1">
                 {hasAdminRole && (
@@ -38,6 +39,7 @@ export async function DashboardNav() {
                 {session.user.name || session.user.email}
               </span>
             </div>
+            <LogoutButton />
           </div>
         </div>
       </div>
