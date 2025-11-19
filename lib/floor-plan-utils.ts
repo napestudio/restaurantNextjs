@@ -35,12 +35,13 @@ export const reverseStatusMap: Record<
 
 /**
  * FloorTable interface - represents a table in the floor plan UI
+ * Position (x, y) represents the CENTER of the table, not top-left
  */
 export interface FloorTable {
   id: string;
   number: number;
-  x: number;
-  y: number;
+  x: number; // Center X coordinate
+  y: number; // Center Y coordinate
   width: number;
   height: number;
   rotation: number;
@@ -159,19 +160,26 @@ export function calculateTableStatus(
 
 /**
  * Transform database table to FloorTable format
+ * Database stores top-left position, FloorTable uses center position
  */
 export function transformTableToFloorTable(
   dbTable: TableWithReservations
 ): FloorTable {
   const { status, currentGuests } = calculateTableStatus(dbTable);
 
+  const width = dbTable.width ?? 80;
+  const height = dbTable.height ?? 80;
+  const topLeftX = dbTable.positionX ?? 100;
+  const topLeftY = dbTable.positionY ?? 100;
+
   return {
     id: dbTable.id,
     number: dbTable.number,
-    x: dbTable.positionX ?? 100,
-    y: dbTable.positionY ?? 100,
-    width: dbTable.width ?? 80,
-    height: dbTable.height ?? 80,
+    // Convert top-left to center
+    x: topLeftX + width / 2,
+    y: topLeftY + height / 2,
+    width,
+    height,
     rotation: dbTable.rotation ?? 0,
     shape: (dbTable.shape ?? "SQUARE") as TableShapeType,
     capacity: dbTable.capacity,

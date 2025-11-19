@@ -144,6 +144,7 @@ export default function FloorPlanHandler({
   }, [selectedTable]);
 
   // Handle table mouse down - memoized
+  // Note: table.x and table.y are CENTER coordinates
   const handleTableMouseDown = useCallback(
     (e: React.MouseEvent, tableId: string) => {
       e.stopPropagation();
@@ -163,6 +164,7 @@ export default function FloorPlanHandler({
         const y = (e.clientY - rect.top) / zoom;
 
         setDraggedTable(tableId);
+        // dragOffset is relative to center (table.x and table.y are center coords)
         setDragOffset({
           x: x - table.x,
           y: y - table.y,
@@ -207,6 +209,7 @@ export default function FloorPlanHandler({
   }, [draggedTable, handleTableDrag, setDraggedTable]);
 
   // Add table handler - memoized
+  // Note: FloorTable uses center coordinates, DB uses top-left
   const addTable = useCallback(async () => {
     if (!newTable.number) {
       return;
@@ -214,13 +217,14 @@ export default function FloorPlanHandler({
 
     const defaults = shapeDefaults[newTable.shape];
 
-    // Calculate position to center table in grid cell
-    // clickPosition is top-left of grid cell, cell center is at +50
+    // Calculate center position (clickPosition is top-left of grid cell)
     const GRID_SIZE = 100;
-    const cellCenterX = clickPosition.x + GRID_SIZE / 2;
-    const cellCenterY = clickPosition.y + GRID_SIZE / 2;
-    const tableX = cellCenterX - defaults.width / 2;
-    const tableY = cellCenterY - defaults.height / 2;
+    const centerX = clickPosition.x + GRID_SIZE / 2;
+    const centerY = clickPosition.y + GRID_SIZE / 2;
+
+    // Convert to top-left for database storage
+    const dbPositionX = centerX - defaults.width / 2;
+    const dbPositionY = centerY - defaults.height / 2;
 
     const result = await createTable({
       branchId,
@@ -228,8 +232,8 @@ export default function FloorPlanHandler({
       name: newTable.name || undefined,
       capacity: Number.parseInt(newTable.capacity),
       sectorId: newTable.sectorId || undefined,
-      positionX: tableX,
-      positionY: tableY,
+      positionX: dbPositionX,
+      positionY: dbPositionY,
       width: defaults.width,
       height: defaults.height,
       rotation: 0,
@@ -239,14 +243,20 @@ export default function FloorPlanHandler({
     });
 
     if (result.success && result.data) {
-      // Add the new table to local floor plan state
+      // Add the new table to local floor plan state (using center coordinates)
+      const width = result.data.width ?? defaults.width;
+      const height = result.data.height ?? defaults.height;
+      const dbX = result.data.positionX ?? dbPositionX;
+      const dbY = result.data.positionY ?? dbPositionY;
+
       const newFloorTable = {
         id: result.data.id,
         number: result.data.number,
-        x: result.data.positionX ?? tableX,
-        y: result.data.positionY ?? tableY,
-        width: result.data.width ?? defaults.width,
-        height: result.data.height ?? defaults.height,
+        // Convert DB top-left to center for FloorTable
+        x: dbX + width / 2,
+        y: dbY + height / 2,
+        width,
+        height,
         rotation: result.data.rotation ?? 0,
         shape: (result.data.shape ?? newTable.shape) as TableShapeType,
         capacity: result.data.capacity,
@@ -257,15 +267,15 @@ export default function FloorPlanHandler({
 
       setTables((prevTables) => [...prevTables, newFloorTable]);
 
-      // Also update parent state for simple view
+      // Also update parent state for simple view (DB format with top-left)
       const newDbTable: TableWithReservations = {
         id: result.data.id,
         number: result.data.number,
         capacity: result.data.capacity,
-        positionX: result.data.positionX ?? tableX,
-        positionY: result.data.positionY ?? tableY,
-        width: result.data.width ?? defaults.width,
-        height: result.data.height ?? defaults.height,
+        positionX: dbX,
+        positionY: dbY,
+        width,
+        height,
         rotation: result.data.rotation ?? 0,
         shape: result.data.shape ?? newTable.shape,
         status: null,
