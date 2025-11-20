@@ -166,9 +166,6 @@ export function ReservationsManager({
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Administración de Reservas
           </h1>
-          <p className="text-gray-600">
-            Administra las reservas desde este panel.
-          </p>
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}
