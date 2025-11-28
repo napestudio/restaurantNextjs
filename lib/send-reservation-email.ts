@@ -42,7 +42,7 @@ export async function sendReservationNotificationEmail(
       date: params.date.toISOString(),
       time: params.time,
       guests: params.guests,
-      branchName: params.branchName,
+      // branchName: params.branchName,
       timeSlotName: params.timeSlotName,
       exactTime: params.exactTime?.toISOString(),
       dietaryRestrictions: params.dietaryRestrictions,
