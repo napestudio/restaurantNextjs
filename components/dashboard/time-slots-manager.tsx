@@ -4,11 +4,16 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
-import { getTimeSlots, createTimeSlot, deleteTimeSlot } from "@/actions/TimeSlot";
+import {
+  getTimeSlots,
+  createTimeSlot,
+  deleteTimeSlot,
+} from "@/actions/TimeSlot";
 import { StatsOverview } from "./stats-overview";
 import { TimeSlotsTable } from "./time-slots-table";
 import { CreateTimeSlotDialog } from "./create-time-slot-dialog";
 import { DeleteTimeSlotDialog } from "./delete-time-slot-dialog";
+import LoadingToast from "./loading-toast";
 
 interface TimeSlotsManagerProps {
   initialTimeSlots: TimeSlot[];
@@ -100,16 +105,7 @@ export function TimeSlotsManager({
   return (
     <div className="space-y-6 relative">
       {/* Loading overlay during refetch */}
-      {isPending && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 text-red-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">
-              Actualizando datos...
-            </p>
-          </div>
-        </div>
-      )}
+      {isPending && <LoadingToast />}
 
       <div className="mb-8 flex items-center justify-between">
         <div>
