@@ -2,16 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
 import {
   getTimeSlots,
   createTimeSlot,
+  updateTimeSlot,
   deleteTimeSlot,
 } from "@/actions/TimeSlot";
 import { StatsOverview } from "./stats-overview";
 import { TimeSlotsTable } from "./time-slots-table";
 import { CreateTimeSlotDialog } from "./create-time-slot-dialog";
+import { EditTimeSlotDialog } from "./edit-time-slot-dialog";
 import { DeleteTimeSlotDialog } from "./delete-time-slot-dialog";
 import LoadingToast from "./loading-toast";
 
@@ -27,7 +29,9 @@ export function TimeSlotsManager({
   const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
   const [isPending, startTransition] = useTransition();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [slotToEdit, setSlotToEdit] = useState<TimeSlot | null>(null);
   const [slotToDelete, setSlotToDelete] = useState<{
     id: string;
     dbId?: string;
@@ -72,6 +76,51 @@ export function TimeSlotsManager({
       } else {
         // TODO: Show error toast/notification
         console.error("Failed to create time slot:", result.error);
+      }
+    });
+  };
+
+  const handleEditClick = (slotId: string) => {
+    // Find the slot to edit
+    const slot = timeSlots.find((s) => s.id === slotId);
+    if (slot) {
+      setSlotToEdit(slot);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleEditConfirm = async (
+    slotId: string,
+    updatedSlot: {
+      timeFrom: string;
+      timeTo: string;
+      days: string[];
+      price: string;
+      notes: string;
+      name?: string;
+      moreInfoUrl?: string;
+      tableIds: string[];
+    }
+  ) => {
+    startTransition(async () => {
+      const result = await updateTimeSlot(slotId, {
+        name: updatedSlot.name || "Unnamed Slot",
+        startTime: updatedSlot.timeFrom,
+        endTime: updatedSlot.timeTo,
+        daysOfWeek: updatedSlot.days,
+        pricePerPerson: updatedSlot.price ? parseFloat(updatedSlot.price) : 0,
+        notes: updatedSlot.notes,
+        moreInfoUrl: updatedSlot.moreInfoUrl,
+        tableIds: updatedSlot.tableIds,
+      });
+
+      if (result.success) {
+        setEditDialogOpen(false);
+        setSlotToEdit(null);
+        mutate();
+      } else {
+        // TODO: Show error toast/notification
+        console.error("Failed to update time slot:", result.error);
       }
     });
   };
@@ -124,15 +173,15 @@ export function TimeSlotsManager({
         </Button>
       </div>
 
-      <div className="mb-8">
-        <StatsOverview timeSlots={timeSlots} />
-      </div>
-
       <TimeSlotsTable
         timeSlots={timeSlots}
         onDelete={handleDeleteClick}
+        onEdit={handleEditClick}
         onCreateClick={() => setCreateDialogOpen(true)}
       />
+      {/* <div className="mb-8">
+        <StatsOverview timeSlots={timeSlots} />
+      </div> */}
 
       <CreateTimeSlotDialog
         open={createDialogOpen}
@@ -140,6 +189,15 @@ export function TimeSlotsManager({
         onCreate={handleCreate}
         isPending={isPending}
         branchId={branchId}
+      />
+
+      <EditTimeSlotDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onEdit={handleEditConfirm}
+        isPending={isPending}
+        branchId={branchId}
+        timeSlot={slotToEdit}
       />
 
       <DeleteTimeSlotDialog

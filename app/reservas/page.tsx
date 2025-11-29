@@ -11,7 +11,7 @@ export default function ReservationPage() {
   }
   return (
     <>
-      <div className="min-h-screen text-center place-content-center space-y-6 bg-neutral-800">
+      <div className="min-h-screen text-center place-content-center py-16 space-y-6 bg-neutral-800">
         <div className="max-w-[500px] mx-auto px-4 md:px-0 flex justify-center flex-col items-center gap-4">
           <Avatar />
           <h1 className="text-4xl text-white leading-none">Reservá tu mesa</h1>
@@ -21,7 +21,7 @@ export default function ReservationPage() {
           <div>
             <Link href="/" className="text-neutral-200 font-semibold">
               <ArrowLeft className="inline-block mr-2 h-4 w-4" />
-              Volver
+              Inicio
             </Link>
           </div>
         </div>
