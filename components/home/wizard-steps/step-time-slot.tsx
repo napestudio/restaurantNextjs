@@ -40,11 +40,11 @@ export function StepTimeSlot({
   isLoading,
 }: StepTimeSlotProps) {
   const formatTime = (date: Date): string => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const selectedSlot = availableSlots.find((s) => s.id === selectedSlotId);
@@ -85,7 +85,7 @@ export function StepTimeSlot({
               <Card
                 key={slot.id}
                 className={cn(
-                  "p-4 cursor-pointer transition-all duration-200 hover:shadow-md",
+                  "p-4 cursor-pointer text-left transition-all duration-200 hover:shadow-md",
                   {
                     "border-2 border-red-600 bg-red-50": isSelected,
                     "border-gray-200 hover:border-red-300": !isSelected,
@@ -155,7 +155,7 @@ export function StepTimeSlot({
                     )}
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-left">
                     {!isAvailable ? (
                       <span className="text-sm font-semibold text-red-600">
                         Completo
@@ -175,7 +175,7 @@ export function StepTimeSlot({
                         </p>
                       </div>
                     ) : (
-                      <span className="text-sm text-gray-500">Gratis</span>
+                      <span className="text-sm text-gray-500"></span>
                     )}
                   </div>
                 </div>
