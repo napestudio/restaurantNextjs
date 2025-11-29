@@ -21,12 +21,7 @@ interface StepCustomerInfoProps {
   guests: number;
 }
 
-export function StepCustomerInfo({
-  data,
-  onChange,
-  selectedSlotDetails,
-  guests,
-}: StepCustomerInfoProps) {
+export function StepCustomerInfo({ data, onChange }: StepCustomerInfoProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">

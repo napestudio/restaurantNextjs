@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
+  // url        = env("DATABASE_URL")
   extensions = [citext]
 }
 
@@ -366,8 +366,8 @@ model Menu {
   // Scoping
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId String
-  branch       Branch?    @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  branchId     String? // null = disponible para todas las sucursales
+  branch       Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId     String // Menus are branch-specific
 
   // Organization
   menuSections MenuSection[]

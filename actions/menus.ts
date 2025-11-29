@@ -29,6 +29,7 @@ export type SerializedMenuItem = Omit<MenuItem, "createdAt" | "updatedAt" | "cus
     description: string | null;
     imageUrl: string | null;
     categoryId: string | null;
+    basePrice?: number | null; // Price from ProductOnBranch for the menu's branch
   };
 };
 
@@ -52,6 +53,15 @@ export async function getMenus(restaurantId: string): Promise<SerializedMenu[]> 
                   description: true,
                   imageUrl: true,
                   categoryId: true,
+                  branches: {
+                    select: {
+                      branchId: true,
+                      prices: {
+                        where: { type: "DINE_IN" },
+                        select: { price: true },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -72,13 +82,28 @@ export async function getMenus(restaurantId: string): Promise<SerializedMenu[]> 
       ...section,
       createdAt: section.createdAt.toISOString(),
       updatedAt: section.updatedAt.toISOString(),
-      menuItems: section.menuItems.map((item) => ({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
-        customPrice: item.customPrice ? Number(item.customPrice) : null,
-        product: item.product,
-      })),
+      menuItems: section.menuItems.map((item) => {
+        // Get price from ProductOnBranch for this menu's branch
+        const branchProduct = item.product.branches.find(
+          (b) => b.branchId === menu.branchId
+        );
+        const basePrice = branchProduct?.prices[0]?.price;
+
+        return {
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+          updatedAt: item.updatedAt.toISOString(),
+          customPrice: item.customPrice ? Number(item.customPrice) : null,
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            description: item.product.description,
+            imageUrl: item.product.imageUrl,
+            categoryId: item.product.categoryId,
+            basePrice: basePrice ? Number(basePrice) : null,
+          },
+        };
+      }),
     })),
   }));
 }
@@ -103,6 +128,15 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
                   description: true,
                   imageUrl: true,
                   categoryId: true,
+                  branches: {
+                    select: {
+                      branchId: true,
+                      prices: {
+                        where: { type: "DINE_IN" },
+                        select: { price: true },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -124,13 +158,28 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
       ...section,
       createdAt: section.createdAt.toISOString(),
       updatedAt: section.updatedAt.toISOString(),
-      menuItems: section.menuItems.map((item) => ({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
-        customPrice: item.customPrice ? Number(item.customPrice) : null,
-        product: item.product,
-      })),
+      menuItems: section.menuItems.map((item) => {
+        // Get price from ProductOnBranch for this menu's branch
+        const branchProduct = item.product.branches.find(
+          (b) => b.branchId === menu.branchId
+        );
+        const basePrice = branchProduct?.prices[0]?.price;
+
+        return {
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+          updatedAt: item.updatedAt.toISOString(),
+          customPrice: item.customPrice ? Number(item.customPrice) : null,
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            description: item.product.description,
+            imageUrl: item.product.imageUrl,
+            categoryId: item.product.categoryId,
+            basePrice: basePrice ? Number(basePrice) : null,
+          },
+        };
+      }),
     })),
   };
 }
@@ -143,7 +192,7 @@ export async function createMenu(data: {
   name: string;
   slug: string;
   description?: string;
-  branchId?: string;
+  branchId: string; // Required - menus are branch-specific
   isActive?: boolean;
   availableFrom?: string; // ISO time string
   availableUntil?: string; // ISO time string
@@ -336,7 +385,14 @@ export async function addMenuItem(data: {
     });
 
     revalidatePath("/dashboard/menus");
-    return { success: true, menuItem };
+    // Serialize Decimal to number for Client Components
+    return {
+      success: true,
+      menuItem: {
+        ...menuItem,
+        customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
+      }
+    };
   } catch (error) {
     console.error("Error adding menu item:", error);
     return { success: false, error: "Failed to add menu item" };
@@ -367,7 +423,14 @@ export async function updateMenuItem(
     });
 
     revalidatePath("/dashboard/menus");
-    return { success: true, menuItem };
+    // Serialize Decimal to number for Client Components
+    return {
+      success: true,
+      menuItem: {
+        ...menuItem,
+        customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
+      }
+    };
   } catch (error) {
     console.error("Error updating menu item:", error);
     return { success: false, error: "Failed to update menu item" };
@@ -479,4 +542,103 @@ export async function getAvailableProducts(restaurantId: string): Promise<
     categoryId: product.categoryId,
     category: product.category,
   }));
+}
+
+/**
+ * Get a menu by slug with restaurant information
+ */
+export async function getMenuBySlug(slug: string): Promise<{
+  menu: SerializedMenu;
+  restaurant: {
+    name: string;
+    logoUrl: string | null;
+    description: string | null;
+  };
+} | null> {
+  const menu = await prisma.menu.findFirst({
+    where: {
+      slug: slug.toLowerCase(),
+      isActive: true,
+    },
+    include: {
+      restaurant: {
+        select: {
+          name: true,
+          logoUrl: true,
+          description: true,
+        },
+      },
+      menuSections: {
+        orderBy: { order: "asc" },
+        include: {
+          menuItems: {
+            orderBy: { order: "asc" },
+            where: {
+              isAvailable: true,
+            },
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  imageUrl: true,
+                  categoryId: true,
+                  branches: {
+                    select: {
+                      branchId: true,
+                      prices: {
+                        where: { type: "DINE_IN" },
+                        select: { price: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!menu) return null;
+
+  return {
+    menu: {
+      ...menu,
+      createdAt: menu.createdAt.toISOString(),
+      updatedAt: menu.updatedAt.toISOString(),
+      availableFrom: menu.availableFrom?.toISOString() ?? null,
+      availableUntil: menu.availableUntil?.toISOString() ?? null,
+      menuSections: menu.menuSections.map((section) => ({
+        ...section,
+        createdAt: section.createdAt.toISOString(),
+        updatedAt: section.updatedAt.toISOString(),
+        menuItems: section.menuItems.map((item) => {
+          // Get price from ProductOnBranch for this menu's branch
+          const branchProduct = item.product.branches.find(
+            (b) => b.branchId === menu.branchId
+          );
+          const basePrice = branchProduct?.prices[0]?.price;
+
+          return {
+            ...item,
+            createdAt: item.createdAt.toISOString(),
+            updatedAt: item.updatedAt.toISOString(),
+            customPrice: item.customPrice ? Number(item.customPrice) : null,
+            product: {
+              id: item.product.id,
+              name: item.product.name,
+              description: item.product.description,
+              imageUrl: item.product.imageUrl,
+              categoryId: item.product.categoryId,
+              basePrice: basePrice ? Number(basePrice) : null,
+            },
+          };
+        }),
+      })),
+    },
+    restaurant: menu.restaurant,
+  };
 }
