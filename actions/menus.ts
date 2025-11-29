@@ -192,20 +192,25 @@ export async function createMenu(data: {
   name: string;
   slug: string;
   description?: string;
-  branchId: string; // Required - menus are branch-specific
+  branchId?: string; // Optional - will use BRANCH_ID from env if not provided
   isActive?: boolean;
   availableFrom?: string; // ISO time string
   availableUntil?: string; // ISO time string
   daysOfWeek?: string[];
 }) {
   try {
+    const branchId = data.branchId || process.env.BRANCH_ID;
+    if (!branchId) {
+      return { success: false, error: "Branch ID is required" };
+    }
+
     const menu = await prisma.menu.create({
       data: {
         restaurantId: data.restaurantId,
         name: data.name,
         slug: data.slug.toLowerCase(),
         description: data.description,
-        branchId: data.branchId,
+        branchId,
         isActive: data.isActive ?? true,
         availableFrom: data.availableFrom ? new Date(`1970-01-01T${data.availableFrom}`) : null,
         availableUntil: data.availableUntil ? new Date(`1970-01-01T${data.availableUntil}`) : null,
