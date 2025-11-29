@@ -2,7 +2,6 @@ import Avatar from "@/components/avatar";
 import { ReservationWizard } from "@/components/home/reservation-wizard";
 import { BRANCH_ID } from "@/lib/constants";
 import { ArrowLeft } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function ReservationPage() {

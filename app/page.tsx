@@ -1,5 +1,4 @@
 import Avatar from "@/components/avatar";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
@@ -15,12 +14,12 @@ export default function Home() {
           >
             Reservas
           </Link>
-          <a
-            href="#"
-            className="bg-black rounded-md py-2 text-xl text-center font-bold uppercase w-full"
+          <Link
+            href="/carta/menu-principal"
+            className="bg-black hover:bg-purple-900  transition-colors rounded-md py-2 text-xl text-center font-bold uppercase w-full"
           >
             Carta
-          </a>
+          </Link>
           <a
             href="#"
             className="bg-black rounded-md py-2 text-xl text-center font-bold uppercase w-full"

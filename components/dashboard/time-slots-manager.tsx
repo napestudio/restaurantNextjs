@@ -1,21 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import {
+  createTimeSlot,
+  deleteTimeSlot,
+  getTimeSlots,
+  updateTimeSlot,
+} from "@/actions/TimeSlot";
+import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
-import {
-  getTimeSlots,
-  createTimeSlot,
-  updateTimeSlot,
-  deleteTimeSlot,
-} from "@/actions/TimeSlot";
-import { StatsOverview } from "./stats-overview";
-import { TimeSlotsTable } from "./time-slots-table";
+import { useState, useTransition } from "react";
 import { CreateTimeSlotDialog } from "./create-time-slot-dialog";
-import { EditTimeSlotDialog } from "./edit-time-slot-dialog";
 import { DeleteTimeSlotDialog } from "./delete-time-slot-dialog";
+import { EditTimeSlotDialog } from "./edit-time-slot-dialog";
 import LoadingToast from "./loading-toast";
+import { TimeSlotsTable } from "./time-slots-table";
 
 interface TimeSlotsManagerProps {
   initialTimeSlots: TimeSlot[];

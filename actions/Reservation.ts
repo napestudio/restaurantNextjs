@@ -164,7 +164,7 @@ export async function createReservation(data: {
     if (data.createdBy === "WEB" && finalReservation) {
       try {
         const assignedTableNames =
-          finalReservation.tables?.map((rt) => rt.table.name) || [];
+          finalReservation.tables?.map((rt) => rt.table.name).filter((name): name is string => name !== null) || [];
 
         await sendReservationNotificationEmail({
           customerName: finalReservation.customerName,
