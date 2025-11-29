@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Plus, Trash2, Calendar, Users, Tag } from "lucide-react";
+import { Clock, Plus, Trash2, Calendar, Users, Tag, Pencil } from "lucide-react";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
 import {
   formatTime,
@@ -19,12 +19,14 @@ import {
 interface TimeSlotsTableProps {
   timeSlots: TimeSlot[];
   onDelete: (slotId: string) => void;
+  onEdit: (slotId: string) => void;
   onCreateClick: () => void;
 }
 
 export function TimeSlotsTable({
   timeSlots,
   onDelete,
+  onEdit,
   onCreateClick,
 }: TimeSlotsTableProps) {
   if (timeSlots.length === 0) {
@@ -105,13 +107,22 @@ export function TimeSlotsTable({
                     )}
                   </div>
 
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => onDelete(slot.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onEdit(slot.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => onDelete(slot.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

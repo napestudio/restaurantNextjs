@@ -18,19 +18,17 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="max-w-md w-full space-y-8">
+    <div className="w-full">
       <div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Ingresar
-        </h2>
+        <h2 className="text-center text-3xl font-extrabold">Ingresar</h2>
       </div>
 
-      <form action={handleCredentialsSubmit} className="mt-8 space-y-6">
+      <form action={handleCredentialsSubmit} className="space-y-6">
         <div className="rounded-md shadow-sm space-y-4">
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium mb-1"
             >
               Usuario
             </label>
@@ -40,14 +38,14 @@ export default function LoginForm() {
               type="text"
               autoComplete="username"
               required
-              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 bg-white placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Usuario"
             />
           </div>
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium mb-1"
             >
               Password
             </label>
@@ -57,7 +55,7 @@ export default function LoginForm() {
               type="password"
               autoComplete="current-password"
               required
-              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 bg-white placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               placeholder="Password"
             />
           </div>

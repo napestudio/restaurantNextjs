@@ -18,6 +18,7 @@ import { CancelReservationDialog } from "./cancel-reservation-dialog";
 import { CreateReservationDialog } from "./create-reservation-dialog";
 import { ReservationsTable } from "./reservations-table";
 import { ViewReservationDialog } from "./view-reservation-dialog";
+import LoadingToast from "./loading-toast";
 
 interface ReservationsManagerProps {
   initialReservations: SerializedReservation[];
@@ -150,25 +151,13 @@ export function ReservationsManager({
   return (
     <div className="space-y-6 relative">
       {/* Loading overlay during refetch */}
-      {isPending && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 text-red-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">
-              Actualizando datos...
-            </p>
-          </div>
-        </div>
-      )}
+      {isPending && <LoadingToast />}
 
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Administración de Reservas
           </h1>
-          <p className="text-gray-600">
-            Administra las reservas desde este panel.
-          </p>
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}

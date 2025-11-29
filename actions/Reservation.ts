@@ -8,6 +8,7 @@ import {
   setTablesReserved,
   updateTableStatusForReservation,
 } from "./Table";
+import { sendReservationNotificationEmail } from "@/lib/send-reservation-email";
 
 /**
  * Helper function to serialize reservation data for client components
@@ -158,6 +159,38 @@ export async function createReservation(data: {
         },
       },
     });
+
+    // Send email notification (only for web reservations)
+    if (data.createdBy === "WEB" && finalReservation) {
+      try {
+        const assignedTableNames =
+          finalReservation.tables?.map((rt) => rt.table.name) || [];
+
+        await sendReservationNotificationEmail({
+          customerName: finalReservation.customerName,
+          customerEmail: finalReservation.customerEmail,
+          customerPhone: finalReservation.customerPhone || undefined,
+          date: finalReservation.date,
+          time: data.time,
+          guests: finalReservation.people,
+          branchName: finalReservation.branch.name,
+          timeSlotName: finalReservation.timeSlot?.name,
+          exactTime: finalReservation.exactTime || undefined,
+          dietaryRestrictions: finalReservation.dietaryRestrictions || undefined,
+          accessibilityNeeds: finalReservation.accessibilityNeeds || undefined,
+          notes: finalReservation.notes || undefined,
+          status: finalStatus,
+          autoAssigned: finalStatus === ReservationStatus.CONFIRMED,
+          assignedTables: assignedTableNames,
+        });
+        console.log(
+          `📧 Email notification sent for reservation ${reservation.id}`
+        );
+      } catch (emailError) {
+        // Log the error but don't fail the reservation
+        console.error("Failed to send email notification:", emailError);
+      }
+    }
 
     revalidatePath("/dashboard/reservations");
 

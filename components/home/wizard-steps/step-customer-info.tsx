@@ -60,7 +60,7 @@ export function StepCustomerInfo({
       )} */}
 
       {/* Form Fields */}
-      <div className="space-y-4 max-h-[40svh] overflow-y-scroll">
+      <div className="space-y-4 overflow-y-scroll">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="name">

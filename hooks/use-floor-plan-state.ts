@@ -31,6 +31,7 @@ export function useFloorPlanState({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Sync floor plan tables when dbTables change (e.g., new reservations)
+  // Note: DB stores top-left, FloorTable uses center coordinates
   useEffect(() => {
     setTables((prevTables) => {
       return dbTables.map((dbTable) => {
@@ -50,14 +51,20 @@ export function useFloorPlanState({
           };
         }
 
-        // New table - use transform logic
+        // New table - convert DB top-left to center coordinates
+        const width = dbTable.width ?? 80;
+        const height = dbTable.height ?? 80;
+        const topLeftX = dbTable.positionX ?? 100;
+        const topLeftY = dbTable.positionY ?? 100;
+
         return {
           id: dbTable.id,
           number: dbTable.number,
-          x: dbTable.positionX ?? 100,
-          y: dbTable.positionY ?? 100,
-          width: dbTable.width ?? 80,
-          height: dbTable.height ?? 80,
+          // Convert to center coordinates
+          x: topLeftX + width / 2,
+          y: topLeftY + height / 2,
+          width,
+          height,
           rotation: dbTable.rotation ?? 0,
           shape: (dbTable.shape ?? "SQUARE") as any,
           capacity: dbTable.capacity,
@@ -89,6 +96,7 @@ export function useFloorPlanState({
   }, [tables, selectedTable]);
 
   // Handle table drag - snap center to grid cell center like a videogame
+  // Note: table.x and table.y are CENTER coordinates
   const handleTableDrag = useCallback(
     (clientX: number, clientY: number, svgRect: DOMRect) => {
       if (!draggedTable) return;
@@ -100,13 +108,9 @@ export function useFloorPlanState({
         prevTables.map((table) => {
           if (table.id !== draggedTable) return table;
 
-          // Calculate raw top-left position
-          const rawX = x - dragOffset.x;
-          const rawY = y - dragOffset.y;
-
-          // Calculate table center position
-          const centerX = rawX + table.width / 2;
-          const centerY = rawY + table.height / 2;
+          // Calculate raw center position (dragOffset is relative to center now)
+          const rawCenterX = x - dragOffset.x;
+          const rawCenterY = y - dragOffset.y;
 
           // Snap center to grid cell center (50, 150, 250, ...)
           const GRID_SIZE = 100;
@@ -122,35 +126,39 @@ export function useFloorPlanState({
 
           if (tableSpansMultipleCellsX) {
             // Snap to grid lines for wide tables
-            snappedCenterX = Math.round(centerX / GRID_SIZE) * GRID_SIZE;
+            snappedCenterX = Math.round(rawCenterX / GRID_SIZE) * GRID_SIZE;
           } else {
             // Snap to cell center for narrow tables
-            snappedCenterX = Math.floor(centerX / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+            snappedCenterX = Math.floor(rawCenterX / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
           }
 
           if (tableSpansMultipleCellsY) {
             // Snap to grid lines for tall tables
-            snappedCenterY = Math.round(centerY / GRID_SIZE) * GRID_SIZE;
+            snappedCenterY = Math.round(rawCenterY / GRID_SIZE) * GRID_SIZE;
           } else {
             // Snap to cell center for short tables
-            snappedCenterY = Math.floor(centerY / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+            snappedCenterY = Math.floor(rawCenterY / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
           }
 
-          // Convert back to top-left position
-          const snappedX = snappedCenterX - table.width / 2;
-          const snappedY = snappedCenterY - table.height / 2;
+          // Calculate bounds - ensure table stays on valid grid positions
+          // For tables snapping to cell centers (50, 150, 250...), min is 50 and max depends on canvas
+          // For tables snapping to grid lines (0, 100, 200...), min is 0 or 100 depending on table size
+          const minX = tableSpansMultipleCellsX ? GRID_SIZE : GRID_SIZE / 2;
+          const minY = tableSpansMultipleCellsY ? GRID_SIZE : GRID_SIZE / 2;
 
-          // Constrain to canvas bounds
-          const constrainedX = constrainToBounds(
-            snappedX,
-            0,
-            canvasWidth - table.width
-          );
-          const constrainedY = constrainToBounds(
-            snappedY,
-            0,
-            canvasHeight - table.height
-          );
+          // Calculate max position that keeps table in bounds AND on grid
+          const maxCellsX = Math.floor((canvasWidth - table.width / 2) / GRID_SIZE);
+          const maxCellsY = Math.floor((canvasHeight - table.height / 2) / GRID_SIZE);
+          const maxX = tableSpansMultipleCellsX
+            ? maxCellsX * GRID_SIZE
+            : maxCellsX * GRID_SIZE + GRID_SIZE / 2;
+          const maxY = tableSpansMultipleCellsY
+            ? maxCellsY * GRID_SIZE
+            : maxCellsY * GRID_SIZE + GRID_SIZE / 2;
+
+          // Constrain to valid grid positions
+          const constrainedX = constrainToBounds(snappedCenterX, minX, maxX);
+          const constrainedY = constrainToBounds(snappedCenterY, minY, maxY);
 
           return {
             ...table,

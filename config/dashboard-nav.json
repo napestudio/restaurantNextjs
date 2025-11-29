@@ -1,11 +1,6 @@
 {
   "items": [
     {
-      "label": "Home",
-      "href": "/dashboard",
-      "adminOnly": false
-    },
-    {
       "label": "Mesas",
       "href": "/dashboard/tables",
       "adminOnly": true

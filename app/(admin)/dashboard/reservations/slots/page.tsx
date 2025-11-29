@@ -12,11 +12,8 @@ export default async function TimeSlotsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="px-4 sm:px-6 lg:px-8 py-8">
-        <TimeSlotsManager
-          initialTimeSlots={timeSlots}
-          branchId={branchId}
-        />
+      <main className="px-4 sm:px-6 lg:px-8 py-16">
+        <TimeSlotsManager initialTimeSlots={timeSlots} branchId={branchId} />
       </main>
     </div>
   );

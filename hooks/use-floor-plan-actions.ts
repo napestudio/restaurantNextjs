@@ -175,22 +175,13 @@ export function useFloorPlanActions({
       const newWidth = defaults.width * multiplier;
       const newHeight = defaults.height * multiplier;
 
-      // Calculate current center position
-      const centerX = table.x + table.width / 2;
-      const centerY = table.y + table.height / 2;
-
-      // Calculate new top-left position to keep the table centered
-      const newX = centerX - newWidth / 2;
-      const newY = centerY - newHeight / 2;
-
-      // Update local floor plan state with new size and recalculated position
+      // table.x and table.y are already the center, so they stay the same
+      // Just update width and height
       setTables((prevTables) =>
         prevTables.map((t) =>
           t.id === tableId
             ? {
                 ...t,
-                x: newX,
-                y: newY,
                 width: newWidth,
                 height: newHeight,
               }
@@ -212,10 +203,11 @@ export function useFloorPlanActions({
       setIsSaving(true);
       try {
         // Prepare batch update data
+        // Convert center coordinates to top-left for database
         const updates = tables.map((table) => ({
           id: table.id,
-          positionX: table.x,
-          positionY: table.y,
+          positionX: table.x - table.width / 2,
+          positionY: table.y - table.height / 2,
           width: table.width,
           height: table.height,
           rotation: table.rotation,
@@ -225,15 +217,15 @@ export function useFloorPlanActions({
         // Batch update all tables
         await updateFloorPlanBatch(updates);
 
-        // Update parent state for simple view
+        // Update parent state for simple view (DB format with top-left)
         setDbTables((prevTables) =>
           prevTables.map((table) => {
             const updatedTable = tables.find((t) => t.id === table.id);
             if (updatedTable) {
               return {
                 ...table,
-                positionX: updatedTable.x,
-                positionY: updatedTable.y,
+                positionX: updatedTable.x - updatedTable.width / 2,
+                positionY: updatedTable.y - updatedTable.height / 2,
                 width: updatedTable.width,
                 height: updatedTable.height,
                 rotation: updatedTable.rotation,

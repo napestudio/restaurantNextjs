@@ -20,11 +20,7 @@ export function formatTime(time: string | Date): string {
     timeString = time;
   }
 
-  const [hours, minutes] = timeString.split(":");
-  const hour = Number.parseInt(hours);
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:${minutes} ${ampm}`;
+  return timeString;
 }
 
 /**

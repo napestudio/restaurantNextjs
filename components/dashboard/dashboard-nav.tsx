@@ -19,7 +19,7 @@ export async function DashboardNav() {
   return (
     <nav className="bg-white shadow-sm border-b fixed w-full z-10">
       <div className="mx-auto px-4 sm:px-4 lg:px-4">
-        <div className="flex justify-between py-2">
+        <div className="flex items-center justify-between flex-wrap py-2">
           <div className="flex ">
             <div className="flex-shrink-0 flex items-center">
               <h1 className="text-xl font-bold text-gray-900">

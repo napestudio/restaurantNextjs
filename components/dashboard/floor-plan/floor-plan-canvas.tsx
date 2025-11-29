@@ -38,6 +38,7 @@ const statusStrokeColors = {
 const CANVAS_CONTAINER_HEIGHT = 600; // Height of the scrollable container
 
 // Memoized Table Shape Component
+// Note: table.x and table.y are CENTER coordinates
 const TableShape = memo(function TableShape({
   table,
   isSelected,
@@ -45,8 +46,12 @@ const TableShape = memo(function TableShape({
   table: FloorTable;
   isSelected: boolean;
 }) {
-  const centerX = table.x + table.width / 2;
-  const centerY = table.y + table.height / 2;
+  // table.x and table.y are already the center
+  const centerX = table.x;
+  const centerY = table.y;
+  // Calculate top-left for rect elements
+  const topLeftX = table.x - table.width / 2;
+  const topLeftY = table.y - table.height / 2;
 
   return (
     <g transform={`rotate(${table.rotation} ${centerX} ${centerY})`}>
@@ -65,8 +70,8 @@ const TableShape = memo(function TableShape({
 
       {table.shape === "SQUARE" && (
         <rect
-          x={table.x}
-          y={table.y}
+          x={topLeftX}
+          y={topLeftY}
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
@@ -79,8 +84,8 @@ const TableShape = memo(function TableShape({
 
       {table.shape === "RECTANGLE" && (
         <rect
-          x={table.x}
-          y={table.y}
+          x={topLeftX}
+          y={topLeftY}
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
@@ -93,8 +98,8 @@ const TableShape = memo(function TableShape({
 
       {table.shape === "WIDE" && (
         <rect
-          x={table.x}
-          y={table.y}
+          x={topLeftX}
+          y={topLeftY}
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
@@ -156,24 +161,24 @@ const TableShape = memo(function TableShape({
       {table.isShared && (
         <>
           <circle
-            cx={table.x + table.width - 15}
-            cy={table.y + 15}
+            cx={topLeftX + table.width - 15}
+            cy={topLeftY + 15}
             r="10"
             fill="#fff"
             opacity={0.9}
             style={{ pointerEvents: "none" }}
           />
           <text
-            x={table.x + table.width - 15}
-            y={table.y + 19}
+            x={topLeftX + table.width - 15}
+            y={topLeftY + 19}
             textAnchor="middle"
             fill="#000"
             fontSize="14"
             fontWeight="bold"
             style={{ pointerEvents: "none", userSelect: "none" }}
             transform={`rotate(${-table.rotation} ${
-              table.x + table.width - 15
-            } ${table.y + 15})`}
+              topLeftX + table.width - 15
+            } ${topLeftY + 15})`}
           >
             C
           </text>
@@ -217,19 +222,33 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     [draggedTable, isEditMode]
   );
 
-  // Check if a grid cell contains any table (table's center is in the cell)
+  // Check if a grid cell is occupied by any table
+  // Note: table.x and table.y are CENTER coordinates
   const isGridCellOccupied = (cellCenterX: number, cellCenterY: number): boolean => {
     const GRID_SIZE = 100;
     return tables.some((table) => {
-      // Calculate table's center
-      const tableCenterX = table.x + table.width / 2;
-      const tableCenterY = table.y + table.height / 2;
+      // table.x and table.y are already center coordinates
+      const tableCenterX = table.x;
+      const tableCenterY = table.y;
 
-      // Check if table center is in the same grid cell
-      const tableCellX = Math.floor(tableCenterX / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
-      const tableCellY = Math.floor(tableCenterY / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+      // Calculate the table's bounding box in grid cells
+      const tableLeft = tableCenterX - table.width / 2;
+      const tableRight = tableCenterX + table.width / 2;
+      const tableTop = tableCenterY - table.height / 2;
+      const tableBottom = tableCenterY + table.height / 2;
 
-      return tableCellX === cellCenterX && tableCellY === cellCenterY;
+      // Check if this cell's center falls within the table's bounds
+      // Cell extends from (cellCenterX - 50) to (cellCenterX + 50)
+      const cellLeft = cellCenterX - GRID_SIZE / 2;
+      const cellRight = cellCenterX + GRID_SIZE / 2;
+      const cellTop = cellCenterY - GRID_SIZE / 2;
+      const cellBottom = cellCenterY + GRID_SIZE / 2;
+
+      // Check for overlap between table and cell
+      const overlapsX = tableLeft < cellRight && tableRight > cellLeft;
+      const overlapsY = tableTop < cellBottom && tableBottom > cellTop;
+
+      return overlapsX && overlapsY;
     });
   };
 
