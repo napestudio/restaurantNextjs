@@ -121,20 +121,30 @@ export async function createReservation(data: {
             })),
           });
 
-          // Update reservation status to CONFIRMED since tables are assigned
-          await prisma.reservation.update({
-            where: { id: reservation.id },
-            data: { status: ReservationStatus.CONFIRMED },
-          });
+          // Check if this is a paid reservation (pricePerPerson > 0)
+          const isPaidReservation = reservation.timeSlot && (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
 
-          // Automatically set table status to RESERVED
-          await setTablesReserved(assignmentResult.data.tableIds);
+          // Only confirm reservation if it's not a paid reservation
+          // Paid reservations must remain PENDING until payment is coordinated
+          if (!isPaidReservation) {
+            await prisma.reservation.update({
+              where: { id: reservation.id },
+              data: { status: ReservationStatus.CONFIRMED },
+            });
 
-          finalStatus = ReservationStatus.CONFIRMED;
+            // Automatically set table status to RESERVED
+            await setTablesReserved(assignmentResult.data.tableIds);
 
-          console.log(
-            `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id}`
-          );
+            finalStatus = ReservationStatus.CONFIRMED;
+
+            console.log(
+              `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} and CONFIRMED`
+            );
+          } else {
+            console.log(
+              `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} but keeping as PENDING (paid reservation)`
+            );
+          }
         } catch (assignError) {
           console.error("Error assigning tables:", assignError);
           // Keep as PENDING if assignment fails
@@ -182,6 +192,7 @@ export async function createReservation(data: {
           status: finalStatus,
           autoAssigned: finalStatus === ReservationStatus.CONFIRMED,
           assignedTables: assignedTableNames,
+          pricePerPerson: finalReservation.timeSlot?.pricePerPerson?.toNumber() || 0,
         });
         console.log(
           `📧 Email notification sent for reservation ${reservation.id}`

@@ -19,6 +19,7 @@ interface SendReservationEmailParams {
   status: string;
   autoAssigned: boolean;
   assignedTables?: string[];
+  pricePerPerson?: number;
 }
 
 export async function sendReservationNotificationEmail(
@@ -51,6 +52,7 @@ export async function sendReservationNotificationEmail(
       status: params.status,
       autoAssigned: params.autoAssigned,
       assignedTables: params.assignedTables,
+      pricePerPerson: params.pricePerPerson,
     });
 
     // Format the date for the subject
