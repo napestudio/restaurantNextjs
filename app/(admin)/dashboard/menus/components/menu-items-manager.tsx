@@ -243,10 +243,10 @@ export function MenuItemsManager({
         variant="outline"
         size="sm"
         onClick={() => setIsAddDialogOpen(true)}
-        className="w-full"
+        className="w-full border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800 hover:border-green-700"
       >
         <Plus className="mr-2 h-4 w-4" />
-        Agregar Producto
+        Agregar Producto a esta Sección
       </Button>
 
       {/* Add Product Dialog */}

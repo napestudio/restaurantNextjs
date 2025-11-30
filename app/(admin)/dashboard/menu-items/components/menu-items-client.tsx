@@ -11,6 +11,7 @@ import type {
   VolumeUnit,
   PriceType,
 } from "@/app/generated/prisma";
+import LoadingToast from "@/components/dashboard/loading-toast";
 
 // Serialized types for client components (Decimal -> number, Date -> string)
 type SerializedProductPrice = {
@@ -126,16 +127,7 @@ export function MenuItemsClient({
   return (
     <div className="space-y-6 relative">
       {/* Loading overlay durante refetch */}
-      {isPending && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">
-              Actualizando datos...
-            </p>
-          </div>
-        </div>
-      )}
+      {isPending && <LoadingToast />}
 
       {/* Barra de herramientas */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">

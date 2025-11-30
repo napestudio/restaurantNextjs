@@ -35,12 +35,13 @@ export const reverseStatusMap: Record<
 
 /**
  * FloorTable interface - represents a table in the floor plan UI
+ * Position (x, y) represents the CENTER of the table, not top-left
  */
 export interface FloorTable {
   id: string;
   number: number;
-  x: number;
-  y: number;
+  x: number; // Center X coordinate
+  y: number; // Center Y coordinate
   width: number;
   height: number;
   rotation: number;
@@ -81,10 +82,33 @@ export interface TableWithReservations {
       } | null;
     };
   }>;
+  orders?: Array<{
+    id: string;
+    partySize: number | null;
+    status: string;
+  }>;
 }
 
 /**
- * Calculate table status based on reservations and manual status
+ * Check if the current time falls within a reservation's time slot
+ */
+function isWithinTimeSlot(
+  timeSlot: { startTime: string; endTime: string } | null,
+  now: Date = new Date()
+): boolean {
+  if (!timeSlot) {
+    // If no time slot is assigned, treat as all-day reservation
+    return true;
+  }
+
+  const startTime = new Date(timeSlot.startTime);
+  const endTime = new Date(timeSlot.endTime);
+
+  return now >= startTime && now <= endTime;
+}
+
+/**
+ * Calculate table status based on reservations, orders, and manual status
  */
 export function calculateTableStatus(
   dbTable: TableWithReservations
@@ -92,7 +116,16 @@ export function calculateTableStatus(
   let status: TableStatus = "empty";
   let currentGuests = 0;
 
-  if (dbTable.status) {
+  // First, check if there are active orders (highest priority for current guests)
+  if (dbTable.orders && dbTable.orders.length > 0) {
+    // Sum up party sizes from all active orders (for shared tables)
+    currentGuests = dbTable.orders.reduce(
+      (sum, order) => sum + (order.partySize || 0),
+      0
+    );
+    // If there are active orders, table is occupied
+    status = "occupied";
+  } else if (dbTable.status) {
     // Use manual status from database
     status = statusMap[dbTable.status] || "empty";
   } else if (dbTable.reservations.length > 0) {
@@ -107,15 +140,18 @@ export function calculateTableStatus(
       reservationDate.getMonth() === today.getMonth() &&
       reservationDate.getFullYear() === today.getFullYear();
 
-    if (isToday) {
+    if (isToday && isWithinTimeSlot(reservation.timeSlot)) {
+      // Only show as reserved/occupied if current time is within the time slot
       status = reservation.status === "CONFIRMED" ? "occupied" : "reserved";
-    } else {
+    } else if (!isToday) {
+      // Future reservations show as reserved
       status = "reserved";
     }
+    // If isToday but NOT within time slot, status remains "empty"
   }
 
-  // Set currentGuests from reservations if available
-  if (dbTable.reservations.length > 0) {
+  // Fallback: Set currentGuests from reservations if no orders and reservations exist
+  if (currentGuests === 0 && dbTable.reservations.length > 0) {
     currentGuests = dbTable.reservations[0].reservation.people;
   }
 
@@ -124,19 +160,26 @@ export function calculateTableStatus(
 
 /**
  * Transform database table to FloorTable format
+ * Database stores top-left position, FloorTable uses center position
  */
 export function transformTableToFloorTable(
   dbTable: TableWithReservations
 ): FloorTable {
   const { status, currentGuests } = calculateTableStatus(dbTable);
 
+  const width = dbTable.width ?? 80;
+  const height = dbTable.height ?? 80;
+  const topLeftX = dbTable.positionX ?? 100;
+  const topLeftY = dbTable.positionY ?? 100;
+
   return {
     id: dbTable.id,
     number: dbTable.number,
-    x: dbTable.positionX ?? 100,
-    y: dbTable.positionY ?? 100,
-    width: dbTable.width ?? 80,
-    height: dbTable.height ?? 80,
+    // Convert top-left to center
+    x: topLeftX + width / 2,
+    y: topLeftY + height / 2,
+    width,
+    height,
     rotation: dbTable.rotation ?? 0,
     shape: (dbTable.shape ?? "SQUARE") as TableShapeType,
     capacity: dbTable.capacity,

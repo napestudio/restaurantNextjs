@@ -12,6 +12,13 @@ export interface TimeSlot {
   branchId: string;
   createdAt: Date | string;
   updatedAt: Date | string;
+  tables?: Array<{
+    id: string;
+    number: number;
+    name?: string | null;
+    capacity: number;
+    isActive: boolean;
+  }>;
 }
 
 // Day configuration

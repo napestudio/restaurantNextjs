@@ -40,11 +40,11 @@ export function StepTimeSlot({
   isLoading,
 }: StepTimeSlotProps) {
   const formatTime = (date: Date): string => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const selectedSlot = availableSlots.find((s) => s.id === selectedSlotId);
@@ -52,17 +52,15 @@ export function StepTimeSlot({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <div className="flex justify-center mb-4">
+        {/* <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
             <Clock className="w-8 h-8 text-red-600" />
           </div>
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          Elige tu horario preferido
-        </h2>
-        <p className="text-gray-600">
+        </div> */}
+        <h2 className="text-2xl font-bold text-gray-900">Elegí un turno</h2>
+        {/* <p className="text-gray-600">
           Selecciona el turno que mejor se ajuste a tus planes
-        </p>
+        </p> */}
       </div>
 
       {isLoading ? (
@@ -87,7 +85,7 @@ export function StepTimeSlot({
               <Card
                 key={slot.id}
                 className={cn(
-                  "p-4 cursor-pointer transition-all duration-200 hover:shadow-md",
+                  "p-4 cursor-pointer text-left transition-all duration-200 hover:shadow-md",
                   {
                     "border-2 border-red-600 bg-red-50": isSelected,
                     "border-gray-200 hover:border-red-300": !isSelected,
@@ -157,7 +155,7 @@ export function StepTimeSlot({
                     )}
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-left">
                     {!isAvailable ? (
                       <span className="text-sm font-semibold text-red-600">
                         Completo
@@ -177,7 +175,7 @@ export function StepTimeSlot({
                         </p>
                       </div>
                     ) : (
-                      <span className="text-sm text-gray-500">Gratis</span>
+                      <span className="text-sm text-gray-500"></span>
                     )}
                   </div>
                 </div>
@@ -191,8 +189,7 @@ export function StepTimeSlot({
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm text-green-800">
             <strong>Total a pagar:</strong> ${selectedSlot.pricePerPerson} ×{" "}
-            {guests} personas = $
-            {selectedSlot.pricePerPerson * guests}
+            {guests} personas = ${selectedSlot.pricePerPerson * guests}
           </p>
         </div>
       )}

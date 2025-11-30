@@ -1,25 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import type { SerializedMenu } from "@/actions/menus";
 import { deleteMenu, updateMenu } from "@/actions/menus";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +12,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Pencil, Trash2, Eye, EyeOff, Calendar, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SITE_URL } from "@/lib/constants";
+import {
+  Download,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  MoreVertical,
+  Pencil,
+  QrCode,
+  Trash2,
+} from "lucide-react";
+import Image from "next/image";
+import QRCodeLib from "qrcode";
+import { useState } from "react";
 
 interface MenuCardProps {
   menu: SerializedMenu;
@@ -43,6 +62,9 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingActive, setIsTogglingActive] = useState(false);
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
+  // const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -89,31 +111,51 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
       0
     ) || 0;
 
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return null;
+  const menuUrl = `${SITE_URL}/carta/${menu.slug}`;
+
+  const handleShowQR = async () => {
     try {
-      const date = new Date(timeString);
-      return date.toLocaleTimeString("es-AR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
+      const qrDataUrl = await QRCodeLib.toDataURL(menuUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
       });
-    } catch {
-      return null;
+      setQrCodeDataUrl(qrDataUrl);
+      setIsQRDialogOpen(true);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      alert("Error al generar código QR");
     }
   };
 
-  const formatDays = (days: string[]) => {
-    const dayMap: Record<string, string> = {
-      monday: "Lun",
-      tuesday: "Mar",
-      wednesday: "Mié",
-      thursday: "Jue",
-      friday: "Vie",
-      saturday: "Sáb",
-      sunday: "Dom",
-    };
-    return days.map((d) => dayMap[d.toLowerCase()] || d).join(", ");
+  const handleDownloadQR = async () => {
+    try {
+      const qrDataUrl = await QRCodeLib.toDataURL(menuUrl, {
+        width: 1024,
+        margin: 4,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      });
+
+      const link = document.createElement("a");
+      link.href = qrDataUrl;
+      link.download = `qr-menu-${menu.slug}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading QR code:", error);
+      alert("Error al descargar código QR");
+    }
+  };
+
+  const handleOpenMenu = () => {
+    window.open(menuUrl, "_blank");
   };
 
   return (
@@ -174,27 +216,6 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             <span>{itemCount} productos</span>
           </div>
 
-          {/* Schedule Info */}
-          {(menu.availableFrom || menu.availableUntil || menu.daysOfWeek.length > 0) && (
-            <div className="space-y-2 text-sm">
-              {(menu.availableFrom || menu.availableUntil) && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {formatTime(menu.availableFrom) || "00:00"} -{" "}
-                    {formatTime(menu.availableUntil) || "23:59"}
-                  </span>
-                </div>
-              )}
-              {menu.daysOfWeek.length > 0 && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDays(menu.daysOfWeek)}</span>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Status Badge */}
           <div className="flex gap-2">
             {menu.isActive ? (
@@ -204,33 +225,55 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             ) : (
               <Badge variant="secondary">Inactivo</Badge>
             )}
-            {menu.branchId ? (
-              <Badge variant="outline">Sucursal específica</Badge>
-            ) : (
-              <Badge variant="outline">Todas las sucursales</Badge>
-            )}
+            {/* <Badge variant="outline">Disponible 24/7</Badge> */}
           </div>
         </CardContent>
 
-        <CardFooter>
-          <Button onClick={onEdit} variant="outline" className="w-full">
-            Gestionar Menú
+        <CardFooter className="flex flex-col gap-2">
+          <div className="flex gap-2 w-full">
+            <Button
+              onClick={handleShowQR}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              QR
+            </Button>
+            <Button
+              onClick={handleOpenMenu}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Ver
+            </Button>
+          </div>
+          <Button onClick={onEdit} variant="default" className="w-full">
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar Menú
           </Button>
         </CardFooter>
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar menú?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará el menú "{menu.name}" y
-              todas sus secciones y productos asociados.
+              Esta acción no se puede deshacer. Se eliminará el menú &quot;
+              {menu.name}&quot; y todas sus secciones y productos asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
@@ -241,6 +284,49 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Código QR del Menú</DialogTitle>
+            <DialogDescription>
+              Escanea este código QR para acceder al menú &quot;{menu.name}
+              &quot;
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrCodeDataUrl && (
+              <Image
+                src={qrCodeDataUrl}
+                alt="QR Code"
+                className="w-64 h-64 border border-gray-200 rounded-lg"
+              />
+            )}
+            <div className="text-sm text-gray-600 text-center break-all px-4">
+              {menuUrl}
+            </div>
+            <div className="flex gap-2 w-full">
+              <Button
+                onClick={handleDownloadQR}
+                variant="outline"
+                className="flex-1"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Descargar QR
+              </Button>
+              <Button
+                onClick={handleOpenMenu}
+                variant="outline"
+                className="flex-1"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Abrir Menú
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

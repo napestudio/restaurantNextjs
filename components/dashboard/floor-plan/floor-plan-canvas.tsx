@@ -1,9 +1,8 @@
-import type React from "react";
-import { memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ZoomIn, ZoomOut, Grid3x3 } from "lucide-react";
 import type { FloorTable } from "@/lib/floor-plan-utils";
+import { Grid3x3, ZoomIn, ZoomOut } from "lucide-react";
+import type React from "react";
+import { memo, useMemo, useState } from "react";
 
 interface FloorPlanCanvasProps {
   tables: FloorTable[];
@@ -14,7 +13,9 @@ interface FloorPlanCanvasProps {
   svgRef: React.RefObject<SVGSVGElement | null>;
   canvasWidth: number;
   canvasHeight: number;
+  isEditMode: boolean;
   onTableMouseDown: (e: React.MouseEvent, tableId: string) => void;
+  onCanvasClick: (x: number, y: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleGrid: () => void;
@@ -37,6 +38,7 @@ const statusStrokeColors = {
 const CANVAS_CONTAINER_HEIGHT = 600; // Height of the scrollable container
 
 // Memoized Table Shape Component
+// Note: table.x and table.y are CENTER coordinates
 const TableShape = memo(function TableShape({
   table,
   isSelected,
@@ -44,8 +46,12 @@ const TableShape = memo(function TableShape({
   table: FloorTable;
   isSelected: boolean;
 }) {
-  const centerX = table.x + table.width / 2;
-  const centerY = table.y + table.height / 2;
+  // table.x and table.y are already the center
+  const centerX = table.x;
+  const centerY = table.y;
+  // Calculate top-left for rect elements
+  const topLeftX = table.x - table.width / 2;
+  const topLeftY = table.y - table.height / 2;
 
   return (
     <g transform={`rotate(${table.rotation} ${centerX} ${centerY})`}>
@@ -64,8 +70,8 @@ const TableShape = memo(function TableShape({
 
       {table.shape === "SQUARE" && (
         <rect
-          x={table.x}
-          y={table.y}
+          x={topLeftX}
+          y={topLeftY}
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
@@ -78,8 +84,8 @@ const TableShape = memo(function TableShape({
 
       {table.shape === "RECTANGLE" && (
         <rect
-          x={table.x}
-          y={table.y}
+          x={topLeftX}
+          y={topLeftY}
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
@@ -92,8 +98,8 @@ const TableShape = memo(function TableShape({
 
       {table.shape === "WIDE" && (
         <rect
-          x={table.x}
-          y={table.y}
+          x={topLeftX}
+          y={topLeftY}
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
@@ -107,10 +113,10 @@ const TableShape = memo(function TableShape({
       {/* Table number - counter-rotated to stay upright */}
       <text
         x={centerX}
-        y={centerY - 5}
+        y={centerY}
         textAnchor="middle"
         fill="#fff"
-        fontSize="16"
+        fontSize="24"
         fontWeight="bold"
         style={{ pointerEvents: "none", userSelect: "none" }}
         transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
@@ -118,41 +124,61 @@ const TableShape = memo(function TableShape({
         {table.number}
       </text>
 
-      {/* Capacity - counter-rotated to stay upright */}
-      <text
-        x={centerX}
-        y={centerY + 15}
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="12"
-        style={{ pointerEvents: "none", userSelect: "none" }}
-        transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}
-      >
-        {table.currentGuests}/{table.capacity}
-      </text>
+      {/* Party size with Users icon - counter-rotated to stay upright */}
+      {table.currentGuests > 0 && (
+        <g transform={`rotate(${-table.rotation} ${centerX} ${centerY + 20})`}>
+          {/* Users icon (SVG path) */}
+          <g
+            transform={`translate(${centerX - 10}, ${centerY + 10})`}
+            style={{ pointerEvents: "none" }}
+          >
+            <path
+              d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              transform="scale(0.5)"
+            />
+          </g>
+          {/* Party size text */}
+          <text
+            x={centerX + 8}
+            y={centerY + 22}
+            textAnchor="middle"
+            fill="#fff"
+            fontSize="16"
+            fontWeight="600"
+            style={{ pointerEvents: "none", userSelect: "none" }}
+          >
+            {table.currentGuests}
+          </text>
+        </g>
+      )}
 
       {/* Shared table indicator - rotates with table, text stays upright */}
       {table.isShared && (
         <>
           <circle
-            cx={table.x + table.width - 15}
-            cy={table.y + 15}
+            cx={topLeftX + table.width - 15}
+            cy={topLeftY + 15}
             r="10"
             fill="#fff"
             opacity={0.9}
             style={{ pointerEvents: "none" }}
           />
           <text
-            x={table.x + table.width - 15}
-            y={table.y + 19}
+            x={topLeftX + table.width - 15}
+            y={topLeftY + 19}
             textAnchor="middle"
             fill="#000"
             fontSize="14"
             fontWeight="bold"
             style={{ pointerEvents: "none", userSelect: "none" }}
             transform={`rotate(${-table.rotation} ${
-              table.x + table.width - 15
-            } ${table.y + 15})`}
+              topLeftX + table.width - 15
+            } ${topLeftY + 15})`}
           >
             C
           </text>
@@ -171,28 +197,121 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
   svgRef,
   canvasWidth,
   canvasHeight,
+  isEditMode,
   onTableMouseDown,
+  onCanvasClick,
   onZoomIn,
   onZoomOut,
   onToggleGrid,
 }: FloorPlanCanvasProps) {
+  // Track mouse position for hover effect
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
+    null
+  );
+
   // Memoize zoom percentage display
   const zoomPercentage = useMemo(() => Math.round(zoom * 100), [zoom]);
 
   // Memoize cursor style
   const cursorStyle = useMemo(
-    () => (draggedTable ? "grabbing" : "default"),
-    [draggedTable]
+    () => {
+      if (draggedTable) return "grabbing";
+      if (isEditMode && !draggedTable) return "crosshair";
+      return "default";
+    },
+    [draggedTable, isEditMode]
   );
 
+  // Check if a grid cell is occupied by any table
+  // Note: table.x and table.y are CENTER coordinates
+  const isGridCellOccupied = (cellCenterX: number, cellCenterY: number): boolean => {
+    const GRID_SIZE = 100;
+    return tables.some((table) => {
+      // table.x and table.y are already center coordinates
+      const tableCenterX = table.x;
+      const tableCenterY = table.y;
+
+      // Calculate the table's bounding box in grid cells
+      const tableLeft = tableCenterX - table.width / 2;
+      const tableRight = tableCenterX + table.width / 2;
+      const tableTop = tableCenterY - table.height / 2;
+      const tableBottom = tableCenterY + table.height / 2;
+
+      // Check if this cell's center falls within the table's bounds
+      // Cell extends from (cellCenterX - 50) to (cellCenterX + 50)
+      const cellLeft = cellCenterX - GRID_SIZE / 2;
+      const cellRight = cellCenterX + GRID_SIZE / 2;
+      const cellTop = cellCenterY - GRID_SIZE / 2;
+      const cellBottom = cellCenterY + GRID_SIZE / 2;
+
+      // Check for overlap between table and cell
+      const overlapsX = tableLeft < cellRight && tableRight > cellLeft;
+      const overlapsY = tableTop < cellBottom && tableBottom > cellTop;
+
+      return overlapsX && overlapsY;
+    });
+  };
+
+  // Handle mouse move on SVG
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isEditMode || draggedTable) {
+      setMousePos(null);
+      return;
+    }
+
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    // Snap to 100px grid intervals - show icon at center of grid cell
+    const GRID_SIZE = 100;
+    const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+    const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+
+    // Don't show cursor if grid cell is occupied by a table
+    if (isGridCellOccupied(snappedX, snappedY)) {
+      setMousePos(null);
+      return;
+    }
+
+    setMousePos({ x: snappedX, y: snappedY });
+  };
+
+  // Handle mouse leave
+  const handleMouseLeave = () => {
+    setMousePos(null);
+  };
+
+  // Handle canvas click
+  const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isEditMode || draggedTable) return;
+
+    // Don't open dialog if clicking on a table or any interactive element
+    const target = e.target as SVGElement;
+    // Only allow clicks on the SVG itself or the grid rect
+    if (target.tagName !== "svg" && target.getAttribute("id") !== "grid-background") return;
+
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+
+    // Snap to 100px grid intervals - return top-left corner for table placement
+    const GRID_SIZE = 100;
+    const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE;
+    const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE;
+
+    onCanvasClick(snappedX, snappedY);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Plano del Salón</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="relative">
+    <div>
+      <div className="relative">
         {/* Floating toolbar in top right - fixed position */}
         <div className="absolute top-4 right-12 z-10 flex items-center space-x-2 bg-white rounded-lg shadow-lg p-2 opacity-65 hover:opacity-100 transition-opacity pointer-events-auto">
           <Button
@@ -214,8 +333,8 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           </Button>
         </div>
         <div
-          className="border rounded-lg overflow-auto bg-gray-100 p-2"
-          style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
+          className="border overflow-auto bg-gray-100 h-[calc(100svh-120px)]"
+          // style={{ height: `${CANVAS_CONTAINER_HEIGHT + 100}px` }}
         >
           <svg
             ref={svgRef}
@@ -224,6 +343,9 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
             viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
             className="bg-white"
             style={{ cursor: cursorStyle }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleCanvasClick}
           >
             {/* Grid */}
             {showGrid && (
@@ -245,6 +367,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
             )}
             {showGrid && (
               <rect
+                id="grid-background"
                 width={canvasWidth}
                 height={canvasHeight}
                 fill="url(#grid)"
@@ -264,11 +387,48 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
                 />
               </g>
             ))}
+
+            {/* Plus icon hover indicator in edit mode */}
+            {isEditMode && mousePos && !draggedTable && (
+              <g
+                style={{ pointerEvents: "none" }}
+                opacity={0.6}
+              >
+                {/* Circle background */}
+                <circle
+                  cx={mousePos.x}
+                  cy={mousePos.y}
+                  r={20}
+                  fill="#ef4444"
+                  stroke="#dc2626"
+                  strokeWidth={2}
+                />
+                {/* Plus icon */}
+                <line
+                  x1={mousePos.x}
+                  y1={mousePos.y - 10}
+                  x2={mousePos.x}
+                  y2={mousePos.y + 10}
+                  stroke="white"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={mousePos.x - 10}
+                  y1={mousePos.y}
+                  x2={mousePos.x + 10}
+                  y2={mousePos.y}
+                  stroke="white"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
           </svg>
         </div>
 
         {/* Legend */}
-        <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+        {/* <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-green-500" />
             <span>Disponible</span>
@@ -280,13 +440,13 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-blue-500" />
             <span>Reservada</span>
-          </div>
-          {/* <div className="flex items-center space-x-2">
+          </div> */}
+        {/* <div className="flex items-center space-x-2">
             <div className="w-4 h-4 rounded-full bg-yellow-500" />
             <span>Limpiando</span>
           </div> */}
-        </div>
-      </CardContent>
-    </Card>
+        {/* </div> */}
+      </div>
+    </div>
   );
 });

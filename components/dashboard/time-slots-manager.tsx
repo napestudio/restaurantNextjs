@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
+import {
+  createTimeSlot,
+  deleteTimeSlot,
+  getTimeSlots,
+  updateTimeSlot,
+} from "@/actions/TimeSlot";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
-import { getTimeSlots, createTimeSlot, deleteTimeSlot } from "@/actions/TimeSlot";
-import { StatsOverview } from "./stats-overview";
-import { TimeSlotsTable } from "./time-slots-table";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useState, useTransition } from "react";
 import { CreateTimeSlotDialog } from "./create-time-slot-dialog";
 import { DeleteTimeSlotDialog } from "./delete-time-slot-dialog";
+import { EditTimeSlotDialog } from "./edit-time-slot-dialog";
+import LoadingToast from "./loading-toast";
+import { TimeSlotsTable } from "./time-slots-table";
 
 interface TimeSlotsManagerProps {
   initialTimeSlots: TimeSlot[];
@@ -22,7 +28,9 @@ export function TimeSlotsManager({
   const [timeSlots, setTimeSlots] = useState(initialTimeSlots);
   const [isPending, startTransition] = useTransition();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [slotToEdit, setSlotToEdit] = useState<TimeSlot | null>(null);
   const [slotToDelete, setSlotToDelete] = useState<{
     id: string;
     dbId?: string;
@@ -71,6 +79,51 @@ export function TimeSlotsManager({
     });
   };
 
+  const handleEditClick = (slotId: string) => {
+    // Find the slot to edit
+    const slot = timeSlots.find((s) => s.id === slotId);
+    if (slot) {
+      setSlotToEdit(slot);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleEditConfirm = async (
+    slotId: string,
+    updatedSlot: {
+      timeFrom: string;
+      timeTo: string;
+      days: string[];
+      price: string;
+      notes: string;
+      name?: string;
+      moreInfoUrl?: string;
+      tableIds: string[];
+    }
+  ) => {
+    startTransition(async () => {
+      const result = await updateTimeSlot(slotId, {
+        name: updatedSlot.name || "Unnamed Slot",
+        startTime: updatedSlot.timeFrom,
+        endTime: updatedSlot.timeTo,
+        daysOfWeek: updatedSlot.days,
+        pricePerPerson: updatedSlot.price ? parseFloat(updatedSlot.price) : 0,
+        notes: updatedSlot.notes,
+        moreInfoUrl: updatedSlot.moreInfoUrl,
+        tableIds: updatedSlot.tableIds,
+      });
+
+      if (result.success) {
+        setEditDialogOpen(false);
+        setSlotToEdit(null);
+        mutate();
+      } else {
+        // TODO: Show error toast/notification
+        console.error("Failed to update time slot:", result.error);
+      }
+    });
+  };
+
   const handleDeleteClick = (slotId: string) => {
     // Find the slot to get its database ID
     const slot = timeSlots.find((s) => s.id === slotId);
@@ -100,16 +153,7 @@ export function TimeSlotsManager({
   return (
     <div className="space-y-6 relative">
       {/* Loading overlay during refetch */}
-      {isPending && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 text-red-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">
-              Actualizando datos...
-            </p>
-          </div>
-        </div>
-      )}
+      {isPending && <LoadingToast />}
 
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -128,15 +172,15 @@ export function TimeSlotsManager({
         </Button>
       </div>
 
-      <div className="mb-8">
-        <StatsOverview timeSlots={timeSlots} />
-      </div>
-
       <TimeSlotsTable
         timeSlots={timeSlots}
         onDelete={handleDeleteClick}
+        onEdit={handleEditClick}
         onCreateClick={() => setCreateDialogOpen(true)}
       />
+      {/* <div className="mb-8">
+        <StatsOverview timeSlots={timeSlots} />
+      </div> */}
 
       <CreateTimeSlotDialog
         open={createDialogOpen}
@@ -144,6 +188,15 @@ export function TimeSlotsManager({
         onCreate={handleCreate}
         isPending={isPending}
         branchId={branchId}
+      />
+
+      <EditTimeSlotDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onEdit={handleEditConfirm}
+        isPending={isPending}
+        branchId={branchId}
+        timeSlot={slotToEdit}
       />
 
       <DeleteTimeSlotDialog

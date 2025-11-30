@@ -1,24 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import {
+  cancelReservation,
+  createReservation,
+  getReservations,
+  updateReservationStatus,
+} from "@/actions/Reservation";
+import type {
+  SerializedReservation,
+  TimeSlot,
+} from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
-import type {
-  TimeSlot,
-  SerializedReservation,
-} from "@/app/(admin)/dashboard/reservations/lib/reservations";
-import {
-  getReservations,
-  createReservation,
-  updateReservationStatus,
-  cancelReservation,
-} from "@/actions/Reservation";
-import { ReservationStatus } from "@/app/generated/prisma";
-import { ReservationStatsOverview } from "./reservation-stats-overview";
+import { useCallback, useState, useTransition } from "react";
+import { CancelReservationDialog } from "./cancel-reservation-dialog";
+import { CreateReservationDialog } from "./create-reservation-dialog";
 import { ReservationsTable } from "./reservations-table";
 import { ViewReservationDialog } from "./view-reservation-dialog";
-import { CreateReservationDialog } from "./create-reservation-dialog";
-import { CancelReservationDialog } from "./cancel-reservation-dialog";
+import LoadingToast from "./loading-toast";
 
 interface ReservationsManagerProps {
   initialReservations: SerializedReservation[];
@@ -32,6 +32,8 @@ export function ReservationsManager({
   branchId,
 }: ReservationsManagerProps) {
   const [reservations, setReservations] = useState(initialReservations);
+  const [filteredReservations, setFilteredReservations] =
+    useState(initialReservations);
   const [isPending, startTransition] = useTransition();
   const [selectedReservation, setSelectedReservation] =
     useState<SerializedReservation | null>(null);
@@ -42,6 +44,16 @@ export function ReservationsManager({
     null
   );
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+
+  // Memoized callback to prevent infinite loops
+  const handleFilteredReservationsChange = useCallback(
+    (filtered: SerializedReservation[]) => {
+      setFilteredReservations(filtered);
+    },
+    []
+  );
 
   // Refetch data helper
   const mutate = () => {
@@ -139,25 +151,13 @@ export function ReservationsManager({
   return (
     <div className="space-y-6 relative">
       {/* Loading overlay during refetch */}
-      {isPending && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 text-red-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">
-              Actualizando datos...
-            </p>
-          </div>
-        </div>
-      )}
+      {isPending && <LoadingToast />}
 
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Administración de Reservas
           </h1>
-          <p className="text-gray-600">
-            Administra las reservas desde este panel.
-          </p>
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}
@@ -169,9 +169,9 @@ export function ReservationsManager({
         </Button>
       </div>
 
-      <div className="mb-8">
-        <ReservationStatsOverview reservations={reservations} />
-      </div>
+      {/* <div className="mb-8">
+        <ReservationStatsOverview reservations={filteredReservations} />
+      </div> */}
 
       <ReservationsTable
         reservations={reservations}
@@ -180,6 +180,11 @@ export function ReservationsManager({
         onStatusUpdate={handleStatusUpdate}
         onView={handleView}
         onCancel={handleCancelClick}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onFilteredReservationsChange={handleFilteredReservationsChange}
       />
 
       <ViewReservationDialog

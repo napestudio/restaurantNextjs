@@ -29,6 +29,7 @@ export type SerializedMenuItem = Omit<MenuItem, "createdAt" | "updatedAt" | "cus
     description: string | null;
     imageUrl: string | null;
     categoryId: string | null;
+    basePrice?: number | null; // Price from ProductOnBranch for the menu's branch
   };
 };
 
@@ -52,6 +53,15 @@ export async function getMenus(restaurantId: string): Promise<SerializedMenu[]> 
                   description: true,
                   imageUrl: true,
                   categoryId: true,
+                  branches: {
+                    select: {
+                      branchId: true,
+                      prices: {
+                        where: { type: "DINE_IN" },
+                        select: { price: true },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -72,13 +82,28 @@ export async function getMenus(restaurantId: string): Promise<SerializedMenu[]> 
       ...section,
       createdAt: section.createdAt.toISOString(),
       updatedAt: section.updatedAt.toISOString(),
-      menuItems: section.menuItems.map((item) => ({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
-        customPrice: item.customPrice ? Number(item.customPrice) : null,
-        product: item.product,
-      })),
+      menuItems: section.menuItems.map((item) => {
+        // Get price from ProductOnBranch for this menu's branch
+        const branchProduct = item.product.branches.find(
+          (b) => b.branchId === menu.branchId
+        );
+        const basePrice = branchProduct?.prices[0]?.price;
+
+        return {
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+          updatedAt: item.updatedAt.toISOString(),
+          customPrice: item.customPrice ? Number(item.customPrice) : null,
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            description: item.product.description,
+            imageUrl: item.product.imageUrl,
+            categoryId: item.product.categoryId,
+            basePrice: basePrice ? Number(basePrice) : null,
+          },
+        };
+      }),
     })),
   }));
 }
@@ -103,6 +128,15 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
                   description: true,
                   imageUrl: true,
                   categoryId: true,
+                  branches: {
+                    select: {
+                      branchId: true,
+                      prices: {
+                        where: { type: "DINE_IN" },
+                        select: { price: true },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -124,43 +158,62 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
       ...section,
       createdAt: section.createdAt.toISOString(),
       updatedAt: section.updatedAt.toISOString(),
-      menuItems: section.menuItems.map((item) => ({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
-        customPrice: item.customPrice ? Number(item.customPrice) : null,
-        product: item.product,
-      })),
+      menuItems: section.menuItems.map((item) => {
+        // Get price from ProductOnBranch for this menu's branch
+        const branchProduct = item.product.branches.find(
+          (b) => b.branchId === menu.branchId
+        );
+        const basePrice = branchProduct?.prices[0]?.price;
+
+        return {
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+          updatedAt: item.updatedAt.toISOString(),
+          customPrice: item.customPrice ? Number(item.customPrice) : null,
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            description: item.product.description,
+            imageUrl: item.product.imageUrl,
+            categoryId: item.product.categoryId,
+            basePrice: basePrice ? Number(basePrice) : null,
+          },
+        };
+      }),
     })),
   };
 }
 
 /**
  * Create a new menu
+ * Note: Menus are available 24/7 by default. Time and day restrictions are not set.
  */
 export async function createMenu(data: {
   restaurantId: string;
   name: string;
   slug: string;
   description?: string;
-  branchId?: string;
+  branchId?: string; // Optional - will use BRANCH_ID from env if not provided
   isActive?: boolean;
-  availableFrom?: string; // ISO time string
-  availableUntil?: string; // ISO time string
-  daysOfWeek?: string[];
 }) {
   try {
+    const branchId = data.branchId || process.env.BRANCH_ID;
+    if (!branchId) {
+      return { success: false, error: "Branch ID is required" };
+    }
+
     const menu = await prisma.menu.create({
       data: {
         restaurantId: data.restaurantId,
         name: data.name,
         slug: data.slug.toLowerCase(),
         description: data.description,
-        branchId: data.branchId,
+        branchId,
         isActive: data.isActive ?? true,
-        availableFrom: data.availableFrom ? new Date(`1970-01-01T${data.availableFrom}`) : null,
-        availableUntil: data.availableUntil ? new Date(`1970-01-01T${data.availableUntil}`) : null,
-        daysOfWeek: data.daysOfWeek ?? [],
+        // Available 24/7 by default - no time or day restrictions
+        availableFrom: null,
+        availableUntil: null,
+        daysOfWeek: [],
       },
     });
 
@@ -174,6 +227,7 @@ export async function createMenu(data: {
 
 /**
  * Update an existing menu
+ * Note: Time and day restrictions are not updated. Menus remain available 24/7.
  */
 export async function updateMenu(
   menuId: string,
@@ -183,9 +237,6 @@ export async function updateMenu(
     description?: string;
     branchId?: string;
     isActive?: boolean;
-    availableFrom?: string; // ISO time string
-    availableUntil?: string; // ISO time string
-    daysOfWeek?: string[];
   }
 ) {
   try {
@@ -197,13 +248,6 @@ export async function updateMenu(
         ...(data.description !== undefined && { description: data.description }),
         ...(data.branchId !== undefined && { branchId: data.branchId }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
-        ...(data.availableFrom !== undefined && {
-          availableFrom: data.availableFrom ? new Date(`1970-01-01T${data.availableFrom}`) : null,
-        }),
-        ...(data.availableUntil !== undefined && {
-          availableUntil: data.availableUntil ? new Date(`1970-01-01T${data.availableUntil}`) : null,
-        }),
-        ...(data.daysOfWeek !== undefined && { daysOfWeek: data.daysOfWeek }),
       },
     });
 
@@ -336,7 +380,14 @@ export async function addMenuItem(data: {
     });
 
     revalidatePath("/dashboard/menus");
-    return { success: true, menuItem };
+    // Serialize Decimal to number for Client Components
+    return {
+      success: true,
+      menuItem: {
+        ...menuItem,
+        customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
+      }
+    };
   } catch (error) {
     console.error("Error adding menu item:", error);
     return { success: false, error: "Failed to add menu item" };
@@ -367,7 +418,14 @@ export async function updateMenuItem(
     });
 
     revalidatePath("/dashboard/menus");
-    return { success: true, menuItem };
+    // Serialize Decimal to number for Client Components
+    return {
+      success: true,
+      menuItem: {
+        ...menuItem,
+        customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
+      }
+    };
   } catch (error) {
     console.error("Error updating menu item:", error);
     return { success: false, error: "Failed to update menu item" };
@@ -479,4 +537,103 @@ export async function getAvailableProducts(restaurantId: string): Promise<
     categoryId: product.categoryId,
     category: product.category,
   }));
+}
+
+/**
+ * Get a menu by slug with restaurant information
+ */
+export async function getMenuBySlug(slug: string): Promise<{
+  menu: SerializedMenu;
+  restaurant: {
+    name: string;
+    logoUrl: string | null;
+    description: string | null;
+  };
+} | null> {
+  const menu = await prisma.menu.findFirst({
+    where: {
+      slug: slug.toLowerCase(),
+      isActive: true,
+    },
+    include: {
+      restaurant: {
+        select: {
+          name: true,
+          logoUrl: true,
+          description: true,
+        },
+      },
+      menuSections: {
+        orderBy: { order: "asc" },
+        include: {
+          menuItems: {
+            orderBy: { order: "asc" },
+            where: {
+              isAvailable: true,
+            },
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  imageUrl: true,
+                  categoryId: true,
+                  branches: {
+                    select: {
+                      branchId: true,
+                      prices: {
+                        where: { type: "DINE_IN" },
+                        select: { price: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!menu) return null;
+
+  return {
+    menu: {
+      ...menu,
+      createdAt: menu.createdAt.toISOString(),
+      updatedAt: menu.updatedAt.toISOString(),
+      availableFrom: menu.availableFrom?.toISOString() ?? null,
+      availableUntil: menu.availableUntil?.toISOString() ?? null,
+      menuSections: menu.menuSections.map((section) => ({
+        ...section,
+        createdAt: section.createdAt.toISOString(),
+        updatedAt: section.updatedAt.toISOString(),
+        menuItems: section.menuItems.map((item) => {
+          // Get price from ProductOnBranch for this menu's branch
+          const branchProduct = item.product.branches.find(
+            (b) => b.branchId === menu.branchId
+          );
+          const basePrice = branchProduct?.prices[0]?.price;
+
+          return {
+            ...item,
+            createdAt: item.createdAt.toISOString(),
+            updatedAt: item.updatedAt.toISOString(),
+            customPrice: item.customPrice ? Number(item.customPrice) : null,
+            product: {
+              id: item.product.id,
+              name: item.product.name,
+              description: item.product.description,
+              imageUrl: item.product.imageUrl,
+              categoryId: item.product.categoryId,
+              basePrice: basePrice ? Number(basePrice) : null,
+            },
+          };
+        }),
+      })),
+    },
+    restaurant: menu.restaurant,
+  };
 }

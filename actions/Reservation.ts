@@ -8,6 +8,7 @@ import {
   setTablesReserved,
   updateTableStatusForReservation,
 } from "./Table";
+import { sendReservationNotificationEmail } from "@/lib/send-reservation-email";
 
 /**
  * Helper function to serialize reservation data for client components
@@ -120,20 +121,30 @@ export async function createReservation(data: {
             })),
           });
 
-          // Update reservation status to CONFIRMED since tables are assigned
-          await prisma.reservation.update({
-            where: { id: reservation.id },
-            data: { status: ReservationStatus.CONFIRMED },
-          });
+          // Check if this is a paid reservation (pricePerPerson > 0)
+          const isPaidReservation = reservation.timeSlot && (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
 
-          // Automatically set table status to RESERVED
-          await setTablesReserved(assignmentResult.data.tableIds);
+          // Only confirm reservation if it's not a paid reservation
+          // Paid reservations must remain PENDING until payment is coordinated
+          if (!isPaidReservation) {
+            await prisma.reservation.update({
+              where: { id: reservation.id },
+              data: { status: ReservationStatus.CONFIRMED },
+            });
 
-          finalStatus = ReservationStatus.CONFIRMED;
+            // Automatically set table status to RESERVED
+            await setTablesReserved(assignmentResult.data.tableIds);
 
-          console.log(
-            `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id}`
-          );
+            finalStatus = ReservationStatus.CONFIRMED;
+
+            console.log(
+              `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} and CONFIRMED`
+            );
+          } else {
+            console.log(
+              `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} but keeping as PENDING (paid reservation)`
+            );
+          }
         } catch (assignError) {
           console.error("Error assigning tables:", assignError);
           // Keep as PENDING if assignment fails
@@ -158,6 +169,39 @@ export async function createReservation(data: {
         },
       },
     });
+
+    // Send email notification (only for web reservations)
+    if (data.createdBy === "WEB" && finalReservation) {
+      try {
+        const assignedTableNames =
+          finalReservation.tables?.map((rt) => rt.table.name).filter((name): name is string => name !== null) || [];
+
+        await sendReservationNotificationEmail({
+          customerName: finalReservation.customerName,
+          customerEmail: finalReservation.customerEmail,
+          customerPhone: finalReservation.customerPhone || undefined,
+          date: finalReservation.date,
+          time: data.time,
+          guests: finalReservation.people,
+          branchName: finalReservation.branch.name,
+          timeSlotName: finalReservation.timeSlot?.name,
+          exactTime: finalReservation.exactTime || undefined,
+          dietaryRestrictions: finalReservation.dietaryRestrictions || undefined,
+          accessibilityNeeds: finalReservation.accessibilityNeeds || undefined,
+          notes: finalReservation.notes || undefined,
+          status: finalStatus,
+          autoAssigned: finalStatus === ReservationStatus.CONFIRMED,
+          assignedTables: assignedTableNames,
+          pricePerPerson: finalReservation.timeSlot?.pricePerPerson?.toNumber() || 0,
+        });
+        console.log(
+          `📧 Email notification sent for reservation ${reservation.id}`
+        );
+      } catch (emailError) {
+        // Log the error but don't fail the reservation
+        console.error("Failed to send email notification:", emailError);
+      }
+    }
 
     revalidatePath("/dashboard/reservations");
 
@@ -200,7 +244,8 @@ export async function getReservations(branchId: string) {
 
     return {
       success: true,
-      data: reservations.map((r) => serializeReservation(r)),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: reservations.map((r: any) => serializeReservation(r)),
     };
   } catch (error) {
     console.error("Error fetching reservations:", error);
@@ -484,13 +529,6 @@ export async function assignTablesToReservation(
   tableIds: string[]
 ) {
   try {
-    // Get old table assignments to clear their status
-    const oldAssignments = await prisma.reservationTable.findMany({
-      where: { reservationId },
-      select: { tableId: true },
-    });
-    const oldTableIds = oldAssignments.map((a) => a.tableId);
-
     // First, remove existing table assignments
     await prisma.reservationTable.deleteMany({
       where: {

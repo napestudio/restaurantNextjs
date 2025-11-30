@@ -47,6 +47,7 @@ interface TablePropertiesFormProps {
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
   isEditMode: boolean;
+  hasActiveOrders?: boolean;
 }
 
 export function TablePropertiesForm({
@@ -62,9 +63,21 @@ export function TablePropertiesForm({
   onRotate,
   onDelete,
   isEditMode,
+  hasActiveOrders = false,
 }: TablePropertiesFormProps) {
+  // Disable editing if table has active orders (except position which is handled in canvas)
+  const isLocked = hasActiveOrders;
+
   return (
     <div className="space-y-4">
+      {hasActiveOrders && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-xs text-amber-800 font-medium">
+            Esta mesa tiene órdenes activas. Solo puedes mover su posición, pero no modificar sus propiedades.
+          </p>
+        </div>
+      )}
+
       <div>
         <Label className="text-xs text-muted-foreground">Número de Mesa</Label>
         <div className="text-lg font-bold">
@@ -97,7 +110,7 @@ export function TablePropertiesForm({
           onValueChange={(value: TableShapeType) =>
             onUpdateShape(selectedTable.id, value)
           }
-          disabled={!isEditMode}
+          disabled={!isEditMode || isLocked}
         >
           <SelectTrigger id="edit-shape">
             <SelectValue />
@@ -146,6 +159,7 @@ export function TablePropertiesForm({
           onValueChange={(value) =>
             onUpdateCapacity(selectedTable.id, Number.parseInt(value))
           }
+          disabled={isLocked}
         >
           <SelectTrigger id="edit-capacity">
             <SelectValue />
@@ -175,19 +189,21 @@ export function TablePropertiesForm({
         </Label>
         <Select
           value={
+            // Big tables use full scale (1x), normal tables use 0.75x
+            // Check if width is greater than 0.875x of default (midpoint between 0.75x and 1x)
             selectedTable.width >
             (selectedTable.shape === "WIDE"
-              ? 400
+              ? 350
               : selectedTable.shape === "RECTANGLE"
-              ? 200
-              : 100)
+              ? 175
+              : 87.5)
               ? "big"
               : "normal"
           }
           onValueChange={(value: "normal" | "big") =>
             onUpdateSize(selectedTable.id, value)
           }
-          disabled={!isEditMode}
+          disabled={!isEditMode || isLocked}
         >
           <SelectTrigger id="edit-size">
             <SelectValue />
@@ -211,6 +227,7 @@ export function TablePropertiesForm({
           onValueChange={(value) =>
             onUpdateStatus(selectedTable.id, value as TableStatus)
           }
+          disabled={isLocked}
         >
           <SelectTrigger>
             <SelectValue />
@@ -234,6 +251,7 @@ export function TablePropertiesForm({
           onCheckedChange={(checked) =>
             onUpdateIsShared(selectedTable.id, checked === true)
           }
+          disabled={isLocked}
         />
         <Label
           htmlFor="edit-is-shared"
@@ -255,6 +273,7 @@ export function TablePropertiesForm({
               variant="outline"
               className="w-full"
               size="sm"
+              disabled={isLocked}
             >
               <RotateCw className="h-4 w-4 mr-2" />
               Rotar 90°
@@ -265,6 +284,7 @@ export function TablePropertiesForm({
             variant="destructive"
             className="w-full"
             size="sm"
+            disabled={isLocked}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Eliminar Mesa

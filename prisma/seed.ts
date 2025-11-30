@@ -632,7 +632,7 @@ async function main() {
   // Create Menus
   console.log("\n📋 Creando menús...");
 
-  // Main Menu (Restaurant-wide, all day)
+  // Main Menu (Branch-specific, all day)
   const mainMenu = await prisma.menu.upsert({
     where: { id: "menu-main" },
     update: {},
@@ -642,7 +642,7 @@ async function main() {
       slug: "menu-principal",
       description: "Nuestra carta completa con todos nuestros platos disponibles",
       restaurantId: restaurant.id,
-      branchId: null, // Available for all branches
+      branchId: branch.id, // Menus are branch-specific
       isActive: true,
       daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     },
@@ -659,7 +659,7 @@ async function main() {
       slug: "menu-ejecutivo",
       description: "Opciones especiales para el almuerzo de lunes a viernes",
       restaurantId: restaurant.id,
-      branchId: null,
+      branchId: branch.id, // Menus are branch-specific
       isActive: true,
       availableFrom: new Date("1970-01-01T11:00:00"),
       availableUntil: new Date("1970-01-01T15:00:00"),
@@ -678,7 +678,7 @@ async function main() {
       slug: "especiales-weekend",
       description: "Platos premium exclusivos para sábados y domingos",
       restaurantId: restaurant.id,
-      branchId: null,
+      branchId: branch.id, // Menus are branch-specific
       isActive: true,
       daysOfWeek: ["saturday", "sunday"],
     },

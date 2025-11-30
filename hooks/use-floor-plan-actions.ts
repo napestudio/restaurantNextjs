@@ -8,6 +8,7 @@ import {
   updateFloorPlanBatch,
   deleteTable as deleteTableAction,
 } from "@/actions/Table";
+import { set } from "zod";
 
 interface UseFloorPlanActionsProps {
   tables: FloorTable[];
@@ -168,16 +169,21 @@ export function useFloorPlanActions({
       if (!table) return;
 
       const defaults = shapeDefaults[table.shape];
-      const multiplier = size === "big" ? 1.25 : 1;
+      // Big tables use full scale (1x), normal tables are smaller (0.75x)
+      const multiplier = size === "big" ? 1 : 0.75;
 
-      // Update local floor plan state with new size
+      const newWidth = defaults.width * multiplier;
+      const newHeight = defaults.height * multiplier;
+
+      // table.x and table.y are already the center, so they stay the same
+      // Just update width and height
       setTables((prevTables) =>
         prevTables.map((t) =>
           t.id === tableId
             ? {
                 ...t,
-                width: defaults.width * multiplier,
-                height: defaults.height * multiplier,
+                width: newWidth,
+                height: newHeight,
               }
             : t
         )
@@ -191,15 +197,17 @@ export function useFloorPlanActions({
   const saveFloorPlanChanges = useCallback(
     async (
       setIsSaving: (value: boolean) => void,
-      setHasUnsavedChangesLocal: (value: boolean) => void
+      setHasUnsavedChangesLocal: (value: boolean) => void,
+      setIsEditMode: (value: boolean) => void
     ) => {
       setIsSaving(true);
       try {
         // Prepare batch update data
+        // Convert center coordinates to top-left for database
         const updates = tables.map((table) => ({
           id: table.id,
-          positionX: table.x,
-          positionY: table.y,
+          positionX: table.x - table.width / 2,
+          positionY: table.y - table.height / 2,
           width: table.width,
           height: table.height,
           rotation: table.rotation,
@@ -209,15 +217,15 @@ export function useFloorPlanActions({
         // Batch update all tables
         await updateFloorPlanBatch(updates);
 
-        // Update parent state for simple view
+        // Update parent state for simple view (DB format with top-left)
         setDbTables((prevTables) =>
           prevTables.map((table) => {
             const updatedTable = tables.find((t) => t.id === table.id);
             if (updatedTable) {
               return {
                 ...table,
-                positionX: updatedTable.x,
-                positionY: updatedTable.y,
+                positionX: updatedTable.x - updatedTable.width / 2,
+                positionY: updatedTable.y - updatedTable.height / 2,
                 width: updatedTable.width,
                 height: updatedTable.height,
                 rotation: updatedTable.rotation,
@@ -233,6 +241,7 @@ export function useFloorPlanActions({
         console.error("Error saving floor plan changes:", error);
       } finally {
         setIsSaving(false);
+        setIsEditMode(false);
       }
     },
     [tables, setDbTables]

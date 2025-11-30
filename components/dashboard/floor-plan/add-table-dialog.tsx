@@ -107,9 +107,9 @@ export function AddTableDialog({
 
           {sectors.length > 0 && (
             <div>
-              <Label htmlFor="sector">Sector (Opcional)</Label>
+              <Label htmlFor="sector">Sector</Label>
               <Select
-                value={sectorId || "none"}
+                value={sectorId || sectors[0]?.id || "none"}
                 onValueChange={(value) =>
                   onSectorChange?.(value === "none" ? "" : value)
                 }
@@ -118,7 +118,7 @@ export function AddTableDialog({
                   <SelectValue placeholder="Seleccionar sector" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sin sector asignado</SelectItem>
+                  {/* <SelectItem value="none">Sin sector asignado</SelectItem> */}
                   {sectors.map((sector) => (
                     <SelectItem key={sector.id} value={sector.id}>
                       <div className="flex items-center gap-2">

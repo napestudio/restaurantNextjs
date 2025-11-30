@@ -1,11 +1,6 @@
 {
   "items": [
     {
-      "label": "Home",
-      "href": "/dashboard",
-      "adminOnly": false
-    },
-    {
       "label": "Mesas",
       "href": "/dashboard/tables",
       "adminOnly": true
@@ -18,6 +13,11 @@
     {
       "label": "Turnos",
       "href": "/dashboard/reservations/slots",
+      "adminOnly": true
+    },
+    {
+      "label": "Ordenes",
+      "href": "/dashboard/orders",
       "adminOnly": true
     },
     {
@@ -36,8 +36,8 @@
       "adminOnly": true
     },
     {
-      "label": "Usuarios",
-      "href": "/dashboard/users",
+      "label": "Configuración",
+      "href": "/dashboard/config",
       "adminOnly": true
     }
   ]

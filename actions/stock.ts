@@ -119,16 +119,17 @@ export async function adjustStock(input: AdjustStockInput) {
  */
 export async function bulkAdjustStock(adjustments: AdjustStockInput[]) {
   try {
-    const results = await prisma.$transaction(
-      adjustments.map((adjustment) =>
-        adjustStock(adjustment).then(result => {
-          if (!result.success) {
-            throw new Error(result.error);
-          }
-          return result.data;
-        })
-      )
-    );
+    const results = await prisma.$transaction(async (tx) => {
+      const txResults = [];
+      for (const adjustment of adjustments) {
+        const result = await adjustStock(adjustment);
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+        txResults.push(result.data);
+      }
+      return txResults;
+    });
 
     revalidatePath("/dashboard/menu-items");
     revalidatePath("/dashboard/stock");

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { SerializedMenu } from "@/actions/menus";
 import { MenuCard } from "./menu-card";
-import { MenuDialog } from "./menu-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -13,33 +13,21 @@ interface MenusClientProps {
 }
 
 export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
+  const router = useRouter();
   const [menus, setMenus] = useState(initialMenus);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState<SerializedMenu | null>(null);
 
   const handleCreateMenu = () => {
-    setSelectedMenu(null);
-    setIsDialogOpen(true);
+    router.push("/dashboard/menus/new");
   };
 
-  const handleEditMenu = (menu: SerializedMenu) => {
-    setSelectedMenu(menu);
-    setIsDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setSelectedMenu(null);
+  const handleEditMenu = (menuId: string) => {
+    router.push(`/dashboard/menus/${menuId}`);
   };
 
   const handleMenuUpdated = (updatedMenu: SerializedMenu) => {
     setMenus((prev) =>
       prev.map((m) => (m.id === updatedMenu.id ? updatedMenu : m))
     );
-  };
-
-  const handleMenuCreated = (newMenu: SerializedMenu) => {
-    setMenus((prev) => [newMenu, ...prev]);
   };
 
   const handleMenuDeleted = (menuId: string) => {
@@ -53,11 +41,12 @@ export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
     <div className="space-y-8">
       {/* Header with Create Button */}
       <div className="flex justify-between items-center">
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div></div>
+        {/* <div className="flex gap-4 text-sm text-gray-600">
           <span>Total: {menus.length}</span>
           <span>Activos: {activeMenus.length}</span>
           <span>Inactivos: {inactiveMenus.length}</span>
-        </div>
+        </div> */}
         <Button onClick={handleCreateMenu}>
           <Plus className="mr-2 h-4 w-4" />
           Crear Menú
@@ -75,7 +64,7 @@ export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
               <MenuCard
                 key={menu.id}
                 menu={menu}
-                onEdit={() => handleEditMenu(menu)}
+                onEdit={() => handleEditMenu(menu.id)}
                 onDelete={() => handleMenuDeleted(menu.id)}
                 onUpdate={handleMenuUpdated}
               />
@@ -95,7 +84,7 @@ export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
               <MenuCard
                 key={menu.id}
                 menu={menu}
-                onEdit={() => handleEditMenu(menu)}
+                onEdit={() => handleEditMenu(menu.id)}
                 onDelete={() => handleMenuDeleted(menu.id)}
                 onUpdate={handleMenuUpdated}
               />
@@ -135,16 +124,6 @@ export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
         </div>
       )}
 
-      {/* Menu Dialog */}
-      <MenuDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        menu={selectedMenu}
-        restaurantId={restaurantId}
-        onMenuCreated={handleMenuCreated}
-        onMenuUpdated={handleMenuUpdated}
-        onClose={handleDialogClose}
-      />
     </div>
   );
 }

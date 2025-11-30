@@ -11,6 +11,7 @@ import { useState, useTransition } from "react";
 import { getBranchStockSummary, getLowStockAlerts } from "@/actions/stock";
 import { formatStock } from "../../menu-items/lib/units";
 import { StockAdjustmentDialog } from "./stock-adjustment-dialog";
+import LoadingToast from "@/components/dashboard/loading-toast";
 
 // Serialized types for client components
 type SerializedCategory = {
@@ -153,16 +154,7 @@ export function StockManagementClient({
   return (
     <div className="space-y-6 relative">
       {/* Loading overlay durante refetch */}
-      {isPending && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-            <p className="text-sm font-medium text-gray-700">
-              Actualizando datos...
-            </p>
-          </div>
-        </div>
-      )}
+      {isPending && <LoadingToast />}
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -299,7 +291,8 @@ export function StockManagementClient({
                 const stock = product.stock;
                 const minAlert = product.product.minStockAlert;
                 const trackStock = product.product.trackStock;
-                const isLowStock = trackStock && minAlert && stock < minAlert && stock > 0;
+                const isLowStock =
+                  trackStock && minAlert && stock < minAlert && stock > 0;
                 const isOutOfStock = trackStock && stock === 0;
                 const isAlwaysAvailable = !trackStock;
                 const dineInPrice = product.prices.find(
@@ -332,7 +325,9 @@ export function StockManagementClient({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {isAlwaysAvailable ? (
-                        <span className="font-semibold text-green-600">N/A</span>
+                        <span className="font-semibold text-green-600">
+                          N/A
+                        </span>
                       ) : (
                         <span
                           className={`font-semibold ${
@@ -353,18 +348,16 @@ export function StockManagementClient({
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                      {isAlwaysAvailable ? (
-                        "-"
-                      ) : product.minStock ? (
-                        formatStock(
-                          product.minStock,
-                          product.product.unitType,
-                          product.product.weightUnit,
-                          product.product.volumeUnit
-                        )
-                      ) : (
-                        "-"
-                      )}
+                      {isAlwaysAvailable
+                        ? "-"
+                        : product.minStock
+                        ? formatStock(
+                            product.minStock,
+                            product.product.unitType,
+                            product.product.weightUnit,
+                            product.product.volumeUnit
+                          )
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
                       {dineInPrice ? `$${dineInPrice.price.toFixed(2)}` : "-"}
@@ -379,7 +372,9 @@ export function StockManagementClient({
                           Ajustar
                         </button>
                       ) : (
-                        <span className="text-gray-400 text-xs">No requiere ajuste</span>
+                        <span className="text-gray-400 text-xs">
+                          No requiere ajuste
+                        </span>
                       )}
                     </td>
                   </tr>

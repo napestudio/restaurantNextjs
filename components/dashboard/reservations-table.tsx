@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -24,9 +25,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Trash2, Filter, UserCheck } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { Eye, Trash2, Filter, UserCheck, CalendarDays } from "lucide-react";
+import { format, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { Input } from "@/components/ui/input";
 
 interface ReservationsTableProps {
   reservations: SerializedReservation[];
@@ -35,6 +37,11 @@ interface ReservationsTableProps {
   onStatusUpdate: (id: string, status: string) => void;
   onView: (reservation: SerializedReservation) => void;
   onCancel: (id: string) => void;
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (date: string) => void;
+  onDateToChange: (date: string) => void;
+  onFilteredReservationsChange: (reservations: SerializedReservation[]) => void;
 }
 
 export function ReservationsTable({
@@ -44,35 +51,127 @@ export function ReservationsTable({
   onStatusUpdate,
   onView,
   onCancel,
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
+  onFilteredReservationsChange,
 }: ReservationsTableProps) {
-  const filteredReservations =
-    statusFilter === "all"
-      ? reservations
-      : reservations.filter((res) => res.status.toLowerCase() === statusFilter);
+  // Apply filters using useMemo to prevent unnecessary recalculations
+  const filteredReservations = useMemo(() => {
+    // Apply status filter
+    let filtered =
+      statusFilter === "all"
+        ? reservations
+        : reservations.filter((res) => res.status.toLowerCase() === statusFilter);
+
+    // Apply date range filter
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter((res) => {
+        const resDate = parseISO(res.date);
+
+        if (dateFrom && dateTo) {
+          const from = startOfDay(parseISO(dateFrom));
+          const to = endOfDay(parseISO(dateTo));
+          return isWithinInterval(resDate, { start: from, end: to });
+        } else if (dateFrom) {
+          return resDate >= startOfDay(parseISO(dateFrom));
+        } else if (dateTo) {
+          return resDate <= endOfDay(parseISO(dateTo));
+        }
+
+        return true;
+      });
+    }
+
+    return filtered;
+  }, [reservations, statusFilter, dateFrom, dateTo]);
+
+  // Update parent component with filtered data - using dependencies that won't cause infinite loops
+  useEffect(() => {
+    onFilteredReservationsChange(filteredReservations);
+  }, [reservations, statusFilter, dateFrom, dateTo]);
+
+  const handleSetToday = () => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    onDateFromChange(today);
+    onDateToChange(today);
+  };
+
+  const handleClearDates = () => {
+    onDateFromChange("");
+    onDateToChange("");
+  };
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Gestión de Reservas</CardTitle>
-            <CardDescription>Administra todas las reservas</CardDescription>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Gestión de Reservas</CardTitle>
+              <CardDescription>Administra todas las reservas</CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="pending">Pendientes</SelectItem>
+                  <SelectItem value="confirmed">Confirmadas</SelectItem>
+                  <SelectItem value="seated">Sentadas</SelectItem>
+                  <SelectItem value="completed">Completadas</SelectItem>
+                  <SelectItem value="canceled">Canceladas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="pending">Pendientes</SelectItem>
-                <SelectItem value="confirmed">Confirmadas</SelectItem>
-                <SelectItem value="seated">Sentadas</SelectItem>
-                <SelectItem value="completed">Completadas</SelectItem>
-                <SelectItem value="canceled">Canceladas</SelectItem>
-              </SelectContent>
-            </Select>
+
+          {/* Date Filters */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros de Fecha:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => onDateFromChange(e.target.value)}
+                className="w-40"
+                placeholder="Desde"
+              />
+              <span className="text-muted-foreground">-</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => onDateToChange(e.target.value)}
+                className="w-40"
+                placeholder="Hasta"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSetToday}
+              className="border-red-600 text-red-600 hover:bg-red-50"
+            >
+              <CalendarDays className="h-4 w-4 mr-1" />
+              Hoy
+            </Button>
+            {(dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearDates}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Limpiar
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -94,9 +193,19 @@ export function ReservationsTable({
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  className="text-center py-8 text-muted-foreground"
+                  className="text-center py-12"
                 >
-                  No se encontraron reservas.
+                  <div className="flex flex-col items-center gap-2">
+                    <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
+                    <p className="text-muted-foreground font-medium">
+                      No se encontraron reservas
+                    </p>
+                    {(dateFrom || dateTo || statusFilter !== "all") && (
+                      <p className="text-sm text-muted-foreground">
+                        Intenta ajustar los filtros para ver más resultados
+                      </p>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
