@@ -1,25 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
 import type { SerializedMenu } from "@/actions/menus";
 import { deleteMenu, updateMenu } from "@/actions/menus";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +12,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -38,19 +30,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  MoreVertical,
-  Pencil,
-  Trash2,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SITE_URL } from "@/lib/constants";
+import {
+  Download,
+  ExternalLink,
   Eye,
   EyeOff,
-  Calendar,
-  Clock,
+  MoreVertical,
+  Pencil,
   QrCode,
-  ExternalLink,
-  Download,
+  Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import QRCodeLib from "qrcode";
-import { SITE_URL } from "@/lib/constants";
+import { useState } from "react";
 
 interface MenuCardProps {
   menu: SerializedMenu;
@@ -65,7 +64,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
   const [isTogglingActive, setIsTogglingActive] = useState(false);
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -111,33 +110,6 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
       (acc, section) => acc + (section.menuItems?.length || 0),
       0
     ) || 0;
-
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return null;
-    try {
-      const date = new Date(timeString);
-      return date.toLocaleTimeString("es-AR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-    } catch {
-      return null;
-    }
-  };
-
-  const formatDays = (days: string[]) => {
-    const dayMap: Record<string, string> = {
-      monday: "Lun",
-      tuesday: "Mar",
-      wednesday: "Mié",
-      thursday: "Jue",
-      friday: "Vie",
-      saturday: "Sáb",
-      sunday: "Dom",
-    };
-    return days.map((d) => dayMap[d.toLowerCase()] || d).join(", ");
-  };
 
   const menuUrl = `${SITE_URL}/carta/${menu.slug}`;
 
@@ -244,27 +216,6 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             <span>{itemCount} productos</span>
           </div>
 
-          {/* Schedule Info */}
-          {/* {(menu.availableFrom || menu.availableUntil || menu.daysOfWeek.length > 0) && (
-            <div className="space-y-2 text-sm">
-              {(menu.availableFrom || menu.availableUntil) && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {formatTime(menu.availableFrom) || "00:00"} -{" "}
-                    {formatTime(menu.availableUntil) || "23:59"}
-                  </span>
-                </div>
-              )}
-              {menu.daysOfWeek.length > 0 && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDays(menu.daysOfWeek)}</span>
-                </div>
-              )}
-            </div>
-          )} */}
-
           {/* Status Badge */}
           <div className="flex gap-2">
             {menu.isActive ? (
@@ -274,21 +225,27 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             ) : (
               <Badge variant="secondary">Inactivo</Badge>
             )}
-            {menu.branchId ? (
-              <Badge variant="outline">Sucursal específica</Badge>
-            ) : (
-              <Badge variant="outline">Todas las sucursales</Badge>
-            )}
+            {/* <Badge variant="outline">Disponible 24/7</Badge> */}
           </div>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-2">
           <div className="flex gap-2 w-full">
-            <Button onClick={handleShowQR} variant="outline" size="sm" className="flex-1">
+            <Button
+              onClick={handleShowQR}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
               <QrCode className="h-4 w-4 mr-2" />
               QR
             </Button>
-            <Button onClick={handleOpenMenu} variant="outline" size="sm" className="flex-1">
+            <Button
+              onClick={handleOpenMenu}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
               <ExternalLink className="h-4 w-4 mr-2" />
               Ver
             </Button>
@@ -334,12 +291,13 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
           <DialogHeader>
             <DialogTitle>Código QR del Menú</DialogTitle>
             <DialogDescription>
-              Escanea este código QR para acceder al menú &quot;{menu.name}&quot;
+              Escanea este código QR para acceder al menú &quot;{menu.name}
+              &quot;
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             {qrCodeDataUrl && (
-              <img
+              <Image
                 src={qrCodeDataUrl}
                 alt="QR Code"
                 className="w-64 h-64 border border-gray-200 rounded-lg"
