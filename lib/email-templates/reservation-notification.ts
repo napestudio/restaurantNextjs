@@ -14,6 +14,7 @@ interface ReservationEmailData {
   status: string;
   autoAssigned: boolean;
   assignedTables?: string[];
+  pricePerPerson?: number;
 }
 
 export function generateReservationNotificationEmail(
@@ -213,6 +214,30 @@ export function generateReservationNotificationEmail(
                 <p style="margin: 0; color: #991b1b; font-size: 16px; font-weight: 600;">
                   ⚠️ Esta reserva requiere asignación manual de mesas
                 </p>
+              </div>
+              `
+                  : ""
+              }
+
+              <!-- Paid Reservation Notice -->
+              ${
+                data.pricePerPerson && data.pricePerPerson > 0
+                  ? `
+              <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-top: 16px;">
+                <h3 style="margin: 0 0 12px; color: #92400e; font-size: 18px; font-weight: 600;">
+                  💳 Reserva con Pago Requerido
+                </h3>
+                <p style="margin: 0 0 12px; color: #78350f; font-size: 16px; line-height: 1.5;">
+                  <strong>IMPORTANTE:</strong> Esta es una reserva de pago. El cliente debe ser contactado para confirmar la reserva y coordinar el pago.
+                </p>
+                <div style="background-color: #fef3c7; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                  <p style="margin: 0; color: #78350f; font-size: 16px;">
+                    <strong>Monto total:</strong> $${(data.pricePerPerson * data.guests).toFixed(2)}
+                  </p>
+                  <p style="margin: 4px 0 0; color: #92400e; font-size: 14px;">
+                    (${data.guests} ${data.guests === 1 ? 'persona' : 'personas'} × $${data.pricePerPerson.toFixed(2)})
+                  </p>
+                </div>
               </div>
               `
                   : ""
