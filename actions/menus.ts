@@ -186,6 +186,7 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
 
 /**
  * Create a new menu
+ * Note: Menus are available 24/7 by default. Time and day restrictions are not set.
  */
 export async function createMenu(data: {
   restaurantId: string;
@@ -194,9 +195,6 @@ export async function createMenu(data: {
   description?: string;
   branchId?: string; // Optional - will use BRANCH_ID from env if not provided
   isActive?: boolean;
-  availableFrom?: string; // ISO time string
-  availableUntil?: string; // ISO time string
-  daysOfWeek?: string[];
 }) {
   try {
     const branchId = data.branchId || process.env.BRANCH_ID;
@@ -212,9 +210,10 @@ export async function createMenu(data: {
         description: data.description,
         branchId,
         isActive: data.isActive ?? true,
-        availableFrom: data.availableFrom ? new Date(`1970-01-01T${data.availableFrom}`) : null,
-        availableUntil: data.availableUntil ? new Date(`1970-01-01T${data.availableUntil}`) : null,
-        daysOfWeek: data.daysOfWeek ?? [],
+        // Available 24/7 by default - no time or day restrictions
+        availableFrom: null,
+        availableUntil: null,
+        daysOfWeek: [],
       },
     });
 
@@ -228,6 +227,7 @@ export async function createMenu(data: {
 
 /**
  * Update an existing menu
+ * Note: Time and day restrictions are not updated. Menus remain available 24/7.
  */
 export async function updateMenu(
   menuId: string,
@@ -237,9 +237,6 @@ export async function updateMenu(
     description?: string;
     branchId?: string;
     isActive?: boolean;
-    availableFrom?: string; // ISO time string
-    availableUntil?: string; // ISO time string
-    daysOfWeek?: string[];
   }
 ) {
   try {
@@ -251,13 +248,6 @@ export async function updateMenu(
         ...(data.description !== undefined && { description: data.description }),
         ...(data.branchId !== undefined && { branchId: data.branchId }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
-        ...(data.availableFrom !== undefined && {
-          availableFrom: data.availableFrom ? new Date(`1970-01-01T${data.availableFrom}`) : null,
-        }),
-        ...(data.availableUntil !== undefined && {
-          availableUntil: data.availableUntil ? new Date(`1970-01-01T${data.availableUntil}`) : null,
-        }),
-        ...(data.daysOfWeek !== undefined && { daysOfWeek: data.daysOfWeek }),
       },
     });
 

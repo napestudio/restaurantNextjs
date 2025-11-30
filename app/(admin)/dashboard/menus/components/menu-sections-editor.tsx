@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, GripVertical, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
 import { MenuItemsManager } from "./menu-items-manager";
 
 interface MenuSectionsEditorProps {
@@ -45,8 +45,13 @@ export function MenuSectionsEditor({
 }: MenuSectionsEditorProps) {
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null);
-  const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
+  const [deletingSectionId, setDeletingSectionId] = useState<string | null>(
+    null
+  );
+  // All sections expanded by default to show products
+  const [collapsedSectionIds, setCollapsedSectionIds] = useState<Set<string>>(
+    new Set()
+  );
 
   // New section form
   const [newSectionName, setNewSectionName] = useState("");
@@ -125,33 +130,102 @@ export function MenuSectionsEditor({
   };
 
   const handleToggleSection = (sectionId: string) => {
-    setExpandedSectionId(expandedSectionId === sectionId ? null : sectionId);
+    setCollapsedSectionIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
+
+  const isSectionExpanded = (sectionId: string) =>
+    !collapsedSectionIds.has(sectionId);
+
+  const handleMoveUp = async (sectionId: string) => {
+    const currentIndex = sections.findIndex((s) => s.id === sectionId);
+    if (currentIndex <= 0) return; // Already at the top
+
+    const newSections = [...sections];
+    const temp = newSections[currentIndex];
+    newSections[currentIndex] = newSections[currentIndex - 1];
+    newSections[currentIndex - 1] = temp;
+
+    // Update order values
+    const updates = newSections.map((section, index) => ({
+      id: section.id,
+      order: index,
+    }));
+
+    const result = await reorderMenuSections(updates);
+    if (result.success) {
+      onUpdate();
+    }
+  };
+
+  const handleMoveDown = async (sectionId: string) => {
+    const currentIndex = sections.findIndex((s) => s.id === sectionId);
+    if (currentIndex >= sections.length - 1) return; // Already at the bottom
+
+    const newSections = [...sections];
+    const temp = newSections[currentIndex];
+    newSections[currentIndex] = newSections[currentIndex + 1];
+    newSections[currentIndex + 1] = temp;
+
+    // Update order values
+    const updates = newSections.map((section, index) => ({
+      id: section.id,
+      order: index,
+    }));
+
+    const result = await reorderMenuSections(updates);
+    if (result.success) {
+      onUpdate();
+    }
   };
 
   return (
     <div className="space-y-4">
+      {/* Add Section Button - Always visible at top */}
+
       {/* Sections List */}
       {sections.length === 0 && !isAddingSection && (
-        <div className="text-center py-8 text-gray-500">
-          <p className="mb-4">No hay secciones en este menú</p>
-          <Button onClick={() => setIsAddingSection(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Primera Sección
-          </Button>
+        <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+          <p className="text-sm">
+            No hay secciones en este menú. Haz clic en `&quot;`Agregar Nueva
+            Sección`&quot;` para comenzar.
+          </p>
         </div>
       )}
 
-      {sections.map((section) => (
+      {sections.map((section, index) => (
         <Card key={section.id}>
           <CardHeader>
             <div className="flex items-start gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="cursor-grab h-8 w-8 mt-1"
-              >
-                <GripVertical className="h-4 w-4" />
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => handleMoveUp(section.id)}
+                  disabled={index === 0}
+                  title="Mover arriba"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => handleMoveDown(section.id)}
+                  disabled={index === sections.length - 1}
+                  title="Mover abajo"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
 
               <div className="flex-1">
                 {editingSectionId === section.id ? (
@@ -163,7 +237,9 @@ export function MenuSectionsEditor({
                     />
                     <Textarea
                       value={editSectionDescription}
-                      onChange={(e) => setEditSectionDescription(e.target.value)}
+                      onChange={(e) =>
+                        setEditSectionDescription(e.target.value)
+                      }
                       placeholder="Descripción (opcional)"
                       rows={2}
                     />
@@ -223,19 +299,8 @@ export function MenuSectionsEditor({
 
           {editingSectionId !== section.id && (
             <CardContent>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleToggleSection(section.id)}
-                className="w-full"
-              >
-                {expandedSectionId === section.id
-                  ? "Ocultar Productos"
-                  : "Gestionar Productos"}
-              </Button>
-
-              {expandedSectionId === section.id && (
-                <div className="mt-4">
+              {isSectionExpanded(section.id) && (
+                <div className="mb-4">
                   <MenuItemsManager
                     section={section}
                     restaurantId={restaurantId}
@@ -243,39 +308,66 @@ export function MenuSectionsEditor({
                   />
                 </div>
               )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleToggleSection(section.id)}
+                className="w-full text-gray-600"
+              >
+                {isSectionExpanded(section.id)
+                  ? "Ocultar Productos"
+                  : "Mostrar Productos"}
+              </Button>
             </CardContent>
           )}
         </Card>
       ))}
+      {!isAddingSection && (
+        <Button
+          onClick={() => setIsAddingSection(true)}
+          className="w-full bg-blue-600 hover:bg-blue-700"
+          size="lg"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Agregar Nueva Sección
+        </Button>
+      )}
 
       {/* Add New Section Form */}
-      {isAddingSection ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Nueva Sección</CardTitle>
+      {isAddingSection && (
+        <Card className="border-2 border-blue-500">
+          <CardHeader className="bg-blue-50">
+            <CardTitle className="text-base text-blue-900">
+              Nueva Sección del Menú
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="sectionName">Nombre *</Label>
+              <Label htmlFor="sectionName">Nombre de la Sección *</Label>
               <Input
                 id="sectionName"
                 value={newSectionName}
                 onChange={(e) => setNewSectionName(e.target.value)}
-                placeholder="ej. Entradas, Platos Principales"
+                placeholder="ej. Entradas, Platos Principales, Postres"
+                autoFocus
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sectionDescription">Descripción</Label>
+              <Label htmlFor="sectionDescription">Descripción (opcional)</Label>
               <Textarea
                 id="sectionDescription"
                 value={newSectionDescription}
                 onChange={(e) => setNewSectionDescription(e.target.value)}
-                placeholder="Descripción opcional"
+                placeholder="Agrega una descripción para esta sección"
                 rows={2}
               />
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleAddSection}>Agregar Sección</Button>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleAddSection} className="flex-1">
+                <Plus className="mr-2 h-4 w-4" />
+                Crear Sección
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -283,23 +375,13 @@ export function MenuSectionsEditor({
                   setNewSectionName("");
                   setNewSectionDescription("");
                 }}
+                className="flex-1"
               >
                 Cancelar
               </Button>
             </div>
           </CardContent>
         </Card>
-      ) : (
-        sections.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => setIsAddingSection(true)}
-            className="w-full"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Sección
-          </Button>
-        )
       )}
 
       {/* Delete Confirmation Dialog */}
@@ -311,8 +393,8 @@ export function MenuSectionsEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar sección?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará la sección y todos los productos asociados. No
-              se puede deshacer.
+              Esta acción eliminará la sección y todos los productos asociados.
+              No se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
