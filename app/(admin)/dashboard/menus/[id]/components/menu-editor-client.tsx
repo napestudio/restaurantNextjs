@@ -29,6 +29,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
     initialMenu?.description || ""
   );
   const [isActive, setIsActive] = useState(initialMenu?.isActive ?? true);
+  const [showPrices, setShowPrices] = useState(initialMenu?.showPrices ?? true);
 
   // Auto-generate slug from name for new menus
   useEffect(() => {
@@ -57,6 +58,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
           name: name.trim(),
           description: description.trim() || undefined,
           isActive,
+          showPrices,
         });
 
         if (result.success && result.menu) {
@@ -201,6 +203,23 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     className="font-normal cursor-pointer"
                   >
                     Menú activo
+                  </Label>
+                </div>
+
+                {/* Show Prices */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showPrices"
+                    checked={showPrices}
+                    onCheckedChange={(checked) =>
+                      setShowPrices(checked as boolean)
+                    }
+                  />
+                  <Label
+                    htmlFor="showPrices"
+                    className="font-normal cursor-pointer"
+                  >
+                    Mostrar precios
                   </Label>
                 </div>
 

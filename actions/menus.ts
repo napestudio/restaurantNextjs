@@ -227,7 +227,6 @@ export async function createMenu(data: {
 
 /**
  * Update an existing menu
- * Note: Time and day restrictions are not updated. Menus remain available 24/7.
  */
 export async function updateMenu(
   menuId: string,
@@ -237,6 +236,10 @@ export async function updateMenu(
     description?: string;
     branchId?: string;
     isActive?: boolean;
+    showPrices?: boolean;
+    availableFrom?: string;
+    availableUntil?: string;
+    daysOfWeek?: string[];
   }
 ) {
   try {
@@ -248,6 +251,14 @@ export async function updateMenu(
         ...(data.description !== undefined && { description: data.description }),
         ...(data.branchId !== undefined && { branchId: data.branchId }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.showPrices !== undefined && { showPrices: data.showPrices }),
+        ...(data.availableFrom !== undefined && {
+          availableFrom: data.availableFrom ? new Date(`1970-01-01T${data.availableFrom}:00Z`) : null
+        }),
+        ...(data.availableUntil !== undefined && {
+          availableUntil: data.availableUntil ? new Date(`1970-01-01T${data.availableUntil}:00Z`) : null
+        }),
+        ...(data.daysOfWeek !== undefined && { daysOfWeek: data.daysOfWeek }),
       },
     });
 

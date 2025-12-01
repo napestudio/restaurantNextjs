@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  // url        = env("DATABASE_URL")
   extensions = [citext]
 }
 
@@ -357,6 +356,7 @@ model Menu {
   description String?
   slug        String  @db.Citext
   isActive    Boolean @default(true)
+  showPrices  Boolean @default(true) // Whether to display prices on the public menu
 
   // Scheduling - cuando está disponible este menú
   availableFrom  DateTime? @db.Time // e.g., 08:00

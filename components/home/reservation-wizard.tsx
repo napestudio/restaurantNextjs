@@ -197,7 +197,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
           <Button
             onClick={handleNextWithFetch}
             disabled={!canProceed || isPending}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-purple-900 hover:bg-purple-800"
             size="lg"
           >
             {isPending ? "Cargando..." : "Continuar"}
