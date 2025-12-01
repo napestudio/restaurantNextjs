@@ -56,6 +56,7 @@ export function MenuDialog({
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [showPrices, setShowPrices] = useState(true);
   const [availableFrom, setAvailableFrom] = useState("");
   const [availableUntil, setAvailableUntil] = useState("");
   const [daysOfWeek, setDaysOfWeek] = useState<string[]>([]);
@@ -75,6 +76,7 @@ export function MenuDialog({
       setSlug(menu.slug);
       setDescription(menu.description || "");
       setIsActive(menu.isActive);
+      setShowPrices(menu.showPrices ?? true);
       setDaysOfWeek(menu.daysOfWeek);
 
       // Format time values
@@ -110,15 +112,17 @@ export function MenuDialog({
       setSlug("");
       setDescription("");
       setIsActive(true);
+      setShowPrices(true);
       setAvailableFrom("");
       setAvailableUntil("");
       setDaysOfWeek([]);
+      setActiveTab("basic");
     }
   }, [menu, open]);
 
-  // Auto-generate slug from name
+  // Auto-generate slug from name (only for edit mode)
   useEffect(() => {
-    if (!menu && name) {
+    if (menu && name && !slug) {
       const generatedSlug = name
         .toLowerCase()
         .normalize("NFD")
@@ -127,7 +131,7 @@ export function MenuDialog({
         .replace(/^-+|-+$/g, "");
       setSlug(generatedSlug);
     }
-  }, [name, menu]);
+  }, [name, menu, slug]);
 
   const handleToggleDay = (day: string) => {
     setDaysOfWeek((prev) =>
@@ -136,8 +140,8 @@ export function MenuDialog({
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !slug.trim()) {
-      alert("El nombre y el slug son obligatorios");
+    if (!name.trim()) {
+      alert("El nombre es obligatorio");
       return;
     }
 
@@ -145,11 +149,18 @@ export function MenuDialog({
     try {
       if (menu) {
         // Update existing menu
+        if (!slug.trim()) {
+          alert("El slug es obligatorio");
+          setIsSaving(false);
+          return;
+        }
+
         const result = await updateMenu(menu.id, {
           name: name.trim(),
           slug: slug.trim(),
           description: description.trim() || undefined,
           isActive,
+          showPrices,
           availableFrom: availableFrom || undefined,
           availableUntil: availableUntil || undefined,
           daysOfWeek: daysOfWeek.length > 0 ? daysOfWeek : undefined,
@@ -166,20 +177,27 @@ export function MenuDialog({
           alert(result.error || "Error al actualizar el menú");
         }
       } else {
-        // Create new menu
+        // Create new menu - generate unique slug
+        const baseSlug = name
+          .trim()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+
+        // Add timestamp to ensure uniqueness
+        const uniqueSlug = `${baseSlug}-${Date.now()}`;
+
         const result = await createMenu({
           restaurantId,
           name: name.trim(),
-          slug: slug.trim(),
-          description: description.trim() || undefined,
-          isActive,
-          availableFrom: availableFrom || undefined,
-          availableUntil: availableUntil || undefined,
-          daysOfWeek: daysOfWeek.length > 0 ? daysOfWeek : undefined,
+          slug: uniqueSlug,
+          isActive: true, // Always active by default
         });
 
         if (result.success && result.menu) {
-          // Fetch full menu data
+          // Fetch full menu data with sections
           const newFull = await getMenu(result.menu.id);
           if (newFull) {
             onMenuCreated(newFull);
@@ -207,22 +225,63 @@ export function MenuDialog({
     }
   };
 
+  // Simple create mode - only show name field
+  if (!menu) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Menú</DialogTitle>
+            <DialogDescription>
+              Ingresa el nombre del menú. Podrás configurar los detalles después.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Nombre del Menú <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="ej. Menú Principal, Menú Ejecutivo"
+                autoFocus
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={onClose} disabled={isSaving}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
+                {isSaving ? "Creando..." : "Crear Menú"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Edit mode - show full form with tabs
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{menu ? "Editar Menú" : "Crear Nuevo Menú"}</DialogTitle>
+          <DialogTitle>Editar Menú</DialogTitle>
           <DialogDescription>
-            {menu
-              ? "Actualiza la información del menú y gestiona sus secciones"
-              : "Crea un nuevo menú para organizar tus productos"}
+            Actualiza la información del menú y gestiona sus secciones
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="basic">Información Básica</TabsTrigger>
-            <TabsTrigger value="sections" disabled={!menu}>
+            <TabsTrigger value="sections">
               Secciones y Productos
             </TabsTrigger>
           </TabsList>
@@ -278,6 +337,18 @@ export function MenuDialog({
               />
               <Label htmlFor="isActive" className="font-normal cursor-pointer">
                 Menú activo (visible para clientes)
+              </Label>
+            </div>
+
+            {/* Show Prices */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showPrices"
+                checked={showPrices}
+                onCheckedChange={(checked) => setShowPrices(checked as boolean)}
+              />
+              <Label htmlFor="showPrices" className="font-normal cursor-pointer">
+                Mostrar precios en el menú público
               </Label>
             </div>
 
@@ -339,7 +410,7 @@ export function MenuDialog({
                 Cancelar
               </Button>
               <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? "Guardando..." : menu ? "Guardar Cambios" : "Crear Menú"}
+                {isSaving ? "Guardando..." : "Guardar Cambios"}
               </Button>
             </div>
           </TabsContent>
