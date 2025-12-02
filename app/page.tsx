@@ -62,7 +62,7 @@ export default async function Home() {
             <p className="text-sm text-gray-400 mt-1">
               {restaurant.data.phone && (
                 <Link
-                  href={"#"}
+                  href={`https://api.whatsapp.com/send/?phone=${restaurant.data.phone}&text=Hola!+Quisiera+hacer+una+consulta.&app_absent=0`}
                   className="flex items-center self-center justify-center"
                 >
                   <span className="inline-block mr-1 w-4 h-4">

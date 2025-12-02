@@ -332,42 +332,6 @@ export default function RestaurantConfigForm({
 
           <div>
             <label
-              htmlFor="twitterUrl"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Twitter / X
-            </label>
-            <input
-              type="url"
-              id="twitterUrl"
-              name="twitterUrl"
-              value={formData.twitterUrl}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="https://twitter.com/turestaurante"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="linkedinUrl"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              LinkedIn
-            </label>
-            <input
-              type="url"
-              id="linkedinUrl"
-              name="linkedinUrl"
-              value={formData.linkedinUrl}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="https://www.linkedin.com/company/turestaurante"
-            />
-          </div>
-
-          <div>
-            <label
               htmlFor="tiktokUrl"
               className="block text-sm font-medium text-gray-700 mb-1"
             >

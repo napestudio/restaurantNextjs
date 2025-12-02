@@ -1,7 +1,21 @@
-import { PrismaClient, UserRole, PriceType, UnitType, WeightUnit, VolumeUnit } from "../app/generated/prisma";
 import bcrypt from "bcryptjs";
+import {
+  PrismaClient,
+  UserRole,
+  PriceType,
+  UnitType,
+  WeightUnit,
+  VolumeUnit,
+} from "../app/generated/prisma";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Starting database seed...");
@@ -14,7 +28,8 @@ async function main() {
       id: "seed-restaurant-1",
       name: "Kiku Sushi",
       slug: "kiku-sushi",
-      description: "Auténtica cocina japonesa con los mejores ingredientes frescos",
+      description:
+        "Auténtica cocina japonesa con los mejores ingredientes frescos",
       phone: "+54 11 1234-5678",
       logoUrl: "/logo.png",
       isActive: true,
@@ -41,16 +56,16 @@ async function main() {
     update: {},
     create: {
       id: "seed-branch-1",
-      name: "Sucursal Principal",
-      slug: "sucursal-principal",
-      address: "Av. Corrientes 1234, Buenos Aires",
+      name: "Kiku Sushi",
+      slug: "kiku-sushi",
+      address: "Callao Bis 139, Rosario, Santa Fe",
       restaurantId: restaurant.id,
     },
   });
   console.log("✅ Sucursal creada:", branch.name);
 
   // Create Admin User
-  const hashedPassword = await bcrypt.hash("Admin@123", 10);
+  const hashedPassword = await bcrypt.hash("NoeKiku@123", 10);
   const adminUser = await prisma.user.upsert({
     where: { username: "admin" },
     update: {},
@@ -196,7 +211,8 @@ async function main() {
     {
       id: "prod-dragon-roll",
       name: "Dragon Roll",
-      description: "Roll premium con langostino tempura, palta y salsa de anguila (10 piezas)",
+      description:
+        "Roll premium con langostino tempura, palta y salsa de anguila (10 piezas)",
       sku: "DRG-001",
       categoryId: "cat-main-courses",
       unitType: "UNIT" as UnitType,
@@ -418,14 +434,86 @@ async function main() {
 
   // Create Tables with varied positions
   const tables = [
-    { number: 1, capacity: 2, sectorId: salonPrincipal.id, positionX: 100, positionY: 100, width: 80, height: 80, shape: "SQUARE" as const },
-    { number: 2, capacity: 2, sectorId: salonPrincipal.id, positionX: 250, positionY: 100, width: 80, height: 80, shape: "SQUARE" as const },
-    { number: 3, capacity: 4, sectorId: salonPrincipal.id, positionX: 400, positionY: 100, width: 120, height: 80, shape: "RECTANGLE" as const },
-    { number: 4, capacity: 4, sectorId: patio.id, positionX: 150, positionY: 150, width: 100, height: 100, shape: "CIRCLE" as const },
-    { number: 5, capacity: 4, sectorId: patio.id, positionX: 350, positionY: 150, width: 100, height: 100, shape: "CIRCLE" as const },
-    { number: 6, capacity: 6, sectorId: patio.id, positionX: 550, positionY: 150, width: 140, height: 90, shape: "WIDE" as const },
-    { number: 7, capacity: 6, sectorId: bar.id, positionX: 120, positionY: 200, width: 140, height: 90, shape: "RECTANGLE" as const },
-    { number: 8, capacity: 8, sectorId: bar.id, positionX: 350, positionY: 200, width: 160, height: 100, shape: "WIDE" as const },
+    {
+      number: 1,
+      capacity: 2,
+      sectorId: salonPrincipal.id,
+      positionX: 100,
+      positionY: 100,
+      width: 80,
+      height: 80,
+      shape: "SQUARE" as const,
+    },
+    {
+      number: 2,
+      capacity: 2,
+      sectorId: salonPrincipal.id,
+      positionX: 250,
+      positionY: 100,
+      width: 80,
+      height: 80,
+      shape: "SQUARE" as const,
+    },
+    {
+      number: 3,
+      capacity: 4,
+      sectorId: salonPrincipal.id,
+      positionX: 400,
+      positionY: 100,
+      width: 120,
+      height: 80,
+      shape: "RECTANGLE" as const,
+    },
+    {
+      number: 4,
+      capacity: 4,
+      sectorId: patio.id,
+      positionX: 150,
+      positionY: 150,
+      width: 100,
+      height: 100,
+      shape: "CIRCLE" as const,
+    },
+    {
+      number: 5,
+      capacity: 4,
+      sectorId: patio.id,
+      positionX: 350,
+      positionY: 150,
+      width: 100,
+      height: 100,
+      shape: "CIRCLE" as const,
+    },
+    {
+      number: 6,
+      capacity: 6,
+      sectorId: patio.id,
+      positionX: 550,
+      positionY: 150,
+      width: 140,
+      height: 90,
+      shape: "WIDE" as const,
+    },
+    {
+      number: 7,
+      capacity: 6,
+      sectorId: bar.id,
+      positionX: 120,
+      positionY: 200,
+      width: 140,
+      height: 90,
+      shape: "RECTANGLE" as const,
+    },
+    {
+      number: 8,
+      capacity: 8,
+      sectorId: bar.id,
+      positionX: 350,
+      positionY: 200,
+      width: 160,
+      height: 100,
+      shape: "WIDE" as const,
+    },
   ];
 
   for (const tableData of tables) {
@@ -659,11 +747,20 @@ async function main() {
       id: "menu-main",
       name: "Menú Principal",
       slug: "menu-principal",
-      description: "Nuestra carta completa con todos nuestros platos disponibles",
+      description:
+        "Nuestra carta completa con todos nuestros platos disponibles",
       restaurantId: restaurant.id,
       branchId: branch.id, // Menus are branch-specific
       isActive: true,
-      daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      daysOfWeek: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
     },
   });
   console.log("  ✓ Menú Principal creado");
