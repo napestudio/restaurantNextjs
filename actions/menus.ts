@@ -1,11 +1,14 @@
 "use server";
 
+import type { Menu, MenuItem, MenuSection } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Menu, MenuSection, MenuItem, Product } from "@/app/generated/prisma";
 
 // Types for serialized data (Decimal -> number, Date -> string)
-export type SerializedMenu = Omit<Menu, "createdAt" | "updatedAt" | "availableFrom" | "availableUntil"> & {
+export type SerializedMenu = Omit<
+  Menu,
+  "createdAt" | "updatedAt" | "availableFrom" | "availableUntil"
+> & {
   createdAt: string;
   updatedAt: string;
   availableFrom: string | null;
@@ -13,13 +16,19 @@ export type SerializedMenu = Omit<Menu, "createdAt" | "updatedAt" | "availableFr
   menuSections?: SerializedMenuSection[];
 };
 
-export type SerializedMenuSection = Omit<MenuSection, "createdAt" | "updatedAt"> & {
+export type SerializedMenuSection = Omit<
+  MenuSection,
+  "createdAt" | "updatedAt"
+> & {
   createdAt: string;
   updatedAt: string;
   menuItems?: SerializedMenuItem[];
 };
 
-export type SerializedMenuItem = Omit<MenuItem, "createdAt" | "updatedAt" | "customPrice"> & {
+export type SerializedMenuItem = Omit<
+  MenuItem,
+  "createdAt" | "updatedAt" | "customPrice"
+> & {
   createdAt: string;
   updatedAt: string;
   customPrice: number | null;
@@ -36,7 +45,9 @@ export type SerializedMenuItem = Omit<MenuItem, "createdAt" | "updatedAt" | "cus
 /**
  * Get all menus for a restaurant with their sections and items
  */
-export async function getMenus(restaurantId: string): Promise<SerializedMenu[]> {
+export async function getMenus(
+  restaurantId: string
+): Promise<SerializedMenu[]> {
   const menus = await prisma.menu.findMany({
     where: { restaurantId },
     include: {
@@ -227,7 +238,6 @@ export async function createMenu(data: {
 
 /**
  * Update an existing menu
- * Note: Time and day restrictions are not updated. Menus remain available 24/7.
  */
 export async function updateMenu(
   menuId: string,
@@ -237,6 +247,10 @@ export async function updateMenu(
     description?: string;
     branchId?: string;
     isActive?: boolean;
+    showPrices?: boolean;
+    availableFrom?: string;
+    availableUntil?: string;
+    daysOfWeek?: string[];
   }
 ) {
   try {
@@ -245,14 +259,38 @@ export async function updateMenu(
       data: {
         ...(data.name && { name: data.name }),
         ...(data.slug && { slug: data.slug.toLowerCase() }),
-        ...(data.description !== undefined && { description: data.description }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
         ...(data.branchId !== undefined && { branchId: data.branchId }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.showPrices !== undefined && { showPrices: data.showPrices }),
+        ...(data.availableFrom !== undefined && {
+          availableFrom: data.availableFrom
+            ? new Date(`1970-01-01T${data.availableFrom}:00Z`)
+            : null,
+        }),
+        ...(data.availableUntil !== undefined && {
+          availableUntil: data.availableUntil
+            ? new Date(`1970-01-01T${data.availableUntil}:00Z`)
+            : null,
+        }),
+        ...(data.daysOfWeek !== undefined && { daysOfWeek: data.daysOfWeek }),
       },
     });
 
     revalidatePath("/dashboard/menus");
-    return { success: true, menu };
+
+    // Serialize dates for client component consumption
+    const serializedMenu: SerializedMenu = {
+      ...menu,
+      createdAt: menu.createdAt.toISOString(),
+      updatedAt: menu.updatedAt.toISOString(),
+      availableFrom: menu.availableFrom?.toISOString() ?? null,
+      availableUntil: menu.availableUntil?.toISOString() ?? null,
+    };
+
+    return { success: true, menu: serializedMenu };
   } catch (error) {
     console.error("Error updating menu:", error);
     return { success: false, error: "Failed to update menu" };
@@ -386,7 +424,7 @@ export async function addMenuItem(data: {
       menuItem: {
         ...menuItem,
         customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
-      }
+      },
     };
   } catch (error) {
     console.error("Error adding menu item:", error);
@@ -411,9 +449,13 @@ export async function updateMenuItem(
       where: { id: itemId },
       data: {
         ...(data.order !== undefined && { order: data.order }),
-        ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
+        ...(data.isAvailable !== undefined && {
+          isAvailable: data.isAvailable,
+        }),
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
-        ...(data.customPrice !== undefined && { customPrice: data.customPrice }),
+        ...(data.customPrice !== undefined && {
+          customPrice: data.customPrice,
+        }),
       },
     });
 
@@ -424,7 +466,7 @@ export async function updateMenuItem(
       menuItem: {
         ...menuItem,
         customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
-      }
+      },
     };
   } catch (error) {
     console.error("Error updating menu item:", error);
@@ -452,7 +494,9 @@ export async function removeMenuItem(itemId: string) {
 /**
  * Reorder menu sections
  */
-export async function reorderMenuSections(sections: { id: string; order: number }[]) {
+export async function reorderMenuSections(
+  sections: { id: string; order: number }[]
+) {
   try {
     await prisma.$transaction(
       sections.map((section) =>

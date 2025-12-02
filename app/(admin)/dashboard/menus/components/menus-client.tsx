@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SerializedMenu } from "@/actions/menus";
 import { MenuCard } from "./menu-card";
+import { MenuDialog } from "./menu-dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -15,9 +16,17 @@ interface MenusClientProps {
 export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
   const router = useRouter();
   const [menus, setMenus] = useState(initialMenus);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const handleCreateMenu = () => {
-    router.push("/dashboard/menus/new");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleMenuCreated = (newMenu: SerializedMenu) => {
+    setMenus((prev) => [newMenu, ...prev]);
+    setIsCreateDialogOpen(false);
+    // Redirect to the newly created menu's page
+    router.push(`/dashboard/menus/${newMenu.id}`);
   };
 
   const handleEditMenu = (menuId: string) => {
@@ -124,6 +133,16 @@ export function MenusClient({ initialMenus, restaurantId }: MenusClientProps) {
         </div>
       )}
 
+      {/* Create Menu Dialog */}
+      <MenuDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        menu={null}
+        restaurantId={restaurantId}
+        onMenuCreated={handleMenuCreated}
+        onMenuUpdated={handleMenuUpdated}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
     </div>
   );
 }

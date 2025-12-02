@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 import { SITE_URL } from "@/lib/constants";
 import {
   Download,
@@ -59,6 +60,7 @@ interface MenuCardProps {
 }
 
 export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
+  const { toast } = useToast();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingActive, setIsTogglingActive] = useState(false);
@@ -72,11 +74,23 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
       const result = await deleteMenu(menu.id);
       if (result.success) {
         onDelete();
+        toast({
+          title: "Éxito",
+          description: "Menú eliminado correctamente",
+        });
       } else {
-        alert("Error al eliminar el menú");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al eliminar el menú",
+        });
       }
     } catch (error) {
-      alert("Error al eliminar el menú");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al eliminar el menú",
+      });
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
@@ -94,11 +108,23 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
           ...menu,
           isActive: !menu.isActive,
         });
+        toast({
+          title: "Éxito",
+          description: `Menú ${!menu.isActive ? "activado" : "desactivado"} correctamente`,
+        });
       } else {
-        alert("Error al actualizar el menú");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al actualizar el menú",
+        });
       }
     } catch (error) {
-      alert("Error al actualizar el menú");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al actualizar el menú",
+      });
     } finally {
       setIsTogglingActive(false);
     }
@@ -127,7 +153,11 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
       setIsQRDialogOpen(true);
     } catch (error) {
       console.error("Error generating QR code:", error);
-      alert("Error al generar código QR");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al generar código QR",
+      });
     }
   };
 
@@ -148,9 +178,17 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      toast({
+        title: "Éxito",
+        description: "Código QR descargado correctamente",
+      });
     } catch (error) {
       console.error("Error downloading QR code:", error);
-      alert("Error al descargar código QR");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al descargar código QR",
+      });
     }
   };
 
@@ -291,7 +329,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
           <DialogHeader>
             <DialogTitle>Código QR del Menú</DialogTitle>
             <DialogDescription>
-              Escanea este código QR para acceder al menú &quot;{menu.name}
+              Podés descargar QR para el menú &quot;{menu.name}
               &quot;
             </DialogDescription>
           </DialogHeader>
@@ -300,6 +338,8 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
               <Image
                 src={qrCodeDataUrl}
                 alt="QR Code"
+                width={256}
+                height={256}
                 className="w-64 h-64 border border-gray-200 rounded-lg"
               />
             )}

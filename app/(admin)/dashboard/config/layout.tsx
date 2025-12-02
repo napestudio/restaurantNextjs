@@ -7,7 +7,9 @@ export default async function ConfigPageLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50 w-full flex pt-11">
-      <ConfigSideBar />
+      <div className="fixed left-0 h-svh">
+        <ConfigSideBar />
+      </div>
       <main className="mx-auto pt-11">{children}</main>
     </div>
   );

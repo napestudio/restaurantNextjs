@@ -62,7 +62,7 @@ export async function createReservation(data: {
   createdBy?: string;
   autoAssignTables?: boolean; // Option to enable/disable auto-assignment
 }) {
-  console.log("creating reservation", data);
+  // console.log("creating reservation", data);
   try {
     // Parse the date
     const reservationDate = new Date(data.date);
@@ -122,7 +122,9 @@ export async function createReservation(data: {
           });
 
           // Check if this is a paid reservation (pricePerPerson > 0)
-          const isPaidReservation = reservation.timeSlot && (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
+          const isPaidReservation =
+            reservation.timeSlot &&
+            (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
 
           // Only confirm reservation if it's not a paid reservation
           // Paid reservations must remain PENDING until payment is coordinated
@@ -137,22 +139,22 @@ export async function createReservation(data: {
 
             finalStatus = ReservationStatus.CONFIRMED;
 
-            console.log(
-              `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} and CONFIRMED`
-            );
+            // console.log(
+            //   `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} and CONFIRMED`
+            // );
           } else {
-            console.log(
-              `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} but keeping as PENDING (paid reservation)`
-            );
+            // console.log(
+            //   `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} but keeping as PENDING (paid reservation)`
+            // );
           }
         } catch (assignError) {
-          console.error("Error assigning tables:", assignError);
+          // console.error("Error assigning tables:", assignError);
           // Keep as PENDING if assignment fails
         }
       } else {
-        console.log(
-          `⚠️  No tables available for reservation ${reservation.id}. Keeping as PENDING for manual assignment.`
-        );
+        // console.log(
+        //   `⚠️  No tables available for reservation ${reservation.id}. Keeping as PENDING for manual assignment.`
+        // );
       }
     }
 
@@ -174,7 +176,9 @@ export async function createReservation(data: {
     if (data.createdBy === "WEB" && finalReservation) {
       try {
         const assignedTableNames =
-          finalReservation.tables?.map((rt) => rt.table.name).filter((name): name is string => name !== null) || [];
+          finalReservation.tables
+            ?.map((rt) => rt.table.name)
+            .filter((name): name is string => name !== null) || [];
 
         await sendReservationNotificationEmail({
           customerName: finalReservation.customerName,
@@ -186,17 +190,20 @@ export async function createReservation(data: {
           branchName: finalReservation.branch.name,
           timeSlotName: finalReservation.timeSlot?.name,
           exactTime: finalReservation.exactTime || undefined,
-          dietaryRestrictions: finalReservation.dietaryRestrictions || undefined,
+          dietaryRestrictions:
+            finalReservation.dietaryRestrictions || undefined,
           accessibilityNeeds: finalReservation.accessibilityNeeds || undefined,
           notes: finalReservation.notes || undefined,
           status: finalStatus,
           autoAssigned: finalStatus === ReservationStatus.CONFIRMED,
           assignedTables: assignedTableNames,
-          pricePerPerson: finalReservation.timeSlot?.pricePerPerson?.toNumber() || 0,
+          pricePerPerson:
+            finalReservation.timeSlot?.pricePerPerson?.toNumber() || 0,
         });
-        console.log(
-          `📧 Email notification sent for reservation ${reservation.id}`
-        );
+        console
+          .log
+          // `📧 Email notification sent for reservation ${reservation.id}`
+          ();
       } catch (emailError) {
         // Log the error but don't fail the reservation
         console.error("Failed to send email notification:", emailError);

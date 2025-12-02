@@ -1,12 +1,9 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import prisma from "@/lib/prisma";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -21,6 +18,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!credentials?.username || !credentials?.password) {
           return null;
         }
+
+        // Dynamically import Prisma only when needed (not in Edge Runtime during middleware)
+        const { prisma } = await import("@/lib/prisma");
 
         const user = await prisma.user.findUnique({
           where: { username: credentials.username as string },
