@@ -1,19 +1,28 @@
 import { UserRole } from "@/app/generated/prisma";
 import prisma from "@/lib/prisma";
+import { unstable_cache } from "next/cache";
 
 /**
  * Check if a user has admin role in any branch
+ * Cached for 5 minutes to improve navigation performance
  */
-export async function isUserAdmin(userId: string): Promise<boolean> {
-  const adminAccess = await prisma.userOnBranch.findFirst({
-    where: {
-      userId,
-      role: UserRole.ADMIN,
-    },
-  });
+export const isUserAdmin = unstable_cache(
+  async (userId: string): Promise<boolean> => {
+    const adminAccess = await prisma.userOnBranch.findFirst({
+      where: {
+        userId,
+        role: UserRole.ADMIN,
+      },
+    });
 
-  return !!adminAccess;
-}
+    return !!adminAccess;
+  },
+  ["user-admin-check"],
+  {
+    revalidate: 300, // 5 minutes
+    tags: ["user-permissions"],
+  }
+);
 
 /**
  * Check if a user has admin role in a specific branch

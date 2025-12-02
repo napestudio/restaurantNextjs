@@ -21,7 +21,6 @@ export default function DashBoardNavItems({
               ? "font-bold text-neutral-100 bg-red-500"
               : "text-neutral-800 hover:text-red-500"
           }`}
-          prefetch={true}
         >
           {item.label}
         </Link>
