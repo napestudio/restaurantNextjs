@@ -173,14 +173,11 @@ export function TablesClientWrapper({
         tableShape={formState.shape}
         tableCapacity={formState.capacity}
         isShared={formState.isShared}
-        sectorId={formState.sectorId}
-        sectors={sectors}
         onTableNumberChange={(value) => updateField("number", value)}
         onTableNameChange={(value) => updateField("name", value)}
         onTableShapeChange={(value) => updateField("shape", value)}
         onTableCapacityChange={(value) => updateField("capacity", value)}
         onIsSharedChange={(value) => updateField("isShared", value)}
-        onSectorChange={(value) => updateField("sectorId", value)}
         onAddTable={handleAddTable}
       />
     </ProductsProvider>

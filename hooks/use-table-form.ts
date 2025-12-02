@@ -33,6 +33,13 @@ export function useTableForm(branchId: string) {
     setFormState(initialFormState);
   }, []);
 
+  const initializeForm = useCallback(
+    (values: Partial<NewTableFormState>) => {
+      setFormState((prev) => ({ ...prev, ...values }));
+    },
+    []
+  );
+
   const submitTable = useCallback(
     async (
       onSuccess: (table: TableWithReservations) => void
@@ -91,6 +98,7 @@ export function useTableForm(branchId: string) {
     formState,
     updateField,
     resetForm,
+    initializeForm,
     submitTable,
   };
 }
