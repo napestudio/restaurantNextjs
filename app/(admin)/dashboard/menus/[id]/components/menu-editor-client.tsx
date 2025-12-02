@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { SITE_URL } from "@/lib/constants";
 import { ArrowLeft, Eye, Layers, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,7 @@ interface MenuEditorClientProps {
 
 export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [menu, setMenu] = useState<SerializedMenu | null>(initialMenu);
 
@@ -46,7 +48,11 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
 
   const handleSave = async () => {
     if (!name.trim() || !slug.trim()) {
-      alert("El nombre y el slug son obligatorios");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "El nombre y el slug son obligatorios",
+      });
       return;
     }
 
@@ -67,9 +73,16 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
           if (updatedFull) {
             setMenu(updatedFull);
           }
-          alert("Menú actualizado correctamente");
+          toast({
+            title: "Éxito",
+            description: "Menú actualizado correctamente",
+          });
         } else {
-          alert(result.error || "Error al actualizar el menú");
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: result.error || "Error al actualizar el menú",
+          });
         }
       } else {
         // Create new menu - we need restaurant ID
@@ -88,15 +101,27 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
           const newFull = await getMenu(result.menu.id);
           if (newFull) {
             setMenu(newFull);
+            toast({
+              title: "Éxito",
+              description: "Menú creado correctamente",
+            });
             // Redirect to the new menu's edit page
             router.push(`/dashboard/menus/${result.menu.id}`);
           }
         } else {
-          alert(result.error || "Error al crear el menú");
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: result.error || "Error al crear el menú",
+          });
         }
       }
     } catch (error) {
-      alert("Error al guardar el menú");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al guardar el menú",
+      });
     } finally {
       setIsSaving(false);
     }
