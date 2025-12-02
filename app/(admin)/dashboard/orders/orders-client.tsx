@@ -128,11 +128,6 @@ export function OrdersClient({ branchId, initialOrders, tables }: OrdersClientPr
   const takeAwayOrders = orders.filter(order => order.type === OrderType.TAKE_AWAY);
   const deliveryOrders = orders.filter(order => order.type === OrderType.DELIVERY);
 
-  const getOrdersByType = (type: OrderType | "ALL") => {
-    if (type === "ALL") return orders;
-    return orders.filter(order => order.type === type);
-  };
-
   return (
     <div className="space-y-6">
       {/* Filters Section */}

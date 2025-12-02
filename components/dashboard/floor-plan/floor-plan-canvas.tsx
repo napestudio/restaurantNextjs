@@ -35,8 +35,6 @@ const statusStrokeColors = {
   cleaning: "#ca8a04",
 };
 
-const CANVAS_CONTAINER_HEIGHT = 600; // Height of the scrollable container
-
 // Memoized Table Shape Component
 // Note: table.x and table.y are CENTER coordinates
 const TableShape = memo(function TableShape({

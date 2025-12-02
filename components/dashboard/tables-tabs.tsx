@@ -8,7 +8,7 @@ interface TabsProps {
 }
 
 export function TablesTabs({ children, defaultTab = "floor-plan" }: TabsProps) {
-  const [activeTab, setActiveTab] = useState<"simple" | "floor-plan">(
+  const [activeTab] = useState<"simple" | "floor-plan">(
     defaultTab
   );
 

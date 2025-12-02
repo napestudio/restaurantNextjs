@@ -11,7 +11,6 @@ interface FloorPlanToolbarProps {
 }
 
 export function FloorPlanToolbar({
-  onAddTable,
   onSave,
   onToggleEditMode,
   hasUnsavedChanges,

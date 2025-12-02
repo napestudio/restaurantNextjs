@@ -90,7 +90,7 @@ export function ReservationsTable({
   // Update parent component with filtered data - using dependencies that won't cause infinite loops
   useEffect(() => {
     onFilteredReservationsChange(filteredReservations);
-  }, [reservations, statusFilter, dateFrom, dateTo]);
+  }, [filteredReservations, onFilteredReservationsChange, reservations, statusFilter, dateFrom, dateTo]);
 
   const handleSetToday = () => {
     const today = format(new Date(), "yyyy-MM-dd");

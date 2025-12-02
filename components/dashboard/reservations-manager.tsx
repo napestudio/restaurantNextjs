@@ -12,7 +12,7 @@ import type {
 } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
 import { CancelReservationDialog } from "./cancel-reservation-dialog";
 import { CreateReservationDialog } from "./create-reservation-dialog";
@@ -32,6 +32,7 @@ export function ReservationsManager({
   branchId,
 }: ReservationsManagerProps) {
   const [reservations, setReservations] = useState(initialReservations);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [filteredReservations, setFilteredReservations] =
     useState(initialReservations);
   const [isPending, startTransition] = useTransition();

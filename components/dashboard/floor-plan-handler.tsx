@@ -86,7 +86,6 @@ export default function FloorPlanHandler({
     selectedTableData,
     draggedTable,
     setDraggedTable,
-    dragOffset,
     setDragOffset,
     handleTableDrag,
   } = useFloorPlanState({
