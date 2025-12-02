@@ -50,7 +50,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${robotoSans.variable} ${geistMono.variable} antialiased `}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
         {children}
         <Toaster />
