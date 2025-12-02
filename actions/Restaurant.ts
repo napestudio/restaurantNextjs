@@ -118,7 +118,7 @@ export async function updateRestaurant(
     // Validate input
     const validation = restaurantUpdateSchema.safeParse(data);
 
-    console.log("Validation result:", validation);
+    // console.log("Validation result:", validation);
 
     if (!validation.success) {
       console.error("Validation error:", validation.error);
