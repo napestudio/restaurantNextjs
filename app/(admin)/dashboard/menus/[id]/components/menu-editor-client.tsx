@@ -116,7 +116,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
           });
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",

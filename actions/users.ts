@@ -34,7 +34,7 @@ export async function createUser(data: UserRegistrationInput) {
     if (!validation.success) {
       return {
         success: false,
-        error: validation.error.errors[0].message,
+        error: validation.error.issues[0].message,
       };
     }
 

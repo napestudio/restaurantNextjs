@@ -43,14 +43,13 @@ export function TablesClientWrapper({
     closeAddSector,
     openEditSector,
     closeEditSector,
-    openAddTable,
     closeAddTable,
   } = useDialogs();
 
   const { formState, updateField, submitTable } = useTableForm(branchId);
 
   // Memoized filtered tables calculation
-  const filteredTables = useMemo(
+  useMemo(
     () =>
       selectedSector
         ? tables.filter((table) => table.sectorId === selectedSector)

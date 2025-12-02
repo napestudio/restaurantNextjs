@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Package, AlertTriangle } from "lucide-react";
+import { Edit, AlertTriangle } from "lucide-react";
 import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
 import { getUnitLabel } from "../lib/units";
 

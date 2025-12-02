@@ -1,5 +1,5 @@
 import { getMenu } from "@/actions/menus";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { MenuEditorClient } from "./components/menu-editor-client";
 
 interface MenuEditorPageProps {

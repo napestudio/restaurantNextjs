@@ -23,9 +23,7 @@ export const userRegistrationSchema = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       "Password must contain uppercase, lowercase, and numbers"
     ),
-  role: z.nativeEnum(UserRole, {
-    errorMap: () => ({ message: "Please select a valid role" }),
-  }),
+  role: z.nativeEnum(UserRole),
   branchId: z.string().min(1, "Please select a branch"),
 });
 

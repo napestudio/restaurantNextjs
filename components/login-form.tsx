@@ -13,6 +13,7 @@ export default function LoginForm() {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function handleGoogleLogin() {
     await loginWithGoogle();
   }

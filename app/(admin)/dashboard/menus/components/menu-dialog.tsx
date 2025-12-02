@@ -207,7 +207,7 @@ export function MenuDialog({
           alert(result.error || "Error al crear el menú");
         }
       }
-    } catch (error) {
+    } catch {
       alert("Error al guardar el menú");
     } finally {
       setIsSaving(false);

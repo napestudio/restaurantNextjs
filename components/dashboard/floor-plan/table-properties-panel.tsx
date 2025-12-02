@@ -1,4 +1,4 @@
-import { CardDescription, CardTitle } from "@/components/ui/card";
+import {} from "@/components/ui/card";
 import type { TableShapeType, TableStatus } from "@/types/table";
 import { Maximize2 } from "lucide-react";
 import { TablePropertiesForm } from "./table-properties-form";

@@ -5,7 +5,6 @@ import "server-only";
 
 declare global {
   // Allow global var reuse in dev mode
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 

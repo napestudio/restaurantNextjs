@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { SerializedMenuSection } from "@/actions/menus";
 import {
   addMenuItem,
@@ -53,18 +53,18 @@ export function MenuItemsManager({
 
   const menuItems = section.menuItems || [];
 
-  useEffect(() => {
-    if (isAddDialogOpen) {
-      loadAvailableProducts();
-    }
-  }, [isAddDialogOpen, restaurantId]);
-
-  const loadAvailableProducts = async () => {
+  const loadAvailableProducts = useCallback(async () => {
     const products = await getAvailableProducts(restaurantId);
     // Filter out products already in this section
     const alreadyAdded = new Set(menuItems.map((item) => item.productId));
     setAvailableProducts(products.filter((p) => !alreadyAdded.has(p.id)));
-  };
+  }, [restaurantId, menuItems]);
+
+  useEffect(() => {
+    if (isAddDialogOpen) {
+      loadAvailableProducts();
+    }
+  }, [isAddDialogOpen, loadAvailableProducts]);
 
   const handleAddProduct = async () => {
     if (!selectedProductId) {
@@ -93,7 +93,7 @@ export function MenuItemsManager({
       } else {
         alert(result.error || "Error al agregar el producto");
       }
-    } catch (error) {
+    } catch {
       alert("Error al agregar el producto");
     } finally {
       setIsAdding(false);
