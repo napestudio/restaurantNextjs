@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
 
+// Optimize navigation performance
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Kiku Sushi - Panel de Administración",
   description:
