@@ -25,12 +25,6 @@ import {
 } from "lucide-react";
 import type { TableShapeType } from "@/types/table";
 
-interface Sector {
-  id: string;
-  name: string;
-  color: string;
-}
-
 interface AddTableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,14 +33,11 @@ interface AddTableDialogProps {
   tableShape: TableShapeType;
   tableCapacity: string;
   isShared: boolean;
-  sectorId?: string;
-  sectors?: Sector[];
   onTableNumberChange: (value: string) => void;
   onTableNameChange?: (value: string) => void;
   onTableShapeChange: (value: TableShapeType) => void;
   onTableCapacityChange: (value: string) => void;
   onIsSharedChange: (value: boolean) => void;
-  onSectorChange?: (value: string) => void;
   onAddTable: () => void;
 }
 
@@ -58,14 +49,11 @@ export function AddTableDialog({
   tableShape,
   tableCapacity,
   isShared,
-  sectorId,
-  sectors = [],
   onTableNumberChange,
   onTableNameChange,
   onTableShapeChange,
   onTableCapacityChange,
   onIsSharedChange,
-  onSectorChange,
   onAddTable,
 }: AddTableDialogProps) {
   return (
@@ -104,39 +92,6 @@ export function AddTableDialog({
               Ejemplo: Barra Central
             </p>
           </div>
-
-          {sectors.length > 0 && (
-            <div>
-              <Label htmlFor="sector">Sector</Label>
-              <Select
-                value={sectorId || sectors[0]?.id || "none"}
-                onValueChange={(value) =>
-                  onSectorChange?.(value === "none" ? "" : value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar sector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* <SelectItem value="none">Sin sector asignado</SelectItem> */}
-                  {sectors.map((sector) => (
-                    <SelectItem key={sector.id} value={sector.id}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: sector.color }}
-                        />
-                        {sector.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Asigna la mesa a un sector específico del restaurante
-              </p>
-            </div>
-          )}
 
           <div>
             <Label htmlFor="table-shape">Forma de la Mesa</Label>
@@ -180,9 +135,9 @@ export function AddTableDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2, 4, 6, 8, 10, 12].map((num) => (
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
                   <SelectItem key={num} value={num.toString()}>
-                    {num} comensales
+                    {num} {num === 1 ? "comensal" : "comensales"}
                   </SelectItem>
                 ))}
               </SelectContent>

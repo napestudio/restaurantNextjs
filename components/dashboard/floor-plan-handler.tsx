@@ -118,10 +118,10 @@ export default function FloorPlanHandler({
   const [newTable, setNewTable] = useState({
     number: "",
     name: "",
-    shape: "CIRCLE" as TableShapeType,
+    shape: "SQUARE" as TableShapeType,
     capacity: "2",
     isShared: false,
-    sectorId: "",
+    sectorId: selectedSector || "",
   });
 
   // Check if selected table has active orders
@@ -291,11 +291,11 @@ export default function FloorPlanHandler({
         shape: "SQUARE",
         capacity: "2",
         isShared: false,
-        sectorId: "",
+        sectorId: selectedSector || "",
       });
       setAddDialogOpen(false);
     }
-  }, [newTable, branchId, setTables, setDbTables, clickPosition]);
+  }, [newTable, branchId, setTables, setDbTables, clickPosition, selectedSector]);
 
   // Save handler - memoized
   const handleSave = useCallback(() => {
@@ -342,10 +342,25 @@ export default function FloorPlanHandler({
   }, []);
 
   // Handle canvas click to add table
-  const handleCanvasClick = useCallback((x: number, y: number) => {
-    setClickPosition({ x, y });
-    setAddDialogOpen(true);
-  }, []);
+  const handleCanvasClick = useCallback(
+    (x: number, y: number) => {
+      setClickPosition({ x, y });
+
+      // Calculate next available table number
+      const existingNumbers = dbTables.map((t) => t.number);
+      const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+      const nextNumber = maxNumber + 1;
+
+      setNewTable((prev) => ({
+        ...prev,
+        number: nextNumber.toString(),
+        sectorId: selectedSector || "",
+      }));
+
+      setAddDialogOpen(true);
+    },
+    [dbTables, selectedSector]
+  );
 
   // Get additional table info for properties panel - memoized
   const selectedDbTable = useMemo(() => {
@@ -446,8 +461,6 @@ export default function FloorPlanHandler({
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
-        sectorId={newTable.sectorId}
-        sectors={sectors}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
@@ -460,9 +473,6 @@ export default function FloorPlanHandler({
         }
         onIsSharedChange={(value) =>
           setNewTable({ ...newTable, isShared: value })
-        }
-        onSectorChange={(value) =>
-          setNewTable({ ...newTable, sectorId: value })
         }
         onAddTable={addTable}
       />
