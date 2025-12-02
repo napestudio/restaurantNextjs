@@ -18,6 +18,19 @@ async function main() {
       phone: "+54 11 1234-5678",
       logoUrl: "/logo.png",
       isActive: true,
+      // Address information
+      address: "Av. Corrientes 1234",
+      city: "Buenos Aires",
+      state: "CABA",
+      postalCode: "C1043",
+      country: "Argentina",
+      // Social media links
+      websiteUrl: "https://www.kikusushi.com",
+      facebookUrl: "https://www.facebook.com/kikusushi",
+      instagramUrl: "https://www.instagram.com/kikusushi",
+      twitterUrl: "https://twitter.com/kikusushi",
+      linkedinUrl: "https://www.linkedin.com/company/kikusushi",
+      tiktokUrl: "https://www.tiktok.com/@kikusushi",
     },
   });
   console.log("✅ Restaurante creado:", restaurant.name);
@@ -403,16 +416,16 @@ async function main() {
 
   console.log("✅ Sectores creados: 3");
 
-  // Create Tables
+  // Create Tables with varied positions
   const tables = [
-    { number: 1, capacity: 2, sectorId: salonPrincipal.id },
-    { number: 2, capacity: 2, sectorId: salonPrincipal.id },
-    { number: 3, capacity: 4, sectorId: salonPrincipal.id },
-    { number: 4, capacity: 4, sectorId: patio.id },
-    { number: 5, capacity: 4, sectorId: patio.id },
-    { number: 6, capacity: 6, sectorId: patio.id },
-    { number: 7, capacity: 6, sectorId: bar.id },
-    { number: 8, capacity: 8, sectorId: bar.id },
+    { number: 1, capacity: 2, sectorId: salonPrincipal.id, positionX: 100, positionY: 100, width: 80, height: 80, shape: "SQUARE" as const },
+    { number: 2, capacity: 2, sectorId: salonPrincipal.id, positionX: 250, positionY: 100, width: 80, height: 80, shape: "SQUARE" as const },
+    { number: 3, capacity: 4, sectorId: salonPrincipal.id, positionX: 400, positionY: 100, width: 120, height: 80, shape: "RECTANGLE" as const },
+    { number: 4, capacity: 4, sectorId: patio.id, positionX: 150, positionY: 150, width: 100, height: 100, shape: "CIRCLE" as const },
+    { number: 5, capacity: 4, sectorId: patio.id, positionX: 350, positionY: 150, width: 100, height: 100, shape: "CIRCLE" as const },
+    { number: 6, capacity: 6, sectorId: patio.id, positionX: 550, positionY: 150, width: 140, height: 90, shape: "WIDE" as const },
+    { number: 7, capacity: 6, sectorId: bar.id, positionX: 120, positionY: 200, width: 140, height: 90, shape: "RECTANGLE" as const },
+    { number: 8, capacity: 8, sectorId: bar.id, positionX: 350, positionY: 200, width: 160, height: 100, shape: "WIDE" as const },
   ];
 
   for (const tableData of tables) {
@@ -428,6 +441,12 @@ async function main() {
         branchId: branch.id,
         sectorId: tableData.sectorId,
         isActive: true,
+        positionX: tableData.positionX,
+        positionY: tableData.positionY,
+        width: tableData.width,
+        height: tableData.height,
+        shape: tableData.shape,
+        rotation: 0,
       },
     });
   }

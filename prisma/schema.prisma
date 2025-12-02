@@ -135,14 +135,26 @@ model Session {
 model Restaurant {
   id          String  @id @default(cuid())
   name        String
-  /**
-   * NUEVO: slug único público (case-insensitive) para misitio.com/[slug]
-   */
   slug        String  @unique @db.Citext
   description String?
   phone       String?
   logoUrl     String?
   isActive    Boolean @default(true)
+
+  // Address fields
+  address    String? // Full street address
+  city       String?
+  state      String?
+  postalCode String?
+  country    String? @default("Argentina")
+
+  // Social media links
+  websiteUrl   String?
+  facebookUrl  String?
+  instagramUrl String?
+  twitterUrl   String?
+  linkedinUrl  String?
+  tiktokUrl    String?
 
   branches   Branch[]
   /**
