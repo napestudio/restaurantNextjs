@@ -3,8 +3,10 @@
 import {
   cancelReservation,
   createReservation,
-  getReservations,
+  getFilteredReservations,
   updateReservationStatus,
+  type ReservationFilterType,
+  type PaginatedReservationsResult,
 } from "@/actions/Reservation";
 import type {
   SerializedReservation,
@@ -22,19 +24,32 @@ import LoadingToast from "./loading-toast";
 
 interface ReservationsManagerProps {
   initialReservations: SerializedReservation[];
+  initialPagination: {
+    nextCursor: string | null;
+    hasMore: boolean;
+    totalCount: number;
+  };
   timeSlots: TimeSlot[];
   branchId: string;
 }
 
 export function ReservationsManager({
   initialReservations,
+  initialPagination,
   timeSlots,
   branchId,
 }: ReservationsManagerProps) {
+  // Reservations state
   const [reservations, setReservations] = useState(initialReservations);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [filteredReservations, setFilteredReservations] =
-    useState(initialReservations);
+  const [pagination, setPagination] = useState(initialPagination);
+
+  // Filter state
+  const [filterType, setFilterType] = useState<ReservationFilterType>("today");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // UI state
   const [isPending, startTransition] = useTransition();
   const [selectedReservation, setSelectedReservation] =
     useState<SerializedReservation | null>(null);
@@ -44,30 +59,108 @@ export function ReservationsManager({
   const [reservationToCancel, setReservationToCancel] = useState<string | null>(
     null
   );
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
 
-  // Memoized callback to prevent infinite loops
-  const handleFilteredReservationsChange = useCallback(
-    (filtered: SerializedReservation[]) => {
-      setFilteredReservations(filtered);
+  // Fetch reservations with current filters
+  const fetchReservations = useCallback(
+    async (cursor?: string, append = false) => {
+      const result = await getFilteredReservations(branchId, {
+        type: filterType,
+        dateFrom: filterType === "dateRange" ? dateFrom : undefined,
+        dateTo: filterType === "dateRange" ? dateTo : undefined,
+        status: statusFilter !== "all" ? (statusFilter.toUpperCase() as ReservationStatus) : undefined,
+        cursor,
+        limit: 10,
+      });
+
+      if (result.success && result.data) {
+        if (append) {
+          setReservations((prev) => [...prev, ...result.data!.reservations]);
+        } else {
+          setReservations(result.data.reservations);
+        }
+        setPagination({
+          nextCursor: result.data.nextCursor,
+          hasMore: result.data.hasMore,
+          totalCount: result.data.totalCount,
+        });
+      }
     },
-    []
+    [branchId, filterType, dateFrom, dateTo, statusFilter]
   );
 
-  // Refetch data helper
-  const mutate = () => {
+  // Handle filter changes - reset and fetch
+  const handleFilterChange = useCallback(
+    (newFilterType: ReservationFilterType, newDateFrom?: string, newDateTo?: string) => {
+      setFilterType(newFilterType);
+      if (newDateFrom !== undefined) setDateFrom(newDateFrom);
+      if (newDateTo !== undefined) setDateTo(newDateTo);
+
+      startTransition(async () => {
+        const result = await getFilteredReservations(branchId, {
+          type: newFilterType,
+          dateFrom: newFilterType === "dateRange" ? (newDateFrom ?? dateFrom) : undefined,
+          dateTo: newFilterType === "dateRange" ? (newDateTo ?? dateTo) : undefined,
+          status: statusFilter !== "all" ? (statusFilter.toUpperCase() as ReservationStatus) : undefined,
+          limit: 10,
+        });
+
+        if (result.success && result.data) {
+          setReservations(result.data.reservations);
+          setPagination({
+            nextCursor: result.data.nextCursor,
+            hasMore: result.data.hasMore,
+            totalCount: result.data.totalCount,
+          });
+        }
+      });
+    },
+    [branchId, dateFrom, dateTo, statusFilter]
+  );
+
+  // Handle status filter change
+  const handleStatusFilterChange = useCallback(
+    (newStatus: string) => {
+      setStatusFilter(newStatus);
+
+      startTransition(async () => {
+        const result = await getFilteredReservations(branchId, {
+          type: filterType,
+          dateFrom: filterType === "dateRange" ? dateFrom : undefined,
+          dateTo: filterType === "dateRange" ? dateTo : undefined,
+          status: newStatus !== "all" ? (newStatus.toUpperCase() as ReservationStatus) : undefined,
+          limit: 10,
+        });
+
+        if (result.success && result.data) {
+          setReservations(result.data.reservations);
+          setPagination({
+            nextCursor: result.data.nextCursor,
+            hasMore: result.data.hasMore,
+            totalCount: result.data.totalCount,
+          });
+        }
+      });
+    },
+    [branchId, filterType, dateFrom, dateTo]
+  );
+
+  // Load more (pagination)
+  const handleLoadMore = useCallback(() => {
+    if (!pagination.hasMore || !pagination.nextCursor) return;
+
     startTransition(async () => {
-      const result = await getReservations(branchId);
-      if (result.success && result.data) {
-        setReservations(result.data);
-      }
+      await fetchReservations(pagination.nextCursor!, true);
     });
-  };
+  }, [pagination.hasMore, pagination.nextCursor, fetchReservations]);
+
+  // Refetch current view (after mutations)
+  const mutate = useCallback(() => {
+    startTransition(async () => {
+      await fetchReservations();
+    });
+  }, [fetchReservations]);
 
   const handleStatusUpdate = async (id: string, status: string) => {
-    // console.log(status, "status");
     startTransition(async () => {
       const result = await updateReservationStatus(
         id,
@@ -78,7 +171,6 @@ export function ReservationsManager({
         mutate();
       } else {
         console.error("Failed to update reservation status:", result.error);
-        // TODO: Show error toast/notification
       }
     });
   };
@@ -104,7 +196,6 @@ export function ReservationsManager({
           mutate();
         } else {
           console.error("Failed to cancel reservation:", result.error);
-          // TODO: Show error toast/notification
         }
       });
     }
@@ -123,7 +214,6 @@ export function ReservationsManager({
     status: string;
   }) => {
     startTransition(async () => {
-      // newReservation.time is actually the timeSlotId from the select
       const result = await createReservation({
         branchId,
         customerName: newReservation.name,
@@ -132,7 +222,7 @@ export function ReservationsManager({
         date: newReservation.date,
         time: newReservation.time,
         guests: Number.parseInt(newReservation.guests),
-        timeSlotId: newReservation.time, // This is the timeSlot ID
+        timeSlotId: newReservation.time,
         dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
         accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
         notes: newReservation.notes || undefined,
@@ -144,14 +234,12 @@ export function ReservationsManager({
         mutate();
       } else {
         console.error("Failed to create reservation:", result.error);
-        // TODO: Show error toast/notification
       }
     });
   };
 
   return (
     <div className="space-y-6 relative">
-      {/* Loading overlay during refetch */}
       {isPending && <LoadingToast />}
 
       <div className="mb-8 flex items-center justify-between">
@@ -170,22 +258,21 @@ export function ReservationsManager({
         </Button>
       </div>
 
-      {/* <div className="mb-8">
-        <ReservationStatsOverview reservations={filteredReservations} />
-      </div> */}
-
       <ReservationsTable
         reservations={reservations}
+        filterType={filterType}
         statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        pagination={pagination}
+        isPending={isPending}
+        onFilterTypeChange={handleFilterChange}
+        onStatusFilterChange={handleStatusFilterChange}
+        onDateRangeChange={(from, to) => handleFilterChange("dateRange", from, to)}
         onStatusUpdate={handleStatusUpdate}
         onView={handleView}
         onCancel={handleCancelClick}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        onDateFromChange={setDateFrom}
-        onDateToChange={setDateTo}
-        onFilteredReservationsChange={handleFilteredReservationsChange}
+        onLoadMore={handleLoadMore}
       />
 
       <ViewReservationDialog

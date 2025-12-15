@@ -428,7 +428,7 @@ export function SessionDetailsSidebar({
               <span className="font-medium text-sm">EGRESO</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  {formatCurrency(totalExpense)}
+                  - {formatCurrency(totalExpense)}
                 </span>
                 {expandedSections.expense ? (
                   <ChevronDown className="h-4 w-4" />
@@ -453,7 +453,7 @@ export function SessionDetailsSidebar({
                           }
                         </span>
                         <span className="text-sm">
-                          {formatCurrency(data.total)}
+                          - {formatCurrency(data.total)}
                         </span>
                       </div>
                       {data.movements.map((m) => (
