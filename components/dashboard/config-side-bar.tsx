@@ -24,6 +24,10 @@ const CONFIG_ITEMS = [
     label: "Mesas",
     href: "/dashboard/config/tables",
   },
+  {
+    label: "Cajas",
+    href: "/dashboard/config/cash-registers",
+  },
 ];
 
 export default function ConfigSideBar() {
