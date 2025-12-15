@@ -34,7 +34,7 @@ export default function ConfigSideBar() {
   const currentPath = usePathname();
   return (
     <div className="w-75 h-full bg-red-500">
-      <nav className="flex flex-col p-4 space-y-2">
+      <nav className="flex flex-col p-4 space-y-1">
         {CONFIG_ITEMS.map((item) => (
           <Link
             key={item.href}

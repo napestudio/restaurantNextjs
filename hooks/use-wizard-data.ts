@@ -25,11 +25,11 @@ export function useWizardData(branchId: string) {
     async (date: string, guests: number) => {
       setIsPending(true);
       try {
-        console.log("Fetching time slots for:", {
-          branchId,
-          date,
-          guests,
-        });
+        // console.log("Fetching time slots for:", {
+        //   branchId,
+        //   date,
+        //   guests,
+        // });
 
         const result = await getAvailableTimeSlotsForDate(
           branchId,
@@ -38,14 +38,14 @@ export function useWizardData(branchId: string) {
           guests
         );
 
-        console.log("Time slots result:", result);
+        // console.log("Time slots result:", result);
 
         if (result.success && result.data) {
-          console.log("Setting available slots:", result.data);
+          // console.log("Setting available slots:", result.data);
           return result.data;
         }
 
-        console.log("No slots or error:", result.error);
+        // console.log("No slots or error:", result.error);
         return [];
       } catch (error) {
         console.error("Error fetching time slots:", error);
@@ -83,10 +83,16 @@ export function useWizardData(branchId: string) {
           return { success: true };
         }
 
-        return { success: false, error: result.error || "Error al crear la reserva" };
+        return {
+          success: false,
+          error: result.error || "Error al crear la reserva",
+        };
       } catch (error) {
         console.error("Error creating reservation:", error);
-        return { success: false, error: "Error inesperado al crear la reserva" };
+        return {
+          success: false,
+          error: "Error inesperado al crear la reserva",
+        };
       } finally {
         setIsPending(false);
       }

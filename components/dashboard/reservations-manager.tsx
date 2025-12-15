@@ -67,7 +67,7 @@ export function ReservationsManager({
   };
 
   const handleStatusUpdate = async (id: string, status: string) => {
-    console.log(status, "status");
+    // console.log(status, "status");
     startTransition(async () => {
       const result = await updateReservationStatus(
         id,
