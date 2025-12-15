@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z, ZodError } from "zod";
 import { Prisma } from "@/app/generated/prisma";
+import { serializeForClient } from "@/lib/serialize";
 
 // =============================================================================
 // SCHEMAS
@@ -380,16 +381,9 @@ export async function openCashRegisterSession(
     revalidatePath("/dashboard/config/cash-registers");
     revalidatePath("/dashboard/cash-registers");
 
-    // Serialize Decimal fields for client
     return {
       success: true,
-      data: {
-        ...result,
-        openingAmount: Number(result.openingAmount),
-        expectedCash: result.expectedCash ? Number(result.expectedCash) : null,
-        countedCash: result.countedCash ? Number(result.countedCash) : null,
-        variance: result.variance ? Number(result.variance) : null,
-      },
+      data: serializeForClient(result),
     };
   } catch (error) {
     console.error("Error opening cash register session:", error);
@@ -474,16 +468,9 @@ export async function closeCashRegisterSession(
     revalidatePath("/dashboard/config/cash-registers");
     revalidatePath("/dashboard/cash-registers");
 
-    // Serialize Decimal fields for client
     return {
       success: true,
-      data: {
-        ...result,
-        openingAmount: Number(result.openingAmount),
-        expectedCash: result.expectedCash ? Number(result.expectedCash) : null,
-        countedCash: result.countedCash ? Number(result.countedCash) : null,
-        variance: result.variance ? Number(result.variance) : null,
-      },
+      data: serializeForClient(result),
     };
   } catch (error) {
     console.error("Error closing cash register session:", error);
@@ -524,7 +511,7 @@ export async function getCurrentSession(cashRegisterId: string) {
 
     return {
       success: true,
-      data: session,
+      data: serializeForClient(session),
     };
   } catch (error) {
     console.error("Error fetching current session:", error);
@@ -567,7 +554,7 @@ export async function getSessionHistory(
 
     return {
       success: true,
-      data: sessions,
+      data: serializeForClient(sessions),
       total,
     };
   } catch (error) {
@@ -622,10 +609,11 @@ export async function addManualMovement(
     });
 
     revalidatePath("/dashboard/config/cash-registers");
+    revalidatePath("/dashboard/cash-registers");
 
     return {
       success: true,
-      data: result,
+      data: serializeForClient(result),
     };
   } catch (error) {
     console.error("Error adding movement:", error);
@@ -711,7 +699,7 @@ export async function getSessionMovements(sessionId: string) {
 
     return {
       success: true,
-      data: movements,
+      data: serializeForClient(movements),
     };
   } catch (error) {
     console.error("Error fetching session movements:", error);

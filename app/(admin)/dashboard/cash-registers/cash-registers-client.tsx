@@ -21,6 +21,8 @@ import {
 import { CashRegisterWithStatus } from "@/types/cash-register";
 import { OpenRegisterDialog } from "@/components/dashboard/cash-registers/open-register-dialog";
 import { CloseRegisterDialog } from "@/components/dashboard/cash-registers/close-register-dialog";
+import { AddMovementDialog } from "@/components/dashboard/cash-registers/add-movement-dialog";
+import { SessionDetailsSidebar } from "@/components/dashboard/cash-registers/session-details-sidebar";
 import { cn } from "@/lib/utils";
 
 interface SerializedSession {
@@ -62,6 +64,7 @@ export function CashRegistersClient({
     useState<SerializedSession[]>(initialSessions);
   const [openDialogOpen, setOpenDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedSession, setSelectedSession] =
     useState<SerializedSession | null>(null);
 
@@ -128,6 +131,22 @@ export function CashRegistersClient({
   const handleCloseClick = (session: SerializedSession) => {
     setSelectedSession(session);
     setCloseDialogOpen(true);
+  };
+
+  const handleRowClick = (session: SerializedSession) => {
+    setSelectedSession(session);
+    setSidebarOpen(true);
+  };
+
+  const handleSidebarClose = () => {
+    setSidebarOpen(false);
+    setSelectedSession(null);
+  };
+
+  const handleSidebarSessionClosed = (closedSession: SerializedSession) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === closedSession.id ? closedSession : s))
+    );
   };
 
   // Get registers that can be opened (active and no open session)
@@ -259,6 +278,9 @@ export function CashRegistersClient({
             </SelectContent>
           </Select>
         </div>
+        <div className="ml-auto">
+          <AddMovementDialog cashRegisters={cashRegisters} />
+        </div>
       </div>
 
       {/* Sessions Table */}
@@ -306,8 +328,9 @@ export function CashRegistersClient({
               filteredSessions.map((session) => (
                 <tr
                   key={session.id}
+                  onClick={() => handleRowClick(session)}
                   className={cn(
-                    "hover:bg-gray-50 transition-colors",
+                    "hover:bg-gray-50 transition-colors cursor-pointer",
                     session.status === "OPEN" && "border-l-4 border-l-green-500"
                   )}
                 >
@@ -382,7 +405,10 @@ export function CashRegistersClient({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleCloseClick(session)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCloseClick(session);
+                          }}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           Cerrar
@@ -416,6 +442,14 @@ export function CashRegistersClient({
           onClosed={handleSessionClosed}
         />
       )}
+
+      {/* Session Details Sidebar */}
+      <SessionDetailsSidebar
+        session={selectedSession}
+        open={sidebarOpen}
+        onClose={handleSidebarClose}
+        onSessionClosed={handleSidebarSessionClosed}
+      />
     </div>
   );
 }

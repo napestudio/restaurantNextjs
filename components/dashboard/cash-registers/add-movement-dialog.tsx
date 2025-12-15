@@ -31,12 +31,10 @@ import {
 
 interface AddMovementDialogProps {
   cashRegisters: CashRegisterWithStatus[];
-  onMovementAdded?: () => void;
 }
 
 export function AddMovementDialog({
   cashRegisters,
-  onMovementAdded,
 }: AddMovementDialogProps) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -97,7 +95,6 @@ export function AddMovementDialog({
       if (result.success) {
         resetForm();
         setOpen(false);
-        onMovementAdded?.();
       } else {
         setError(result.error || "Error al agregar el movimiento");
       }

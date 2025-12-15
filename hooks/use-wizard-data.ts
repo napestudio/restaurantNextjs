@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
-import { getAvailableTimeSlotsForDate, getTimeSlots } from "@/actions/TimeSlot";
 import { createReservation } from "@/actions/Reservation";
+import { getAvailableTimeSlotsForDate, getTimeSlots } from "@/actions/TimeSlot";
 import type { WizardData } from "@/lib/reservation-wizard-utils";
+import { useCallback, useState } from "react";
 
 export function useWizardData(branchId: string) {
   const [isPending, setIsPending] = useState(false);
