@@ -169,7 +169,6 @@ export function TablesClientWrapper({
         open={dialogState.addTable}
         onOpenChange={closeAddTable}
         tableNumber={formState.number}
-        tableName={formState.name}
         tableShape={formState.shape}
         tableCapacity={formState.capacity}
         isShared={formState.isShared}
