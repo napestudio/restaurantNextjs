@@ -378,10 +378,18 @@ export async function openCashRegisterSession(
     });
 
     revalidatePath("/dashboard/config/cash-registers");
+    revalidatePath("/dashboard/cash-registers");
 
+    // Serialize Decimal fields for client
     return {
       success: true,
-      data: result,
+      data: {
+        ...result,
+        openingAmount: Number(result.openingAmount),
+        expectedCash: result.expectedCash ? Number(result.expectedCash) : null,
+        countedCash: result.countedCash ? Number(result.countedCash) : null,
+        variance: result.variance ? Number(result.variance) : null,
+      },
     };
   } catch (error) {
     console.error("Error opening cash register session:", error);
@@ -464,10 +472,18 @@ export async function closeCashRegisterSession(
     });
 
     revalidatePath("/dashboard/config/cash-registers");
+    revalidatePath("/dashboard/cash-registers");
 
+    // Serialize Decimal fields for client
     return {
       success: true,
-      data: result,
+      data: {
+        ...result,
+        openingAmount: Number(result.openingAmount),
+        expectedCash: result.expectedCash ? Number(result.expectedCash) : null,
+        countedCash: result.countedCash ? Number(result.countedCash) : null,
+        variance: result.variance ? Number(result.variance) : null,
+      },
     };
   } catch (error) {
     console.error("Error closing cash register session:", error);

@@ -16,6 +16,11 @@
       "adminOnly": true
     },
     {
+      "label": "Cajas",
+      "href": "/dashboard/cash-registers",
+      "adminOnly": true
+    },
+    {
       "label": "Menú",
       "href": "/dashboard/menus",
       "adminOnly": true

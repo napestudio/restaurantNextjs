@@ -11,6 +11,24 @@ import type {
 // Re-export enums for convenience
 export type { CashRegisterStatus, CashMovementType, PaymentMethodExtended };
 
+// Serialized session for client components (Decimal -> number, Date -> string)
+export interface SerializedCashRegisterSession {
+  id: string;
+  cashRegisterId: string;
+  status: CashRegisterStatus;
+  openedAt: string;
+  openedBy: string;
+  openingAmount: number;
+  closedAt: string | null;
+  closedBy: string | null;
+  expectedCash: number | null;
+  countedCash: number | null;
+  variance: number | null;
+  closingNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Cash Register with relations
 export interface CashRegisterWithRelations extends CashRegister {
   sector: Pick<Sector, "id" | "name" | "color"> | null;
@@ -20,10 +38,17 @@ export interface CashRegisterWithRelations extends CashRegister {
   };
 }
 
-// Cash Register with current session info
-export interface CashRegisterWithStatus extends CashRegister {
+// Cash Register with current session info (for client components with serialized data)
+export interface CashRegisterWithStatus {
+  id: string;
+  name: string;
+  isActive: boolean;
+  branchId: string;
+  sectorId: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   sector: Pick<Sector, "id" | "name" | "color"> | null;
-  sessions: CashRegisterSession[]; // Will contain at most 1 OPEN session
+  sessions: SerializedCashRegisterSession[]; // Serialized sessions
   _count: {
     sessions: number;
   };
