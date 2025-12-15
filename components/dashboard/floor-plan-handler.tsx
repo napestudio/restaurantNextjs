@@ -295,7 +295,14 @@ export default function FloorPlanHandler({
       });
       setAddDialogOpen(false);
     }
-  }, [newTable, branchId, setTables, setDbTables, clickPosition, selectedSector]);
+  }, [
+    newTable,
+    branchId,
+    setTables,
+    setDbTables,
+    clickPosition,
+    selectedSector,
+  ]);
 
   // Save handler - memoized
   const handleSave = useCallback(() => {
@@ -348,7 +355,8 @@ export default function FloorPlanHandler({
 
       // Calculate next available table number
       const existingNumbers = dbTables.map((t) => t.number);
-      const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+      const maxNumber =
+        existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
       const nextNumber = maxNumber + 1;
 
       setNewTable((prev) => ({
@@ -457,14 +465,12 @@ export default function FloorPlanHandler({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         tableNumber={newTable.number}
-        tableName={newTable.name}
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
-        onTableNameChange={(value) => setNewTable({ ...newTable, name: value })}
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })
         }

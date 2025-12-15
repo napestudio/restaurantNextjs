@@ -9,6 +9,10 @@ const CONFIG_ITEMS = [
     href: "/dashboard/config/restaurant",
   },
   {
+    label: "Turnos",
+    href: "/dashboard/config/slots",
+  },
+  {
     label: "Usuarios",
     href: "/dashboard/config/users",
   },
@@ -25,7 +29,7 @@ const CONFIG_ITEMS = [
 export default function ConfigSideBar() {
   const currentPath = usePathname();
   return (
-    <div className="w-[300px] h-full bg-red-500">
+    <div className="w-75 h-full bg-red-500">
       <nav className="flex flex-col p-4 space-y-2">
         {CONFIG_ITEMS.map((item) => (
           <Link

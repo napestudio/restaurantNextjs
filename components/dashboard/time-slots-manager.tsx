@@ -6,7 +6,7 @@ import {
   getTimeSlots,
   updateTimeSlot,
 } from "@/actions/TimeSlot";
-import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
+import type { TimeSlot } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState, useTransition } from "react";
