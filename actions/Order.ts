@@ -1128,3 +1128,203 @@ export async function updateInvoice(
     };
   }
 }
+
+// Payment method type for closing tables (extended)
+export type PaymentMethodExtended =
+  | "CASH"
+  | "CARD_DEBIT"
+  | "CARD_CREDIT"
+  | "ACCOUNT"
+  | "TRANSFER";
+
+// Payment entry for split payments
+export type PaymentEntry = {
+  method: PaymentMethodExtended;
+  amount: number;
+};
+
+// Close table with payment - records payment in cash register
+export async function closeTableWithPayment(data: {
+  orderId: string;
+  payments: PaymentEntry[];
+  sessionId: string;
+  userId: string;
+  isPartialClose?: boolean;
+}) {
+  try {
+    const { orderId, payments, sessionId, userId, isPartialClose } = data;
+
+    // Validate payments array
+    if (!payments || payments.length === 0) {
+      return {
+        success: false,
+        error: "At least one payment method is required",
+      };
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Get the order with items and table
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          table: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.status === OrderStatus.COMPLETED) {
+        throw new Error("Order is already completed");
+      }
+
+      if (order.items.length === 0) {
+        throw new Error("Cannot close an order without items");
+      }
+
+      // Validate session exists and is open
+      const session = await tx.cashRegisterSession.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        throw new Error("Cash register session not found");
+      }
+
+      if (session.status === "CLOSED") {
+        throw new Error("Cannot add movements to a closed session");
+      }
+
+      // Calculate order total
+      const subtotal = order.items.reduce(
+        (sum, item) => sum + Number(item.price) * item.quantity,
+        0
+      );
+      const discountAmount = subtotal * (Number(order.discountPercentage) / 100);
+      const total = subtotal - discountAmount;
+
+      // Validate payment amounts match total
+      const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Allow small rounding differences (0.01)
+      if (Math.abs(totalPayment - total) > 0.01) {
+        throw new Error(
+          `Payment amount ($${totalPayment.toFixed(2)}) does not match order total ($${total.toFixed(2)})`
+        );
+      }
+
+      // Create cash movements for each payment
+      for (const payment of payments) {
+        await tx.cashMovement.create({
+          data: {
+            sessionId,
+            type: "SALE",
+            paymentMethod: payment.method,
+            amount: payment.amount,
+            description: `Table ${order.table?.number || "N/A"} - Order ${order.publicCode}`,
+            orderId: order.id,
+            createdBy: userId,
+          },
+        });
+      }
+
+      // Determine primary payment method for the order
+      // Use the method with the highest amount
+      const primaryPayment = payments.reduce((max, p) =>
+        p.amount > max.amount ? p : max
+      );
+
+      // Map extended payment method to Order's PaymentMethod enum
+      let orderPaymentMethod: PaymentMethod;
+      switch (primaryPayment.method) {
+        case "CASH":
+          orderPaymentMethod = PaymentMethod.CASH;
+          break;
+        case "CARD_DEBIT":
+        case "CARD_CREDIT":
+          orderPaymentMethod = PaymentMethod.CARD;
+          break;
+        case "TRANSFER":
+        case "ACCOUNT":
+          orderPaymentMethod = PaymentMethod.TRANSFER;
+          break;
+        default:
+          orderPaymentMethod = PaymentMethod.CASH;
+      }
+
+      // Update order status and payment method
+      const completedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: isPartialClose ? OrderStatus.IN_PROGRESS : OrderStatus.COMPLETED,
+          paymentMethod: orderPaymentMethod,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          table: true,
+        },
+      });
+
+      // If not partial close, check if table should be cleared
+      if (!isPartialClose && completedOrder.tableId) {
+        const activeOrders = await tx.order.count({
+          where: {
+            tableId: completedOrder.tableId,
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        });
+
+        // If no more active orders, clear table status
+        if (activeOrders === 0) {
+          await tx.table.update({
+            where: { id: completedOrder.tableId },
+            data: { status: "EMPTY" },
+          });
+        }
+      }
+
+      return completedOrder;
+    });
+
+    // Serialize for client
+    const serializedOrder = {
+      ...result,
+      discountPercentage: Number(result.discountPercentage),
+      items: result.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        product: serializeProduct(item.product),
+      })),
+    };
+
+    return {
+      success: true,
+      data: serializedOrder,
+    };
+  } catch (error) {
+    console.error("Error closing table with payment:", error);
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+    return {
+      success: false,
+      error: "Error closing the table",
+    };
+  }
+}

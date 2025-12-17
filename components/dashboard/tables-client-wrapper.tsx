@@ -173,7 +173,6 @@ export function TablesClientWrapper({
         tableCapacity={formState.capacity}
         isShared={formState.isShared}
         onTableNumberChange={(value) => updateField("number", value)}
-        onTableNameChange={(value) => updateField("name", value)}
         onTableShapeChange={(value) => updateField("shape", value)}
         onTableCapacityChange={(value) => updateField("capacity", value)}
         onIsSharedChange={(value) => updateField("isShared", value)}

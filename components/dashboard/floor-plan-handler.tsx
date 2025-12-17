@@ -471,7 +471,6 @@ export default function FloorPlanHandler({
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
-        onTableNameChange={(value) => setNewTable({ ...newTable, name: value })}
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })
         }

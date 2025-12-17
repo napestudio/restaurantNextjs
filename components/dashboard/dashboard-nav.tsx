@@ -21,7 +21,7 @@ export async function DashboardNav() {
       <div className="mx-auto px-4 sm:px-4 lg:px-4">
         <div className="flex items-center justify-between flex-wrap py-2">
           <div className="flex ">
-            <div className="flex-shrink-0 flex items-center">
+            <div className="shrink-0 flex items-center">
               <h1 className="text-xl font-bold text-gray-900">
                 Administración
               </h1>
@@ -29,7 +29,7 @@ export async function DashboardNav() {
           </div>
           <DashBoardNavItems navItems={navItems} />
           <div className="flex items-center gap-2">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <span className="text-sm text-gray-700 relative flex items-center gap-1">
                 {hasAdminRole && (
                   <span className="text-red-500">

@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import type { ReservationFilterType } from "@/actions/Reservation";
+import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -23,84 +27,91 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Eye, Trash2, Filter, UserCheck, CalendarDays } from "lucide-react";
-import { format, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns";
-import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
-import { Input } from "@/components/ui/input";
+import { format, parseISO } from "date-fns";
+import {
+  CalendarDays,
+  ChevronDown,
+  Clock,
+  Eye,
+  Filter,
+  History,
+  Loader2,
+  Trash2,
+  UserCheck,
+} from "lucide-react";
 
 interface ReservationsTableProps {
   reservations: SerializedReservation[];
+  filterType: ReservationFilterType;
   statusFilter: string;
+  dateFrom: string;
+  dateTo: string;
+  pagination: {
+    nextCursor: string | null;
+    hasMore: boolean;
+    totalCount: number;
+  };
+  isPending: boolean;
+  onFilterTypeChange: (
+    type: ReservationFilterType,
+    dateFrom?: string,
+    dateTo?: string
+  ) => void;
   onStatusFilterChange: (status: string) => void;
+  onDateRangeChange: (dateFrom: string, dateTo: string) => void;
   onStatusUpdate: (id: string, status: string) => void;
   onView: (reservation: SerializedReservation) => void;
   onCancel: (id: string) => void;
-  dateFrom: string;
-  dateTo: string;
-  onDateFromChange: (date: string) => void;
-  onDateToChange: (date: string) => void;
-  onFilteredReservationsChange: (reservations: SerializedReservation[]) => void;
+  onLoadMore: () => void;
 }
 
 export function ReservationsTable({
   reservations,
+  filterType,
   statusFilter,
+  dateFrom,
+  dateTo,
+  pagination,
+  isPending,
+  onFilterTypeChange,
   onStatusFilterChange,
+  onDateRangeChange,
   onStatusUpdate,
   onView,
   onCancel,
-  dateFrom,
-  dateTo,
-  onDateFromChange,
-  onDateToChange,
-  onFilteredReservationsChange,
+  onLoadMore,
 }: ReservationsTableProps) {
-  // Apply filters using useMemo to prevent unnecessary recalculations
-  const filteredReservations = useMemo(() => {
-    // Apply status filter
-    let filtered =
-      statusFilter === "all"
-        ? reservations
-        : reservations.filter((res) => res.status.toLowerCase() === statusFilter);
-
-    // Apply date range filter
-    if (dateFrom || dateTo) {
-      filtered = filtered.filter((res) => {
-        const resDate = parseISO(res.date);
-
-        if (dateFrom && dateTo) {
-          const from = startOfDay(parseISO(dateFrom));
-          const to = endOfDay(parseISO(dateTo));
-          return isWithinInterval(resDate, { start: from, end: to });
-        } else if (dateFrom) {
-          return resDate >= startOfDay(parseISO(dateFrom));
-        } else if (dateTo) {
-          return resDate <= endOfDay(parseISO(dateTo));
-        }
-
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [reservations, statusFilter, dateFrom, dateTo]);
-
-  // Update parent component with filtered data - using dependencies that won't cause infinite loops
-  useEffect(() => {
-    onFilteredReservationsChange(filteredReservations);
-  }, [filteredReservations, onFilteredReservationsChange, reservations, statusFilter, dateFrom, dateTo]);
-
   const handleSetToday = () => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    onDateFromChange(today);
-    onDateToChange(today);
+    onFilterTypeChange("today");
   };
 
-  const handleClearDates = () => {
-    onDateFromChange("");
-    onDateToChange("");
+  const handleSetPast = () => {
+    onFilterTypeChange("past");
+  };
+
+  const handleDateFromChange = (value: string) => {
+    onDateRangeChange(value, dateTo);
+  };
+
+  const handleDateToChange = (value: string) => {
+    onDateRangeChange(dateFrom, value);
+  };
+
+  const handleClearFilters = () => {
+    onFilterTypeChange("today", "", "");
+  };
+
+  const getFilterLabel = () => {
+    switch (filterType) {
+      case "today":
+        return "Hoy";
+      case "past":
+        return "Historial";
+      case "dateRange":
+        return "Rango de fechas";
+      default:
+        return "Hoy";
+    }
   };
 
   return (
@@ -109,8 +120,18 @@ export function ReservationsTable({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gestión de Reservas</CardTitle>
-              <CardDescription>Administra todas las reservas</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                Gestión de Reservas
+                {/* <Badge variant="secondary" className="ml-2">
+                  {pagination.totalCount} total
+                </Badge> */}
+              </CardTitle>
+              <CardDescription>
+                {filterType === "today" && "Mostrando reservas de hoy"}
+                {filterType === "past" && "Mostrando reservas pasadas"}
+                {filterType === "dateRange" &&
+                  "Mostrando rango de fechas seleccionado"}
+              </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -130,46 +151,88 @@ export function ReservationsTable({
             </div>
           </div>
 
-          {/* Date Filters */}
+          {/* Date Filter Tabs */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Filtros de Fecha:</span>
+              <span className="text-sm font-medium">Período:</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => onDateFromChange(e.target.value)}
-                className="w-40"
-                placeholder="Desde"
-              />
-              <span className="text-muted-foreground">-</span>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => onDateToChange(e.target.value)}
-                className="w-40"
-                placeholder="Hasta"
-              />
+
+            {/* Filter Type Buttons */}
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+              <Button
+                variant={filterType === "today" ? "default" : "ghost"}
+                size="sm"
+                onClick={handleSetToday}
+                className={
+                  filterType === "today" ? "bg-red-600 hover:bg-red-700" : ""
+                }
+                disabled={isPending}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Hoy
+              </Button>
+              <Button
+                variant={filterType === "past" ? "default" : "ghost"}
+                size="sm"
+                onClick={handleSetPast}
+                className={
+                  filterType === "past" ? "bg-red-600 hover:bg-red-700" : ""
+                }
+                disabled={isPending}
+              >
+                <History className="h-4 w-4 mr-1" />
+                Historial
+              </Button>
+              <Button
+                variant={filterType === "dateRange" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onFilterTypeChange("dateRange")}
+                className={
+                  filterType === "dateRange"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : ""
+                }
+                disabled={isPending}
+              >
+                <CalendarDays className="h-4 w-4 mr-1" />
+                Rango
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSetToday}
-              className="border-red-600 text-red-600 hover:bg-red-50"
-            >
-              <CalendarDays className="h-4 w-4 mr-1" />
-              Hoy
-            </Button>
-            {(dateFrom || dateTo) && (
+
+            {/* Date Range Inputs - Only show when dateRange is selected */}
+            {filterType === "dateRange" && (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => handleDateFromChange(e.target.value)}
+                  className="w-40"
+                  placeholder="Desde"
+                  disabled={isPending}
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => handleDateToChange(e.target.value)}
+                  className="w-40"
+                  placeholder="Hasta"
+                  disabled={isPending}
+                />
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {(filterType !== "today" || statusFilter !== "all") && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleClearDates}
+                onClick={handleClearFilters}
                 className="text-muted-foreground hover:text-foreground"
+                disabled={isPending}
               >
-                Limpiar
+                Limpiar filtros
               </Button>
             )}
           </div>
@@ -189,27 +252,26 @@ export function ReservationsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredReservations.length === 0 ? (
+            {reservations.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center py-12"
-                >
+                <TableCell colSpan={7} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
                     <p className="text-muted-foreground font-medium">
                       No se encontraron reservas
                     </p>
-                    {(dateFrom || dateTo || statusFilter !== "all") && (
-                      <p className="text-sm text-muted-foreground">
-                        Intenta ajustar los filtros para ver más resultados
-                      </p>
-                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {filterType === "today" && "No hay reservas para hoy"}
+                      {filterType === "past" &&
+                        "No hay reservas en el historial"}
+                      {filterType === "dateRange" &&
+                        "Selecciona un rango de fechas"}
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              filteredReservations.map((reservation) => (
+              reservations.map((reservation) => (
                 <TableRow key={reservation.id}>
                   <TableCell className="font-mono text-sm">
                     {reservation.id.slice(0, 8)}
@@ -272,7 +334,9 @@ export function ReservationsTable({
                           size="sm"
                           variant="default"
                           className="bg-green-600 hover:bg-green-700"
-                          onClick={() => onStatusUpdate(reservation.id, "seated")}
+                          onClick={() =>
+                            onStatusUpdate(reservation.id, "seated")
+                          }
                           title="Marcar como Sentada"
                         >
                           <UserCheck className="h-4 w-4" />
@@ -301,6 +365,37 @@ export function ReservationsTable({
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination / Load More */}
+        {pagination.hasMore && (
+          <div className="flex justify-center mt-6">
+            <Button
+              variant="outline"
+              onClick={onLoadMore}
+              disabled={isPending}
+              className="min-w-[200px]"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Cargando...
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Cargar más ({reservations.length} de {pagination.totalCount})
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Show count when all loaded */}
+        {!pagination.hasMore && reservations.length > 0 && (
+          <div className="text-center mt-4 text-sm text-muted-foreground">
+            Mostrando {reservations.length} de {pagination.totalCount} reservas
+          </div>
+        )}
       </CardContent>
     </Card>
   );

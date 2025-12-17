@@ -11,13 +11,13 @@
       "adminOnly": true
     },
     {
-      "label": "Turnos",
-      "href": "/dashboard/reservations/slots",
+      "label": "Ordenes",
+      "href": "/dashboard/orders",
       "adminOnly": true
     },
     {
-      "label": "Ordenes",
-      "href": "/dashboard/orders",
+      "label": "Cajas",
+      "href": "/dashboard/cash-registers",
       "adminOnly": true
     },
     {
@@ -37,7 +37,7 @@
     },
     {
       "label": "Configuración",
-      "href": "/dashboard/config",
+      "href": "/dashboard/config/restaurant",
       "adminOnly": true
     }
   ]
