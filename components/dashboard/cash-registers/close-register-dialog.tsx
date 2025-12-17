@@ -105,9 +105,16 @@ export function CloseRegisterDialog({
           status: "CLOSED",
           closedAt,
           closedBy: result.data.closedBy || userId,
-          expectedCash: result.data.expectedCash ?? expectedCash,
-          countedCash: result.data.countedCash ?? 0,
-          variance: result.data.variance ?? 0,
+          expectedCash:
+            result.data.expectedCash != null
+              ? Number(result.data.expectedCash)
+              : expectedCash,
+          countedCash:
+            result.data.countedCash != null
+              ? Number(result.data.countedCash)
+              : 0,
+          variance:
+            result.data.variance != null ? Number(result.data.variance) : 0,
           closingNotes: result.data.closingNotes,
           updatedAt,
         };
