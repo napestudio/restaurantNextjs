@@ -621,7 +621,7 @@ export function SessionDetailsSidebar({
                 )
               }
             >
-              {isClosing ? "Cerrando..." : "Cerrar Arqueo"}
+              {isClosing ? "Finalizando..." : "Finalizar Arqueo"}
             </Button>
           </div>
         )}

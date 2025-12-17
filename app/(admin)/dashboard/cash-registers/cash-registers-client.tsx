@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   CircleDot,
@@ -17,12 +18,13 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowRightLeft,
+  Wallet,
 } from "lucide-react";
 import { CashRegisterWithStatus } from "@/types/cash-register";
 import { OpenRegisterDialog } from "@/components/dashboard/cash-registers/open-register-dialog";
 import { CloseRegisterDialog } from "@/components/dashboard/cash-registers/close-register-dialog";
-import { AddMovementDialog } from "@/components/dashboard/cash-registers/add-movement-dialog";
 import { SessionDetailsSidebar } from "@/components/dashboard/cash-registers/session-details-sidebar";
+import { MovimientosCaja } from "@/components/dashboard/cash-registers/movimientos-caja";
 import { cn } from "@/lib/utils";
 
 interface SerializedSession {
@@ -74,30 +76,6 @@ export function CashRegistersClient({
 
   // Calculate summary stats from open sessions
   const openSessions = sessions.filter((s) => s.status === "OPEN");
-  const closedSessions = sessions.filter((s) => s.status === "CLOSED");
-
-  const stats = useMemo(() => {
-    const totalSales = closedSessions.reduce(
-      (sum, s) => sum + (s.expectedCash || 0) - s.openingAmount,
-      0
-    );
-    const totalIncome = closedSessions.reduce(
-      (sum, s) => sum + (s.countedCash || 0),
-      0
-    );
-    const totalExpenses = closedSessions.reduce(
-      (sum, s) =>
-        sum + Math.max(0, s.openingAmount - (s.countedCash || s.openingAmount)),
-      0
-    );
-
-    return {
-      openCount: openSessions.length,
-      totalSales,
-      totalIncome,
-      totalExpenses,
-    };
-  }, [openSessions, closedSessions]);
 
   // Filter sessions
   const filteredSessions = useMemo(() => {
@@ -177,251 +155,290 @@ export function CashRegistersClient({
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Arqueos de Caja</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Gestiona las aperturas y cierres de caja de tu sucursal
-          </p>
-        </div>
-        <Button
-          onClick={() => setOpenDialogOpen(true)}
-          className="bg-red-600 hover:bg-red-700"
-          disabled={availableRegisters.length === 0}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo arqueo de caja
-        </Button>
-      </div>
+      {/* Page Header */}
+      {/* <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Cajas</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          Gestiona los arqueos y movimientos de caja de tu sucursal
+        </p>
+      </div> */}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <DollarSign className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Arqueos de Caja</p>
-              <p className="text-xs text-muted-foreground">
-                Abrí uno para darle seguimiento a las ventas.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Saldo actual</p>
-              <p className="text-2xl font-bold">
-                {formatCurrency(
-                  openSessions.reduce((sum, s) => sum + s.openingAmount, 0)
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-100 rounded-lg">
-              <ArrowRightLeft className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total de ventas</p>
-              <p className="text-2xl font-bold">{formatCurrency(0)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <TrendingDown className="h-5 w-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Egresos</p>
-              <p className="text-2xl font-bold">{formatCurrency(0)}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="arqueos" className="w-full bg-white">
+        <TabsList>
+          <TabsTrigger
+            value="arqueos"
+            className="gap-2 data-[state=active]:bg-white"
+          >
+            <DollarSign className="h-4 w-4" />
+            Arqueo de Cajas
+          </TabsTrigger>
+          <TabsTrigger value="movimientos" className="gap-2">
+            <Wallet className="h-4 w-4" />
+            Movimientos de Caja
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <Select value={filterCashRegister} onValueChange={setFilterCashRegister}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Caja" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las cajas</SelectItem>
-              {cashRegisters.map((register) => (
-                <SelectItem key={register.id} value={register.id}>
-                  {register.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los estados</SelectItem>
-              <SelectItem value="OPEN">Abierto</SelectItem>
-              <SelectItem value="CLOSED">Cerrado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="ml-auto">
-          <AddMovementDialog cashRegisters={cashRegisters} />
-        </div>
-      </div>
+        {/* Arqueos Tab */}
+        <TabsContent value="arqueos" className="bg-white">
+          {/* Header with Action Button */}
+          <div className="flex items-center justify-between mb-6 bg-white">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Arqueos de Caja
+              </h2>
+            </div>
+            <Button
+              onClick={() => setOpenDialogOpen(true)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={availableRegisters.length === 0}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo arqueo de caja
+            </Button>
+          </div>
 
-      {/* Sessions Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Hora de apertura
-              </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Hora de cierre
-              </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Caja
-              </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Sistema
-              </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Usuario
-              </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Diferencia
-              </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Estado
-              </th>
-              <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {filteredSessions.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-12 text-center">
-                  <p className="text-gray-500">No hay arqueos de caja</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Crea un nuevo arqueo para comenzar
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Arqueos de Caja
                   </p>
-                </td>
-              </tr>
-            ) : (
-              filteredSessions.map((session) => (
-                <tr
-                  key={session.id}
-                  onClick={() => handleRowClick(session)}
-                  className={cn(
-                    "hover:bg-gray-50 transition-colors cursor-pointer",
-                    session.status === "OPEN" && "border-l-4 border-l-green-500"
-                  )}
-                >
-                  {/* Opening time */}
-                  <td className="px-4 py-3 text-sm">
-                    {formatDateTime(session.openedAt)}
-                  </td>
-
-                  {/* Closing time */}
-                  <td className="px-4 py-3 text-sm text-gray-500">
-                    {session.closedAt ? formatDateTime(session.closedAt) : "—"}
-                  </td>
-
-                  {/* Cash register */}
-                  <td className="px-4 py-3 text-sm font-medium">
-                    {session.cashRegister.name}
-                  </td>
-
-                  {/* System expected */}
-                  <td className="px-4 py-3 text-sm">
-                    {session.expectedCash !== null
-                      ? formatCurrency(session.expectedCash)
-                      : formatCurrency(session.openingAmount)}
-                  </td>
-
-                  {/* User counted */}
-                  <td className="px-4 py-3 text-sm">
-                    {session.countedCash !== null
-                      ? formatCurrency(session.countedCash)
-                      : "—"}
-                  </td>
-
-                  {/* Variance */}
-                  <td className="px-4 py-3 text-sm">
-                    {session.variance !== null ? (
-                      <span
-                        className={cn(
-                          "font-medium px-2 py-1 rounded",
-                          session.variance < 0
-                            ? "text-red-600 bg-red-50"
-                            : session.variance > 0
-                            ? "text-green-600 bg-green-50"
-                            : "text-gray-600"
-                        )}
-                      >
-                        {formatCurrency(session.variance)}
-                      </span>
-                    ) : (
-                      "—"
+                  <p className="text-xs text-muted-foreground">
+                    Abrí uno para darle seguimiento a las ventas.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Saldo actual</p>
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(
+                      openSessions.reduce((sum, s) => sum + s.openingAmount, 0)
                     )}
-                  </td>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <ArrowRightLeft className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Total de ventas
+                  </p>
+                  <p className="text-2xl font-bold">{formatCurrency(0)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Egresos</p>
+                  <p className="text-2xl font-bold">{formatCurrency(0)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    {session.status === "OPEN" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        <CircleDot className="h-3 w-3" />
-                        Abierto
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                        <CircleOff className="h-3 w-3" />
-                        Cerrado
-                      </span>
-                    )}
-                  </td>
+          {/* Filters */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Select
+                value={filterCashRegister}
+                onValueChange={setFilterCashRegister}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Caja" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las cajas</SelectItem>
+                  {cashRegisters.map((register) => (
+                    <SelectItem key={register.id} value={register.id}>
+                      {register.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="OPEN">Abierto</SelectItem>
+                  <SelectItem value="CLOSED">Cerrado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end">
-                      {session.status === "OPEN" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCloseClick(session);
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          Cerrar
-                        </Button>
-                      )}
-                    </div>
-                  </td>
+          {/* Sessions Table */}
+          <div className="bg-white rounded-lg border overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Hora de apertura
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Hora de cierre
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Caja
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Sistema
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Usuario
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Diferencia
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                    Estado
+                  </th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">
+                    Acciones
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y">
+                {filteredSessions.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-12 text-center">
+                      <p className="text-gray-500">No hay arqueos de caja</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Crea un nuevo arqueo para comenzar
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSessions.map((session) => (
+                    <tr
+                      key={session.id}
+                      onClick={() => handleRowClick(session)}
+                      className={cn(
+                        "hover:bg-gray-50 transition-colors cursor-pointer",
+                        session.status === "OPEN" &&
+                          "border-l-4 border-l-green-500"
+                      )}
+                    >
+                      {/* Opening time */}
+                      <td className="px-4 py-3 text-sm">
+                        {formatDateTime(session.openedAt)}
+                      </td>
+
+                      {/* Closing time */}
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {session.closedAt
+                          ? formatDateTime(session.closedAt)
+                          : "—"}
+                      </td>
+
+                      {/* Cash register */}
+                      <td className="px-4 py-3 text-sm font-medium">
+                        {session.cashRegister.name}
+                      </td>
+
+                      {/* System expected */}
+                      <td className="px-4 py-3 text-sm">
+                        {session.expectedCash !== null
+                          ? formatCurrency(session.expectedCash)
+                          : formatCurrency(session.openingAmount)}
+                      </td>
+
+                      {/* User counted */}
+                      <td className="px-4 py-3 text-sm">
+                        {session.countedCash !== null
+                          ? formatCurrency(session.countedCash)
+                          : "—"}
+                      </td>
+
+                      {/* Variance */}
+                      <td className="px-4 py-3 text-sm">
+                        {session.variance !== null ? (
+                          <span
+                            className={cn(
+                              "font-medium px-2 py-1 rounded",
+                              session.variance < 0
+                                ? "text-red-600 bg-red-50"
+                                : session.variance > 0
+                                ? "text-green-600 bg-green-50"
+                                : "text-gray-600"
+                            )}
+                          >
+                            {formatCurrency(session.variance)}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3">
+                        {session.status === "OPEN" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            <CircleDot className="h-3 w-3" />
+                            Abierto
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            <CircleOff className="h-3 w-3" />
+                            Cerrado
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end">
+                          {session.status === "OPEN" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCloseClick(session);
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Cerrar
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        {/* Movimientos Tab */}
+        <TabsContent value="movimientos">
+          <MovimientosCaja branchId={branchId} cashRegisters={cashRegisters} />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <OpenRegisterDialog

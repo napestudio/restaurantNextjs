@@ -2,7 +2,6 @@
 
 import {
   addOrderItem,
-  closeTable,
   createTableOrder,
   getAvailableTablesForMove,
   moveOrderToTable,
@@ -24,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CloseTableDialog } from "./close-table-dialog";
 import { MoveOrderDialog } from "./move-order-dialog";
 import { OrderItemsList } from "./order-items-list";
 import { OrderTabs } from "./order-tabs";
@@ -59,6 +59,7 @@ export function TableOrderSidebar({
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -235,7 +236,7 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
-  const handleCloseTable = async () => {
+  const handleCloseTable = () => {
     if (!order || !tableId) return;
 
     if (order.items.length === 0) {
@@ -243,45 +244,38 @@ export function TableOrderSidebar({
       return;
     }
 
-    if (!confirm("¿Cerrar esta orden y completarla?")) {
-      return;
-    }
+    // Open the close table dialog instead of directly closing
+    setShowCloseDialog(true);
+  };
 
-    setIsLoadingAction(true);
-    const result = await closeTable(order.id);
+  const handleCloseTableSuccess = async (closedTableId: string) => {
+    onOrderUpdated(closedTableId);
 
-    if (result.success) {
-      onOrderUpdated(tableId);
+    if (tableIsShared) {
+      // Refresh to get updated orders list
+      await refresh();
 
-      if (tableIsShared) {
-        // Refresh to get updated orders list
-        await refresh();
+      // Check if there are more active orders after refresh
+      const remainingOrders = Array.isArray(allOrders)
+        ? allOrders.filter((o) => o.id !== order?.id)
+        : [];
 
-        // Check if there are more active orders after refresh
-        const remainingOrders = Array.isArray(allOrders)
-          ? allOrders.filter((o) => o.id !== order.id)
-          : [];
-
-        if (remainingOrders.length > 0) {
-          // Switch to the first remaining order
-          setSelectedOrderId(remainingOrders[0].id);
-          alert(
-            "Orden cerrada. Esta mesa compartida tiene más órdenes activas."
-          );
-        } else {
-          // Last order closed, close sidebar
-          alert("Última orden cerrada exitosamente");
-          onClose();
-        }
+      if (remainingOrders.length > 0) {
+        // Switch to the first remaining order
+        setSelectedOrderId(remainingOrders[0].id);
+        alert(
+          "Orden cerrada. Esta mesa compartida tiene más órdenes activas."
+        );
       } else {
-        // Non-shared table, close sidebar
-        alert("Mesa cerrada exitosamente");
+        // Last order closed, close sidebar
+        alert("Última orden cerrada exitosamente");
         onClose();
       }
     } else {
-      alert(result.error || "Error al cerrar la orden");
+      // Non-shared table, close sidebar
+      alert("Mesa cerrada exitosamente");
+      onClose();
     }
-    setIsLoadingAction(false);
   };
 
   const handlePrintCheck = () => {
@@ -528,6 +522,32 @@ export function TableOrderSidebar({
         onConfirm={handleMoveOrder}
         isLoading={isLoading}
       />
+
+      {/* Close Table Dialog */}
+      {order && tableId && tableNumber && (
+        <CloseTableDialog
+          open={showCloseDialog}
+          onOpenChange={setShowCloseDialog}
+          order={{
+            id: order.id,
+            publicCode: order.publicCode,
+            partySize: order.partySize,
+            discountPercentage: Number(order.discountPercentage),
+            items: order.items.map((item) => ({
+              id: item.id,
+              itemName: item.product?.name,
+              quantity: item.quantity,
+              price: item.price,
+              originalPrice: item.originalPrice,
+              product: item.product,
+            })),
+          }}
+          tableNumber={tableNumber}
+          branchId={branchId}
+          tableId={tableId}
+          onSuccess={handleCloseTableSuccess}
+        />
+      )}
     </div>
   );
 }

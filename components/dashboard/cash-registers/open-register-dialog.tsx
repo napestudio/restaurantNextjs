@@ -118,7 +118,7 @@ export function OpenRegisterDialog({
           status: "OPEN",
           openedAt,
           openedBy: result.data.openedBy,
-          openingAmount: result.data.openingAmount,
+          openingAmount: Number(result.data.openingAmount),
           closedAt: null,
           closedBy: null,
           expectedCash: null,

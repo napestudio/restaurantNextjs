@@ -91,13 +91,14 @@ export function CloseRegisterDialog({
       if (result.success && result.data) {
         // Handle date serialization (could be Date or string from server)
         const closedAt = result.data.closedAt
-          ? (result.data.closedAt instanceof Date
-              ? result.data.closedAt.toISOString()
-              : String(result.data.closedAt))
+          ? result.data.closedAt instanceof Date
+            ? result.data.closedAt.toISOString()
+            : String(result.data.closedAt)
           : new Date().toISOString();
-        const updatedAt = result.data.updatedAt instanceof Date
-          ? result.data.updatedAt.toISOString()
-          : String(result.data.updatedAt);
+        const updatedAt =
+          result.data.updatedAt instanceof Date
+            ? result.data.updatedAt.toISOString()
+            : String(result.data.updatedAt);
 
         const closedSession: SerializedSession = {
           ...session,
@@ -160,7 +161,7 @@ export function CloseRegisterDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Cerrar Arqueo de Caja</DialogTitle>
+          <DialogTitle>Finalizar Arqueo de Caja</DialogTitle>
           <DialogDescription>
             Cierra la sesión de caja y registra el efectivo contado.
           </DialogDescription>
@@ -307,7 +308,7 @@ export function CloseRegisterDialog({
             className="bg-red-600 hover:bg-red-700"
             disabled={isPending || !countedCash}
           >
-            {isPending ? "Cerrando..." : "Cerrar Arqueo"}
+            {isPending ? "Finalizando..." : "Finalizar Arqueo"}
           </Button>
         </DialogFooter>
       </DialogContent>

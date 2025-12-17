@@ -837,3 +837,219 @@ export async function calculateExpectedCash(sessionId: string) {
     };
   }
 }
+
+// Get manual movements (INCOME/EXPENSE only, not SALE/REFUND from orders) with date filters
+export async function getManualMovements(params: {
+  branchId: string;
+  dateFrom?: string;
+  dateTo?: string;
+  cashRegisterId?: string;
+  type?: "INCOME" | "EXPENSE";
+  limit?: number;
+  offset?: number;
+}) {
+  try {
+    const { branchId, dateFrom, dateTo, cashRegisterId, type, limit = 50, offset = 0 } = params;
+
+    // Build date filter
+    const dateFilter: { gte?: Date; lte?: Date } = {};
+    if (dateFrom) {
+      dateFilter.gte = new Date(dateFrom);
+      dateFilter.gte.setHours(0, 0, 0, 0);
+    }
+    if (dateTo) {
+      dateFilter.lte = new Date(dateTo);
+      dateFilter.lte.setHours(23, 59, 59, 999);
+    }
+
+    const whereClause = {
+      // Only manual movements (INCOME/EXPENSE), not SALE/REFUND from orders
+      type: type ? type : { in: ["INCOME", "EXPENSE"] as const },
+      // Filter by branch through session -> cashRegister
+      session: {
+        cashRegister: {
+          branchId,
+          ...(cashRegisterId && { id: cashRegisterId }),
+        },
+      },
+      // Date filter
+      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+    };
+
+    // Get total count and movements in parallel
+    const [movements, total] = await Promise.all([
+      prisma.cashMovement.findMany({
+        where: whereClause,
+        include: {
+          session: {
+            include: {
+              cashRegister: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.cashMovement.count({ where: whereClause }),
+    ]);
+
+    // Serialize for client
+    const serializedMovements = movements.map((movement) => ({
+      id: movement.id,
+      type: movement.type,
+      paymentMethod: movement.paymentMethod,
+      amount: Number(movement.amount),
+      description: movement.description,
+      createdAt: movement.createdAt.toISOString(),
+      createdBy: movement.createdBy,
+      sessionId: movement.sessionId,
+      cashRegister: movement.session.cashRegister,
+    }));
+
+    return {
+      success: true,
+      data: serializedMovements,
+      total,
+      hasMore: offset + movements.length < total,
+    };
+  } catch (error) {
+    console.error("Error fetching manual movements:", error);
+    return {
+      success: false,
+      error: "Error al obtener los movimientos",
+      data: [],
+      total: 0,
+      hasMore: false,
+    };
+  }
+}
+
+// Get a single movement by ID
+export async function getMovementById(movementId: string) {
+  try {
+    const movement = await prisma.cashMovement.findUnique({
+      where: { id: movementId },
+      include: {
+        session: {
+          include: {
+            cashRegister: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            publicCode: true,
+            type: true,
+          },
+        },
+      },
+    });
+
+    if (!movement) {
+      return {
+        success: false,
+        error: "Movimiento no encontrado",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: movement.id,
+        type: movement.type,
+        paymentMethod: movement.paymentMethod,
+        amount: Number(movement.amount),
+        description: movement.description,
+        createdAt: movement.createdAt.toISOString(),
+        createdBy: movement.createdBy,
+        sessionId: movement.sessionId,
+        orderId: movement.orderId,
+        cashRegister: movement.session.cashRegister,
+        order: movement.order,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching movement:", error);
+    return {
+      success: false,
+      error: "Error al obtener el movimiento",
+    };
+  }
+}
+
+// Get cash registers with open sessions for a branch
+export async function getOpenCashRegistersForBranch(branchId: string) {
+  try {
+    const cashRegisters = await prisma.cashRegister.findMany({
+      where: {
+        branchId,
+        isActive: true,
+        sessions: {
+          some: {
+            status: "OPEN",
+          },
+        },
+      },
+      include: {
+        sector: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        sessions: {
+          where: {
+            status: "OPEN",
+          },
+          take: 1,
+          orderBy: {
+            openedAt: "desc",
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    // Transform to include session directly
+    const registersWithSession = cashRegisters.map((register) => ({
+      id: register.id,
+      name: register.name,
+      sector: register.sector,
+      session: register.sessions[0]
+        ? {
+            id: register.sessions[0].id,
+            openedAt: register.sessions[0].openedAt.toISOString(),
+            openingAmount: Number(register.sessions[0].openingAmount),
+          }
+        : null,
+    }));
+
+    return {
+      success: true,
+      data: registersWithSession,
+    };
+  } catch (error) {
+    console.error("Error fetching open cash registers:", error);
+    return {
+      success: false,
+      error: "Error al obtener las cajas abiertas",
+      data: [],
+    };
+  }
+}
