@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { deleteUser } from "@/actions/users";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { UserWithBranches } from "@/types/user";
 import { AlertTriangle, User } from "lucide-react";
-import { deleteUser } from "@/actions/users";
-import { UserWithBranches, USER_ROLE_LABELS } from "@/types/user";
+import { useState } from "react";
 
 interface DeleteUserDialogProps {
   open: boolean;
@@ -30,7 +30,7 @@ export function DeleteUserDialog({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const primaryBranch = user.userOnBranches[0];
+  // const primaryBranch = user.userOnBranches[0];
 
   const handleDelete = async () => {
     setIsPending(true);
@@ -75,13 +75,13 @@ export function DeleteUserDialog({
             </div>
             <div>
               <p className="font-medium">{user.name || user.username}</p>
-              <p className="text-sm text-muted-foreground">@{user.username}</p>
-              {primaryBranch && (
+              <p className="text-sm text-muted-foreground">{user.username}</p>
+              {/* {primaryBranch && (
                 <p className="text-sm text-muted-foreground">
                   {USER_ROLE_LABELS[primaryBranch.role]} en{" "}
                   {primaryBranch.restaurant.name} - {primaryBranch.name}
                 </p>
-              )}
+              )} */}
             </div>
           </div>
 

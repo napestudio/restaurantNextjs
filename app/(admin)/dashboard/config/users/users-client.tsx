@@ -26,7 +26,11 @@ interface UsersClientProps {
   branchId: string;
 }
 
-export function UsersClient({ initialUsers, currentUserId, branchId }: UsersClientProps) {
+export function UsersClient({
+  initialUsers,
+  currentUserId,
+  branchId,
+}: UsersClientProps) {
   const [users, setUsers] = useState<UserWithBranches[]>(initialUsers);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -115,7 +119,7 @@ export function UsersClient({ initialUsers, currentUserId, branchId }: UsersClie
                       <TableHead>Usuario</TableHead>
                       <TableHead>Nombre</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Sucursal</TableHead>
+                      {/* <TableHead>Sucursal</TableHead> */}
                       <TableHead>Rol</TableHead>
                       <TableHead>Creado</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
@@ -129,11 +133,11 @@ export function UsersClient({ initialUsers, currentUserId, branchId }: UsersClie
                       return (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">
-                            @{user.username}
+                            {user.username}
                           </TableCell>
                           <TableCell>{user.name || "-"}</TableCell>
                           <TableCell>{user.email || "-"}</TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             {primaryBranch ? (
                               <span className="text-sm">
                                 {primaryBranch.restaurant.name} -{" "}
@@ -142,11 +146,13 @@ export function UsersClient({ initialUsers, currentUserId, branchId }: UsersClie
                             ) : (
                               "-"
                             )}
-                          </TableCell>
+                          </TableCell> */}
                           <TableCell>
                             {primaryBranch ? (
                               <Badge
-                                variant={getRoleBadgeVariant(primaryBranch.role)}
+                                variant={getRoleBadgeVariant(
+                                  primaryBranch.role
+                                )}
                               >
                                 {USER_ROLE_LABELS[primaryBranch.role]}
                               </Badge>

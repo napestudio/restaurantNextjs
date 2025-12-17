@@ -864,7 +864,7 @@ export async function getManualMovements(params: {
 
     const whereClause = {
       // Only manual movements (INCOME/EXPENSE), not SALE/REFUND from orders
-      type: type ? type : { in: ["INCOME", "EXPENSE"] as const },
+      type: type ? type : { in: ["INCOME", "EXPENSE"] as ("INCOME" | "EXPENSE")[] },
       // Filter by branch through session -> cashRegister
       session: {
         cashRegister: {
