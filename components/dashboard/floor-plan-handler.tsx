@@ -437,6 +437,10 @@ export default function FloorPlanHandler({
                 dbTables.find((t) => t.id === selectedTableForOrder)
                   ?.isShared ?? false
               }
+              tableSectorId={
+                dbTables.find((t) => t.id === selectedTableForOrder)
+                  ?.sectorId ?? null
+              }
               branchId={branchId}
               onClose={handleCloseSidebar}
               onOrderUpdated={handleOrderUpdated}

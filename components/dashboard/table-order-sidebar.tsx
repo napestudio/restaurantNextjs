@@ -33,6 +33,7 @@ interface TableOrderSidebarProps {
   tableId: string | null;
   tableNumber: number | null;
   tableIsShared?: boolean;
+  tableSectorId?: string | null;
   branchId: string;
   onClose: () => void;
   onOrderUpdated: (tableId: string) => void;
@@ -51,6 +52,7 @@ export function TableOrderSidebar({
   tableId,
   tableNumber,
   tableIsShared = false,
+  tableSectorId,
   branchId,
   onClose,
   onOrderUpdated,
@@ -263,9 +265,7 @@ export function TableOrderSidebar({
       if (remainingOrders.length > 0) {
         // Switch to the first remaining order
         setSelectedOrderId(remainingOrders[0].id);
-        alert(
-          "Orden cerrada. Esta mesa compartida tiene más órdenes activas."
-        );
+        alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
       } else {
         // Last order closed, close sidebar
         alert("Última orden cerrada exitosamente");
@@ -273,7 +273,7 @@ export function TableOrderSidebar({
       }
     } else {
       // Non-shared table, close sidebar
-      alert("Mesa cerrada exitosamente");
+      // alert("Mesa cerrada exitosamente");
       onClose();
     }
   };
@@ -545,6 +545,7 @@ export function TableOrderSidebar({
           tableNumber={tableNumber}
           branchId={branchId}
           tableId={tableId}
+          tableSectorId={tableSectorId}
           onSuccess={handleCloseTableSuccess}
         />
       )}
