@@ -71,6 +71,7 @@ interface CloseTableDialogProps {
   branchName?: string;
   onSuccess: (tableId: string) => void;
   tableId: string;
+  tableSectorId?: string | null;
 }
 
 type PaymentLine = {
@@ -96,6 +97,7 @@ export function CloseTableDialog({
   branchName = "Principal",
   onSuccess,
   tableId,
+  tableSectorId,
 }: CloseTableDialogProps) {
   const [payments, setPayments] = useState<PaymentLine[]>([
     { id: "1", method: "CASH", amount: "" },
@@ -108,6 +110,8 @@ export function CloseTableDialog({
   );
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
+  const [sectorCashRegister, setSectorCashRegister] =
+    useState<CashRegisterWithSession | null>(null);
 
   // Calculate totals
   const subtotal = useMemo(() => {
@@ -153,9 +157,28 @@ export function CloseTableDialog({
     const result = await getOpenCashRegistersForBranch(branchId);
     if (result.success && result.data) {
       setCashRegisters(result.data);
-      // Auto-select first register if only one
-      if (result.data.length === 1 && result.data[0].session) {
-        setSelectedRegisterId(result.data[0].id);
+
+      // Check if the table's sector has an assigned cash register with an open session
+      if (tableSectorId) {
+        const sectorRegister = result.data.find(
+          (r) => r.sector?.id === tableSectorId && r.session
+        );
+        if (sectorRegister) {
+          setSectorCashRegister(sectorRegister);
+          setSelectedRegisterId(sectorRegister.id);
+        } else {
+          setSectorCashRegister(null);
+          // Auto-select first register if only one
+          if (result.data.length === 1 && result.data[0].session) {
+            setSelectedRegisterId(result.data[0].id);
+          }
+        }
+      } else {
+        setSectorCashRegister(null);
+        // Auto-select first register if only one
+        if (result.data.length === 1 && result.data[0].session) {
+          setSelectedRegisterId(result.data[0].id);
+        }
       }
     }
     setIsLoadingRegisters(false);
@@ -251,6 +274,7 @@ export function CloseTableDialog({
     setIsPartialClose(false);
     setError(null);
     setSelectedRegisterId("");
+    setSectorCashRegister(null);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -357,29 +381,37 @@ export function CloseTableDialog({
                 {/* Cash Register Selection */}
                 <div className="space-y-2">
                   <Label>Caja Registradora</Label>
-                  <Select
-                    value={selectedRegisterId}
-                    onValueChange={setSelectedRegisterId}
-                    disabled={isPending || isLoadingRegisters}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue
-                        placeholder={
-                          isLoadingRegisters
-                            ? "Cargando..."
-                            : "Seleccionar caja"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cashRegisters.map((register) => (
-                        <SelectItem key={register.id} value={register.id}>
-                          {register.name}
-                          {register.sector && ` (${register.sector.name})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {sectorCashRegister ? (
+                    // Show read-only cash register name when sector has an assigned register
+                    <div className="px-3 py-2 bg-white border rounded-md text-sm">
+                      {sectorCashRegister.name}
+                    </div>
+                  ) : (
+                    // Show dropdown selector when no sector register is assigned
+                    <Select
+                      value={selectedRegisterId}
+                      onValueChange={setSelectedRegisterId}
+                      disabled={isPending || isLoadingRegisters}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue
+                          placeholder={
+                            isLoadingRegisters
+                              ? "Cargando..."
+                              : "Seleccionar caja"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cashRegisters.map((register) => (
+                          <SelectItem key={register.id} value={register.id}>
+                            {register.name}
+                            {register.sector && ` (${register.sector.name})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 {/* Payment Lines */}
