@@ -24,7 +24,7 @@ export function serializeForClient<T>(data: T): T {
 
   // Handle Decimal (duck typing to avoid import issues)
   if (isDecimal(data)) {
-    return (data as { toNumber: () => number }).toNumber() as T;
+    return (data as unknown as { toNumber: () => number }).toNumber() as T;
   }
 
   // Handle Date
