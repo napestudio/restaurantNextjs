@@ -26,6 +26,169 @@ function serializeProduct(product: Product | null) {
   };
 }
 
+// Create a new order (any type)
+export async function createOrder(data: {
+  branchId: string;
+  type: OrderType;
+  tableId?: string | null;
+  partySize?: number | null;
+  clientId?: string | null;
+  assignedToId?: string | null;
+  description?: string | null;
+}) {
+  try {
+    const { branchId, type, tableId, partySize, clientId, assignedToId, description } = data;
+
+    // Validation based on order type
+    if (type === OrderType.DINE_IN && !tableId) {
+      return {
+        success: false,
+        error: "Se requiere una mesa para órdenes para comer aquí",
+      };
+    }
+
+    if (type === OrderType.DELIVERY && !clientId) {
+      return {
+        success: false,
+        error: "Se requiere un cliente para órdenes de delivery",
+      };
+    }
+
+    // For DINE_IN orders, check if table exists and validate
+    if (tableId) {
+      const table = await prisma.table.findUnique({
+        where: { id: tableId },
+        select: { isShared: true, isActive: true },
+      });
+
+      if (!table) {
+        return {
+          success: false,
+          error: "Mesa no encontrada",
+        };
+      }
+
+      if (!table.isActive) {
+        return {
+          success: false,
+          error: "Mesa no activa",
+        };
+      }
+
+      // Check if table already has an active order (only for non-shared tables)
+      if (!table.isShared && type === OrderType.DINE_IN) {
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            tableId,
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        });
+
+        if (existingOrder) {
+          return {
+            success: false,
+            error: "Esta mesa ya tiene una orden activa",
+          };
+        }
+      }
+    }
+
+    // Generate a unique public code
+    const publicCode = `${type.charAt(0)}${Date.now().toString().slice(-8)}`;
+
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
+    // Create order in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          branchId,
+          tableId: tableId || null,
+          partySize: partySize || null,
+          type,
+          publicCode,
+          status: OrderStatus.PENDING,
+          clientId: clientId || null,
+          assignedToId: assignedToId || null,
+          discountPercentage: clientDiscount,
+          description: description || null,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+            orderBy: {
+              id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+            },
+          },
+          table: {
+            select: {
+              number: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Update table status to OCCUPIED if it's a dine-in order
+      if (tableId && type === OrderType.DINE_IN) {
+        await tx.table.update({
+          where: { id: tableId },
+          data: { status: "OCCUPIED" },
+        });
+      }
+
+      return newOrder;
+    });
+
+    // Serialize Decimal fields
+    const serializedOrder = {
+      ...order,
+      discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        product: serializeProduct(item.product),
+      })),
+    };
+
+    return {
+      success: true,
+      data: serializedOrder,
+    };
+  } catch (error) {
+    console.error("Error creating order:", error);
+    return {
+      success: false,
+      error: "Error al crear la orden",
+    };
+  }
+}
+
 // Create a new dine-in order for a table
 export async function createTableOrder(
   tableId: string,
@@ -888,13 +1051,7 @@ export async function getOrders(filters: OrderFilters) {
             id: "asc",
           },
         },
-        client: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        client: true,
         assignedTo: {
           select: {
             id: true,
@@ -912,6 +1069,7 @@ export async function getOrders(filters: OrderFilters) {
     const serializedOrders = orders.map((order) => ({
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -1027,6 +1185,33 @@ export async function assignStaffToOrder(
     return {
       success: false,
       error: "Error al asignar personal a la orden",
+    };
+  }
+}
+
+// Update order status
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus
+) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return {
+      success: false,
+      error: "Error al actualizar el estado de la orden",
     };
   }
 }

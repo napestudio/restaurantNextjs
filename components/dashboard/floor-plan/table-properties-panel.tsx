@@ -20,7 +20,6 @@ interface FloorTable {
 
 interface TablePropertiesPanelProps {
   selectedTable: FloorTable | undefined;
-  tableName?: string | null;
   sectorName?: string | null;
   sectorColor?: string | null;
   onUpdateShape: (tableId: string, shape: TableShapeType) => void;
@@ -36,7 +35,6 @@ interface TablePropertiesPanelProps {
 
 export function TablePropertiesPanel({
   selectedTable,
-  tableName,
   sectorName,
   sectorColor,
   onUpdateShape,
@@ -64,7 +62,6 @@ export function TablePropertiesPanel({
           {selectedTable ? (
             <TablePropertiesForm
               selectedTable={selectedTable}
-              tableName={tableName}
               sectorName={sectorName}
               sectorColor={sectorColor}
               onUpdateShape={onUpdateShape}

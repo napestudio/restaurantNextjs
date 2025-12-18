@@ -448,7 +448,6 @@ export default function FloorPlanHandler({
           ) : (
             <TablePropertiesPanel
               selectedTable={selectedTableData}
-              tableName={selectedDbTable?.name}
               sectorName={selectedTableSector?.name}
               sectorColor={selectedTableSector?.color}
               onUpdateShape={updateTableShape}

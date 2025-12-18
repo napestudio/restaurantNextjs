@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Package, Truck, UtensilsCrossed } from "lucide-react";
+import type { ClientData } from "@/lib/serializers";
 
 type Order = {
   id: string;
@@ -26,11 +27,7 @@ type Order = {
     number: number;
     name: string | null;
   } | null;
-  client: {
-    id: string;
-    name: string;
-    email: string | null;
-  } | null;
+  client: ClientData | null;
   assignedTo: {
     id: string;
     name: string | null;
@@ -155,26 +152,21 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                   <td className="px-6 py-4">
                     <div className="text-sm">
                       {order.table ? (
-                        <div className="text-gray-900 font-medium">
-                          Mesa {order.table.number}
-                        </div>
-                      ) : order.customerName ? (
-                        <div className="text-gray-900">
-                          {order.customerName}
-                        </div>
+                        <>
+                          <div className="text-gray-900 font-medium">
+                            Mesa {order.table.number}
+                          </div>
+                          {order.partySize && (
+                            <div className="text-xs text-gray-500">
+                              {order.partySize}{" "}
+                              {order.partySize === 1 ? "persona" : "personas"}
+                            </div>
+                          )}
+                        </>
+                      ) : order.client ? (
+                        <div className="text-gray-900">{order.client.name}</div>
                       ) : (
                         <div className="text-gray-400">-</div>
-                      )}
-                      {order.partySize && (
-                        <div className="text-xs text-gray-500">
-                          {order.partySize}{" "}
-                          {order.partySize === 1 ? "persona" : "personas"}
-                        </div>
-                      )}
-                      {order.courierName && (
-                        <div className="text-xs text-gray-500">
-                          Repartidor: {order.courierName}
-                        </div>
                       )}
                     </div>
                   </td>

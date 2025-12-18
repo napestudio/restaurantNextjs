@@ -1,20 +1,14 @@
 import { getOrders } from "@/actions/Order";
 import { OrdersClient } from "./orders-client";
 import prisma from "@/lib/prisma";
+import { ProductsProvider } from "@/contexts/products-context";
 
 export default async function OrdersPage() {
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";
 
-  // Get today's date range
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Fetch today's orders by default
-  const ordersResult = await getOrders({
-    branchId,
-    startDate: today,
-  });
+  // Fetch all orders
+  const ordersResult = await getOrders({ branchId });
 
   const rawOrders =
     ordersResult.success && ordersResult.data ? ordersResult.data : [];
@@ -48,11 +42,13 @@ export default async function OrdersPage() {
           <h1 className="text-3xl font-bold text-gray-900">Ordenes</h1>
         </div>
 
-        <OrdersClient
-          branchId={branchId}
-          initialOrders={orders}
-          tables={tables}
-        />
+        <ProductsProvider branchId={branchId}>
+          <OrdersClient
+            branchId={branchId}
+            initialOrders={orders}
+            tables={tables}
+          />
+        </ProductsProvider>
       </main>
     </div>
   );

@@ -36,7 +36,6 @@ interface FloorTable {
 
 interface TablePropertiesFormProps {
   selectedTable: FloorTable;
-  tableName?: string | null;
   sectorName?: string | null;
   sectorColor?: string | null;
   onUpdateShape: (tableId: string, shape: TableShapeType) => void;
@@ -52,7 +51,6 @@ interface TablePropertiesFormProps {
 
 export function TablePropertiesForm({
   selectedTable,
-  tableName,
   sectorName,
   sectorColor,
   onUpdateShape,
@@ -73,16 +71,15 @@ export function TablePropertiesForm({
       {hasActiveOrders && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-xs text-amber-800 font-medium">
-            Esta mesa tiene órdenes activas. Solo puedes mover su posición, pero no modificar sus propiedades.
+            Esta mesa tiene órdenes activas. Solo puedes mover su posición, pero
+            no modificar sus propiedades.
           </p>
         </div>
       )}
 
       <div>
         <Label className="text-xs text-muted-foreground">Número de Mesa</Label>
-        <div className="text-lg font-bold">
-          {selectedTable.number} {tableName || ""}
-        </div>
+        <div className="text-lg font-bold">{selectedTable.number}</div>
       </div>
 
       {sectorName && (

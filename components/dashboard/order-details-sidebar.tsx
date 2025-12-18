@@ -1,10 +1,11 @@
 "use client";
 
 import type { ClientData } from "@/actions/clients";
-import { assignClientToOrder, assignStaffToOrder } from "@/actions/Order";
+import { assignClientToOrder, assignStaffToOrder, updateOrderStatus } from "@/actions/Order";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -47,11 +48,7 @@ type Order = {
     number: number;
     name: string | null;
   } | null;
-  client: {
-    id: string;
-    name: string;
-    email: string | null;
-  } | null;
+  client: ClientData | null;
   assignedTo: {
     id: string;
     name: string | null;
@@ -123,6 +120,7 @@ export function OrderDetailsSidebar({
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   if (!order) return null;
 
@@ -211,6 +209,25 @@ export function OrderDetailsSidebar({
     }
   };
 
+  const handleStatusChange = async (newStatus: OrderStatus) => {
+    if (!order) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const result = await updateOrderStatus(order.id, newStatus);
+      if (result.success) {
+        onOrderUpdated?.();
+      } else {
+        alert(result.error || "Error al actualizar el estado");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Error al actualizar el estado");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -291,9 +308,23 @@ export function OrderDetailsSidebar({
                 <span>{typeLabels[order.type]}</span>
               </div>
             </div>
-            <Badge className={statusColors[order.status]} variant="outline">
-              {statusLabels[order.status]}
-            </Badge>
+            <div className="flex flex-col items-end gap-2">
+              <Select
+                value={order.status}
+                onValueChange={(value) => handleStatusChange(value as OrderStatus)}
+                disabled={isUpdatingStatus}
+              >
+                <SelectTrigger className={cn("w-[180px]", statusColors[order.status])}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={OrderStatus.PENDING}>{statusLabels[OrderStatus.PENDING]}</SelectItem>
+                  <SelectItem value={OrderStatus.IN_PROGRESS}>{statusLabels[OrderStatus.IN_PROGRESS]}</SelectItem>
+                  <SelectItem value={OrderStatus.COMPLETED}>{statusLabels[OrderStatus.COMPLETED]}</SelectItem>
+                  <SelectItem value={OrderStatus.CANCELED}>{statusLabels[OrderStatus.CANCELED]}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Date/Time */}
@@ -341,7 +372,7 @@ export function OrderDetailsSidebar({
             </div>
           ) : (
             order.client && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-gray-400" />
                   <div className="flex flex-col">
@@ -351,6 +382,35 @@ export function OrderDetailsSidebar({
                     </span>
                   </div>
                 </div>
+
+                {/* Show delivery info for delivery orders */}
+                {order.type === OrderType.DELIVERY && (
+                  <div className="ml-6 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                    <h4 className="text-xs font-semibold text-blue-900">
+                      Información de Entrega
+                    </h4>
+                    <div className="text-xs space-y-1">
+                      {order.client.phone && (
+                        <p className="text-gray-700">
+                          <span className="font-medium">Tel:</span> {order.client.phone}
+                        </p>
+                      )}
+                      {(order.client.addressStreet || order.client.addressNumber) && (
+                        <p className="text-gray-700">
+                          <span className="font-medium">Dirección:</span>{" "}
+                          {order.client.addressStreet} {order.client.addressNumber}
+                          {order.client.addressApartment && ` - Depto ${order.client.addressApartment}`}
+                          {order.client.addressCity && `, ${order.client.addressCity}`}
+                        </p>
+                      )}
+                      {order.client.notes && (
+                        <p className="text-gray-700">
+                          <span className="font-medium">Notas:</span> {order.client.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           )}
