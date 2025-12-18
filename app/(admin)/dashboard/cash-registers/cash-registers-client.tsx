@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { CloseRegisterDialog } from "@/components/dashboard/cash-registers/close-register-dialog";
+import { MovimientosCaja } from "@/components/dashboard/cash-registers/movimientos-caja";
+import { OpenRegisterDialog } from "@/components/dashboard/cash-registers/open-register-dialog";
+import { SessionDetailsSidebar } from "@/components/dashboard/cash-registers/session-details-sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -10,22 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Plus,
-  CircleDot,
-  CircleOff,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  ArrowRightLeft,
-  Wallet,
-} from "lucide-react";
-import { CashRegisterWithStatus } from "@/types/cash-register";
-import { OpenRegisterDialog } from "@/components/dashboard/cash-registers/open-register-dialog";
-import { CloseRegisterDialog } from "@/components/dashboard/cash-registers/close-register-dialog";
-import { SessionDetailsSidebar } from "@/components/dashboard/cash-registers/session-details-sidebar";
-import { MovimientosCaja } from "@/components/dashboard/cash-registers/movimientos-caja";
 import { cn } from "@/lib/utils";
+import { CashRegisterWithStatus } from "@/types/cash-register";
+import { CircleDot, CircleOff, DollarSign, Plus, Wallet } from "lucide-react";
+import { useMemo, useState } from "react";
 
 interface SerializedSession {
   id: string;
@@ -75,7 +66,7 @@ export function CashRegistersClient({
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   // Calculate summary stats from open sessions
-  const openSessions = sessions.filter((s) => s.status === "OPEN");
+  // const openSessions = sessions.filter((s) => s.status === "OPEN");
 
   // Filter sessions
   const filteredSessions = useMemo(() => {
@@ -199,7 +190,7 @@ export function CashRegistersClient({
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg border p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -254,7 +245,7 @@ export function CashRegistersClient({
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Filters */}
           <div className="flex items-center gap-4 mb-4">
@@ -263,7 +254,7 @@ export function CashRegistersClient({
                 value={filterCashRegister}
                 onValueChange={setFilterCashRegister}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-45">
                   <SelectValue placeholder="Caja" />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,7 +269,7 @@ export function CashRegistersClient({
             </div>
             <div className="flex items-center gap-2">
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-45">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>

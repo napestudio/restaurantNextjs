@@ -12,14 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CreditCard } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CreditCard, X } from "lucide-react";
 import { createCashRegister } from "@/actions/CashRegister";
 import { CashRegisterWithStatus } from "@/types/cash-register";
 import { Sector } from "@/app/generated/prisma";
@@ -40,9 +34,21 @@ export function CreateCashRegisterDialog({
   onCreated,
 }: CreateCashRegisterDialogProps) {
   const [name, setName] = useState("");
-  const [sectorId, setSectorId] = useState<string | null>(null);
+  const [sectorIds, setSectorIds] = useState<string[]>([]);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleSectorToggle = (sectorId: string, checked: boolean) => {
+    if (checked) {
+      setSectorIds((prev) => [...prev, sectorId]);
+    } else {
+      setSectorIds((prev) => prev.filter((id) => id !== sectorId));
+    }
+  };
+
+  const handleRemoveSector = (sectorId: string) => {
+    setSectorIds((prev) => prev.filter((id) => id !== sectorId));
+  };
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -57,22 +63,28 @@ export function CreateCashRegisterDialog({
       const result = await createCashRegister({
         name: name.trim(),
         branchId,
-        sectorId: sectorId || null,
+        sectorIds,
       });
 
       if (result.success && result.data) {
         // Create the full object with relations for the UI
+        const selectedSectors = sectorIds
+          .map((id) => sectors.find((s) => s.id === id))
+          .filter(Boolean) as typeof sectors;
+
         const newRegister: CashRegisterWithStatus = {
           ...result.data,
-          sector: sectorId
-            ? sectors.find((s) => s.id === sectorId)
-              ? {
-                  id: sectorId,
-                  name: sectors.find((s) => s.id === sectorId)!.name,
-                  color: sectors.find((s) => s.id === sectorId)!.color,
-                }
-              : null
-            : null,
+          sectors: selectedSectors.map((s) => ({
+            id: `temp-${s.id}`,
+            cashRegisterId: result.data.id,
+            sectorId: s.id,
+            createdAt: new Date().toISOString(),
+            sector: {
+              id: s.id,
+              name: s.name,
+              color: s.color,
+            },
+          })),
           sessions: [],
           _count: { sessions: 0 },
           hasOpenSession: false,
@@ -91,7 +103,7 @@ export function CreateCashRegisterDialog({
 
   const resetForm = () => {
     setName("");
-    setSectorId(null);
+    setSectorIds([]);
     setError(null);
   };
 
@@ -131,37 +143,68 @@ export function CreateCashRegisterDialog({
             </p>
           </div>
 
-          {/* Sector (optional) */}
+          {/* Sectors (optional, multi-select) */}
           <div className="space-y-2">
-            <Label htmlFor="sector">Sector (Opcional)</Label>
-            <Select
-              value={sectorId || "none"}
-              onValueChange={(value) =>
-                setSectorId(value === "none" ? null : value)
-              }
-              disabled={isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sin sector asignado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sin sector asignado</SelectItem>
-                {sectors.map((sector) => (
-                  <SelectItem key={sector.id} value={sector.id}>
-                    <div className="flex items-center gap-2">
+            <Label>Sectores (Opcional)</Label>
+            {/* Selected sectors as badges */}
+            {sectorIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {sectorIds.map((id) => {
+                  const sector = sectors.find((s) => s.id === id);
+                  if (!sector) return null;
+                  return (
+                    <div
+                      key={id}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: sector.color }}
+                    >
+                      {sector.name}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSector(id)}
+                        className="hover:bg-white/20 rounded-full p-0.5"
+                        disabled={isPending}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Sector checkboxes */}
+            <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+              {sectors.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No hay sectores disponibles
+                </p>
+              ) : (
+                sectors.map((sector) => (
+                  <div key={sector.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`sector-${sector.id}`}
+                      checked={sectorIds.includes(sector.id)}
+                      onCheckedChange={(checked) =>
+                        handleSectorToggle(sector.id, checked === true)
+                      }
+                      disabled={isPending}
+                    />
+                    <label
+                      htmlFor={`sector-${sector.id}`}
+                      className="flex items-center gap-2 text-sm cursor-pointer"
+                    >
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: sector.color }}
                       />
                       {sector.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    </label>
+                  </div>
+                ))
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Asigna la caja a un sector del plano (para futura integración
-              visual).
+              Selecciona los sectores que esta caja puede atender.
             </p>
           </div>
 

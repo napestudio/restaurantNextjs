@@ -16,7 +16,7 @@
       "adminOnly": true
     },
     {
-      "label": "Cajas",
+      "label": "Arqueos",
       "href": "/dashboard/cash-registers",
       "adminOnly": true
     },

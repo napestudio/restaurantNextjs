@@ -6,10 +6,14 @@ import type {
   CashRegisterStatus,
   CashMovementType,
   PaymentMethodExtended,
+  CashRegisterOnSector,
 } from "@/app/generated/prisma";
 
 // Re-export enums for convenience
 export type { CashRegisterStatus, CashMovementType, PaymentMethodExtended };
+
+// Sector info for display
+export type SectorInfo = Pick<Sector, "id" | "name" | "color">;
 
 // Serialized session for client components (Decimal -> number, Date -> string)
 export interface SerializedCashRegisterSession {
@@ -29,9 +33,18 @@ export interface SerializedCashRegisterSession {
   updatedAt: string;
 }
 
-// Cash Register with relations
+// Cash Register sector junction with included sector
+export interface CashRegisterSectorWithDetails {
+  id: string;
+  cashRegisterId: string;
+  sectorId: string;
+  createdAt: Date | string;
+  sector: SectorInfo;
+}
+
+// Cash Register with relations (many-to-many sectors)
 export interface CashRegisterWithRelations extends CashRegister {
-  sector: Pick<Sector, "id" | "name" | "color"> | null;
+  sectors: CashRegisterSectorWithDetails[];
   sessions: CashRegisterSession[];
   _count: {
     sessions: number;
@@ -44,10 +57,9 @@ export interface CashRegisterWithStatus {
   name: string;
   isActive: boolean;
   branchId: string;
-  sectorId: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
-  sector: Pick<Sector, "id" | "name" | "color"> | null;
+  sectors: CashRegisterSectorWithDetails[];
   sessions: SerializedCashRegisterSession[]; // Serialized sessions
   _count: {
     sessions: number;
@@ -86,13 +98,13 @@ export interface MovementWithOrder extends CashMovement {
 // Form state for creating cash register
 export interface CreateCashRegisterForm {
   name: string;
-  sectorId: string | null;
+  sectorIds: string[];
 }
 
 // Form state for editing cash register
 export interface EditCashRegisterForm {
   name: string;
-  sectorId: string | null;
+  sectorIds: string[];
   isActive: boolean;
 }
 
@@ -123,6 +135,15 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethodExtended, string> = {
   ACCOUNT: "Cuenta Corriente",
   TRANSFER: "Transferencia",
 };
+
+// Payment methods array for select dropdowns
+export const PAYMENT_METHODS: { value: PaymentMethodExtended; label: string }[] = [
+  { value: "CASH", label: "Efectivo" },
+  { value: "CARD_DEBIT", label: "Tarjeta Débito" },
+  { value: "CARD_CREDIT", label: "Tarjeta Crédito" },
+  { value: "TRANSFER", label: "Transferencia" },
+  { value: "ACCOUNT", label: "Cuenta Corriente" },
+];
 
 // Movement type labels in Spanish
 export const MOVEMENT_TYPE_LABELS: Record<CashMovementType, string> = {
