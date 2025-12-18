@@ -5,13 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Settings, Plus, X, Receipt, CreditCard } from "lucide-react";
 import {
   closeTableWithPayment,
@@ -300,7 +293,7 @@ export function CloseTableDialog({
           handleOpenChange(false);
         }
       }}
-      className="w-225 max-w-[95vw] max-h-[90vh] overflow-hidden rounded-lg shadow-xl p-0 backdrop:bg-black/50"
+      className="w-225 max-w-[95vw] self-center mx-auto max-h-[90vh] overflow-hidden rounded-lg shadow-xl p-0 backdrop:bg-black/50"
     >
       <div className="flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -405,15 +398,15 @@ export function CloseTableDialog({
                     disabled={isPending}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Agregar método
+                    Dividir pago
                   </Button>
                 </div>
 
                 <div className="space-y-4">
                   {/* Cash Register Display */}
-                  <div className="space-y-2">
-                    <Label>Caja Registradora</Label>
-                    <div className="px-3 py-2 bg-gray-50 border rounded-md text-sm">
+                  <div className="flex items-center gap-1">
+                    <Label>Caja:</Label>
+                    <div className="text-sm">
                       {isLoadingRegisters
                         ? "Cargando..."
                         : cashRegisters.find((r) => r.id === selectedRegisterId)
@@ -426,31 +419,27 @@ export function CloseTableDialog({
                     {payments.map((payment) => (
                       <div key={payment.id} className="space-y-2">
                         <div className="flex items-center gap-3">
-                          <Select
+                          <select
                             value={payment.method}
-                            onValueChange={(value) =>
+                            onChange={(e) =>
                               updatePaymentLine(
                                 payment.id,
                                 "method",
-                                value as PaymentMethodExtended
+                                e.target.value as PaymentMethodExtended
                               )
                             }
                             disabled={isPending}
+                            className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <SelectTrigger className="w-48">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PAYMENT_METHODS.map((method) => (
-                                <SelectItem
-                                  key={method.value}
-                                  value={method.value}
-                                >
-                                  {method.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {PAYMENT_METHODS.map((method) => (
+                              <option
+                                key={method.value}
+                                value={method.value}
+                              >
+                                {method.label}
+                              </option>
+                            ))}
+                          </select>
                           <div className="relative flex-1 min-w-32">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                               $

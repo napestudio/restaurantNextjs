@@ -24,7 +24,9 @@ function serializeProduct(product: Product | null) {
 export async function createTableOrder(
   tableId: string,
   branchId: string,
-  partySize: number
+  partySize: number,
+  clientId?: string | null,
+  assignedToId?: string | null
 ) {
   try {
     // Get table info to check if it's shared
@@ -73,6 +75,8 @@ export async function createTableOrder(
           type: OrderType.DINE_IN,
           publicCode,
           status: OrderStatus.PENDING,
+          clientId: clientId || null,
+          assignedToId: assignedToId || null,
         },
         include: {
           items: {
@@ -81,6 +85,14 @@ export async function createTableOrder(
             },
             orderBy: {
               id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
             },
           },
         },
@@ -853,6 +865,20 @@ export async function getOrders(filters: OrderFilters) {
             id: "asc",
           },
         },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -969,6 +995,39 @@ export async function assignStaffToOrder(orderId: string, userId: string | null)
     return {
       success: false,
       error: "Error al asignar personal a la orden",
+    };
+  }
+}
+
+// Assign client to order
+export async function assignClientToOrder(orderId: string, clientId: string | null) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { clientId: clientId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error assigning client to order:", error);
+    return {
+      success: false,
+      error: "Error al asignar cliente a la orden",
     };
   }
 }

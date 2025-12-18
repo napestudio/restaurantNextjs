@@ -115,7 +115,7 @@ export function OrderTabs({
               onClick={() => onSelectOrder(order.id)}
               disabled={disabled}
               className={`
-                flex-shrink-0 px-4 py-2 rounded-lg border-2 transition-all
+                shrink-0 px-4 py-2 rounded-lg border-2 transition-all
                 ${
                   isSelected
                     ? "border-blue-500 bg-blue-50"
@@ -129,7 +129,9 @@ export function OrderTabs({
               </div>
               <div className="text-xs text-gray-600">
                 {order.partySize
-                  ? `${order.partySize} ${order.partySize === 1 ? "persona" : "personas"}`
+                  ? `${order.partySize} ${
+                      order.partySize === 1 ? "persona" : "personas"
+                    }`
                   : "Sin asignar"}
               </div>
               <div className="text-sm font-bold text-gray-900 mt-1">
@@ -144,16 +146,14 @@ export function OrderTabs({
           onClick={onCreateOrder}
           disabled={disabled}
           className={`
-            flex-shrink-0 px-4 py-2 rounded-lg border-2 border-dashed border-gray-300
+            shrink-0 px-4 py-2 rounded-lg border-2 border-dashed border-gray-300
             bg-white hover:border-blue-400 hover:bg-blue-50 transition-all
             flex items-center gap-2
             ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           `}
         >
           <Plus className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-600">
-            Nueva Orden
-          </span>
+          <span className="text-sm font-medium text-gray-600">Nueva Orden</span>
         </button>
       </div>
 

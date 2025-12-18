@@ -46,9 +46,6 @@ export default async function OrdersPage() {
       <main className="px-4 sm:px-6 lg:px-8 py-16">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Ordenes</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Gestiona y visualiza las ordenes de tu restaurante
-          </p>
         </div>
 
         <OrdersClient

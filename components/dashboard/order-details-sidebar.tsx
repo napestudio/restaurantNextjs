@@ -1,0 +1,500 @@
+"use client";
+
+import { useState } from "react";
+import { OrderStatus, OrderType } from "@/app/generated/prisma";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import {
+  Clock,
+  MapPin,
+  User,
+  Package,
+  Truck,
+  UtensilsCrossed,
+  X,
+  DollarSign,
+  Mail,
+  FileText,
+  CreditCard,
+  Edit,
+  Save,
+} from "lucide-react";
+import { assignClientToOrder, assignStaffToOrder } from "@/actions/Order";
+import { ClientPicker } from "./client-picker";
+import { WaiterPicker } from "./waiter-picker";
+import type { ClientData } from "@/actions/clients";
+
+type Order = {
+  id: string;
+  publicCode: string;
+  type: OrderType;
+  status: OrderStatus;
+  customerName: string | null;
+  customerEmail: string | null;
+  partySize: number | null;
+  description: string | null;
+  courierName: string | null;
+  createdAt: Date;
+  tableId: string | null;
+  paymentMethod: string;
+  discountPercentage: number;
+  needsInvoice: boolean;
+  assignedToId: string | null;
+  table: {
+    number: number;
+    name: string | null;
+  } | null;
+  client: {
+    id: string;
+    name: string;
+    email: string | null;
+  } | null;
+  assignedTo: {
+    id: string;
+    name: string | null;
+    username: string;
+  } | null;
+  items: Array<{
+    id: string;
+    itemName: string;
+    quantity: number;
+    price: number;
+    originalPrice: number | null;
+    product: {
+      name: string;
+      categoryId: string | null;
+    } | null;
+  }>;
+};
+
+interface OrderDetailsSidebarProps {
+  order: Order | null;
+  open: boolean;
+  onClose: () => void;
+  branchId: string;
+  onOrderUpdated?: () => void;
+}
+
+const statusColors = {
+  [OrderStatus.PENDING]: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  [OrderStatus.IN_PROGRESS]: "bg-blue-100 text-blue-800 border-blue-200",
+  [OrderStatus.COMPLETED]: "bg-green-100 text-green-800 border-green-200",
+  [OrderStatus.CANCELED]: "bg-red-100 text-red-800 border-red-200",
+};
+
+const statusLabels = {
+  [OrderStatus.PENDING]: "Pendiente",
+  [OrderStatus.IN_PROGRESS]: "En Progreso",
+  [OrderStatus.COMPLETED]: "Completada",
+  [OrderStatus.CANCELED]: "Cancelada",
+};
+
+const typeIcons = {
+  [OrderType.DINE_IN]: UtensilsCrossed,
+  [OrderType.TAKE_AWAY]: Package,
+  [OrderType.DELIVERY]: Truck,
+};
+
+const typeLabels = {
+  [OrderType.DINE_IN]: "Para Comer Aquí",
+  [OrderType.TAKE_AWAY]: "Para Llevar",
+  [OrderType.DELIVERY]: "Delivery",
+};
+
+const paymentMethodLabels: Record<string, string> = {
+  CASH: "Efectivo",
+  CARD_DEBIT: "Tarjeta de Débito",
+  CARD_CREDIT: "Tarjeta de Crédito",
+  ACCOUNT: "Cuenta",
+  TRANSFER: "Transferencia",
+};
+
+export function OrderDetailsSidebar({
+  order,
+  open,
+  onClose,
+  branchId,
+  onOrderUpdated,
+}: OrderDetailsSidebarProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  if (!order) return null;
+
+  const TypeIcon = typeIcons[order.type];
+  const subtotal = order.items.reduce(
+    (sum, item) => sum + item.quantity * item.price,
+    0
+  );
+  const discount = (subtotal * order.discountPercentage) / 100;
+  const total = subtotal - discount;
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    // Set current values
+    if (order.client) {
+      setSelectedClient({
+        id: order.client.id,
+        name: order.client.name,
+        email: order.client.email,
+        phone: null,
+        birthDate: null,
+        taxId: null,
+        notes: null,
+        addressStreet: null,
+        addressNumber: null,
+        addressApartment: null,
+        addressCity: null,
+        discountPercentage: 0,
+        preferredPaymentMethod: null,
+        hasCurrentAccount: false,
+        createdAt: new Date(),
+      } as ClientData);
+    }
+    if (order.assignedTo) {
+      setSelectedWaiterId(order.assignedTo.id);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setSelectedClient(null);
+    setSelectedWaiterId(null);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!order) return;
+
+    setIsSaving(true);
+    try {
+      // Update client if changed
+      const clientId = selectedClient?.id || null;
+      const currentClientId = order.client?.id || null;
+
+      if (clientId !== currentClientId) {
+        const result = await assignClientToOrder(order.id, clientId);
+        if (!result.success) {
+          alert(result.error || "Error al actualizar el cliente");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Update waiter if changed
+      const waiterId = selectedWaiterId || null;
+      const currentWaiterId = order.assignedTo?.id || null;
+
+      if (waiterId !== currentWaiterId) {
+        const result = await assignStaffToOrder(order.id, waiterId);
+        if (!result.success) {
+          alert(result.error || "Error al actualizar el mesero");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Success - refresh and close edit mode
+      onOrderUpdated?.();
+      setIsEditing(false);
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+    } catch (error) {
+      console.error("Error updating order:", error);
+      alert("Error al actualizar la orden");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={cn(
+          "fixed inset-0 h-full bg-black/50 z-40 transition-opacity",
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={onClose}
+      />
+
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
+          open ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Header */}
+        <div className="bg-red-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
+          <h2 className="text-lg font-semibold">DETALLES DE ORDEN</h2>
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-orange-600"
+                onClick={handleEditClick}
+                title="Editar cliente y mesero"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-orange-600"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  title="Cancelar"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-green-600"
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  title="Guardar cambios"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-orange-600"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Order Info */}
+        <div className="p-4 space-y-4 border-b">
+          {/* Order Code and Status */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {order.publicCode}
+              </h3>
+              <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
+                <TypeIcon className="h-4 w-4" />
+                <span>{typeLabels[order.type]}</span>
+              </div>
+            </div>
+            <Badge className={statusColors[order.status]} variant="outline">
+              {statusLabels[order.status]}
+            </Badge>
+          </div>
+
+          {/* Date/Time */}
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-gray-400" />
+            <span className="text-gray-600">
+              {format(new Date(order.createdAt), "PPp", { locale: es })}
+            </span>
+          </div>
+
+          {/* Table Info */}
+          {order.table && (
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-600">Mesa {order.table.number}</span>
+            </div>
+          )}
+
+          {/* Party Size */}
+          {order.partySize && (
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-600">
+                {order.partySize}{" "}
+                {/* {order.partySize === 1 ? "persona" : "personas"} */}
+              </span>
+            </div>
+          )}
+
+          {/* Client Info */}
+          {isEditing ? (
+            <div className="space-y-2">
+              <label className="text-xs text-gray-500 font-medium">
+                Cliente
+              </label>
+              <ClientPicker
+                branchId={branchId}
+                selectedClient={selectedClient}
+                onSelectClient={setSelectedClient}
+                onCreateNew={() => {}}
+                disabled={isSaving}
+              />
+            </div>
+          ) : (
+            order.client && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-gray-400" />
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500">Cliente</span>
+                    <span className="text-gray-900 font-medium">
+                      {order.client.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Waitress/Waiter Info */}
+          {isEditing ? (
+            <div className="space-y-2">
+              <label className="text-xs text-gray-500 font-medium">
+                Camarero/a
+              </label>
+              <WaiterPicker
+                branchId={branchId}
+                selectedWaiterId={selectedWaiterId}
+                onSelectWaiter={setSelectedWaiterId}
+                disabled={isSaving}
+              />
+            </div>
+          ) : (
+            order.assignedTo && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-gray-400" />
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500">Camarero/a</span>
+                  <span className="text-gray-900 font-medium">
+                    {order.assignedTo.name || order.assignedTo.username}
+                  </span>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Customer Info */}
+          {order.customerName && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">{order.customerName}</span>
+              </div>
+              {order.customerEmail && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">{order.customerEmail}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Courier Name */}
+          {order.courierName && (
+            <div className="flex items-center gap-2 text-sm">
+              <Truck className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-600">
+                Repartidor: {order.courierName}
+              </span>
+            </div>
+          )}
+
+          {/* Description */}
+          {order.description && (
+            <div className="flex items-start gap-2 text-sm">
+              <FileText className="h-4 w-4 text-gray-400 mt-0.5" />
+              <span className="text-gray-600">{order.description}</span>
+            </div>
+          )}
+
+          {/* Invoice Required */}
+          {order.needsInvoice && (
+            <div className="flex items-center gap-2 text-sm">
+              <DollarSign className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-600">Requiere Factura</span>
+            </div>
+          )}
+        </div>
+
+        {/* Items Section */}
+        <div>
+          <div className="bg-gray-400 text-white px-4 py-2 font-semibold text-sm">
+            PRODUCTOS ({order.items.length})
+          </div>
+
+          <div className="divide-y">
+            {order.items.map((item) => (
+              <div key={item.id} className="px-4 py-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">
+                      {item.itemName}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Cantidad: {item.quantity}
+                    </div>
+                    {item.originalPrice &&
+                      item.originalPrice !== item.price && (
+                        <div className="text-xs text-orange-600">
+                          Precio modificado (Original: $
+                          {item.originalPrice.toFixed(2)})
+                        </div>
+                      )}
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-gray-900">
+                      ${(item.quantity * item.price).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ${item.price.toFixed(2)} c/u
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Totals Section */}
+        <div className="border-t">
+          {/* Subtotal */}
+          <div className="flex justify-between px-4 py-3">
+            <span className="text-gray-600">Subtotal</span>
+            <span className="font-medium">${subtotal.toFixed(2)}</span>
+          </div>
+
+          {/* Discount */}
+          {order.discountPercentage > 0 && (
+            <div className="flex justify-between px-4 py-3 text-orange-600">
+              <span>Descuento ({order.discountPercentage}%)</span>
+              <span>-${discount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Total */}
+          <div className="flex justify-between px-4 py-4 bg-gray-100 font-semibold text-lg">
+            <span>Total</span>
+            {/* Payment Method */}
+            {order.status === OrderStatus.COMPLETED && (
+              <div className="flex items-center gap-2 text-sm">
+                <CreditCard className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">
+                  {paymentMethodLabels[order.paymentMethod] ||
+                    order.paymentMethod}
+                </span>
+              </div>
+            )}
+            <span className="text-red-600">${total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

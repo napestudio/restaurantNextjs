@@ -10,6 +10,7 @@ import {
   updateOrderItemQuantity,
   updatePartySize,
 } from "@/actions/Order";
+import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,11 +24,14 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
+import { CreateClientDialog } from "./create-client-dialog";
 import { MoveOrderDialog } from "./move-order-dialog";
 import { OrderItemsList } from "./order-items-list";
 import { OrderTabs } from "./order-tabs";
 import { ProductPicker } from "./product-picker";
+import { WaiterPicker } from "./waiter-picker";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -62,6 +66,10 @@ export function TableOrderSidebar({
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -105,6 +113,9 @@ export function TableOrderSidebar({
     if (tableId) {
       setPartySize("");
       setSelectedOrderId(null);
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+      setClientSearchQuery("");
     }
   }, [tableId]);
 
@@ -137,7 +148,9 @@ export function TableOrderSidebar({
     const result = await createTableOrder(
       tableId,
       branchId,
-      parseInt(partySize)
+      parseInt(partySize),
+      selectedClient?.id || null,
+      selectedWaiterId || null
     );
 
     if (result.success && result.data) {
@@ -147,8 +160,11 @@ export function TableOrderSidebar({
       // Select the newly created order
       setSelectedOrderId(result.data.id);
 
-      // Reset party size input for next order
+      // Reset form inputs for next order
       setPartySize("");
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+      setClientSearchQuery("");
 
       // Update table status
       onOrderUpdated(tableId);
@@ -156,6 +172,16 @@ export function TableOrderSidebar({
       alert(result.error || "Error al crear la orden");
     }
     setIsLoadingAction(false);
+  };
+
+  const handleCreateNewClient = (searchQuery: string) => {
+    setClientSearchQuery(searchQuery);
+    setShowCreateClientDialog(true);
+  };
+
+  const handleClientCreated = (client: ClientData) => {
+    setSelectedClient(client);
+    setShowCreateClientDialog(false);
   };
 
   const handlePartySizeChange = async (newSize: string) => {
@@ -410,16 +436,39 @@ export function TableOrderSidebar({
             placeholder="Ej: 4"
             disabled={isLoading}
           />
-          {!order && partySize && parseInt(partySize) > 0 && (
-            <Button
-              onClick={handleCreateOrder}
-              disabled={isLoading}
-              className="w-full"
-            >
-              Abrir Mesa
-            </Button>
-          )}
         </div>
+
+        {/* Client Picker - Only show when no active order */}
+        {!order && (
+          <ClientPicker
+            branchId={branchId}
+            selectedClient={selectedClient}
+            onSelectClient={setSelectedClient}
+            onCreateNew={handleCreateNewClient}
+            disabled={isLoading}
+          />
+        )}
+
+        {/* Waiter Picker - Only show when no active order */}
+        {!order && (
+          <WaiterPicker
+            branchId={branchId}
+            selectedWaiterId={selectedWaiterId}
+            onSelectWaiter={setSelectedWaiterId}
+            disabled={isLoading}
+          />
+        )}
+
+        {/* Open Table Button */}
+        {!order && partySize && parseInt(partySize) > 0 && (
+          <Button
+            onClick={handleCreateOrder}
+            disabled={isLoading}
+            className="w-full"
+          >
+            Abrir Mesa
+          </Button>
+        )}
 
         {/* Only show product picker and items if order exists */}
         {order && (
@@ -549,6 +598,15 @@ export function TableOrderSidebar({
           onSuccess={handleCloseTableSuccess}
         />
       )}
+
+      {/* Create Client Dialog */}
+      <CreateClientDialog
+        open={showCreateClientDialog}
+        onOpenChange={setShowCreateClientDialog}
+        branchId={branchId}
+        onSuccess={handleClientCreated}
+        initialName={clientSearchQuery}
+      />
     </div>
   );
 }

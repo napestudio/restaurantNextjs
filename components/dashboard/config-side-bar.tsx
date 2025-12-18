@@ -17,6 +17,10 @@ const CONFIG_ITEMS = [
     href: "/dashboard/config/users",
   },
   {
+    label: "Clientes",
+    href: "/dashboard/config/clients",
+  },
+  {
     label: "Impresoras",
     href: "/dashboard/config/printers",
   },
