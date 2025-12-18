@@ -6,6 +6,7 @@ import {
   getAvailableTablesForMove,
   moveOrderToTable,
   removeOrderItem,
+  updateDiscount,
   updateOrderItemPrice,
   updateOrderItemQuantity,
   updatePartySize,
@@ -19,6 +20,7 @@ import { useOrdersData } from "@/hooks/use-orders-data";
 import {
   ArrowRightLeft,
   DollarSign,
+  Percent,
   Printer,
   RefreshCw,
   X,
@@ -70,6 +72,8 @@ export function TableOrderSidebar({
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -362,6 +366,38 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
+  const handleDiscountEdit = () => {
+    if (!order) return;
+    setDiscountInput(order.discountPercentage.toString());
+    setIsEditingDiscount(true);
+  };
+
+  const handleDiscountSave = async () => {
+    if (!order) return;
+
+    const newDiscount = parseFloat(discountInput);
+    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
+      alert("El descuento debe ser un número entre 0 y 100");
+      return;
+    }
+
+    setIsLoadingAction(true);
+    const result = await updateDiscount(order.id, newDiscount);
+
+    if (result.success) {
+      setIsEditingDiscount(false);
+      refresh(); // Refresh the order data
+    } else {
+      alert(result.error || "Error al actualizar el descuento");
+    }
+    setIsLoadingAction(false);
+  };
+
+  const handleDiscountCancel = () => {
+    setIsEditingDiscount(false);
+    setDiscountInput("");
+  };
+
   if (!tableId) {
     return null;
   }
@@ -549,6 +585,57 @@ export function TableOrderSidebar({
                 <ArrowRightLeft className="h-4 w-4" />
                 {/* Mover a Otra Mesa */}
               </Button>
+
+              {/* Discount Button/Editor */}
+              {isEditingDiscount ? (
+                <div className="flex items-center gap-1 bg-white rounded px-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    className="h-8 w-16 text-sm"
+                    placeholder="%"
+                    autoFocus
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountSave}
+                    disabled={isLoadingAction}
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountCancel}
+                    disabled={isLoadingAction}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleDiscountEdit}
+                  variant={Number(order.discountPercentage) > 0 ? "default" : "outline"}
+                  disabled={isLoading}
+                  title={
+                    Number(order.discountPercentage) > 0
+                      ? `Descuento: ${order.discountPercentage}%`
+                      : "Agregar descuento"
+                  }
+                >
+                  <Percent className="h-4 w-4" />
+                  {Number(order.discountPercentage) > 0 && (
+                    <span className="ml-1 text-xs">{Number(order.discountPercentage)}%</span>
+                  )}
+                </Button>
+              )}
 
               <Button
                 onClick={handleCloseTable}

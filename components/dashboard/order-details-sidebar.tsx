@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import type { ClientData } from "@/actions/clients";
+import { assignClientToOrder, assignStaffToOrder } from "@/actions/Order";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,23 +10,22 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   Clock,
-  MapPin,
-  User,
+  CreditCard,
+  DollarSign,
+  Edit,
+  FileText,
+  Mail,
   Package,
+  Save,
   Truck,
+  User,
   UtensilsCrossed,
   X,
-  DollarSign,
-  Mail,
-  FileText,
-  CreditCard,
-  Edit,
-  Save,
 } from "lucide-react";
-import { assignClientToOrder, assignStaffToOrder } from "@/actions/Order";
+import { useState } from "react";
+import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
-import type { ClientData } from "@/actions/clients";
 
 type Order = {
   id: string;
@@ -307,7 +307,9 @@ export function OrderDetailsSidebar({
           {/* Table Info */}
           {order.table && (
             <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-gray-400" />
+              <div className="h-4 w-4 text-gray-400">
+                <TableIcon />
+              </div>
               <span className="text-gray-600">Mesa {order.table.number}</span>
             </div>
           )}

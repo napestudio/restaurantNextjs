@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { OrderStatus, OrderType, PaymentMethod, type Product } from "@/app/generated/prisma";
+import { serializeClient } from "@/lib/serializers";
 
 export type OrderItemInput = {
   productId: string;
@@ -64,6 +65,18 @@ export async function createTableOrder(
     // Generate a unique public code
     const publicCode = `T${Date.now().toString().slice(-8)}`;
 
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
     // Create order and update table status in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -77,6 +90,7 @@ export async function createTableOrder(
           status: OrderStatus.PENDING,
           clientId: clientId || null,
           assignedToId: assignedToId || null,
+          discountPercentage: clientDiscount,
         },
         include: {
           items: {
@@ -111,6 +125,7 @@ export async function createTableOrder(
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -1002,9 +1017,24 @@ export async function assignStaffToOrder(orderId: string, userId: string | null)
 // Assign client to order
 export async function assignClientToOrder(orderId: string, clientId: string | null) {
   try {
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
     const order = await prisma.order.update({
       where: { id: orderId },
-      data: { clientId: clientId },
+      data: {
+        clientId: clientId,
+        discountPercentage: clientDiscount,
+      },
       include: {
         client: {
           select: {
