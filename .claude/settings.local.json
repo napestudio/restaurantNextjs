@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx shadcn@latest add:*)",
-      "Read(//c/dev/RestaurantesNextjs/restaurantNextJs/app/(admin)/dashboard/tables/**)"
+      "Read(//c/dev/RestaurantesNextjs/restaurantNextJs/app/(admin)/dashboard/tables/**)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

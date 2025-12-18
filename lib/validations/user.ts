@@ -4,27 +4,51 @@ import { UserRole } from "@/app/generated/prisma";
 export const userRegistrationSchema = z.object({
   username: z
     .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be at most 30 characters")
+    .min(3, "El usuario debe tener al menos 3 caracteres")
+    .max(30, "El usuario debe tener máximo 30 caracteres")
     .regex(
       /^[a-zA-Z0-9_]+$/,
-      "Username can only contain letters, numbers, and underscores"
+      "El usuario solo puede contener letras, números y guiones bajos"
     ),
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "La contraseña debe contener mayúsculas, minúsculas y números"
+    ),
+  role: z.nativeEnum(UserRole),
+  branchId: z.string().min(1, "Selecciona una sucursal"),
+});
+
+export const userUpdateSchema = z.object({
+  username: z
+    .string()
+    .min(3, "El usuario debe tener al menos 3 caracteres")
+    .max(30, "El usuario debe tener máximo 30 caracteres")
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "El usuario solo puede contener letras, números y guiones bajos"
+    ),
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   email: z
     .string()
-    .email("Please enter a valid email address")
+    .email("Ingresa un email válido")
     .optional()
     .or(z.literal("")),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain uppercase, lowercase, and numbers"
-    ),
+      "La contraseña debe contener mayúsculas, minúsculas y números"
+    )
+    .optional()
+    .or(z.literal("")),
   role: z.nativeEnum(UserRole),
-  branchId: z.string().min(1, "Please select a branch"),
+  branchId: z.string().min(1, "Selecciona una sucursal"),
 });
 
 export type UserRegistrationInput = z.infer<typeof userRegistrationSchema>;
+export type UserUpdateInput = z.infer<typeof userUpdateSchema>;

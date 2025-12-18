@@ -9,7 +9,7 @@ export default function DashBoardNavItems({
   navItems: { label: string; href: string }[];
 }) {
   const currentPath = usePathname();
-  // console.log("Current Path:", currentPath, navItems[1].href);
+  // console.log("Current Path:", currentPath);
   return (
     <div className="hidden sm:flex">
       {navItems.map((item) => (

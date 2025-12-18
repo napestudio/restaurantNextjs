@@ -285,7 +285,7 @@ export async function deleteTimeSlot(id: string, softDelete: boolean = true) {
   try {
     if (softDelete) {
       // Soft delete - just mark as inactive
-      console.log("el id es", id);
+      // console.log("el id es", id);
       const timeSlot = await prisma.timeSlot.update({
         where: { id },
         data: { isActive: false },

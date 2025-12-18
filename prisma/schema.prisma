@@ -17,6 +17,7 @@ enum UserRole {
   ADMIN
   MANAGER
   EMPLOYEE
+  WAITER
 }
 
 enum OrderStatus {
@@ -85,6 +86,29 @@ enum VolumeUnit {
   MILLILITER // Mililitro
   GALLON // Galón
   FLUID_OUNCE // Onza líquida
+}
+
+//
+// CASH REGISTER (CAJAS)
+//
+enum CashRegisterStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  INCOME // Manual income (not from orders)
+  EXPENSE // Manual expense (payouts, purchases)
+  SALE // From completed orders
+  REFUND // Order refund
+}
+
+enum PaymentMethodExtended {
+  CASH
+  CARD_DEBIT
+  CARD_CREDIT
+  ACCOUNT // Current account / on account
+  TRANSFER
 }
 
 //
@@ -183,14 +207,15 @@ model Branch {
    */
   slug String? @db.Citext
 
-  reservations Reservation[]
-  orders       Order[]
-  sectors      Sector[]
-  tables       Table[]
-  timeSlots    TimeSlot[]
-  products     ProductOnBranch[]
-  userAccess   UserOnBranch[]
-  menus        Menu[]
+  reservations  Reservation[]
+  orders        Order[]
+  sectors       Sector[]
+  tables        Table[]
+  timeSlots     TimeSlot[]
+  products      ProductOnBranch[]
+  userAccess    UserOnBranch[]
+  menus         Menu[]
+  cashRegisters CashRegister[]
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -225,11 +250,13 @@ model Sector {
   width     Int      @default(1200) // Ancho del canvas del plano del sector
   height    Int      @default(800) // Alto del canvas del plano del sector
   isActive  Boolean  @default(true)
-  branch    Branch   @relation(fields: [branchId], references: [id])
-  branchId  String
-  tables    Table[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  branch        Branch                @relation(fields: [branchId], references: [id])
+  branchId      String
+  tables        Table[]
+  // Many-to-many relation with cash registers
+  cashRegisters CashRegisterOnSector[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   /**
    * Un nombre de sector no se repite dentro de la misma sucursal
@@ -558,8 +585,9 @@ model Order {
   createdBy String?
   updatedBy String?
 
-  items    OrderItem[]
-  invoices Invoice[]
+  items         OrderItem[]
+  invoices      Invoice[]
+  cashMovements CashMovement[]
 
   @@index([tableId])
   @@index([assignedToId])
@@ -601,7 +629,101 @@ model Invoice {
 // Slugs reservados para rutas del sistema (admin, api, auth, etc.)
 //
 model ReservedSlug {
-  slug      String   @id @db.Citext
+  slug      String   @id @default(cuid()) @db.Citext
   reason    String?
   createdAt DateTime @default(now())
+}
+
+//
+// CAJAS (CASH REGISTERS)
+//
+
+// Physical cash register configuration (the "Caja" entity)
+model CashRegister {
+  id       String  @id @default(cuid())
+  name     String // "Caja Principal", "Caja Barra"
+  isActive Boolean @default(true)
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  // Many-to-many relation with sectors (one cash register can serve multiple sectors)
+  sectors CashRegisterOnSector[]
+
+  sessions CashRegisterSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, name])
+  @@index([branchId])
+}
+
+// Junction table for CashRegister <-> Sector many-to-many relationship
+model CashRegisterOnSector {
+  id             String       @id @default(cuid())
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  cashRegisterId String
+  sector         Sector       @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  sectorId       String
+
+  createdAt DateTime @default(now())
+
+  @@unique([cashRegisterId, sectorId])
+  @@index([sectorId])
+}
+
+// A session represents an open/close cycle
+model CashRegisterSession {
+  id             String       @id @default(cuid())
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
+  cashRegisterId String
+
+  status CashRegisterStatus @default(OPEN)
+
+  // Opening
+  openedAt      DateTime @default(now())
+  openedBy      String // User ID
+  openingAmount Decimal  @default(0) // Initial cash in drawer
+
+  // Closing (nullable until closed)
+  closedAt     DateTime?
+  closedBy     String?
+  expectedCash Decimal? // System-calculated expected cash
+  countedCash  Decimal? // Actual counted cash
+  variance     Decimal? // countedCash - expectedCash
+  closingNotes String?
+
+  movements CashMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cashRegisterId])
+  @@index([status])
+  @@index([openedAt])
+}
+
+// Individual money movements within a session
+model CashMovement {
+  id        String              @id @default(cuid())
+  session   CashRegisterSession @relation(fields: [sessionId], references: [id])
+  sessionId String
+
+  type          CashMovementType
+  paymentMethod PaymentMethodExtended
+  amount        Decimal // Always positive; type determines direction
+  description   String?
+
+  // Link to order (for SALE/REFUND types)
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  createdBy String // User ID
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([orderId])
 }

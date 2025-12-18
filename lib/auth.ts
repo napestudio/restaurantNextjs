@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -19,8 +18,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Dynamically import Prisma only when needed (not in Edge Runtime during middleware)
+        // Dynamically import Prisma and bcrypt only when needed (not in Edge Runtime during middleware)
         const { prisma } = await import("@/lib/prisma");
+        const bcrypt = await import("bcryptjs");
 
         const user = await prisma.user.findUnique({
           where: { username: credentials.username as string },

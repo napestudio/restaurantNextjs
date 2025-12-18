@@ -70,7 +70,7 @@ export async function sendReservationNotificationEmail(
       html: emailHtml,
     });
 
-    console.log("Reservation notification email sent:", info.messageId);
+    // console.log("Reservation notification email sent:", info.messageId);
 
     return {
       success: true,

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, DollarSign, Calendar } from "lucide-react";
-import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
+import type { TimeSlot } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
 
 interface StatsOverviewProps {
   timeSlots: TimeSlot[];

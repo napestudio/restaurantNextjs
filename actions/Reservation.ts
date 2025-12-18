@@ -529,6 +529,124 @@ export async function getReservationsByStatus(
 }
 
 /**
+ * Filter types for reservations
+ */
+export type ReservationFilterType = "today" | "past" | "dateRange";
+
+export interface ReservationFilters {
+  type: ReservationFilterType;
+  dateFrom?: string; // ISO date string
+  dateTo?: string; // ISO date string
+  status?: ReservationStatus;
+  cursor?: string; // For pagination - reservation ID
+  limit?: number;
+}
+
+export interface PaginatedReservationsResult {
+  reservations: ReturnType<typeof serializeReservation>[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  totalCount: number;
+}
+
+/**
+ * Get reservations with filters and pagination
+ * Optimized for the common case: loading today's reservations first
+ */
+export async function getFilteredReservations(
+  branchId: string,
+  filters: ReservationFilters
+): Promise<{
+  success: boolean;
+  data?: PaginatedReservationsResult;
+  error?: string;
+}> {
+  try {
+    const limit = filters.limit || 10;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    // Build the where clause based on filter type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let whereClause: any = { branchId };
+
+    switch (filters.type) {
+      case "today":
+        whereClause.date = {
+          gte: todayStart,
+          lt: todayEnd,
+        };
+        break;
+      case "past":
+        whereClause.date = {
+          lt: todayStart,
+        };
+        break;
+      case "dateRange":
+        if (filters.dateFrom || filters.dateTo) {
+          whereClause.date = {};
+          if (filters.dateFrom) {
+            whereClause.date.gte = new Date(filters.dateFrom);
+          }
+          if (filters.dateTo) {
+            const endDate = new Date(filters.dateTo);
+            endDate.setDate(endDate.getDate() + 1);
+            whereClause.date.lt = endDate;
+          }
+        }
+        break;
+    }
+
+    // Add status filter if provided
+    if (filters.status) {
+      whereClause.status = filters.status;
+    }
+
+    // Get total count for this filter
+    const totalCount = await prisma.reservation.count({ where: whereClause });
+
+    // Fetch reservations with optional cursor-based pagination
+    const reservations = await prisma.reservation.findMany({
+      where: whereClause,
+      include: {
+        timeSlot: true,
+        tables: {
+          include: {
+            table: true,
+          },
+        },
+      },
+      orderBy: [
+        { date: filters.type === "past" ? "desc" : "asc" },
+        { createdAt: "desc" },
+      ],
+      take: limit + 1, // Take one extra to check if there are more
+      ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+    });
+
+    // Check if there are more results
+    const hasMore = reservations.length > limit;
+    const resultReservations = hasMore ? reservations.slice(0, limit) : reservations;
+    const nextCursor = hasMore ? resultReservations[resultReservations.length - 1].id : null;
+
+    return {
+      success: true,
+      data: {
+        reservations: resultReservations.map((r) => serializeReservation(r)),
+        nextCursor,
+        hasMore,
+        totalCount,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching filtered reservations:", error);
+    return { success: false, error: "Failed to fetch reservations" };
+  }
+}
+
+/**
  * Assign tables to a reservation
  */
 export async function assignTablesToReservation(
