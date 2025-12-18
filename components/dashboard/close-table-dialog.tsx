@@ -130,6 +130,17 @@ export function CloseTableDialog({
     setCurrentDiscount(order.discountPercentage);
   }, [order.discountPercentage]);
 
+  // Update payment amount when total changes
+  useEffect(() => {
+    setPayments((prevPayments) => {
+      if (prevPayments.length === 1) {
+        // Update the first payment amount to match the new total
+        return [{ ...prevPayments[0], amount: total.toFixed(2) }];
+      }
+      return prevPayments;
+    });
+  }, [total]);
+
   // Calculate total payment and change
   const totalPayment = useMemo(() => {
     return payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);

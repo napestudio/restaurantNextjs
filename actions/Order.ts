@@ -1,7 +1,12 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { OrderStatus, OrderType, PaymentMethod, type Product } from "@/app/generated/prisma";
+import {
+  OrderStatus,
+  OrderType,
+  PaymentMethod,
+  type Product,
+} from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
 
 export type OrderItemInput = {
@@ -689,7 +694,10 @@ export async function moveOrderToTable(orderId: string, targetTableId: string) {
       };
     }
 
-    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELED) {
+    if (
+      order.status === OrderStatus.COMPLETED ||
+      order.status === OrderStatus.CANCELED
+    ) {
       return {
         success: false,
         error: "No se puede mover una orden completada o cancelada",
@@ -926,7 +934,10 @@ export async function getOrders(filters: OrderFilters) {
 }
 
 // Update payment method
-export async function updatePaymentMethod(orderId: string, paymentMethod: PaymentMethod) {
+export async function updatePaymentMethod(
+  orderId: string,
+  paymentMethod: PaymentMethod
+) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -950,7 +961,10 @@ export async function updatePaymentMethod(orderId: string, paymentMethod: Paymen
 }
 
 // Update discount percentage
-export async function updateDiscount(orderId: string, discountPercentage: number) {
+export async function updateDiscount(
+  orderId: string,
+  discountPercentage: number
+) {
   try {
     // Validate discount percentage (0-100)
     if (discountPercentage < 0 || discountPercentage > 100) {
@@ -982,7 +996,10 @@ export async function updateDiscount(orderId: string, discountPercentage: number
 }
 
 // Assign staff to order
-export async function assignStaffToOrder(orderId: string, userId: string | null) {
+export async function assignStaffToOrder(
+  orderId: string,
+  userId: string | null
+) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -1015,7 +1032,10 @@ export async function assignStaffToOrder(orderId: string, userId: string | null)
 }
 
 // Assign client to order
-export async function assignClientToOrder(orderId: string, clientId: string | null) {
+export async function assignClientToOrder(
+  orderId: string,
+  clientId: string | null
+) {
   try {
     // Get client discount if clientId is provided
     let clientDiscount = 0;
@@ -1295,7 +1315,8 @@ export async function closeTableWithPayment(data: {
         (sum, item) => sum + Number(item.price) * item.quantity,
         0
       );
-      const discountAmount = subtotal * (Number(order.discountPercentage) / 100);
+      const discountAmount =
+        subtotal * (Number(order.discountPercentage) / 100);
       const total = subtotal - discountAmount;
 
       // Validate payment amounts match total
@@ -1304,7 +1325,9 @@ export async function closeTableWithPayment(data: {
       // Allow small rounding differences (0.01)
       if (Math.abs(totalPayment - total) > 0.01) {
         throw new Error(
-          `Payment amount ($${totalPayment.toFixed(2)}) does not match order total ($${total.toFixed(2)})`
+          `Total ($${totalPayment.toFixed(
+            2
+          )}) no coincide con el total de la mesa ($${total.toFixed(2)})`
         );
       }
 
@@ -1316,7 +1339,9 @@ export async function closeTableWithPayment(data: {
             type: "SALE",
             paymentMethod: payment.method,
             amount: payment.amount,
-            description: `Table ${order.table?.number || "N/A"} - Order ${order.publicCode}`,
+            description: `Table ${order.table?.number || "N/A"} - Order ${
+              order.publicCode
+            }`,
             orderId: order.id,
             createdBy: userId,
           },
@@ -1351,7 +1376,9 @@ export async function closeTableWithPayment(data: {
       const completedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
-          status: isPartialClose ? OrderStatus.IN_PROGRESS : OrderStatus.COMPLETED,
+          status: isPartialClose
+            ? OrderStatus.IN_PROGRESS
+            : OrderStatus.COMPLETED,
           paymentMethod: orderPaymentMethod,
         },
         include: {
