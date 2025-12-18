@@ -5,16 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Settings, Plus, X, Receipt, CreditCard } from "lucide-react";
+import { Settings, Plus, X, Receipt, CreditCard, Percent } from "lucide-react";
 import {
   closeTableWithPayment,
+  updateDiscount,
   type PaymentMethodExtended,
   type PaymentEntry,
 } from "@/actions/Order";
@@ -91,12 +85,16 @@ export function CloseTableDialog({
   ]);
   const [isPartialClose, setIsPartialClose] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
     []
   );
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
+  const [currentDiscount, setCurrentDiscount] = useState(order.discountPercentage);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Open/close dialog based on open prop
@@ -120,12 +118,28 @@ export function CloseTableDialog({
   }, [order.items]);
 
   const discountAmount = useMemo(() => {
-    return subtotal * (order.discountPercentage / 100);
-  }, [subtotal, order.discountPercentage]);
+    return subtotal * (currentDiscount / 100);
+  }, [subtotal, currentDiscount]);
 
   const total = useMemo(() => {
     return subtotal - discountAmount;
   }, [subtotal, discountAmount]);
+
+  // Sync current discount when order changes
+  useEffect(() => {
+    setCurrentDiscount(order.discountPercentage);
+  }, [order.discountPercentage]);
+
+  // Update payment amount when total changes
+  useEffect(() => {
+    setPayments((prevPayments) => {
+      if (prevPayments.length === 1) {
+        // Update the first payment amount to match the new total
+        return [{ ...prevPayments[0], amount: total.toFixed(2) }];
+      }
+      return prevPayments;
+    });
+  }, [total]);
 
   // Calculate total payment and change
   const totalPayment = useMemo(() => {
@@ -201,6 +215,36 @@ export function CloseTableDialog({
         p.id === id ? { ...p, [field]: field === "method" ? value : value } : p
       )
     );
+  };
+
+  const handleDiscountEdit = () => {
+    setDiscountInput(currentDiscount.toString());
+    setIsEditingDiscount(true);
+  };
+
+  const handleDiscountSave = async () => {
+    const newDiscount = parseFloat(discountInput);
+    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
+      setError("El descuento debe ser un número entre 0 y 100");
+      return;
+    }
+
+    setIsLoadingAction(true);
+    const result = await updateDiscount(order.id, newDiscount);
+    setIsLoadingAction(false);
+
+    if (result.success) {
+      setCurrentDiscount(newDiscount);
+      setIsEditingDiscount(false);
+      setError(null);
+    } else {
+      setError(result.error || "Error al actualizar el descuento");
+    }
+  };
+
+  const handleDiscountCancel = () => {
+    setIsEditingDiscount(false);
+    setDiscountInput("");
   };
 
   const handleClose = async () => {
@@ -300,7 +344,7 @@ export function CloseTableDialog({
           handleOpenChange(false);
         }
       }}
-      className="w-225 max-w-[95vw] max-h-[90vh] overflow-hidden rounded-lg shadow-xl p-0 backdrop:bg-black/50"
+      className="w-225 max-w-[95vw] self-center mx-auto max-h-[90vh] overflow-hidden rounded-lg shadow-xl p-0 backdrop:bg-black/50"
     >
       <div className="flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -369,7 +413,7 @@ export function CloseTableDialog({
 
                   {/* Totals */}
                   <div className="bg-gray-50 border-t px-4 py-4 space-y-2">
-                    {order.discountPercentage > 0 && (
+                    {currentDiscount > 0 && (
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
@@ -377,12 +421,75 @@ export function CloseTableDialog({
                           </span>
                           <span>{formatCurrency(subtotal)}</span>
                         </div>
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Descuento ({order.discountPercentage}%):</span>
-                          <span>-{formatCurrency(discountAmount)}</span>
+                        <div className="flex justify-between items-center text-sm text-green-600">
+                          <span>Descuento ({currentDiscount}%):</span>
+                          <div className="flex items-center gap-2">
+                            <span>-{formatCurrency(discountAmount)}</span>
+                            {!isEditingDiscount && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={handleDiscountEdit}
+                                disabled={isPending || isLoadingAction}
+                              >
+                                <Percent className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}
+
+                    {/* Discount Editor */}
+                    {isEditingDiscount && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={discountInput}
+                          onChange={(e) => setDiscountInput(e.target.value)}
+                          className="h-8 w-20"
+                          placeholder="%"
+                          autoFocus
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8"
+                          onClick={handleDiscountSave}
+                          disabled={isLoadingAction}
+                        >
+                          Guardar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8"
+                          onClick={handleDiscountCancel}
+                          disabled={isLoadingAction}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Add Discount Button */}
+                    {!isEditingDiscount && currentDiscount === 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDiscountEdit}
+                        disabled={isPending || isLoadingAction}
+                        className="w-full"
+                      >
+                        <Percent className="h-4 w-4 mr-2" />
+                        Agregar descuento
+                      </Button>
+                    )}
+
                     <div className="flex justify-between text-xl font-bold pt-2 border-t">
                       <span>Total:</span>
                       <span>{formatCurrency(total)}</span>
@@ -405,15 +512,15 @@ export function CloseTableDialog({
                     disabled={isPending}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Agregar método
+                    Dividir pago
                   </Button>
                 </div>
 
                 <div className="space-y-4">
                   {/* Cash Register Display */}
-                  <div className="space-y-2">
-                    <Label>Caja Registradora</Label>
-                    <div className="px-3 py-2 bg-gray-50 border rounded-md text-sm">
+                  <div className="flex items-center gap-1">
+                    <Label>Caja:</Label>
+                    <div className="text-sm">
                       {isLoadingRegisters
                         ? "Cargando..."
                         : cashRegisters.find((r) => r.id === selectedRegisterId)
@@ -426,31 +533,24 @@ export function CloseTableDialog({
                     {payments.map((payment) => (
                       <div key={payment.id} className="space-y-2">
                         <div className="flex items-center gap-3">
-                          <Select
+                          <select
                             value={payment.method}
-                            onValueChange={(value) =>
+                            onChange={(e) =>
                               updatePaymentLine(
                                 payment.id,
                                 "method",
-                                value as PaymentMethodExtended
+                                e.target.value as PaymentMethodExtended
                               )
                             }
                             disabled={isPending}
+                            className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <SelectTrigger className="w-48">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PAYMENT_METHODS.map((method) => (
-                                <SelectItem
-                                  key={method.value}
-                                  value={method.value}
-                                >
-                                  {method.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {PAYMENT_METHODS.map((method) => (
+                              <option key={method.value} value={method.value}>
+                                {method.label}
+                              </option>
+                            ))}
+                          </select>
                           <div className="relative flex-1 min-w-32">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                               $
@@ -503,7 +603,7 @@ export function CloseTableDialog({
                   )}
 
                   {/* Partial Close Option */}
-                  {/* <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center gap-2 pt-2">
                     <Checkbox
                       id="partial-close"
                       checked={isPartialClose}
@@ -518,7 +618,7 @@ export function CloseTableDialog({
                     >
                       Cierre Parcial
                     </Label>
-                  </div> */}
+                  </div>
 
                   {/* Error Message */}
                   {error && (

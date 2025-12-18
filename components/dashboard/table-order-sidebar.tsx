@@ -6,10 +6,12 @@ import {
   getAvailableTablesForMove,
   moveOrderToTable,
   removeOrderItem,
+  updateDiscount,
   updateOrderItemPrice,
   updateOrderItemQuantity,
   updatePartySize,
 } from "@/actions/Order";
+import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,16 +20,20 @@ import { useOrdersData } from "@/hooks/use-orders-data";
 import {
   ArrowRightLeft,
   DollarSign,
+  Percent,
   Printer,
   RefreshCw,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
+import { CreateClientDialog } from "./create-client-dialog";
 import { MoveOrderDialog } from "./move-order-dialog";
 import { OrderItemsList } from "./order-items-list";
 import { OrderTabs } from "./order-tabs";
 import { ProductPicker } from "./product-picker";
+import { WaiterPicker } from "./waiter-picker";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -62,6 +68,12 @@ export function TableOrderSidebar({
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -105,6 +117,9 @@ export function TableOrderSidebar({
     if (tableId) {
       setPartySize("");
       setSelectedOrderId(null);
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+      setClientSearchQuery("");
     }
   }, [tableId]);
 
@@ -137,7 +152,9 @@ export function TableOrderSidebar({
     const result = await createTableOrder(
       tableId,
       branchId,
-      parseInt(partySize)
+      parseInt(partySize),
+      selectedClient?.id || null,
+      selectedWaiterId || null
     );
 
     if (result.success && result.data) {
@@ -147,8 +164,11 @@ export function TableOrderSidebar({
       // Select the newly created order
       setSelectedOrderId(result.data.id);
 
-      // Reset party size input for next order
+      // Reset form inputs for next order
       setPartySize("");
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+      setClientSearchQuery("");
 
       // Update table status
       onOrderUpdated(tableId);
@@ -156,6 +176,16 @@ export function TableOrderSidebar({
       alert(result.error || "Error al crear la orden");
     }
     setIsLoadingAction(false);
+  };
+
+  const handleCreateNewClient = (searchQuery: string) => {
+    setClientSearchQuery(searchQuery);
+    setShowCreateClientDialog(true);
+  };
+
+  const handleClientCreated = (client: ClientData) => {
+    setSelectedClient(client);
+    setShowCreateClientDialog(false);
   };
 
   const handlePartySizeChange = async (newSize: string) => {
@@ -336,6 +366,38 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
+  const handleDiscountEdit = () => {
+    if (!order) return;
+    setDiscountInput(order.discountPercentage.toString());
+    setIsEditingDiscount(true);
+  };
+
+  const handleDiscountSave = async () => {
+    if (!order) return;
+
+    const newDiscount = parseFloat(discountInput);
+    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
+      alert("El descuento debe ser un número entre 0 y 100");
+      return;
+    }
+
+    setIsLoadingAction(true);
+    const result = await updateDiscount(order.id, newDiscount);
+
+    if (result.success) {
+      setIsEditingDiscount(false);
+      refresh(); // Refresh the order data
+    } else {
+      alert(result.error || "Error al actualizar el descuento");
+    }
+    setIsLoadingAction(false);
+  };
+
+  const handleDiscountCancel = () => {
+    setIsEditingDiscount(false);
+    setDiscountInput("");
+  };
+
   if (!tableId) {
     return null;
   }
@@ -410,16 +472,39 @@ export function TableOrderSidebar({
             placeholder="Ej: 4"
             disabled={isLoading}
           />
-          {!order && partySize && parseInt(partySize) > 0 && (
-            <Button
-              onClick={handleCreateOrder}
-              disabled={isLoading}
-              className="w-full"
-            >
-              Abrir Mesa
-            </Button>
-          )}
         </div>
+
+        {/* Client Picker - Only show when no active order */}
+        {!order && (
+          <ClientPicker
+            branchId={branchId}
+            selectedClient={selectedClient}
+            onSelectClient={setSelectedClient}
+            onCreateNew={handleCreateNewClient}
+            disabled={isLoading}
+          />
+        )}
+
+        {/* Waiter Picker - Only show when no active order */}
+        {!order && (
+          <WaiterPicker
+            branchId={branchId}
+            selectedWaiterId={selectedWaiterId}
+            onSelectWaiter={setSelectedWaiterId}
+            disabled={isLoading}
+          />
+        )}
+
+        {/* Open Table Button */}
+        {!order && partySize && parseInt(partySize) > 0 && (
+          <Button
+            onClick={handleCreateOrder}
+            disabled={isLoading}
+            className="w-full"
+          >
+            Abrir Mesa
+          </Button>
+        )}
 
         {/* Only show product picker and items if order exists */}
         {order && (
@@ -501,6 +586,57 @@ export function TableOrderSidebar({
                 {/* Mover a Otra Mesa */}
               </Button>
 
+              {/* Discount Button/Editor */}
+              {isEditingDiscount ? (
+                <div className="flex items-center gap-1 bg-white rounded px-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    className="h-8 w-16 text-sm"
+                    placeholder="%"
+                    autoFocus
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountSave}
+                    disabled={isLoadingAction}
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountCancel}
+                    disabled={isLoadingAction}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleDiscountEdit}
+                  variant={Number(order.discountPercentage) > 0 ? "default" : "outline"}
+                  disabled={isLoading}
+                  title={
+                    Number(order.discountPercentage) > 0
+                      ? `Descuento: ${order.discountPercentage}%`
+                      : "Agregar descuento"
+                  }
+                >
+                  <Percent className="h-4 w-4" />
+                  {Number(order.discountPercentage) > 0 && (
+                    <span className="ml-1 text-xs">{Number(order.discountPercentage)}%</span>
+                  )}
+                </Button>
+              )}
+
               <Button
                 onClick={handleCloseTable}
                 disabled={isLoading || order.items.length === 0}
@@ -549,6 +685,15 @@ export function TableOrderSidebar({
           onSuccess={handleCloseTableSuccess}
         />
       )}
+
+      {/* Create Client Dialog */}
+      <CreateClientDialog
+        open={showCreateClientDialog}
+        onOpenChange={setShowCreateClientDialog}
+        branchId={branchId}
+        onSuccess={handleClientCreated}
+        initialName={clientSearchQuery}
+      />
     </div>
   );
 }

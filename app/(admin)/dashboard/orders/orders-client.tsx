@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Grid3x3, List, Filter } from "lucide-react";
+import { CalendarIcon, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { OrderGridView } from "./components/order-grid-view";
 import { OrderListView } from "./components/order-list-view";
+import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
 
 type Order = {
   id: string;
@@ -34,6 +34,16 @@ type Order = {
   table: {
     number: number;
     name: string | null;
+  } | null;
+  client: {
+    id: string;
+    name: string;
+    email: string | null;
+  } | null;
+  assignedTo: {
+    id: string;
+    name: string | null;
+    username: string;
   } | null;
   items: Array<{
     id: string;
@@ -71,8 +81,9 @@ export function OrdersClient({ branchId, initialOrders, tables }: OrdersClientPr
   const [selectedTable, setSelectedTable] = useState<string | "ALL">("ALL");
   const [orderType, setOrderType] = useState<OrderType | "ALL">("ALL");
 
-  // View state
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  // Sidebar state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Apply filters
   const applyFilters = () => {
@@ -127,6 +138,22 @@ export function OrdersClient({ branchId, initialOrders, tables }: OrdersClientPr
   const dineInOrders = orders.filter(order => order.type === OrderType.DINE_IN);
   const takeAwayOrders = orders.filter(order => order.type === OrderType.TAKE_AWAY);
   const deliveryOrders = orders.filter(order => order.type === OrderType.DELIVERY);
+
+  // Handle order click
+  const handleOrderClick = (order: Order) => {
+    setSelectedOrder(order);
+    setSidebarOpen(true);
+  };
+
+  const handleCloseSidebar = () => {
+    setSidebarOpen(false);
+    setSelectedOrder(null);
+  };
+
+  const handleOrderUpdated = () => {
+    // Refresh orders after updating client/waiter
+    applyFilters();
+  };
 
   return (
     <div className="space-y-6">
@@ -248,28 +275,10 @@ export function OrdersClient({ branchId, initialOrders, tables }: OrdersClientPr
         </div>
       </div>
 
-      {/* View Mode Toggle */}
+      {/* Order Count */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
           Mostrando {orders.length} {orders.length === 1 ? "orden" : "órdenes"}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === "grid" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("grid")}
-          >
-            <Grid3x3 className="h-4 w-4 mr-2" />
-            Cuadrícula
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-          >
-            <List className="h-4 w-4 mr-2" />
-            Lista
-          </Button>
         </div>
       </div>
 
@@ -291,37 +300,30 @@ export function OrdersClient({ branchId, initialOrders, tables }: OrdersClientPr
         </TabsList>
 
         <TabsContent value="ALL" className="mt-6">
-          {viewMode === "grid" ? (
-            <OrderGridView orders={orders} />
-          ) : (
-            <OrderListView orders={orders} />
-          )}
+          <OrderListView orders={orders} onOrderClick={handleOrderClick} />
         </TabsContent>
 
         <TabsContent value={OrderType.DINE_IN} className="mt-6">
-          {viewMode === "grid" ? (
-            <OrderGridView orders={dineInOrders} />
-          ) : (
-            <OrderListView orders={dineInOrders} />
-          )}
+          <OrderListView orders={dineInOrders} onOrderClick={handleOrderClick} />
         </TabsContent>
 
         <TabsContent value={OrderType.TAKE_AWAY} className="mt-6">
-          {viewMode === "grid" ? (
-            <OrderGridView orders={takeAwayOrders} />
-          ) : (
-            <OrderListView orders={takeAwayOrders} />
-          )}
+          <OrderListView orders={takeAwayOrders} onOrderClick={handleOrderClick} />
         </TabsContent>
 
         <TabsContent value={OrderType.DELIVERY} className="mt-6">
-          {viewMode === "grid" ? (
-            <OrderGridView orders={deliveryOrders} />
-          ) : (
-            <OrderListView orders={deliveryOrders} />
-          )}
+          <OrderListView orders={deliveryOrders} onOrderClick={handleOrderClick} />
         </TabsContent>
       </Tabs>
+
+      {/* Order Details Sidebar */}
+      <OrderDetailsSidebar
+        order={selectedOrder}
+        open={sidebarOpen}
+        onClose={handleCloseSidebar}
+        branchId={branchId}
+        onOrderUpdated={handleOrderUpdated}
+      />
     </div>
   );
 }

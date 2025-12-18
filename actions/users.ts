@@ -495,3 +495,57 @@ export async function deleteUser(userId: string): Promise<{
     };
   }
 }
+
+export type WaiterData = {
+  id: string;
+  name: string | null;
+  username: string;
+};
+
+export async function getWaitersForBranch(branchId: string): Promise<{
+  success: boolean;
+  data?: WaiterData[];
+  error?: string;
+}> {
+  try {
+    const userOnBranches = await prisma.userOnBranch.findMany({
+      where: {
+        branchId,
+        role: {
+          in: ["WAITER", "EMPLOYEE", "MANAGER", "ADMIN"],
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: {
+        user: {
+          name: "asc",
+        },
+      },
+    });
+
+    const waiters: WaiterData[] = userOnBranches.map((ub) => ({
+      id: ub.user.id,
+      name: ub.user.name,
+      username: ub.user.username,
+    }));
+
+    return {
+      success: true,
+      data: waiters,
+    };
+  } catch (error) {
+    console.error("Error fetching waiters:", error);
+    return {
+      success: false,
+      error: "Error al obtener camareros",
+    };
+  }
+}

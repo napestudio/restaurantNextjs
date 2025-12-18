@@ -26,17 +26,32 @@ type Order = {
     number: number;
     name: string | null;
   } | null;
+  client: {
+    id: string;
+    name: string;
+    email: string | null;
+  } | null;
+  assignedTo: {
+    id: string;
+    name: string | null;
+    username: string;
+  } | null;
   items: Array<{
     id: string;
     itemName: string;
     quantity: number;
     price: number;
     originalPrice: number | null;
+    product: {
+      name: string;
+      categoryId: string | null;
+    } | null;
   }>;
 };
 
 interface OrderListViewProps {
   orders: Order[];
+  onOrderClick?: (order: Order) => void;
 }
 
 const statusColors = {
@@ -65,13 +80,17 @@ const typeLabels = {
   [OrderType.DELIVERY]: "Delivery",
 };
 
-export function OrderListView({ orders }: OrderListViewProps) {
+export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border">
         <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay órdenes</h3>
-        <p className="text-gray-500">No se encontraron órdenes con los filtros seleccionados.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No hay órdenes
+        </h3>
+        <p className="text-gray-500">
+          No se encontraron órdenes con los filtros seleccionados.
+        </p>
       </div>
     );
   }
@@ -115,7 +134,11 @@ export function OrderListView({ orders }: OrderListViewProps) {
               const total = calculateTotal(order.items);
 
               return (
-                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={order.id}
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => onOrderClick?.(order)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-900">
                       {order.publicCode}
@@ -134,20 +157,18 @@ export function OrderListView({ orders }: OrderListViewProps) {
                       {order.table ? (
                         <div className="text-gray-900 font-medium">
                           Mesa {order.table.number}
-                          {order.table.name && (
-                            <span className="text-gray-500 font-normal">
-                              {" "}- {order.table.name}
-                            </span>
-                          )}
                         </div>
                       ) : order.customerName ? (
-                        <div className="text-gray-900">{order.customerName}</div>
+                        <div className="text-gray-900">
+                          {order.customerName}
+                        </div>
                       ) : (
                         <div className="text-gray-400">-</div>
                       )}
                       {order.partySize && (
                         <div className="text-xs text-gray-500">
-                          {order.partySize} {order.partySize === 1 ? "persona" : "personas"}
+                          {order.partySize}{" "}
+                          {order.partySize === 1 ? "persona" : "personas"}
                         </div>
                       )}
                       {order.courierName && (
@@ -160,23 +181,33 @@ export function OrderListView({ orders }: OrderListViewProps) {
                   <td className="px-6 py-4">
                     <div className="text-sm">
                       <div className="text-gray-900 font-medium">
-                        {order.items.length} {order.items.length === 1 ? "producto" : "productos"}
+                        {order.items.length}{" "}
+                        {order.items.length === 1 ? "producto" : "productos"}
                       </div>
                       <div className="text-xs text-gray-500 max-w-xs truncate">
-                        {order.items.map(item => `${item.quantity}x ${item.itemName}`).join(", ")}
+                        {order.items
+                          .map((item) => `${item.quantity}x ${item.itemName}`)
+                          .join(", ")}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-600">
-                      {format(new Date(order.createdAt), "dd/MM/yyyy", { locale: es })}
+                      {format(new Date(order.createdAt), "dd/MM/yyyy", {
+                        locale: es,
+                      })}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {format(new Date(order.createdAt), "HH:mm", { locale: es })}
+                      {format(new Date(order.createdAt), "HH:mm", {
+                        locale: es,
+                      })}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge className={statusColors[order.status]} variant="outline">
+                    <Badge
+                      className={statusColors[order.status]}
+                      variant="outline"
+                    >
                       {statusLabels[order.status]}
                     </Badge>
                   </td>

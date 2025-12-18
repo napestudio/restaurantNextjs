@@ -216,6 +216,7 @@ model Branch {
   userAccess    UserOnBranch[]
   menus         Menu[]
   cashRegisters CashRegister[]
+  clients       Client[]
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -552,6 +553,44 @@ model StockMovement {
 }
 
 //
+// CLIENTES
+//
+model Client {
+  id       String @id @default(cuid())
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  // Basic info
+  name  String
+  phone String?
+  email String?
+
+  // Additional info
+  birthDate DateTime?
+  taxId     String? // CUIT/DNI
+  notes     String?
+
+  // Address
+  addressStreet     String?
+  addressNumber     String?
+  addressApartment  String?
+  addressCity       String?
+
+  // Preferences
+  discountPercentage    Decimal?              @default(0) @db.Decimal(5, 2)
+  preferredPaymentMethod PaymentMethod?
+  hasCurrentAccount     Boolean               @default(false)
+
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId])
+  @@index([name])
+  @@index([phone])
+}
+
+//
 // PEDIDOS
 //
 model Order {
@@ -563,6 +602,10 @@ model Order {
   table     Table?  @relation(fields: [tableId], references: [id])
   tableId   String?
   partySize Int?
+
+  // Client association
+  client   Client? @relation(fields: [clientId], references: [id])
+  clientId String?
 
   customerName  String?
   customerEmail String?
@@ -591,6 +634,7 @@ model Order {
 
   @@index([tableId])
   @@index([assignedToId])
+  @@index([clientId])
 }
 
 model OrderItem {

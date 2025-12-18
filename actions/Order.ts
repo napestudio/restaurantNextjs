@@ -1,7 +1,13 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { OrderStatus, OrderType, PaymentMethod, type Product } from "@/app/generated/prisma";
+import {
+  OrderStatus,
+  OrderType,
+  PaymentMethod,
+  type Product,
+} from "@/app/generated/prisma";
+import { serializeClient } from "@/lib/serializers";
 
 export type OrderItemInput = {
   productId: string;
@@ -24,7 +30,9 @@ function serializeProduct(product: Product | null) {
 export async function createTableOrder(
   tableId: string,
   branchId: string,
-  partySize: number
+  partySize: number,
+  clientId?: string | null,
+  assignedToId?: string | null
 ) {
   try {
     // Get table info to check if it's shared
@@ -62,6 +70,18 @@ export async function createTableOrder(
     // Generate a unique public code
     const publicCode = `T${Date.now().toString().slice(-8)}`;
 
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
     // Create order and update table status in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -73,6 +93,9 @@ export async function createTableOrder(
           type: OrderType.DINE_IN,
           publicCode,
           status: OrderStatus.PENDING,
+          clientId: clientId || null,
+          assignedToId: assignedToId || null,
+          discountPercentage: clientDiscount,
         },
         include: {
           items: {
@@ -81,6 +104,14 @@ export async function createTableOrder(
             },
             orderBy: {
               id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
             },
           },
         },
@@ -99,6 +130,7 @@ export async function createTableOrder(
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -662,7 +694,10 @@ export async function moveOrderToTable(orderId: string, targetTableId: string) {
       };
     }
 
-    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELED) {
+    if (
+      order.status === OrderStatus.COMPLETED ||
+      order.status === OrderStatus.CANCELED
+    ) {
       return {
         success: false,
         error: "No se puede mover una orden completada o cancelada",
@@ -853,6 +888,20 @@ export async function getOrders(filters: OrderFilters) {
             id: "asc",
           },
         },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -885,7 +934,10 @@ export async function getOrders(filters: OrderFilters) {
 }
 
 // Update payment method
-export async function updatePaymentMethod(orderId: string, paymentMethod: PaymentMethod) {
+export async function updatePaymentMethod(
+  orderId: string,
+  paymentMethod: PaymentMethod
+) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -909,7 +961,10 @@ export async function updatePaymentMethod(orderId: string, paymentMethod: Paymen
 }
 
 // Update discount percentage
-export async function updateDiscount(orderId: string, discountPercentage: number) {
+export async function updateDiscount(
+  orderId: string,
+  discountPercentage: number
+) {
   try {
     // Validate discount percentage (0-100)
     if (discountPercentage < 0 || discountPercentage > 100) {
@@ -941,7 +996,10 @@ export async function updateDiscount(orderId: string, discountPercentage: number
 }
 
 // Assign staff to order
-export async function assignStaffToOrder(orderId: string, userId: string | null) {
+export async function assignStaffToOrder(
+  orderId: string,
+  userId: string | null
+) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -969,6 +1027,57 @@ export async function assignStaffToOrder(orderId: string, userId: string | null)
     return {
       success: false,
       error: "Error al asignar personal a la orden",
+    };
+  }
+}
+
+// Assign client to order
+export async function assignClientToOrder(
+  orderId: string,
+  clientId: string | null
+) {
+  try {
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        clientId: clientId,
+        discountPercentage: clientDiscount,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error assigning client to order:", error);
+    return {
+      success: false,
+      error: "Error al asignar cliente a la orden",
     };
   }
 }
@@ -1206,7 +1315,8 @@ export async function closeTableWithPayment(data: {
         (sum, item) => sum + Number(item.price) * item.quantity,
         0
       );
-      const discountAmount = subtotal * (Number(order.discountPercentage) / 100);
+      const discountAmount =
+        subtotal * (Number(order.discountPercentage) / 100);
       const total = subtotal - discountAmount;
 
       // Validate payment amounts match total
@@ -1215,7 +1325,9 @@ export async function closeTableWithPayment(data: {
       // Allow small rounding differences (0.01)
       if (Math.abs(totalPayment - total) > 0.01) {
         throw new Error(
-          `Payment amount ($${totalPayment.toFixed(2)}) does not match order total ($${total.toFixed(2)})`
+          `Total ($${totalPayment.toFixed(
+            2
+          )}) no coincide con el total de la mesa ($${total.toFixed(2)})`
         );
       }
 
@@ -1227,7 +1339,9 @@ export async function closeTableWithPayment(data: {
             type: "SALE",
             paymentMethod: payment.method,
             amount: payment.amount,
-            description: `Table ${order.table?.number || "N/A"} - Order ${order.publicCode}`,
+            description: `Table ${order.table?.number || "N/A"} - Order ${
+              order.publicCode
+            }`,
             orderId: order.id,
             createdBy: userId,
           },
@@ -1262,7 +1376,9 @@ export async function closeTableWithPayment(data: {
       const completedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
-          status: isPartialClose ? OrderStatus.IN_PROGRESS : OrderStatus.COMPLETED,
+          status: isPartialClose
+            ? OrderStatus.IN_PROGRESS
+            : OrderStatus.COMPLETED,
           paymentMethod: orderPaymentMethod,
         },
         include: {
