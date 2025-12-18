@@ -81,9 +81,9 @@ export function DeleteCashRegisterDialog({
             </div>
             <div>
               <p className="font-medium">{register.name}</p>
-              {register.sector && (
+              {register.sectors && register.sectors.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Sector: {register.sector.name}
+                  Sectores: {register.sectors.map((s) => s.sector.name).join(", ")}
                 </p>
               )}
               <p className="text-sm text-muted-foreground">

@@ -25,7 +25,7 @@ import { Plus, DollarSign } from "lucide-react";
 import { addManualMovement } from "@/actions/CashRegister";
 import {
   CashRegisterWithStatus,
-  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHODS,
   MOVEMENT_TYPE_LABELS,
 } from "@/types/cash-register";
 
@@ -194,9 +194,9 @@ export function AddMovementDialog({
                 <SelectValue placeholder="Seleccionar medio de pago" />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+                {PAYMENT_METHODS.map((method) => (
+                  <SelectItem key={method.value} value={method.value}>
+                    {method.label}
                   </SelectItem>
                 ))}
               </SelectContent>

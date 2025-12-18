@@ -1,16 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -18,13 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Plus, X } from "lucide-react";
+import { Settings, Plus, X, Receipt, CreditCard } from "lucide-react";
 import {
   closeTableWithPayment,
   type PaymentMethodExtended,
   type PaymentEntry,
 } from "@/actions/Order";
 import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
+import { PAYMENT_METHODS } from "@/types/cash-register";
 
 interface OrderItem {
   id: string;
@@ -50,11 +45,11 @@ interface Order {
 interface CashRegisterWithSession {
   id: string;
   name: string;
-  sector: {
+  sectors: {
     id: string;
     name: string;
     color: string;
-  } | null;
+  }[];
   session: {
     id: string;
     openedAt: string;
@@ -80,14 +75,6 @@ type PaymentLine = {
   amount: string;
 };
 
-const PAYMENT_METHODS: { value: PaymentMethodExtended; label: string }[] = [
-  { value: "CASH", label: "Efectivo" },
-  { value: "CARD_DEBIT", label: "Tarjeta Débito" },
-  { value: "CARD_CREDIT", label: "Tarjeta Crédito" },
-  { value: "TRANSFER", label: "Transferencia" },
-  { value: "ACCOUNT", label: "Cuenta Corriente" },
-];
-
 export function CloseTableDialog({
   open,
   onOpenChange,
@@ -110,8 +97,19 @@ export function CloseTableDialog({
   );
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
-  const [sectorCashRegister, setSectorCashRegister] =
-    useState<CashRegisterWithSession | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Open/close dialog based on open prop
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open) {
+      dialog.showModal();
+    } else {
+      dialog.close();
+    }
+  }, [open]);
 
   // Calculate totals
   const subtotal = useMemo(() => {
@@ -140,49 +138,47 @@ export function CloseTableDialog({
 
   // Load open cash registers when dialog opens
   useEffect(() => {
-    if (open) {
-      loadCashRegisters();
-    }
-  }, [open, branchId]);
+    const loadCashRegisters = async () => {
+      setIsLoadingRegisters(true);
+      const result = await getOpenCashRegistersForBranch(branchId);
+      if (result.success && result.data) {
+        setCashRegisters(result.data);
 
-  // Set initial payment amount when total changes
-  useEffect(() => {
-    if (open && payments.length === 1 && payments[0].amount === "") {
-      setPayments([{ ...payments[0], amount: total.toFixed(2) }]);
-    }
-  }, [open, total]);
-
-  const loadCashRegisters = async () => {
-    setIsLoadingRegisters(true);
-    const result = await getOpenCashRegistersForBranch(branchId);
-    if (result.success && result.data) {
-      setCashRegisters(result.data);
-
-      // Check if the table's sector has an assigned cash register with an open session
-      if (tableSectorId) {
-        const sectorRegister = result.data.find(
-          (r) => r.sector?.id === tableSectorId && r.session
-        );
-        if (sectorRegister) {
-          setSectorCashRegister(sectorRegister);
-          setSelectedRegisterId(sectorRegister.id);
-        } else {
-          setSectorCashRegister(null);
-          // Auto-select first register if only one
-          if (result.data.length === 1 && result.data[0].session) {
+        // Check if the table's sector has an assigned cash register with an open session
+        if (tableSectorId) {
+          const sectorRegister = result.data.find(
+            (r) => r.sectors?.some((s) => s.id === tableSectorId) && r.session
+          );
+          if (sectorRegister) {
+            setSelectedRegisterId(sectorRegister.id);
+          } else if (result.data.length === 1 && result.data[0].session) {
+            // Auto-select first register if only one
             setSelectedRegisterId(result.data[0].id);
           }
-        }
-      } else {
-        setSectorCashRegister(null);
-        // Auto-select first register if only one
-        if (result.data.length === 1 && result.data[0].session) {
+        } else if (result.data.length === 1 && result.data[0].session) {
+          // Auto-select first register if only one
           setSelectedRegisterId(result.data[0].id);
         }
       }
+      setIsLoadingRegisters(false);
+    };
+
+    if (open) {
+      loadCashRegisters();
     }
-    setIsLoadingRegisters(false);
-  };
+  }, [open, branchId, tableSectorId]);
+
+  // Set initial payment amount when total changes
+  useEffect(() => {
+    if (open) {
+      setPayments((prev) => {
+        if (prev.length === 1 && prev[0].amount === "") {
+          return [{ ...prev[0], amount: total.toFixed(2) }];
+        }
+        return prev;
+      });
+    }
+  }, [open, total]);
 
   const addPaymentLine = () => {
     const newId = Date.now().toString();
@@ -202,9 +198,7 @@ export function CloseTableDialog({
   ) => {
     setPayments(
       payments.map((p) =>
-        p.id === id
-          ? { ...p, [field]: field === "method" ? value : value }
-          : p
+        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p
       )
     );
   };
@@ -215,7 +209,7 @@ export function CloseTableDialog({
       (r) => r.id === selectedRegisterId
     );
     if (!selectedRegister?.session) {
-      setError("Please select a cash register with an open session");
+      setError("Selecciona una caja registradora con sesión abierta");
       return;
     }
 
@@ -228,14 +222,16 @@ export function CloseTableDialog({
       }));
 
     if (validPayments.length === 0) {
-      setError("Please enter at least one payment amount");
+      setError("Ingresa al menos un monto de pago");
       return;
     }
 
     const paymentTotal = validPayments.reduce((sum, p) => sum + p.amount, 0);
     if (paymentTotal < total - 0.01) {
       setError(
-        `Payment amount ($${paymentTotal.toFixed(2)}) is less than total ($${total.toFixed(2)})`
+        `El monto pagado (${formatCurrency(
+          paymentTotal
+        )}) es menor al total (${formatCurrency(total)})`
       );
       return;
     }
@@ -260,10 +256,10 @@ export function CloseTableDialog({
         resetForm();
         onOpenChange(false);
       } else {
-        setError(result.error || "Error closing the table");
+        setError(result.error || "Error al cerrar la mesa");
       }
     } catch {
-      setError("Error closing the table");
+      setError("Error al cerrar la mesa");
     } finally {
       setIsPending(false);
     }
@@ -274,14 +270,13 @@ export function CloseTableDialog({
     setIsPartialClose(false);
     setError(null);
     setSelectedRegisterId("");
-    setSectorCashRegister(null);
   };
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
       resetForm();
     }
-    onOpenChange(open);
+    onOpenChange(newOpen);
   };
 
   const formatCurrency = (amount: number) => {
@@ -296,238 +291,267 @@ export function CloseTableDialog({
   const noOpenRegisters = !isLoadingRegisters && cashRegisters.length === 0;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
-        <DialogHeader className="bg-neutral-700 text-white px-4 py-3">
-          <DialogTitle className="text-lg font-medium">
-            CERRAR MESA {tableNumber} - {branchName.toUpperCase()}
-          </DialogTitle>
-        </DialogHeader>
-
-        {noOpenRegisters ? (
-          <div className="p-8 text-center">
-            <div className="text-amber-600 mb-4">
-              <Settings className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium mb-2">
-              No hay cajas abiertas
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Para cerrar una mesa, primero debes abrir una caja registradora.
-            </p>
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              Cerrar
-            </Button>
+    <dialog
+      ref={dialogRef}
+      onClose={() => handleOpenChange(false)}
+      onClick={(e) => {
+        // Close when clicking backdrop
+        if (e.target === dialogRef.current) {
+          handleOpenChange(false);
+        }
+      }}
+      className="w-225 max-w-[95vw] max-h-[90vh] overflow-hidden rounded-lg shadow-xl p-0 backdrop:bg-black/50"
+    >
+      <div className="flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
+          <div>
+            <h2 className="text-xl font-semibold">
+              Cerrar Mesa {tableNumber} - {branchName}
+            </h2>
+            {/* <p className="text-sm text-muted-foreground mt-1">
+              Revisa los items de la orden y procesa el pago para cerrar la
+              mesa.
+            </p> */}
           </div>
-        ) : (
-          <div className="flex flex-col md:flex-row">
-            {/* Left Side - Order Items */}
-            <div className="flex-1 flex flex-col">
-              <div className="bg-neutral-600 text-white px-4 py-2 text-sm font-medium">
-                ADICIONES
+          <button
+            onClick={() => handleOpenChange(false)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {noOpenRegisters ? (
+            <div className="py-8 text-center">
+              <div className="text-amber-600 mb-4">
+                <Settings className="h-12 w-12 mx-auto" />
               </div>
-              <div className="flex-1 max-h-[400px] overflow-y-auto bg-white">
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between px-4 py-3 border-b border-neutral-100"
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="text-neutral-500 w-6">{item.quantity}</span>
-                      <span className="font-medium">
-                        {item.product?.name || item.itemName || "Item"}
-                      </span>
-                    </div>
-                    <span className="text-neutral-700">
-                      {formatCurrency(item.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {/* Total Section */}
-              <div className="bg-neutral-700 text-white px-4 py-3 flex justify-between items-center">
-                <span className="text-lg">Total:</span>
-                <span className="text-2xl font-bold">{formatCurrency(total)}</span>
-              </div>
+              <h3 className="text-lg font-medium mb-2">
+                No hay cajas abiertas
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Para cerrar una mesa, primero debes abrir una caja registradora.
+              </p>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Side - Order Items */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="font-semibold text-lg">Detalle de la orden</h3>
+                </div>
 
-            {/* Right Side - Payment */}
-            <div className="w-full md:w-[400px] flex flex-col bg-neutral-100">
-              <div className="bg-neutral-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-between">
-                <span>PAGO</span>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-white hover:bg-neutral-500"
-                    onClick={() => {}}
-                    title="Settings"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-white hover:bg-neutral-500"
-                    onClick={addPaymentLine}
-                    title="Add payment method"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-72 overflow-y-auto">
+                    {order.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between px-4 py-3 border-b last:border-b-0 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground font-medium min-w-8">
+                            {item.quantity}x
+                          </span>
+                          <span className="font-medium">
+                            {item.product?.name || item.itemName || "Item"}
+                          </span>
+                        </div>
+                        <span className="font-medium whitespace-nowrap">
+                          {formatCurrency(item.price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Totals */}
+                  <div className="bg-gray-50 border-t px-4 py-4 space-y-2">
+                    {order.discountPercentage > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Subtotal:
+                          </span>
+                          <span>{formatCurrency(subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Descuento ({order.discountPercentage}%):</span>
+                          <span>-{formatCurrency(discountAmount)}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between text-xl font-bold pt-2 border-t">
+                      <span>Total:</span>
+                      <span>{formatCurrency(total)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[300px]">
-                {/* Cash Register Selection */}
-                <div className="space-y-2">
-                  <Label>Caja Registradora</Label>
-                  {sectorCashRegister ? (
-                    // Show read-only cash register name when sector has an assigned register
-                    <div className="px-3 py-2 bg-white border rounded-md text-sm">
-                      {sectorCashRegister.name}
-                    </div>
-                  ) : (
-                    // Show dropdown selector when no sector register is assigned
-                    <Select
-                      value={selectedRegisterId}
-                      onValueChange={setSelectedRegisterId}
-                      disabled={isPending || isLoadingRegisters}
-                    >
-                      <SelectTrigger className="bg-white">
-                        <SelectValue
-                          placeholder={
-                            isLoadingRegisters
-                              ? "Cargando..."
-                              : "Seleccionar caja"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cashRegisters.map((register) => (
-                          <SelectItem key={register.id} value={register.id}>
-                            {register.name}
-                            {register.sector && ` (${register.sector.name})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+              {/* Right Side - Payment */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold text-lg">Pago</h3>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addPaymentLine}
+                    disabled={isPending}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Agregar método
+                  </Button>
                 </div>
 
-                {/* Payment Lines */}
-                {payments.map((payment, index) => (
-                  <div key={payment.id} className="flex items-center gap-2">
-                    <Select
-                      value={payment.method}
-                      onValueChange={(value) =>
-                        updatePaymentLine(
-                          payment.id,
-                          "method",
-                          value as PaymentMethodExtended
-                        )
+                <div className="space-y-4">
+                  {/* Cash Register Display */}
+                  <div className="space-y-2">
+                    <Label>Caja Registradora</Label>
+                    <div className="px-3 py-2 bg-gray-50 border rounded-md text-sm">
+                      {isLoadingRegisters
+                        ? "Cargando..."
+                        : cashRegisters.find((r) => r.id === selectedRegisterId)
+                            ?.name || "Sin caja seleccionada"}
+                    </div>
+                  </div>
+
+                  {/* Payment Lines */}
+                  <div className="space-y-3">
+                    {payments.map((payment) => (
+                      <div key={payment.id} className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Select
+                            value={payment.method}
+                            onValueChange={(value) =>
+                              updatePaymentLine(
+                                payment.id,
+                                "method",
+                                value as PaymentMethodExtended
+                              )
+                            }
+                            disabled={isPending}
+                          >
+                            <SelectTrigger className="w-48">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {PAYMENT_METHODS.map((method) => (
+                                <SelectItem
+                                  key={method.value}
+                                  value={method.value}
+                                >
+                                  {method.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="relative flex-1 min-w-32">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                              $
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={payment.amount}
+                              onChange={(e) =>
+                                updatePaymentLine(
+                                  payment.id,
+                                  "amount",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0.00"
+                              className="pl-7"
+                              disabled={isPending}
+                            />
+                          </div>
+                          {payments.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-muted-foreground hover:text-red-500 shrink-0"
+                              onClick={() => removePaymentLine(payment.id)}
+                              disabled={isPending}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Change Display */}
+                  {change > 0 && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-green-800 font-medium">
+                          Vuelto:
+                        </span>
+                        <span className="text-2xl font-bold text-green-700">
+                          {formatCurrency(change)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Partial Close Option */}
+                  {/* <div className="flex items-center gap-2 pt-2">
+                    <Checkbox
+                      id="partial-close"
+                      checked={isPartialClose}
+                      onCheckedChange={(checked) =>
+                        setIsPartialClose(checked as boolean)
                       }
                       disabled={isPending}
+                    />
+                    <Label
+                      htmlFor="partial-close"
+                      className="text-sm cursor-pointer"
                     >
-                      <SelectTrigger className="w-[160px] bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAYMENT_METHODS.map((method) => (
-                          <SelectItem key={method.value} value={method.value}>
-                            {method.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-1 flex-1">
-                      <span className="text-neutral-500">$</span>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={payment.amount}
-                        onChange={(e) =>
-                          updatePaymentLine(payment.id, "amount", e.target.value)
-                        }
-                        placeholder="0"
-                        className="bg-white"
-                        disabled={isPending}
-                      />
+                      Cierre Parcial
+                    </Label>
+                  </div> */}
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                      {error}
                     </div>
-                    {payments.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-neutral-400 hover:text-red-500"
-                        onClick={() => removePaymentLine(payment.id)}
-                        disabled={isPending}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-
-                {/* Error Message */}
-                {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
-              </div>
-
-              {/* Change Section */}
-              <div className="bg-neutral-200 px-4 py-3 flex justify-between items-center">
-                <span className="text-neutral-600">Vuelto:</span>
-                <span className="text-xl font-medium">{formatCurrency(change)}</span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Footer */}
-        {!noOpenRegisters && (
-          <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 border-t">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 border rounded bg-white">
-                <span className="text-neutral-600">$</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="partial-close"
-                  checked={isPartialClose}
-                  onCheckedChange={(checked) =>
-                    setIsPartialClose(checked as boolean)
-                  }
-                  disabled={isPending}
-                />
-                <Label
-                  htmlFor="partial-close"
-                  className="text-sm cursor-pointer"
-                >
-                  Cierre Parcial
-                </Label>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={isPending}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleClose}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-                disabled={isPending || !selectedRegisterId}
-              >
-                {isPending ? "Cerrando..." : `Cerrar mesa ${tableNumber}`}
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+          <Button
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+          {!noOpenRegisters && (
+            <Button
+              onClick={handleClose}
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={isPending || !selectedRegisterId}
+            >
+              {isPending ? "Cerrando..." : `Cerrar Mesa ${tableNumber}`}
+            </Button>
+          )}
+        </div>
+      </div>
+    </dialog>
   );
 }

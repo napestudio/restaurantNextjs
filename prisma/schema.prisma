@@ -250,12 +250,13 @@ model Sector {
   width     Int      @default(1200) // Ancho del canvas del plano del sector
   height    Int      @default(800) // Alto del canvas del plano del sector
   isActive  Boolean  @default(true)
-  branch        Branch         @relation(fields: [branchId], references: [id])
+  branch        Branch                @relation(fields: [branchId], references: [id])
   branchId      String
   tables        Table[]
-  cashRegisters CashRegister[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  // Many-to-many relation with cash registers
+  cashRegisters CashRegisterOnSector[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   /**
    * Un nombre de sector no se repite dentro de la misma sucursal
@@ -646,9 +647,8 @@ model CashRegister {
   branch   Branch @relation(fields: [branchId], references: [id])
   branchId String
 
-  // Optional: assign to a sector for floor plan integration
-  sector   Sector? @relation(fields: [sectorId], references: [id])
-  sectorId String?
+  // Many-to-many relation with sectors (one cash register can serve multiple sectors)
+  sectors CashRegisterOnSector[]
 
   sessions CashRegisterSession[]
 
@@ -657,6 +657,20 @@ model CashRegister {
 
   @@unique([branchId, name])
   @@index([branchId])
+}
+
+// Junction table for CashRegister <-> Sector many-to-many relationship
+model CashRegisterOnSector {
+  id             String       @id @default(cuid())
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  cashRegisterId String
+  sector         Sector       @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  sectorId       String
+
+  createdAt DateTime @default(now())
+
+  @@unique([cashRegisterId, sectorId])
+  @@index([sectorId])
 }
 
 // A session represents an open/close cycle

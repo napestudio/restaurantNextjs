@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -13,14 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Pencil } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { updateCashRegister } from "@/actions/CashRegister";
 import { CashRegisterWithStatus } from "@/types/cash-register";
 import { Sector } from "@/app/generated/prisma";
@@ -40,8 +34,12 @@ export function EditCashRegisterDialog({
   sectors,
   onUpdated,
 }: EditCashRegisterDialogProps) {
+  // Extract current sector IDs from the register
+  const getCurrentSectorIds = () =>
+    register.sectors?.map((s) => s.sectorId) || [];
+
   const [name, setName] = useState(register.name);
-  const [sectorId, setSectorId] = useState<string | null>(register.sectorId);
+  const [sectorIds, setSectorIds] = useState<string[]>(getCurrentSectorIds());
   const [isActive, setIsActive] = useState(register.isActive);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +47,22 @@ export function EditCashRegisterDialog({
   // Reset form when register changes
   useEffect(() => {
     setName(register.name);
-    setSectorId(register.sectorId);
+    setSectorIds(getCurrentSectorIds());
     setIsActive(register.isActive);
     setError(null);
   }, [register]);
+
+  const handleSectorToggle = (sectorId: string, checked: boolean) => {
+    if (checked) {
+      setSectorIds((prev) => [...prev, sectorId]);
+    } else {
+      setSectorIds((prev) => prev.filter((id) => id !== sectorId));
+    }
+  };
+
+  const handleRemoveSector = (sectorId: string) => {
+    setSectorIds((prev) => prev.filter((id) => id !== sectorId));
+  };
 
   const handleUpdate = async () => {
     if (!name.trim()) {
@@ -66,24 +76,30 @@ export function EditCashRegisterDialog({
     try {
       const result = await updateCashRegister(register.id, {
         name: name.trim(),
-        sectorId: sectorId,
+        sectorIds,
         isActive,
       });
 
       if (result.success && result.data) {
         // Create the full object with relations for the UI
+        const selectedSectors = sectorIds
+          .map((id) => sectors.find((s) => s.id === id))
+          .filter(Boolean) as typeof sectors;
+
         const updatedRegister: CashRegisterWithStatus = {
           ...register,
           ...result.data,
-          sector: sectorId
-            ? sectors.find((s) => s.id === sectorId)
-              ? {
-                  id: sectorId,
-                  name: sectors.find((s) => s.id === sectorId)!.name,
-                  color: sectors.find((s) => s.id === sectorId)!.color,
-                }
-              : null
-            : null,
+          sectors: selectedSectors.map((s) => ({
+            id: `temp-${s.id}`,
+            cashRegisterId: register.id,
+            sectorId: s.id,
+            createdAt: new Date().toISOString(),
+            sector: {
+              id: s.id,
+              name: s.name,
+              color: s.color,
+            },
+          })),
         };
         onUpdated(updatedRegister);
       } else {
@@ -103,10 +119,14 @@ export function EditCashRegisterDialog({
     onOpenChange(open);
   };
 
+  // Check if sectors have changed
+  const currentSectorIds = getCurrentSectorIds();
+  const sectorsChanged =
+    sectorIds.length !== currentSectorIds.length ||
+    sectorIds.some((id) => !currentSectorIds.includes(id));
+
   const hasChanges =
-    name !== register.name ||
-    sectorId !== register.sectorId ||
-    isActive !== register.isActive;
+    name !== register.name || sectorsChanged || isActive !== register.isActive;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -134,34 +154,66 @@ export function EditCashRegisterDialog({
             />
           </div>
 
-          {/* Sector (optional) */}
+          {/* Sectors (optional, multi-select) */}
           <div className="space-y-2">
-            <Label htmlFor="edit-sector">Sector (Opcional)</Label>
-            <Select
-              value={sectorId || "none"}
-              onValueChange={(value) =>
-                setSectorId(value === "none" ? null : value)
-              }
-              disabled={isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sin sector asignado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sin sector asignado</SelectItem>
-                {sectors.map((sector) => (
-                  <SelectItem key={sector.id} value={sector.id}>
-                    <div className="flex items-center gap-2">
+            <Label>Sectores (Opcional)</Label>
+            {/* Selected sectors as badges */}
+            {sectorIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {sectorIds.map((id) => {
+                  const sector = sectors.find((s) => s.id === id);
+                  if (!sector) return null;
+                  return (
+                    <div
+                      key={id}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white"
+                      style={{ backgroundColor: sector.color }}
+                    >
+                      {sector.name}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSector(id)}
+                        className="hover:bg-white/20 rounded-full p-0.5"
+                        disabled={isPending}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Sector checkboxes */}
+            <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+              {sectors.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No hay sectores disponibles
+                </p>
+              ) : (
+                sectors.map((sector) => (
+                  <div key={sector.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`edit-sector-${sector.id}`}
+                      checked={sectorIds.includes(sector.id)}
+                      onCheckedChange={(checked) =>
+                        handleSectorToggle(sector.id, checked === true)
+                      }
+                      disabled={isPending}
+                    />
+                    <label
+                      htmlFor={`edit-sector-${sector.id}`}
+                      className="flex items-center gap-2 text-sm cursor-pointer"
+                    >
                       <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: sector.color }}
                       />
                       {sector.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    </label>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* Active Status */}

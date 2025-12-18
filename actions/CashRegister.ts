@@ -13,12 +13,12 @@ import { serializeForClient } from "@/lib/serialize";
 const createCashRegisterSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   branchId: z.string().min(1, "La sucursal es requerida"),
-  sectorId: z.string().optional().nullable(),
+  sectorIds: z.array(z.string()).optional().default([]),
 });
 
 const updateCashRegisterSchema = z.object({
   name: z.string().min(1, "El nombre es requerido").optional(),
-  sectorId: z.string().optional().nullable(),
+  sectorIds: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -82,8 +82,29 @@ export async function createCashRegister(
       data: {
         name: validatedData.name,
         branchId: validatedData.branchId,
-        sectorId: validatedData.sectorId || null,
         isActive: true,
+        // Create sector connections if any sectorIds provided
+        sectors:
+          validatedData.sectorIds && validatedData.sectorIds.length > 0
+            ? {
+                create: validatedData.sectorIds.map((sectorId) => ({
+                  sectorId,
+                })),
+              }
+            : undefined,
+      },
+      include: {
+        sectors: {
+          include: {
+            sector: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -115,11 +136,15 @@ export async function getCashRegistersByBranch(branchId: string) {
         branchId,
       },
       include: {
-        sector: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
+        sectors: {
+          include: {
+            sector: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
           },
         },
         sessions: {
@@ -161,11 +186,15 @@ export async function getCashRegisterById(id: string) {
     const cashRegister = await prisma.cashRegister.findUnique({
       where: { id },
       include: {
-        sector: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
+        sectors: {
+          include: {
+            sector: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
           },
         },
         sessions: {
@@ -234,17 +263,54 @@ export async function updateCashRegister(
       }
     }
 
-    const cashRegister = await prisma.cashRegister.update({
-      where: { id },
-      data: {
-        ...(validatedData.name && { name: validatedData.name }),
-        ...(validatedData.sectorId !== undefined && {
-          sectorId: validatedData.sectorId,
-        }),
-        ...(validatedData.isActive !== undefined && {
-          isActive: validatedData.isActive,
-        }),
-      },
+    // Use transaction to update register and sectors atomically
+    const cashRegister = await prisma.$transaction(async (tx) => {
+      // Update basic fields
+      const updated = await tx.cashRegister.update({
+        where: { id },
+        data: {
+          ...(validatedData.name && { name: validatedData.name }),
+          ...(validatedData.isActive !== undefined && {
+            isActive: validatedData.isActive,
+          }),
+        },
+      });
+
+      // If sectorIds is provided, update the sector relationships
+      if (validatedData.sectorIds !== undefined) {
+        // Delete existing sector connections
+        await tx.cashRegisterOnSector.deleteMany({
+          where: { cashRegisterId: id },
+        });
+
+        // Create new sector connections
+        if (validatedData.sectorIds.length > 0) {
+          await tx.cashRegisterOnSector.createMany({
+            data: validatedData.sectorIds.map((sectorId) => ({
+              cashRegisterId: id,
+              sectorId,
+            })),
+          });
+        }
+      }
+
+      // Return the updated register with sectors
+      return tx.cashRegister.findUnique({
+        where: { id },
+        include: {
+          sectors: {
+            include: {
+              sector: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
+          },
+        },
+      });
     });
 
     revalidatePath("/dashboard/config/cash-registers");
@@ -1004,11 +1070,15 @@ export async function getOpenCashRegistersForBranch(branchId: string) {
         },
       },
       include: {
-        sector: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
+        sectors: {
+          include: {
+            sector: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
           },
         },
         sessions: {
@@ -1026,11 +1096,11 @@ export async function getOpenCashRegistersForBranch(branchId: string) {
       },
     });
 
-    // Transform to include session directly
+    // Transform to include session directly and flatten sectors
     const registersWithSession = cashRegisters.map((register) => ({
       id: register.id,
       name: register.name,
-      sector: register.sector,
+      sectors: register.sectors.map((s) => s.sector),
       session: register.sessions[0]
         ? {
             id: register.sessions[0].id,

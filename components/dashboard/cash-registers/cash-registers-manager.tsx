@@ -6,7 +6,6 @@ import {
   Plus,
   CircleDot,
   CircleOff,
-  Building2,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -110,7 +109,7 @@ export function CashRegistersManager({
                         Estado
                       </th>
                       <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                        Sector
+                        Sectores
                       </th>
                       {/* <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                         Sesiones
@@ -152,7 +151,7 @@ export function CashRegistersManager({
                         Estado
                       </th>
                       <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                        Sector
+                        Sectores
                       </th>
                       {/* <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                         Sesiones
@@ -242,16 +241,19 @@ function CashRegisterRow({ register, onEdit, onDelete }: CashRegisterRowProps) {
         )}
       </td>
 
-      {/* Sector */}
+      {/* Sectors */}
       <td className="px-4 py-3">
-        {register.sector ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Building2 className="h-4 w-4" />
-            <span>{register.sector.name}</span>
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: register.sector.color }}
-            />
+        {register.sectors && register.sectors.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {register.sectors.map((sectorRelation) => (
+              <div
+                key={sectorRelation.sectorId}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                style={{ backgroundColor: sectorRelation.sector.color }}
+              >
+                {sectorRelation.sector.name}
+              </div>
+            ))}
           </div>
         ) : (
           <span className="text-sm text-muted-foreground">—</span>
