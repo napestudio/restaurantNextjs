@@ -647,6 +647,7 @@ model OrderItem {
   quantity      Int
   price         Decimal // Current price (can be modified)
   originalPrice Decimal? // Original price from product
+  notes         String? // Special instructions (e.g., "no sugar", "extra spicy")
 }
 
 //

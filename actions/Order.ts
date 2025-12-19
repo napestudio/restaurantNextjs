@@ -15,6 +15,7 @@ export type OrderItemInput = {
   quantity: number;
   price: number;
   originalPrice: number;
+  notes?: string;
 };
 
 // Helper to serialize product (convert Decimal fields to numbers)
@@ -431,6 +432,7 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
         quantity: item.quantity,
         price: item.price,
         originalPrice: item.originalPrice,
+        notes: item.notes || null,
       },
       include: {
         product: true,
@@ -531,6 +533,38 @@ export async function updateOrderItemQuantity(
     return {
       success: false,
       error: "Error al actualizar la cantidad",
+    };
+  }
+}
+
+// Update order item notes
+export async function updateOrderItemNotes(itemId: string, notes: string | null) {
+  try {
+    const item = await prisma.orderItem.update({
+      where: { id: itemId },
+      data: { notes },
+      include: {
+        product: true,
+      },
+    });
+
+    // Convert Decimal to number
+    const serializedItem = {
+      ...item,
+      price: Number(item.price),
+      originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+      product: serializeProduct(item.product),
+    };
+
+    return {
+      success: true,
+      data: serializedItem,
+    };
+  } catch (error) {
+    console.error("Error updating order item notes:", error);
+    return {
+      success: false,
+      error: "Error al actualizar las notas",
     };
   }
 }
