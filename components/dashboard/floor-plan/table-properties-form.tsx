@@ -186,14 +186,14 @@ export function TablePropertiesForm({
         </Label>
         <Select
           value={
-            // Big tables use full scale (1x), normal tables use 0.75x
-            // Check if width is greater than 0.875x of default (midpoint between 0.75x and 1x)
+            // Determine if table is "big" by checking if width is close to normal default (80/180/380)
+            // or big size (90/190/390). Use midpoint (85/185/385) as threshold
             selectedTable.width >
             (selectedTable.shape === "WIDE"
-              ? 350
+              ? 385 // Midpoint between 380 (normal) and 390 (big)
               : selectedTable.shape === "RECTANGLE"
-              ? 175
-              : 87.5)
+              ? 185 // Midpoint between 180 (normal) and 190 (big)
+              : 85) // Midpoint between 80 (normal) and 90 (big)
               ? "big"
               : "normal"
           }
@@ -206,8 +206,8 @@ export function TablePropertiesForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="big">Grande</SelectItem>
+            <SelectItem value="normal">Normal (80x80)</SelectItem>
+            <SelectItem value="big">Grande (90x90)</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground mt-1">

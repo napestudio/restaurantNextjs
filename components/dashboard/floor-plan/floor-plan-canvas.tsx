@@ -3,6 +3,12 @@ import type { FloorTable } from "@/lib/floor-plan-utils";
 import { Grid3x3, ZoomIn, ZoomOut } from "lucide-react";
 import type React from "react";
 import { memo, useMemo, useState } from "react";
+import {
+  GRID_SIZE,
+  WAITER_OUTLINE_WIDTH,
+  WAITER_OUTLINE_COLOR,
+  WAITER_OUTLINE_OFFSET,
+} from "@/lib/floor-plan-constants";
 
 interface FloorPlanCanvasProps {
   tables: FloorTable[];
@@ -53,6 +59,38 @@ const TableShape = memo(function TableShape({
 
   return (
     <g transform={`rotate(${table.rotation} ${centerX} ${centerY})`}>
+      {/* Selection highlight outline (rendered behind the table) */}
+      {isSelected && table.shape === "CIRCLE" && (
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r={table.width / 2 + WAITER_OUTLINE_OFFSET}
+          fill="none"
+          stroke={WAITER_OUTLINE_COLOR}
+          strokeWidth={WAITER_OUTLINE_WIDTH}
+          opacity={0.8}
+          style={{ pointerEvents: "none" }}
+        />
+      )}
+
+      {isSelected &&
+        (table.shape === "SQUARE" ||
+          table.shape === "RECTANGLE" ||
+          table.shape === "WIDE") && (
+          <rect
+            x={topLeftX - WAITER_OUTLINE_OFFSET}
+            y={topLeftY - WAITER_OUTLINE_OFFSET}
+            width={table.width + WAITER_OUTLINE_OFFSET * 2}
+            height={table.height + WAITER_OUTLINE_OFFSET * 2}
+            fill="none"
+            stroke={WAITER_OUTLINE_COLOR}
+            strokeWidth={WAITER_OUTLINE_WIDTH}
+            rx={12}
+            opacity={0.8}
+            style={{ pointerEvents: "none" }}
+          />
+        )}
+
       {/* Table shape */}
       {table.shape === "CIRCLE" && (
         <circle
@@ -60,7 +98,7 @@ const TableShape = memo(function TableShape({
           cy={centerY}
           r={table.width / 2}
           fill={statusColors[table.status]}
-          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          stroke={statusStrokeColors[table.status]}
           strokeWidth={isSelected ? 3 : 2}
           opacity={0.9}
         />
@@ -73,7 +111,7 @@ const TableShape = memo(function TableShape({
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
-          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          stroke={statusStrokeColors[table.status]}
           strokeWidth={isSelected ? 3 : 2}
           rx={8}
           opacity={0.9}
@@ -87,7 +125,7 @@ const TableShape = memo(function TableShape({
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
-          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          stroke={statusStrokeColors[table.status]}
           strokeWidth={isSelected ? 3 : 2}
           rx={8}
           opacity={0.9}
@@ -101,7 +139,7 @@ const TableShape = memo(function TableShape({
           width={table.width}
           height={table.height}
           fill={statusColors[table.status]}
-          stroke={isSelected ? "#000" : statusStrokeColors[table.status]}
+          stroke={statusStrokeColors[table.status]}
           strokeWidth={isSelected ? 3 : 2}
           rx={8}
           opacity={0.9}
@@ -182,6 +220,24 @@ const TableShape = memo(function TableShape({
           </text>
         </>
       )}
+
+      {/* Waiter name - displayed inside the table below the number */}
+      {table.hasWaiter && table.waiterName && (
+        <text
+          x={centerX}
+          y={centerY + (table.currentGuests > 0 ? 35 : 18)}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize="12"
+          fontWeight="600"
+          style={{ pointerEvents: "none", userSelect: "none" }}
+          transform={`rotate(${-table.rotation} ${centerX} ${
+            centerY + (table.currentGuests > 0 ? 35 : 18)
+          })`}
+        >
+          {table.waiterName}
+        </text>
+      )}
     </g>
   );
 });
@@ -211,19 +267,18 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
   const zoomPercentage = useMemo(() => Math.round(zoom * 100), [zoom]);
 
   // Memoize cursor style
-  const cursorStyle = useMemo(
-    () => {
-      if (draggedTable) return "grabbing";
-      if (isEditMode && !draggedTable) return "crosshair";
-      return "default";
-    },
-    [draggedTable, isEditMode]
-  );
+  const cursorStyle = useMemo(() => {
+    if (draggedTable) return "grabbing";
+    if (isEditMode && !draggedTable) return "crosshair";
+    return "default";
+  }, [draggedTable, isEditMode]);
 
   // Check if a grid cell is occupied by any table
   // Note: table.x and table.y are CENTER coordinates
-  const isGridCellOccupied = (cellCenterX: number, cellCenterY: number): boolean => {
-    const GRID_SIZE = 100;
+  const isGridCellOccupied = (
+    cellCenterX: number,
+    cellCenterY: number
+  ): boolean => {
     return tables.some((table) => {
       // table.x and table.y are already center coordinates
       const tableCenterX = table.x;
@@ -264,8 +319,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     const x = (e.clientX - rect.left) / zoom;
     const y = (e.clientY - rect.top) / zoom;
 
-    // Snap to 100px grid intervals - show icon at center of grid cell
-    const GRID_SIZE = 100;
+    // Snap to grid intervals - show icon at center of grid cell
     const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
 
@@ -290,7 +344,11 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     // Don't open dialog if clicking on a table or any interactive element
     const target = e.target as SVGElement;
     // Only allow clicks on the SVG itself or the grid rect
-    if (target.tagName !== "svg" && target.getAttribute("id") !== "grid-background") return;
+    if (
+      target.tagName !== "svg" &&
+      target.getAttribute("id") !== "grid-background"
+    )
+      return;
 
     const svg = svgRef.current;
     if (!svg) return;
@@ -299,8 +357,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     const x = (e.clientX - rect.left) / zoom;
     const y = (e.clientY - rect.top) / zoom;
 
-    // Snap to 100px grid intervals - return top-left corner for table placement
-    const GRID_SIZE = 100;
+    // Snap to grid intervals - return top-left corner for table placement
     const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE;
     const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE;
 
@@ -350,12 +407,12 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
               <defs>
                 <pattern
                   id="grid"
-                  width="100"
-                  height="100"
+                  width={GRID_SIZE}
+                  height={GRID_SIZE}
                   patternUnits="userSpaceOnUse"
                 >
                   <path
-                    d="M 100 0 L 0 0 0 100"
+                    d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`}
                     fill="none"
                     stroke="#e5e7eb"
                     strokeWidth="2"
@@ -388,10 +445,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
 
             {/* Plus icon hover indicator in edit mode */}
             {isEditMode && mousePos && !draggedTable && (
-              <g
-                style={{ pointerEvents: "none" }}
-                opacity={0.6}
-              >
+              <g style={{ pointerEvents: "none" }} opacity={0.6}>
                 {/* Circle background */}
                 <circle
                   cx={mousePos.x}

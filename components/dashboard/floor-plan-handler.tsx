@@ -6,6 +6,7 @@ import type { TableShapeType } from "@/types/table";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TableWithReservations } from "@/lib/floor-plan-utils";
 import { shapeDefaults } from "@/lib/floor-plan-utils";
+import { GRID_SIZE } from "@/lib/floor-plan-constants";
 import { useFloorPlanState } from "@/hooks/use-floor-plan-state";
 import { useFloorPlanActions } from "@/hooks/use-floor-plan-actions";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
@@ -169,7 +170,8 @@ export default function FloorPlanHandler({
           y: y - table.y,
         });
       } else {
-        // In view mode, open order sidebar
+        // In view mode, open order sidebar and select table for visual feedback
+        setSelectedTable(tableId);
         setSelectedTableForOrder(tableId);
       }
     },
@@ -217,7 +219,6 @@ export default function FloorPlanHandler({
     const defaults = shapeDefaults[newTable.shape];
 
     // Calculate center position (clickPosition is top-left of grid cell)
-    const GRID_SIZE = 100;
     const centerX = clickPosition.x + GRID_SIZE / 2;
     const centerY = clickPosition.y + GRID_SIZE / 2;
 

@@ -168,12 +168,33 @@ export function useFloorPlanActions({
       const table = tables.find((t) => t.id === tableId);
       if (!table) return;
 
-      const defaults = shapeDefaults[table.shape];
-      // Big tables use full scale (1x), normal tables are smaller (0.75x)
-      const multiplier = size === "big" ? 1 : 0.75;
+      // Normal size: use shapeDefaults (80/180/380)
+      // Big size: 90/190/390 (fits better in grid with outline)
+      let newWidth: number;
+      let newHeight: number;
 
-      const newWidth = defaults.width * multiplier;
-      const newHeight = defaults.height * multiplier;
+      if (size === "normal") {
+        const defaults = shapeDefaults[table.shape];
+        newWidth = defaults.width;
+        newHeight = defaults.height;
+      } else {
+        // Big size
+        switch (table.shape) {
+          case "CIRCLE":
+          case "SQUARE":
+            newWidth = 90;
+            newHeight = 90;
+            break;
+          case "RECTANGLE":
+            newWidth = 190;
+            newHeight = 90;
+            break;
+          case "WIDE":
+            newWidth = 390;
+            newHeight = 95;
+            break;
+        }
+      }
 
       // table.x and table.y are already the center, so they stay the same
       // Just update width and height
