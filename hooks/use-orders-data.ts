@@ -12,12 +12,23 @@ type OrderWithItems = Order & {
     quantity: number;
     price: number;
     originalPrice: number | null;
+    notes?: string | null;
     product: {
       id: string;
       name: string;
       description: string | null;
     };
   }>;
+  client?: {
+    id: string;
+    name: string;
+    email: string | null;
+  } | null;
+  assignedTo?: {
+    id: string;
+    name: string | null;
+    username: string;
+  } | null;
 };
 
 interface UseOrdersDataOptions {
