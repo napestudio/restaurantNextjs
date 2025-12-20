@@ -617,11 +617,20 @@ export async function closeTable(orderId: string) {
   try {
     // Update order and check table status in a transaction
     const order = await prisma.$transaction(async (tx) => {
-      // Mark order as completed
+      // First, get the order to check its tableId
+      const existingOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { tableId: true },
+      });
+
+      const previousTableId = existingOrder?.tableId;
+
+      // Mark order as completed and clear tableId
       const completedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           status: OrderStatus.COMPLETED,
+          tableId: null, // Clear table association when order is completed
         },
         include: {
           items: {
@@ -637,10 +646,10 @@ export async function closeTable(orderId: string) {
       });
 
       // Check if table has any other active orders
-      if (completedOrder.tableId) {
+      if (previousTableId) {
         const activeOrders = await tx.order.count({
           where: {
-            tableId: completedOrder.tableId,
+            tableId: previousTableId,
             status: {
               in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
             },
@@ -650,7 +659,7 @@ export async function closeTable(orderId: string) {
         // If no more active orders, clear table status
         if (activeOrders === 0) {
           await tx.table.update({
-            where: { id: completedOrder.tableId },
+            where: { id: previousTableId },
             data: { status: "EMPTY" },
           });
         }
@@ -1591,6 +1600,9 @@ export async function closeTableWithPayment(data: {
           orderPaymentMethod = PaymentMethod.CASH;
       }
 
+      // Store tableId before clearing it
+      const previousTableId = order.tableId;
+
       // Update order status and payment method
       const completedOrder = await tx.order.update({
         where: { id: orderId },
@@ -1599,6 +1611,8 @@ export async function closeTableWithPayment(data: {
             ? OrderStatus.IN_PROGRESS
             : OrderStatus.COMPLETED,
           paymentMethod: orderPaymentMethod,
+          // Clear tableId when order is fully completed
+          tableId: isPartialClose ? order.tableId : null,
         },
         include: {
           items: {
@@ -1611,10 +1625,10 @@ export async function closeTableWithPayment(data: {
       });
 
       // If not partial close, check if table should be cleared
-      if (!isPartialClose && completedOrder.tableId) {
+      if (!isPartialClose && previousTableId) {
         const activeOrders = await tx.order.count({
           where: {
-            tableId: completedOrder.tableId,
+            tableId: previousTableId,
             status: {
               in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
             },
@@ -1624,7 +1638,7 @@ export async function closeTableWithPayment(data: {
         // If no more active orders, clear table status
         if (activeOrders === 0) {
           await tx.table.update({
-            where: { id: completedOrder.tableId },
+            where: { id: previousTableId },
             data: { status: "EMPTY" },
           });
         }

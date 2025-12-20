@@ -9,6 +9,17 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   RotateCw,
   Trash2,
   Users,
@@ -276,16 +287,42 @@ export function TablePropertiesForm({
               Rotar 90°
             </Button>
           )}
-          <Button
-            onClick={() => onDelete(selectedTable.id)}
-            variant="destructive"
-            className="w-full"
-            size="sm"
-            disabled={isLocked}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Eliminar Mesa
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="w-full"
+                size="sm"
+                disabled={isLocked}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar Mesa
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar mesa {selectedTable.number}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. La mesa será eliminada
+                  permanentemente del plano de planta.
+                  {selectedTable.isShared && (
+                    <span className="block mt-2 text-amber-600 font-medium">
+                      Esta es una mesa compartida y puede tener reservas asociadas.
+                    </span>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete(selectedTable.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
       {!isEditMode && (
