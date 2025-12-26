@@ -31,7 +31,12 @@ interface StationCardProps {
   onDelete: (stationId: string) => void;
 }
 
-export function StationCard({ station, onClick, onUpdate, onDelete }: StationCardProps) {
+export function StationCard({
+  station,
+  onClick,
+  onUpdate,
+  onDelete,
+}: StationCardProps) {
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -132,7 +137,7 @@ export function StationCard({ station, onClick, onUpdate, onDelete }: StationCar
             <AlertDialogTitle>¿Eliminar estación?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminará permanentemente la
-              estación "{station.name}".
+              estación &quot;{station.name}&quot;.
               {station._count.printers > 0 && (
                 <span className="block mt-2 text-red-600 font-medium">
                   Advertencia: Esta estación tiene {station._count.printers}{" "}

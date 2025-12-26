@@ -15,12 +15,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Settings } from "lucide-react";
 import { createStation } from "@/actions/Station";
+import { Station } from "@/app/generated/prisma";
 
 interface CreateStationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   branchId: string;
-  onCreated: (station: any) => void;
+  onCreated: (station: Station) => void;
 }
 
 // Default color for stations (not user-configurable)
