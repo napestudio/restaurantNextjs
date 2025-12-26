@@ -106,8 +106,12 @@ export function PrintersManager({
     setCreatePrinterOpen(false);
   };
 
-  const handleStationCreated = (newStation: StationWithCounts) => {
-    setStations((prev) => [newStation, ...prev]);
+  const handleStationCreated = (newStation: Station) => {
+    const stationWithCounts: StationWithCounts = {
+      ...newStation,
+      _count: { printers: 0, stationCategories: 0 },
+    };
+    setStations((prev) => [stationWithCounts, ...prev]);
     setCreateStationOpen(false);
   };
 
