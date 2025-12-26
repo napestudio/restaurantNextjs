@@ -217,6 +217,8 @@ model Branch {
   menus         Menu[]
   cashRegisters CashRegister[]
   clients       Client[]
+  stations      Station[]
+  printers      Printer[]
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -381,7 +383,8 @@ model Category {
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
-  products Product[]
+  products          Product[]
+  stationCategories StationCategory[]
 
   @@unique([restaurantId, name]) // mismo nombre no se repite dentro del restaurante
   @@index([restaurantId])
@@ -631,6 +634,7 @@ model Order {
   items         OrderItem[]
   invoices      Invoice[]
   cashMovements CashMovement[]
+  printJobs     PrintJob[]
 
   @@index([tableId])
   @@index([assignedToId])
@@ -668,6 +672,140 @@ model Invoice {
   updatedBy String?
 
   @@index([orderId])
+}
+
+//
+// PRINTERS & STATIONS
+//
+
+enum PrinterStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
+enum PrintJobStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  FAILED
+  CANCELED
+}
+
+// How a printer handles order printing
+enum PrintMode {
+  STATION_ITEMS   // Only prints items matching station categories (kitchen ticket)
+  FULL_ORDER      // Prints the complete order (control ticket/receipt)
+  BOTH            // Prints both station items AND full order
+}
+
+// Stations define areas where orders are prepared (kitchen, bar, etc.)
+model Station {
+  id          String  @id @default(cuid())
+  name        String // "Kitchen", "Bar", "Desserts", "Grill"
+  description String?
+  color       String  @default("#6366f1") // Hex color for UI identification
+  order       Int     @default(0) // Display order in UI
+  isActive    Boolean @default(true)
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  // Stations can have printers assigned to them
+  printers           Printer[]
+  // Categories can be assigned to stations for auto-routing
+  stationCategories  StationCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, name])
+  @@index([branchId])
+}
+
+// Many-to-many: Categories can be assigned to stations for auto-routing
+model StationCategory {
+  id         String   @id @default(cuid())
+  station    Station  @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  stationId  String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([stationId, categoryId])
+  @@index([categoryId])
+}
+
+// Physical thermal printers
+model Printer {
+  id          String        @id @default(cuid())
+  name        String // "Kitchen Printer 1", "Bar Printer"
+  description String?
+
+  // Network configuration
+  ipAddress String // Required for network printers
+  port      Int    @default(9100) // Default ESC/POS port
+
+  // Printer details
+  model    String? // "Epson TM-T88VI", "Star TSP143III", etc.
+  status   PrinterStatus @default(OFFLINE)
+
+  // Settings
+  isActive        Boolean   @default(true)
+  autoPrint       Boolean   @default(true) // Auto-print orders when items added
+  printMode       PrintMode @default(STATION_ITEMS) // What type of tickets to print
+  printCopies     Int       @default(1) // Number of copies to print
+  paperWidth      Int       @default(80) // Paper width in mm (58, 80)
+  charactersPerLine Int     @default(48) // Characters per line based on paper width
+
+  // Ticket customization
+  ticketHeader     String? // Custom header text for tickets
+  ticketHeaderSize Int     @default(2) // 0=small, 1=normal, 2=double height, 3=double width+height
+  ticketFooter     String? // Custom footer text for tickets
+  ticketFooterSize Int     @default(1) // 0=small, 1=normal, 2=double height, 3=double width+height
+
+  // Assignment
+  station   Station? @relation(fields: [stationId], references: [id])
+  stationId String?
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  branchId  String
+
+  // Track print jobs
+  printJobs PrintJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, name])
+  @@unique([branchId, ipAddress]) // One IP per branch
+  @@index([branchId])
+  @@index([stationId])
+}
+
+// Track all print jobs for debugging and audit
+model PrintJob {
+  id        String   @id @default(cuid())
+  printer   Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  printerId String
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String?
+
+  // Content and metadata
+  content     String // JSON representation of what was printed
+  jobType     String @default("ORDER") // ORDER, RECEIPT, TEST
+  status      PrintJobStatus @default(PENDING)
+  error       String? // Error message if failed
+  attempts    Int     @default(0) // Number of retry attempts
+
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime? // When the print command was sent
+  confirmedAt DateTime? // When printer confirmed (if supported)
+
+  @@index([printerId])
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 //

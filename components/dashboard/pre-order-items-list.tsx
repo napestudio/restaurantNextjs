@@ -13,6 +13,7 @@ export type PreOrderItem = {
   price: number;
   originalPrice: number;
   notes?: string;
+  categoryId?: string | null;
 };
 
 interface PreOrderItemsListProps {

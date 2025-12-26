@@ -8,6 +8,7 @@ import {
   removeOrderItem,
   updateDiscount,
 } from "@/actions/Order";
+import { autoPrintOrderItems, printControlTicket } from "@/actions/Printer";
 import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -191,7 +192,6 @@ export function TableOrderSidebar({
     setShowCreateClientDialog(false);
   };
 
-
   const handleSelectProduct = (product: Product) => {
     // Add to pre-order state instead of directly to order
     setPreOrderItems((prev) => [
@@ -203,6 +203,7 @@ export function TableOrderSidebar({
         price: Number(product.price),
         originalPrice: Number(product.price),
         notes: undefined,
+        categoryId: product.categoryId,
       },
     ]);
   };
@@ -222,6 +223,9 @@ export function TableOrderSidebar({
 
     setIsLoadingAction(true);
 
+    // Store items to print before clearing
+    const itemsToPrint = [...preOrderItems];
+
     // Add all pre-order items to the actual order
     for (const item of preOrderItems) {
       const result = await addOrderItem(order.id, {
@@ -239,6 +243,25 @@ export function TableOrderSidebar({
         return;
       }
     }
+
+    // Auto-print the newly added items (station comandas - no prices, no waiter)
+    const tableName = tableNumber?.toString() || "—";
+
+    await autoPrintOrderItems(
+      {
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        branchId,
+      },
+      itemsToPrint.map((item) => ({
+        productId: item.productId,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        notes: item.notes,
+        categoryId: item.categoryId,
+      }))
+    );
 
     // Clear pre-order items after successful confirmation
     setPreOrderItems([]);
@@ -306,32 +329,53 @@ export function TableOrderSidebar({
     }
   };
 
-  const handlePrintCheck = () => {
+  const handlePrintCheck = async () => {
     if (!order) return;
 
-    const total = order.items.reduce(
+    setIsLoadingAction(true);
+
+    const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    const checkData = {
-      tableNumber,
-      partySize: order.partySize,
-      items: order.items.map((item) => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-      })),
-      total,
-    };
+    const waiterName =
+      order.assignedTo?.name || order.assignedTo?.username || "—";
+    const tableName = tableNumber?.toString() || "—";
 
-    console.log("Print Check:", checkData);
-    alert(
-      `Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(
-        2
-      )}\n\nVer consola para detalles completos`
-    );
+    try {
+      const result = await printControlTicket({
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        waiterName,
+        branchId,
+        items: order.items.map((item) => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          notes: item.notes,
+        })),
+        subtotal,
+        discountPercentage: order.discountPercentage
+          ? Number(order.discountPercentage)
+          : undefined,
+        orderType: order.type,
+        customerName: order.client?.name,
+      });
+
+      if (result.success) {
+        // Success notification could be added here
+        console.log("Control ticket printed:", result.message);
+      } else {
+        alert(result.error || "Error al imprimir ticket de control");
+      }
+    } catch (error) {
+      console.error("Error printing check:", error);
+      alert("Error al imprimir ticket de control");
+    } finally {
+      setIsLoadingAction(false);
+    }
   };
 
   const handleOpenMoveDialog = async () => {
@@ -349,7 +393,6 @@ export function TableOrderSidebar({
     const result = await moveOrderToTable(order.id, targetTableId);
 
     if (result.success) {
-      alert("Orden movida exitosamente");
       setShowMoveDialog(false);
 
       // Update both tables
@@ -584,99 +627,103 @@ export function TableOrderSidebar({
         {/* Action Buttons - Show at bottom when order exists */}
         {order && (
           <div className="flex gap-2 pt-4 border-t flex-wrap">
-              <Button
-                onClick={handlePrintCheck}
-                variant="outline"
-                disabled={isLoading || order.items.length === 0}
+            <Button
+              onClick={handlePrintCheck}
+              variant="outline"
+              disabled={isLoading || order.items.length === 0}
+            >
+              <Printer className="h-4 w-4" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="128"
+                height="128"
+                viewBox="0 0 48 48"
               >
-                <Printer className="h-4 w-4" />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="128"
-                  height="128"
-                  viewBox="0 0 48 48"
-                >
-                  <g fill="none" stroke="currentColor" strokeWidth="4">
-                    <path
-                      strokeLinecap="round"
-                      d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
-                    />
-                    <rect width="36" height="22" x="6" y="20" rx="2" />
-                    <path
-                      fill="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M20 34h15v8H20z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 26h3"
-                    />
-                  </g>
-                </svg>
-                {/* Imprimir Cuenta */}
-              </Button>
-
-              <Button
-                onClick={handleOpenMoveDialog}
-                variant="outline"
-                disabled={isLoading}
-              >
-                <ArrowRightLeft className="h-4 w-4" />
-                {/* Mover a Otra Mesa */}
-              </Button>
-
-              {/* Discount Button/Editor */}
-              {isEditingDiscount ? (
-                <div className="flex items-center gap-1 bg-white rounded px-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={discountInput}
-                    onChange={(e) => setDiscountInput(e.target.value)}
-                    className="h-8 w-16 text-sm"
-                    placeholder="%"
-                    autoFocus
+                <g fill="none" stroke="currentColor" strokeWidth="4">
+                  <path
+                    strokeLinecap="round"
+                    d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
                   />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={handleDiscountSave}
-                    disabled={isLoadingAction}
-                  >
-                    ✓
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={handleDiscountCancel}
-                    disabled={isLoadingAction}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
+                  <rect width="36" height="22" x="6" y="20" rx="2" />
+                  <path
+                    fill="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20 34h15v8H20z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 26h3"
+                  />
+                </g>
+              </svg>
+              {/* Imprimir Cuenta */}
+            </Button>
+
+            <Button
+              onClick={handleOpenMoveDialog}
+              variant="outline"
+              disabled={isLoading}
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              {/* Mover a Otra Mesa */}
+            </Button>
+
+            {/* Discount Button/Editor */}
+            {isEditingDiscount ? (
+              <div className="flex items-center gap-1 bg-white rounded px-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={discountInput}
+                  onChange={(e) => setDiscountInput(e.target.value)}
+                  className="h-8 w-16 text-sm"
+                  placeholder="%"
+                  autoFocus
+                />
                 <Button
-                  onClick={handleDiscountEdit}
-                  variant={Number(order.discountPercentage) > 0 ? "default" : "outline"}
-                  disabled={isLoading}
-                  title={
-                    Number(order.discountPercentage) > 0
-                      ? `Descuento: ${order.discountPercentage}%`
-                      : "Agregar descuento"
-                  }
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={handleDiscountSave}
+                  disabled={isLoadingAction}
                 >
-                  <Percent className="h-4 w-4" />
-                  {Number(order.discountPercentage) > 0 && (
-                    <span className="ml-1 text-xs">{Number(order.discountPercentage)}%</span>
-                  )}
+                  ✓
                 </Button>
-              )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={handleDiscountCancel}
+                  disabled={isLoadingAction}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleDiscountEdit}
+                variant={
+                  Number(order.discountPercentage) > 0 ? "default" : "outline"
+                }
+                disabled={isLoading}
+                title={
+                  Number(order.discountPercentage) > 0
+                    ? `Descuento: ${order.discountPercentage}%`
+                    : "Agregar descuento"
+                }
+              >
+                <Percent className="h-4 w-4" />
+                {Number(order.discountPercentage) > 0 && (
+                  <span className="ml-1 text-xs">
+                    {Number(order.discountPercentage)}%
+                  </span>
+                )}
+              </Button>
+            )}
 
             <Button
               onClick={handleCloseTable}
@@ -744,11 +791,15 @@ export function TableOrderSidebar({
           branchId={branchId}
           currentPartySize={order.partySize || 1}
           currentClientId={order.clientId}
-          currentClient={order.client ? {
-            id: order.client.id,
-            name: order.client.name,
-            email: order.client.email,
-          } : null}
+          currentClient={
+            order.client
+              ? {
+                  id: order.client.id,
+                  name: order.client.name,
+                  email: order.client.email,
+                }
+              : null
+          }
           currentWaiterId={order.assignedToId}
           onSuccess={() => {
             refresh();
