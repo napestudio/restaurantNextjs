@@ -1,11 +1,21 @@
 "use client";
 
 import type { ClientData } from "@/actions/clients";
-import { assignClientToOrder, assignStaffToOrder, updateOrderStatus } from "@/actions/Order";
+import {
+  assignClientToOrder,
+  assignStaffToOrder,
+  updateOrderStatus,
+} from "@/actions/Order";
+import { printControlTicket } from "@/actions/Printer";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -17,6 +27,7 @@ import {
   FileText,
   Mail,
   Package,
+  Printer,
   Save,
   Truck,
   User,
@@ -121,6 +132,7 @@ export function OrderDetailsSidebar({
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   if (!order) return null;
 
@@ -228,6 +240,47 @@ export function OrderDetailsSidebar({
     }
   };
 
+  const handlePrintControlTicket = async () => {
+    if (!order) return;
+
+    setIsPrinting(true);
+    try {
+      const waiterName =
+        order.assignedTo?.name || order.assignedTo?.username || "—";
+      const tableName = order.table?.number?.toString() || "—";
+
+      const result = await printControlTicket({
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        waiterName,
+        branchId,
+        items: order.items.map((item) => ({
+          name: item.itemName,
+          quantity: item.quantity,
+          price: item.price,
+          notes: null,
+        })),
+        subtotal,
+        discountPercentage:
+          order.discountPercentage > 0 ? order.discountPercentage : undefined,
+        orderType: order.type,
+        customerName: order.client?.name || order.customerName || undefined,
+      });
+
+      if (result.success) {
+        console.log("Control ticket printed:", result.message);
+      } else {
+        alert(result.error || "Error al imprimir ticket de control");
+      }
+    } catch (error) {
+      console.error("Error printing control ticket:", error);
+      alert("Error al imprimir ticket de control");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -242,7 +295,7 @@ export function OrderDetailsSidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
+          "fixed top-0 right-0 h-full w-full sm:w-125 bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -311,17 +364,29 @@ export function OrderDetailsSidebar({
             <div className="flex flex-col items-end gap-2">
               <Select
                 value={order.status}
-                onValueChange={(value) => handleStatusChange(value as OrderStatus)}
+                onValueChange={(value) =>
+                  handleStatusChange(value as OrderStatus)
+                }
                 disabled={isUpdatingStatus}
               >
-                <SelectTrigger className={cn("w-[180px]", statusColors[order.status])}>
+                <SelectTrigger
+                  className={cn("w-45", statusColors[order.status])}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={OrderStatus.PENDING}>{statusLabels[OrderStatus.PENDING]}</SelectItem>
-                  <SelectItem value={OrderStatus.IN_PROGRESS}>{statusLabels[OrderStatus.IN_PROGRESS]}</SelectItem>
-                  <SelectItem value={OrderStatus.COMPLETED}>{statusLabels[OrderStatus.COMPLETED]}</SelectItem>
-                  <SelectItem value={OrderStatus.CANCELED}>{statusLabels[OrderStatus.CANCELED]}</SelectItem>
+                  <SelectItem value={OrderStatus.PENDING}>
+                    {statusLabels[OrderStatus.PENDING]}
+                  </SelectItem>
+                  <SelectItem value={OrderStatus.IN_PROGRESS}>
+                    {statusLabels[OrderStatus.IN_PROGRESS]}
+                  </SelectItem>
+                  <SelectItem value={OrderStatus.COMPLETED}>
+                    {statusLabels[OrderStatus.COMPLETED]}
+                  </SelectItem>
+                  <SelectItem value={OrderStatus.CANCELED}>
+                    {statusLabels[OrderStatus.CANCELED]}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -392,20 +457,26 @@ export function OrderDetailsSidebar({
                     <div className="text-xs space-y-1">
                       {order.client.phone && (
                         <p className="text-gray-700">
-                          <span className="font-medium">Tel:</span> {order.client.phone}
+                          <span className="font-medium">Tel:</span>{" "}
+                          {order.client.phone}
                         </p>
                       )}
-                      {(order.client.addressStreet || order.client.addressNumber) && (
+                      {(order.client.addressStreet ||
+                        order.client.addressNumber) && (
                         <p className="text-gray-700">
                           <span className="font-medium">Dirección:</span>{" "}
-                          {order.client.addressStreet} {order.client.addressNumber}
-                          {order.client.addressApartment && ` - Depto ${order.client.addressApartment}`}
-                          {order.client.addressCity && `, ${order.client.addressCity}`}
+                          {order.client.addressStreet}{" "}
+                          {order.client.addressNumber}
+                          {order.client.addressApartment &&
+                            ` - Depto ${order.client.addressApartment}`}
+                          {order.client.addressCity &&
+                            `, ${order.client.addressCity}`}
                         </p>
                       )}
                       {order.client.notes && (
                         <p className="text-gray-700">
-                          <span className="font-medium">Notas:</span> {order.client.notes}
+                          <span className="font-medium">Notas:</span>{" "}
+                          {order.client.notes}
                         </p>
                       )}
                     </div>
@@ -555,6 +626,19 @@ export function OrderDetailsSidebar({
             )}
             <span className="text-red-600">${total.toFixed(2)}</span>
           </div>
+        </div>
+
+        {/* Actions */}
+        <div className="p-4 border-t">
+          <Button
+            onClick={handlePrintControlTicket}
+            disabled={isPrinting || order.items.length === 0}
+            variant="outline"
+            className="w-full"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrinting ? "Imprimiendo..." : "Imprimir Ticket de Control"}
+          </Button>
         </div>
       </div>
     </>

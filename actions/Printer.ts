@@ -484,12 +484,11 @@ export async function testPrinter(id: string) {
   }
 }
 
-// Types for auto-printing order items
+// Types for auto-printing order items (comandas - no prices)
 interface OrderItemForPrint {
   productId: string;
   itemName: string;
   quantity: number;
-  price: number;
   notes?: string | null;
   categoryId?: string | null;
 }
@@ -498,29 +497,50 @@ interface OrderInfoForPrint {
   orderId: string;
   orderCode: string; // publicCode or short identifier
   tableName: string;
+  branchId: string;
+}
+
+// Types for control ticket printing (with prices)
+interface ControlTicketItem {
+  name: string;
+  quantity: number;
+  price: number;
+  notes?: string | null;
+}
+
+interface ControlTicketInfo {
+  orderId: string;
+  orderCode: string;
+  tableName: string;
   waiterName: string;
   branchId: string;
-  // For FULL_ORDER mode
+  items: ControlTicketItem[];
+  subtotal: number;
+  discountPercentage?: number;
   orderType?: string;
   customerName?: string;
-  discountPercentage?: number;
 }
 
 /**
- * Auto-print newly added order items to the appropriate printers
- * based on station/category configuration and print mode
+ * Auto-print newly added order items to station printers (comandas)
+ * This prints kitchen/bar tickets WITHOUT prices and WITHOUT waiter name
+ * Only prints to printers with STATION_ITEMS or BOTH print mode
  */
 export async function autoPrintOrderItems(
   orderInfo: OrderInfoForPrint,
   items: OrderItemForPrint[]
 ) {
+  console.log("[autoPrintOrderItems] Called with:", JSON.stringify({ orderInfo, itemCount: items.length }, null, 2));
+
   try {
-    // Get all active auto-print printers for this branch
+    // Get all active auto-print printers for this branch that should print station items
     const printers = await prisma.printer.findMany({
       where: {
         branchId: orderInfo.branchId,
         isActive: true,
         autoPrint: true,
+        // Only get printers that print station items (not FULL_ORDER only)
+        printMode: { in: ["STATION_ITEMS", "BOTH"] },
       },
       include: {
         station: {
@@ -535,7 +555,18 @@ export async function autoPrintOrderItems(
       },
     });
 
+    console.log("[autoPrintOrderItems] Found printers:", printers.map(p => ({
+      id: p.id,
+      name: p.name,
+      printMode: p.printMode,
+      autoPrint: p.autoPrint,
+      isActive: p.isActive,
+      hasStation: !!p.station,
+      stationCategories: p.station?.stationCategories?.length || 0,
+    })));
+
     if (printers.length === 0) {
+      console.log("[autoPrintOrderItems] No printers configured for auto-print");
       return { success: true, message: "No hay impresoras configuradas para auto-impresión" };
     }
 
@@ -561,20 +592,15 @@ export async function autoPrintOrderItems(
       categoryId: item.categoryId || productCategoryMap.get(item.productId) || null,
     }));
 
-    // Import print functions
-    const { printOrder, printFullOrder } = await import("@/lib/printer/escpos");
+    // Import print function
+    const { printOrder } = await import("@/lib/printer/escpos");
 
-    // Calculate totals for full order printing
-    const subtotal = enrichedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const discountAmount = orderInfo.discountPercentage
-      ? subtotal * (orderInfo.discountPercentage / 100)
-      : 0;
-    const total = subtotal - discountAmount;
-
-    // Print to each printer based on its print mode
+    // Print to each printer
     const printResults: { printerId: string; success: boolean; error?: string; jobType: string }[] = [];
 
     for (const printer of printers) {
+      console.log(`[autoPrintOrderItems] Processing printer: ${printer.name}`);
+
       const printerConfig = {
         ipAddress: printer.ipAddress,
         port: printer.port,
@@ -582,7 +608,7 @@ export async function autoPrintOrderItems(
         charactersPerLine: printer.charactersPerLine,
       };
 
-      // Determine which items this printer should receive for station mode
+      // Determine which items this printer should receive
       let stationItems = enrichedItems;
 
       if (printer.station) {
@@ -590,107 +616,69 @@ export async function autoPrintOrderItems(
           printer.station.stationCategories.map((sc) => sc.categoryId)
         );
 
+        console.log(`[autoPrintOrderItems] Station "${printer.station.name}" has categories:`, Array.from(stationCategoryIds));
+        console.log(`[autoPrintOrderItems] Items categories:`, enrichedItems.map(i => i.categoryId));
+
         // If station has categories, filter items
         if (stationCategoryIds.size > 0) {
           stationItems = enrichedItems.filter(
             (item) => item.categoryId && stationCategoryIds.has(item.categoryId)
           );
         } else {
-          // Station has no categories configured - skip station items printing
+          // Station has no categories configured - skip
+          console.log(`[autoPrintOrderItems] Station has no categories, skipping`);
           stationItems = [];
         }
+      } else {
+        console.log(`[autoPrintOrderItems] Printer has no station, will print all items`);
       }
-      // If no station, printer receives all items
 
-      // Print based on mode
-      const printMode = printer.printMode;
+      console.log(`[autoPrintOrderItems] Station items to print: ${stationItems.length}`);
 
-      // STATION_ITEMS or BOTH: Print station comanda
-      if ((printMode === "STATION_ITEMS" || printMode === "BOTH") && stationItems.length > 0) {
-        const orderData = {
-          orderNumber: orderInfo.orderCode,
-          tableName: orderInfo.tableName,
-          waiterName: orderInfo.waiterName,
-          stationName: printer.station?.name,
-          items: stationItems.map((item) => ({
-            name: item.itemName,
-            quantity: item.quantity,
-            notes: item.notes || undefined,
-          })),
-        };
+      if (stationItems.length === 0) {
+        console.log(`[autoPrintOrderItems] No items to print for this printer, skipping`);
+        continue;
+      }
 
-        for (let copy = 0; copy < printer.printCopies; copy++) {
-          const result = await printOrder(printerConfig, orderData);
+      // Print station comanda (NO prices, NO waiter name)
+      const orderData = {
+        orderNumber: orderInfo.orderCode,
+        tableName: orderInfo.tableName,
+        stationName: printer.station?.name,
+        items: stationItems.map((item) => ({
+          name: item.itemName,
+          quantity: item.quantity,
+          notes: item.notes || undefined,
+        })),
+      };
 
-          await prisma.printJob.create({
-            data: {
-              printerId: printer.id,
-              orderId: orderInfo.orderId,
-              content: JSON.stringify(orderData),
-              jobType: "STATION_ORDER",
-              status: result.success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
-              error: result.error || null,
-              sentAt: result.success ? new Date() : null,
-              attempts: 1,
-            },
-          });
+      console.log(`[autoPrintOrderItems] Sending to printer ${printer.name}:`, orderData);
 
-          await updatePrinterStatusFromResult(printer.id, result.success);
+      for (let copy = 0; copy < printer.printCopies; copy++) {
+        const result = await printOrder(printerConfig, orderData);
+        console.log(`[autoPrintOrderItems] Print result for ${printer.name}:`, result);
 
-          printResults.push({
+        await prisma.printJob.create({
+          data: {
             printerId: printer.id,
-            success: result.success,
-            error: result.error,
+            orderId: orderInfo.orderId,
+            content: JSON.stringify(orderData),
             jobType: "STATION_ORDER",
-          });
-        }
-      }
+            status: result.success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
+            error: result.error || null,
+            sentAt: result.success ? new Date() : null,
+            attempts: 1,
+          },
+        });
 
-      // FULL_ORDER or BOTH: Print full control ticket
-      if (printMode === "FULL_ORDER" || printMode === "BOTH") {
-        const fullOrderData = {
-          orderNumber: orderInfo.orderCode,
-          tableName: orderInfo.tableName,
-          waiterName: orderInfo.waiterName,
-          items: enrichedItems.map((item) => ({
-            name: item.itemName,
-            quantity: item.quantity,
-            price: item.price,
-            notes: item.notes || undefined,
-          })),
-          subtotal,
-          discountPercentage: orderInfo.discountPercentage,
-          discountAmount,
-          total,
-          orderType: orderInfo.orderType,
-          customerName: orderInfo.customerName,
-        };
+        await updatePrinterStatusFromResult(printer.id, result.success);
 
-        for (let copy = 0; copy < printer.printCopies; copy++) {
-          const result = await printFullOrder(printerConfig, fullOrderData);
-
-          await prisma.printJob.create({
-            data: {
-              printerId: printer.id,
-              orderId: orderInfo.orderId,
-              content: JSON.stringify(fullOrderData),
-              jobType: "FULL_ORDER",
-              status: result.success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
-              error: result.error || null,
-              sentAt: result.success ? new Date() : null,
-              attempts: 1,
-            },
-          });
-
-          await updatePrinterStatusFromResult(printer.id, result.success);
-
-          printResults.push({
-            printerId: printer.id,
-            success: result.success,
-            error: result.error,
-            jobType: "FULL_ORDER",
-          });
-        }
+        printResults.push({
+          printerId: printer.id,
+          success: result.success,
+          error: result.error,
+          jobType: "STATION_ORDER",
+        });
       }
     }
 
@@ -717,4 +705,114 @@ async function updatePrinterStatusFromResult(printerId: string, success: boolean
     where: { id: printerId },
     data: { status: success ? PrinterStatus.ONLINE : PrinterStatus.ERROR },
   });
+}
+
+/**
+ * Print control ticket (full order with prices) - triggered manually by user
+ * This prints to printers with FULL_ORDER or BOTH print mode
+ */
+export async function printControlTicket(ticketInfo: ControlTicketInfo) {
+  try {
+    // Get printers that print control tickets (FULL_ORDER or BOTH)
+    const printers = await prisma.printer.findMany({
+      where: {
+        branchId: ticketInfo.branchId,
+        isActive: true,
+        printMode: { in: ["FULL_ORDER", "BOTH"] },
+      },
+    });
+
+    if (printers.length === 0) {
+      return {
+        success: false,
+        error: "No hay impresoras configuradas para tickets de control"
+      };
+    }
+
+    const { printFullOrder } = await import("@/lib/printer/escpos");
+
+    // Calculate totals
+    const subtotal = ticketInfo.subtotal;
+    const discountAmount = ticketInfo.discountPercentage
+      ? subtotal * (ticketInfo.discountPercentage / 100)
+      : 0;
+    const total = subtotal - discountAmount;
+
+    const printResults: { printerId: string; success: boolean; error?: string }[] = [];
+
+    for (const printer of printers) {
+      const printerConfig = {
+        ipAddress: printer.ipAddress,
+        port: printer.port,
+        paperWidth: printer.paperWidth,
+        charactersPerLine: printer.charactersPerLine,
+      };
+
+      const fullOrderData = {
+        orderNumber: ticketInfo.orderCode,
+        tableName: ticketInfo.tableName,
+        waiterName: ticketInfo.waiterName,
+        items: ticketInfo.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          notes: item.notes || undefined,
+        })),
+        subtotal,
+        discountPercentage: ticketInfo.discountPercentage,
+        discountAmount,
+        total,
+        orderType: ticketInfo.orderType,
+        customerName: ticketInfo.customerName,
+      };
+
+      for (let copy = 0; copy < printer.printCopies; copy++) {
+        const result = await printFullOrder(printerConfig, fullOrderData);
+
+        await prisma.printJob.create({
+          data: {
+            printerId: printer.id,
+            orderId: ticketInfo.orderId,
+            content: JSON.stringify(fullOrderData),
+            jobType: "FULL_ORDER",
+            status: result.success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
+            error: result.error || null,
+            sentAt: result.success ? new Date() : null,
+            attempts: 1,
+          },
+        });
+
+        await updatePrinterStatusFromResult(printer.id, result.success);
+
+        printResults.push({
+          printerId: printer.id,
+          success: result.success,
+          error: result.error,
+        });
+      }
+    }
+
+    const successCount = printResults.filter((r) => r.success).length;
+    const failCount = printResults.filter((r) => !r.success).length;
+
+    if (successCount === 0) {
+      return {
+        success: false,
+        error: "No se pudo imprimir en ninguna impresora",
+        results: printResults,
+      };
+    }
+
+    return {
+      success: true,
+      message: `Ticket impreso en ${successCount} impresora(s)${failCount > 0 ? `, ${failCount} fallaron` : ""}`,
+      results: printResults,
+    };
+  } catch (error) {
+    console.error("Error printing control ticket:", error);
+    return {
+      success: false,
+      error: "Error al imprimir ticket de control",
+    };
+  }
 }

@@ -336,6 +336,14 @@ export async function getTableOrder(tableId: string) {
             id: "asc",
           },
         },
+        client: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -355,6 +363,20 @@ export async function getTableOrder(tableId: string) {
               : null,
             product: serializeProduct(item.product),
           })),
+          client: order.client
+            ? {
+                id: order.client.id,
+                name: order.client.name,
+                email: order.client.email,
+              }
+            : null,
+          assignedTo: order.assignedTo
+            ? {
+                id: order.assignedTo.id,
+                name: order.assignedTo.name,
+                username: order.assignedTo.username,
+              }
+            : null,
         }
       : null;
 
@@ -390,6 +412,14 @@ export async function getTableOrders(tableId: string) {
             id: "asc",
           },
         },
+        client: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -406,6 +436,20 @@ export async function getTableOrders(tableId: string) {
         originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
         product: serializeProduct(item.product),
       })),
+      client: order.client
+        ? {
+            id: order.client.id,
+            name: order.client.name,
+            email: order.client.email,
+          }
+        : null,
+      assignedTo: order.assignedTo
+        ? {
+            id: order.assignedTo.id,
+            name: order.assignedTo.name,
+            username: order.assignedTo.username,
+          }
+        : null,
     }));
 
     return {

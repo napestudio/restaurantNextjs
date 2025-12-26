@@ -29,6 +29,14 @@ const Commands = {
   // Initialize printer
   INIT: `${ESC}@`,
 
+  // Code page selection for Spanish/Latin characters
+  // CP858 (Western European with Euro) - supports áéíóúñ¿¡
+  CODEPAGE_CP858: `${ESC}t${String.fromCharCode(19)}`,
+  // CP850 (Western European) - supports áéíóúñ¿¡
+  CODEPAGE_CP850: `${ESC}t${String.fromCharCode(2)}`,
+  // CP1252 (Windows Latin 1) - supports áéíóúñ¿¡
+  CODEPAGE_CP1252: `${ESC}t${String.fromCharCode(16)}`,
+
   // Text formatting
   BOLD_ON: `${ESC}E${String.fromCharCode(1)}`,
   BOLD_OFF: `${ESC}E${String.fromCharCode(0)}`,
@@ -82,6 +90,55 @@ const Commands = {
 };
 
 /**
+ * Character mapping from Unicode to CP850/CP858 for Spanish characters
+ * CP850 is widely supported by thermal printers
+ */
+const CP850_MAP: Record<string, number> = {
+  // Spanish accented vowels
+  'á': 0xa0, 'é': 0x82, 'í': 0xa1, 'ó': 0xa2, 'ú': 0xa3,
+  'Á': 0xb5, 'É': 0x90, 'Í': 0xd6, 'Ó': 0xe0, 'Ú': 0xe9,
+  // Spanish special characters
+  'ñ': 0xa4, 'Ñ': 0xa5,
+  'ü': 0x81, 'Ü': 0x9a,
+  '¿': 0xa8, '¡': 0xad,
+  // Currency
+  '€': 0xd5, // CP858 has Euro at 0xD5
+  // Other common symbols
+  '°': 0xf8,
+  '±': 0xf1,
+  '²': 0xfd,
+  '½': 0xab,
+  '¼': 0xac,
+};
+
+/**
+ * Convert a string to a Buffer encoded for CP850/CP858 thermal printers
+ * This handles Spanish accented characters correctly
+ */
+function encodeForPrinter(text: string): Buffer {
+  const bytes: number[] = [];
+
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+
+    // Check if we have a special mapping for this character
+    if (CP850_MAP[char] !== undefined) {
+      bytes.push(CP850_MAP[char]);
+    }
+    // ASCII characters (0-127) pass through directly
+    else if (code < 128) {
+      bytes.push(code);
+    }
+    // For unmapped characters above 127, use a placeholder
+    else {
+      bytes.push(0x3f); // '?' as fallback
+    }
+  }
+
+  return Buffer.from(bytes);
+}
+
+/**
  * Format text to fit within printer width
  */
 function formatLine(
@@ -126,6 +183,7 @@ function separator(width: number, char: string = "-"): string {
 
 /**
  * Send data to printer via TCP socket
+ * Encodes the data using CP850 code page for proper Spanish character support
  */
 async function sendToPrinter(
   config: PrinterConfig,
@@ -153,8 +211,12 @@ async function sendToPrinter(
       }
     }, 5000);
 
+    // Prepend code page selection command and encode the data
+    const dataWithCodepage = Commands.CODEPAGE_CP850 + data;
+    const encodedData = encodeForPrinter(dataWithCodepage);
+
     socket.on("connect", () => {
-      socket.write(data, (err) => {
+      socket.write(encodedData, (err) => {
         cleanup(timeoutId);
         if (err) {
           socket.destroy();
@@ -281,7 +343,7 @@ export interface OrderItem {
 export interface OrderData {
   orderNumber: string;
   tableName: string;
-  waiterName: string;
+  waiterName?: string; // Optional - not shown on station comandas
   stationName?: string;
   items: OrderItem[];
   notes?: string;
@@ -322,7 +384,9 @@ export async function printOrder(
     formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
   content +=
     formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR"), width) + "\n";
-  content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  if (order.waiterName) {
+    content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  }
 
   content += separator(width) + "\n";
 

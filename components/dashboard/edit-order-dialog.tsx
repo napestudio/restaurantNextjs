@@ -13,7 +13,11 @@ import { Input } from "@/components/ui/input";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { type ClientData } from "@/actions/clients";
-import { assignClientToOrder, assignStaffToOrder, updatePartySize } from "@/actions/Order";
+import {
+  assignClientToOrder,
+  assignStaffToOrder,
+  updatePartySize,
+} from "@/actions/Order";
 
 interface EditOrderDialogProps {
   open: boolean;
@@ -42,36 +46,8 @@ export function EditOrderDialog({
 }: EditOrderDialogProps) {
   const [partySize, setPartySize] = useState(currentPartySize.toString());
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(
-    currentClient ? {
-      id: currentClient.id,
-      name: currentClient.name,
-      email: currentClient.email,
-      phone: null,
-      birthDate: null,
-      taxId: null,
-      notes: null,
-      addressStreet: null,
-      addressNumber: null,
-      addressApartment: null,
-      addressCity: null,
-      discountPercentage: 0,
-      preferredPaymentMethod: null,
-      hasCurrentAccount: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } : null
-  );
-  const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(
-    currentWaiterId || null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Reset form when dialog opens
-  useEffect(() => {
-    if (open) {
-      setPartySize(currentPartySize.toString());
-      setSelectedClient(
-        currentClient ? {
+    currentClient
+      ? {
           id: currentClient.id,
           name: currentClient.name,
           email: currentClient.email,
@@ -88,7 +64,39 @@ export function EditOrderDialog({
           hasCurrentAccount: false,
           createdAt: new Date(),
           updatedAt: new Date(),
-        } : null
+        }
+      : null
+  );
+  const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(
+    currentWaiterId || null
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setPartySize(currentPartySize.toString());
+      setSelectedClient(
+        currentClient
+          ? {
+              id: currentClient.id,
+              name: currentClient.name,
+              email: currentClient.email,
+              phone: null,
+              birthDate: null,
+              taxId: null,
+              notes: null,
+              addressStreet: null,
+              addressNumber: null,
+              addressApartment: null,
+              addressCity: null,
+              discountPercentage: 0,
+              preferredPaymentMethod: null,
+              hasCurrentAccount: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+          : null
       );
       setSelectedWaiterId(currentWaiterId || null);
     }
@@ -100,7 +108,11 @@ export function EditOrderDialog({
     try {
       // Update party size if changed
       const newPartySize = parseInt(partySize);
-      if (!isNaN(newPartySize) && newPartySize > 0 && newPartySize !== currentPartySize) {
+      if (
+        !isNaN(newPartySize) &&
+        newPartySize > 0 &&
+        newPartySize !== currentPartySize
+      ) {
         const result = await updatePartySize(orderId, newPartySize);
         if (!result.success) {
           alert(result.error || "Error al actualizar el número de personas");
@@ -111,7 +123,10 @@ export function EditOrderDialog({
 
       // Update client if changed
       if (selectedClient?.id !== currentClientId) {
-        const result = await assignClientToOrder(orderId, selectedClient?.id || null);
+        const result = await assignClientToOrder(
+          orderId,
+          selectedClient?.id || null
+        );
         if (!result.success) {
           alert(result.error || "Error al actualizar el cliente");
           setIsLoading(false);
@@ -141,7 +156,7 @@ export function EditOrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Editar Venta</DialogTitle>
         </DialogHeader>
@@ -189,7 +204,10 @@ export function EditOrderDialog({
           >
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={isLoading || !partySize || parseInt(partySize) <= 0}>
+          <Button
+            onClick={handleSave}
+            disabled={isLoading || !partySize || parseInt(partySize) <= 0}
+          >
             {isLoading ? "Guardando..." : "Guardar"}
           </Button>
         </div>

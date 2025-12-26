@@ -8,7 +8,7 @@ import {
   removeOrderItem,
   updateDiscount,
 } from "@/actions/Order";
-import { autoPrintOrderItems } from "@/actions/Printer";
+import { autoPrintOrderItems, printControlTicket } from "@/actions/Printer";
 import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -245,8 +245,7 @@ export function TableOrderSidebar({
       }
     }
 
-    // Auto-print the newly added items
-    const waiterName = order.assignedTo?.name || order.assignedTo?.username || "—";
+    // Auto-print the newly added items (station comandas - no prices, no waiter)
     const tableName = tableNumber?.toString() || "—";
 
     await autoPrintOrderItems(
@@ -254,17 +253,12 @@ export function TableOrderSidebar({
         orderId: order.id,
         orderCode: order.publicCode,
         tableName,
-        waiterName,
         branchId,
-        orderType: order.type,
-        customerName: order.client?.name,
-        discountPercentage: order.discountPercentage ? Number(order.discountPercentage) : undefined,
       },
       itemsToPrint.map((item) => ({
         productId: item.productId,
         itemName: item.itemName,
         quantity: item.quantity,
-        price: item.price,
         notes: item.notes,
         categoryId: item.categoryId,
       }))
@@ -336,32 +330,50 @@ export function TableOrderSidebar({
     }
   };
 
-  const handlePrintCheck = () => {
+  const handlePrintCheck = async () => {
     if (!order) return;
 
-    const total = order.items.reduce(
+    setIsLoadingAction(true);
+
+    const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    const checkData = {
-      tableNumber,
-      partySize: order.partySize,
-      items: order.items.map((item) => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-      })),
-      total,
-    };
+    const waiterName = order.assignedTo?.name || order.assignedTo?.username || "—";
+    const tableName = tableNumber?.toString() || "—";
 
-    console.log("Print Check:", checkData);
-    alert(
-      `Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(
-        2
-      )}\n\nVer consola para detalles completos`
-    );
+    try {
+      const result = await printControlTicket({
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        waiterName,
+        branchId,
+        items: order.items.map((item) => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          notes: item.notes,
+        })),
+        subtotal,
+        discountPercentage: order.discountPercentage ? Number(order.discountPercentage) : undefined,
+        orderType: order.type,
+        customerName: order.client?.name,
+      });
+
+      if (result.success) {
+        // Success notification could be added here
+        console.log("Control ticket printed:", result.message);
+      } else {
+        alert(result.error || "Error al imprimir ticket de control");
+      }
+    } catch (error) {
+      console.error("Error printing check:", error);
+      alert("Error al imprimir ticket de control");
+    } finally {
+      setIsLoadingAction(false);
+    }
   };
 
   const handleOpenMoveDialog = async () => {
