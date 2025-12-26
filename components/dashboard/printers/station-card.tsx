@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings, Printer, Tag, Trash2 } from "lucide-react";
 import type { Station } from "@/app/generated/prisma";
@@ -111,13 +110,7 @@ export function StationCard({ station, onClick, onUpdate, onDelete }: StationCar
             </span>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <Badge
-              style={{ backgroundColor: station.color }}
-              className="text-white"
-            >
-              {station.color}
-            </Badge>
+          <div className="flex items-center justify-end pt-2">
             <Button
               variant="ghost"
               size="sm"

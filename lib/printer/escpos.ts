@@ -12,6 +12,11 @@ export interface PrinterConfig {
   port: number;
   paperWidth: number; // 58 or 80 mm
   charactersPerLine: number;
+  // Ticket customization (optional)
+  ticketHeader?: string | null;
+  ticketHeaderSize?: number; // 0=small, 1=normal, 2=double height, 3=double size
+  ticketFooter?: string | null;
+  ticketFooterSize?: number; // 0=small, 1=normal, 2=double height, 3=double size
 }
 
 export interface PrintResult {
@@ -95,20 +100,31 @@ const Commands = {
  */
 const CP850_MAP: Record<string, number> = {
   // Spanish accented vowels
-  'á': 0xa0, 'é': 0x82, 'í': 0xa1, 'ó': 0xa2, 'ú': 0xa3,
-  'Á': 0xb5, 'É': 0x90, 'Í': 0xd6, 'Ó': 0xe0, 'Ú': 0xe9,
+  á: 0xa0,
+  é: 0x82,
+  í: 0xa1,
+  ó: 0xa2,
+  ú: 0xa3,
+  Á: 0xb5,
+  É: 0x90,
+  Í: 0xd6,
+  Ó: 0xe0,
+  Ú: 0xe9,
   // Spanish special characters
-  'ñ': 0xa4, 'Ñ': 0xa5,
-  'ü': 0x81, 'Ü': 0x9a,
-  '¿': 0xa8, '¡': 0xad,
+  ñ: 0xa4,
+  Ñ: 0xa5,
+  ü: 0x81,
+  Ü: 0x9a,
+  "¿": 0xa8,
+  "¡": 0xad,
   // Currency
-  '€': 0xd5, // CP858 has Euro at 0xD5
+  "€": 0xd5, // CP858 has Euro at 0xD5
   // Other common symbols
-  '°': 0xf8,
-  '±': 0xf1,
-  '²': 0xfd,
-  '½': 0xab,
-  '¼': 0xac,
+  "°": 0xf8,
+  "±": 0xf1,
+  "²": 0xfd,
+  "½": 0xab,
+  "¼": 0xac,
 };
 
 /**
@@ -179,6 +195,28 @@ function formatTwoColumns(left: string, right: string, width: number): string {
  */
 function separator(width: number, char: string = "-"): string {
   return char.repeat(width);
+}
+
+/**
+ * Get the ESC/POS command for a given text size
+ * 0 = small (normal, no emphasis)
+ * 1 = normal
+ * 2 = double height (mediano)
+ * 3 = double width + height (grande)
+ */
+function getSizeCommand(size: number): string {
+  switch (size) {
+    case 0:
+      return Commands.NORMAL_SIZE; // Small - just normal size
+    case 1:
+      return Commands.NORMAL_SIZE;
+    case 2:
+      return Commands.DOUBLE_HEIGHT_ON;
+    case 3:
+      return Commands.DOUBLE_SIZE_ON;
+    default:
+      return Commands.NORMAL_SIZE;
+  }
 }
 
 /**
@@ -293,7 +331,7 @@ export async function printTestPage(
   // Date/Time
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-AR");
-  const timeStr = now.toLocaleTimeString("es-AR");
+  const timeStr = now.toLocaleTimeString("es-AR", { hour12: false });
   content += formatTwoColumns("Fecha:", dateStr, width) + "\n";
   content += formatTwoColumns("Hora:", timeStr, width) + "\n";
 
@@ -383,7 +421,7 @@ export async function printOrder(
   content +=
     formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
   content +=
-    formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR"), width) + "\n";
+    formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
   if (order.waiterName) {
     content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
   }
@@ -460,9 +498,20 @@ export async function printFullOrder(
 
   let content = Commands.INIT;
 
+  // Custom header (if configured)
+  if (config.ticketHeader) {
+    content += Commands.ALIGN_CENTER;
+    content += getSizeCommand(config.ticketHeaderSize ?? 2);
+    content += Commands.BOLD_ON;
+    content += `${config.ticketHeader}\n`;
+    content += Commands.BOLD_OFF;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
+
   // Header
   content += Commands.ALIGN_CENTER;
-  content += Commands.DOUBLE_SIZE_ON;
+  // content += Commands.NORMAL_SIZE;
   content += "TICKET DE CONTROL\n";
   content += Commands.NORMAL_SIZE;
   content += Commands.FEED_LINE;
@@ -482,15 +531,13 @@ export async function printFullOrder(
   content +=
     formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
   content +=
-    formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR"), width) + "\n";
+    formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
   content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
-
-  if (order.orderType) {
-    content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
-  }
-
   if (order.customerName) {
     content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
+  }
+  if (order.orderType) {
+    content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
   }
 
   content += separator(width) + "\n";
@@ -567,6 +614,15 @@ export async function printFullOrder(
     content += Commands.BOLD_OFF;
     content += order.notes + "\n";
     content += separator(width) + "\n";
+  }
+
+  // Custom footer (if configured)
+  if (config.ticketFooter) {
+    content += Commands.ALIGN_CENTER;
+    content += getSizeCommand(config.ticketFooterSize ?? 1);
+    content += `${config.ticketFooter}\n`;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
   }
 
   // Feed and cut

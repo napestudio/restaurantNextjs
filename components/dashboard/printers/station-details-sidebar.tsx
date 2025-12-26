@@ -13,7 +13,6 @@ import {
   Settings,
   Printer,
   Tag,
-  Palette,
   Loader2,
 } from "lucide-react";
 import {
@@ -58,20 +57,8 @@ interface StationDetailsSidebarProps {
   onUpdate: (station: StationWithCounts) => void;
 }
 
-const PRESET_COLORS = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#f59e0b", // amber
-  "#84cc16", // lime
-  "#22c55e", // green
-  "#14b8a6", // teal
-  "#06b6d4", // cyan
-  "#3b82f6", // blue
-  "#6366f1", // indigo
-  "#8b5cf6", // violet
-  "#a855f7", // purple
-  "#ec4899", // pink
-];
+// Default color for stations (not user-configurable)
+const DEFAULT_STATION_COLOR = "#6366f1";
 
 export function StationDetailsSidebar({
   station,
@@ -93,7 +80,6 @@ export function StationDetailsSidebar({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    color: "#6366f1",
   });
 
   // Category selection state
@@ -117,7 +103,6 @@ export function StationDetailsSidebar({
             setFormData({
               name: detailsResult.data.name,
               description: detailsResult.data.description || "",
-              color: detailsResult.data.color,
             });
 
             // Initialize selected categories
@@ -172,7 +157,7 @@ export function StationDetailsSidebar({
       const updateResult = await updateStation(station.id, {
         name: formData.name,
         description: formData.description || undefined,
-        color: formData.color,
+        color: DEFAULT_STATION_COLOR,
       });
 
       if (!updateResult.success) {
@@ -196,7 +181,7 @@ export function StationDetailsSidebar({
         ...station,
         name: formData.name,
         description: formData.description || null,
-        color: formData.color,
+        color: DEFAULT_STATION_COLOR,
         _count: {
           ...station._count,
           stationCategories: selectedCategoryIds.length,
@@ -222,7 +207,6 @@ export function StationDetailsSidebar({
       setFormData({
         name: stationDetails.name,
         description: stationDetails.description || "",
-        color: stationDetails.color,
       });
       setSelectedCategoryIds(
         stationDetails.stationCategories.map((sc) => sc.category.id)
@@ -326,53 +310,6 @@ export function StationDetailsSidebar({
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Color</Label>
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Palette className="h-4 w-4 text-gray-500" />
-                      <Input
-                        type="color"
-                        value={formData.color}
-                        onChange={(e) =>
-                          setFormData({ ...formData, color: e.target.value })
-                        }
-                        className="w-16 h-8 p-1 cursor-pointer"
-                        disabled={isSaving}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {formData.color}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {PRESET_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, color })}
-                          className={cn(
-                            "w-8 h-8 rounded-full border-2 transition-all",
-                            formData.color === color
-                              ? "border-gray-800 scale-110"
-                              : "border-transparent hover:scale-105"
-                          )}
-                          style={{ backgroundColor: color }}
-                          disabled={isSaving}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-6 h-6 rounded-full border"
-                      style={{ backgroundColor: station.color }}
-                    />
-                    <span className="text-sm">{station.color}</span>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Categories */}

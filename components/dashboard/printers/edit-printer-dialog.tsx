@@ -56,6 +56,11 @@ export function EditPrinterDialog({
   const [printCopies, setPrintCopies] = useState("1");
   const [paperWidth, setPaperWidth] = useState<"58" | "80">("80");
   const [charactersPerLine, setCharactersPerLine] = useState("48");
+  // Ticket customization
+  const [ticketHeader, setTicketHeader] = useState("");
+  const [ticketHeaderSize, setTicketHeaderSize] = useState("2");
+  const [ticketFooter, setTicketFooter] = useState("");
+  const [ticketFooterSize, setTicketFooterSize] = useState("1");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +77,11 @@ export function EditPrinterDialog({
       setPrintCopies(printer.printCopies.toString());
       setPaperWidth(printer.paperWidth === 58 ? "58" : "80");
       setCharactersPerLine(printer.charactersPerLine.toString());
+      // Ticket customization
+      setTicketHeader(printer.ticketHeader || "");
+      setTicketHeaderSize((printer.ticketHeaderSize ?? 2).toString());
+      setTicketFooter(printer.ticketFooter || "");
+      setTicketFooterSize((printer.ticketFooterSize ?? 1).toString());
       setError(null);
     }
   }, [printer, open]);
@@ -132,6 +142,10 @@ export function EditPrinterDialog({
         printCopies: copies,
         paperWidth,
         charactersPerLine: charsPerLine,
+        ticketHeader: ticketHeader.trim() || null,
+        ticketHeaderSize: parseInt(ticketHeaderSize),
+        ticketFooter: ticketFooter.trim() || null,
+        ticketFooterSize: parseInt(ticketFooterSize),
       });
 
       if (result.success && result.data) {
@@ -367,6 +381,75 @@ export function EditPrinterDialog({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Ticket Customization */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-medium text-sm">Personalización del Ticket</h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-ticketHeader">Encabezado del Ticket</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="edit-ticketHeader"
+                  value={ticketHeader}
+                  onChange={(e) => setTicketHeader(e.target.value)}
+                  placeholder="Ej: RESTAURANTE LA COCINA"
+                  disabled={isPending}
+                  className="flex-1"
+                />
+                <Select
+                  value={ticketHeaderSize}
+                  onValueChange={setTicketHeaderSize}
+                  disabled={isPending}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Pequeño</SelectItem>
+                    <SelectItem value="1">Normal</SelectItem>
+                    <SelectItem value="2">Mediano</SelectItem>
+                    <SelectItem value="3">Grande</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Texto que aparece al inicio del ticket
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-ticketFooter">Pie del Ticket</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="edit-ticketFooter"
+                  value={ticketFooter}
+                  onChange={(e) => setTicketFooter(e.target.value)}
+                  placeholder="Ej: ¡Gracias por su visita!"
+                  disabled={isPending}
+                  className="flex-1"
+                />
+                <Select
+                  value={ticketFooterSize}
+                  onValueChange={setTicketFooterSize}
+                  disabled={isPending}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Pequeño</SelectItem>
+                    <SelectItem value="1">Normal</SelectItem>
+                    <SelectItem value="2">Mediano</SelectItem>
+                    <SelectItem value="3">Grande</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Texto que aparece al final del ticket
+              </p>
+            </div>
           </div>
 
           {/* Error */}

@@ -46,7 +46,7 @@ export default function FloorPlanHandler({
   onRefreshSingleTable,
 }: FloorPlanPageProps) {
   // UI State
-  const [zoom, setZoom] = useState(0.75);
+  const [zoom, setZoom] = useState(0.85);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ x: number; y: number }>({

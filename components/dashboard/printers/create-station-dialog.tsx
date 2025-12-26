@@ -23,14 +23,8 @@ interface CreateStationDialogProps {
   onCreated: (station: any) => void;
 }
 
-const PRESET_COLORS = [
-  { name: "Azul", value: "#3b82f6" },
-  { name: "Verde", value: "#10b981" },
-  { name: "Naranja", value: "#f59e0b" },
-  { name: "Rojo", value: "#ef4444" },
-  { name: "Púrpura", value: "#8b5cf6" },
-  { name: "Rosa", value: "#ec4899" },
-];
+// Default color for stations (not user-configurable)
+const DEFAULT_STATION_COLOR = "#6366f1";
 
 export function CreateStationDialog({
   open,
@@ -40,23 +34,12 @@ export function CreateStationDialog({
 }: CreateStationDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [color, setColor] = useState("#6366f1");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const validateColor = (colorValue: string) => {
-    const colorRegex = /^#[0-9A-Fa-f]{6}$/;
-    return colorRegex.test(colorValue);
-  };
 
   const handleCreate = async () => {
     if (!name.trim()) {
       setError("El nombre es requerido");
-      return;
-    }
-
-    if (!validateColor(color)) {
-      setError("Color inválido (debe ser formato hex, ej: #3b82f6)");
       return;
     }
 
@@ -67,7 +50,7 @@ export function CreateStationDialog({
       const result = await createStation({
         name: name.trim(),
         description: description.trim() || undefined,
-        color,
+        color: DEFAULT_STATION_COLOR,
         branchId,
       });
 
@@ -87,7 +70,6 @@ export function CreateStationDialog({
   const resetForm = () => {
     setName("");
     setDescription("");
-    setColor("#6366f1");
     setError(null);
   };
 
@@ -132,46 +114,6 @@ export function CreateStationDialog({
               placeholder="Descripción opcional..."
               disabled={isPending}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                {PRESET_COLORS.map((preset) => (
-                  <button
-                    key={preset.value}
-                    type="button"
-                    onClick={() => setColor(preset.value)}
-                    className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                      color === preset.value
-                        ? "border-gray-900 scale-110"
-                        : "border-gray-300"
-                    }`}
-                    style={{ backgroundColor: preset.value }}
-                    title={preset.name}
-                    disabled={isPending}
-                  />
-                ))}
-              </div>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-20 h-10"
-                  disabled={isPending}
-                />
-                <Input
-                  type="text"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  placeholder="#000000"
-                  className="flex-1"
-                  disabled={isPending}
-                />
-              </div>
-            </div>
           </div>
 
           {/* Error */}

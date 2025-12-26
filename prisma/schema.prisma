@@ -759,6 +759,12 @@ model Printer {
   paperWidth      Int       @default(80) // Paper width in mm (58, 80)
   charactersPerLine Int     @default(48) // Characters per line based on paper width
 
+  // Ticket customization
+  ticketHeader     String? // Custom header text for tickets
+  ticketHeaderSize Int     @default(2) // 0=small, 1=normal, 2=double height, 3=double width+height
+  ticketFooter     String? // Custom footer text for tickets
+  ticketFooterSize Int     @default(1) // 0=small, 1=normal, 2=double height, 3=double width+height
+
   // Assignment
   station   Station? @relation(fields: [stationId], references: [id])
   stationId String?

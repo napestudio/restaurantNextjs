@@ -405,6 +405,35 @@ export function PrinterDetailsSidebar({
             </div>
           </div>
 
+          {/* Ticket Customization */}
+          {(printer.ticketHeader || printer.ticketFooter) && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-700 border-b pb-2">
+                Personalización del Ticket
+              </h3>
+
+              {printer.ticketHeader && (
+                <div className="space-y-2">
+                  <Label>Encabezado</Label>
+                  <p className="text-sm">{printer.ticketHeader}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tamaño: {printer.ticketHeaderSize === 0 ? "Pequeño" : printer.ticketHeaderSize === 1 ? "Normal" : printer.ticketHeaderSize === 2 ? "Mediano" : "Grande"}
+                  </p>
+                </div>
+              )}
+
+              {printer.ticketFooter && (
+                <div className="space-y-2">
+                  <Label>Pie</Label>
+                  <p className="text-sm">{printer.ticketFooter}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tamaño: {printer.ticketFooterSize === 0 ? "Pequeño" : printer.ticketFooterSize === 1 ? "Normal" : printer.ticketFooterSize === 2 ? "Mediano" : "Grande"}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Statistics */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700 border-b pb-2">

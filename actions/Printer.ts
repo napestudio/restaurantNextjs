@@ -25,6 +25,11 @@ const printerInputSchema = z.object({
   printCopies: z.number().min(1).max(5).default(1),
   paperWidth: z.enum(["58", "80"]),
   charactersPerLine: z.number().min(32).max(48).default(48),
+  // Ticket customization (0=small, 1=normal, 2=medium, 3=large)
+  ticketHeader: z.string().optional().nullable(),
+  ticketHeaderSize: z.number().min(0).max(3).default(2),
+  ticketFooter: z.string().optional().nullable(),
+  ticketFooterSize: z.number().min(0).max(3).default(1),
 });
 
 const printerSchema = printerInputSchema.transform((data) => ({
@@ -251,6 +256,18 @@ export async function updatePrinter(
         }),
         ...(data.charactersPerLine !== undefined && {
           charactersPerLine: data.charactersPerLine,
+        }),
+        ...(data.ticketHeader !== undefined && {
+          ticketHeader: data.ticketHeader,
+        }),
+        ...(data.ticketHeaderSize !== undefined && {
+          ticketHeaderSize: data.ticketHeaderSize,
+        }),
+        ...(data.ticketFooter !== undefined && {
+          ticketFooter: data.ticketFooter,
+        }),
+        ...(data.ticketFooterSize !== undefined && {
+          ticketFooterSize: data.ticketFooterSize,
         }),
       },
     });
@@ -746,6 +763,11 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
         port: printer.port,
         paperWidth: printer.paperWidth,
         charactersPerLine: printer.charactersPerLine,
+        // Ticket customization
+        ticketHeader: printer.ticketHeader,
+        ticketHeaderSize: printer.ticketHeaderSize,
+        ticketFooter: printer.ticketFooter,
+        ticketFooterSize: printer.ticketFooterSize,
       };
 
       const fullOrderData = {
