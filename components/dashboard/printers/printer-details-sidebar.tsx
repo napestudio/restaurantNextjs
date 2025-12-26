@@ -12,6 +12,7 @@ import {
   AlertCircle,
   TestTube,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import {
   togglePrinterStatus,
@@ -19,7 +20,7 @@ import {
   testPrinter,
 } from "@/actions/Printer";
 import { useToast } from "@/hooks/use-toast";
-import type { Printer, PrinterStatus, PrintMode } from "@/app/generated/prisma";
+import type { Printer, PrinterStatus, PrintMode, Station } from "@/app/generated/prisma";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { EditPrinterDialog } from "./edit-printer-dialog";
 
 type PrinterWithStation = Printer & {
   station: { id: string; name: string; color: string } | null;
@@ -43,6 +45,7 @@ interface PrinterDetailsSidebarProps {
   onClose: () => void;
   onUpdate: (printer: PrinterWithStation) => void;
   onDelete: (printerId: string) => void;
+  stations: Station[];
 }
 
 const PRINTER_STATUS_LABELS: Record<PrinterStatus, string> = {
@@ -72,14 +75,36 @@ export function PrinterDetailsSidebar({
   onClose,
   onUpdate,
   onDelete,
+  stations,
 }: PrinterDetailsSidebarProps) {
   const { toast } = useToast();
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   if (!printer) return null;
+
+  const handlePrinterUpdated = (updatedPrinter: Printer) => {
+    // Find the station from the stations list if stationId is set
+    const station = updatedPrinter.stationId
+      ? stations.find((s) => s.id === updatedPrinter.stationId)
+      : null;
+
+    onUpdate({
+      ...updatedPrinter,
+      station: station
+        ? { id: station.id, name: station.name, color: station.color }
+        : null,
+      _count: printer._count,
+    });
+
+    toast({
+      title: "Éxito",
+      description: "Impresora actualizada correctamente",
+    });
+  };
 
   const handleToggleStatus = async () => {
     setIsTogglingStatus(true);
@@ -216,14 +241,24 @@ export function PrinterDetailsSidebar({
             <PrinterIcon className="h-5 w-5" />
             <h2 className="text-lg font-semibold">Detalles de Impresora</h2>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-orange-600"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-orange-600"
+              onClick={() => setEditDialogOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-orange-600"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
@@ -445,6 +480,14 @@ export function PrinterDetailsSidebar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditPrinterDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        printer={printer}
+        stations={stations}
+        onUpdated={handlePrinterUpdated}
+      />
     </>
   );
 }

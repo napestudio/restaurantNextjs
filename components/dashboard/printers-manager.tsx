@@ -502,6 +502,7 @@ export function PrintersManager({
         onClose={handleClosePrinterSidebar}
         onUpdate={handlePrinterUpdated}
         onDelete={handlePrinterDeleted}
+        stations={stations}
       />
 
       <StationDetailsSidebar
