@@ -6,7 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Save, User } from "lucide-react";
-import { updateClient, type ClientData, type ClientInput } from "@/actions/clients";
+import {
+  updateClient,
+  type ClientData,
+  type ClientInput,
+} from "@/actions/clients";
 import { PaymentMethod } from "@/app/generated/prisma";
 import { cn } from "@/lib/utils";
 
@@ -155,7 +159,7 @@ export function ClientDetailsSidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
+          "fixed top-0 right-0 h-full w-full sm:w-112.5 bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -381,7 +385,9 @@ export function ClientDetailsSidebar({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="preferredPaymentMethod">Método de Pago Preferido</Label>
+              <Label htmlFor="preferredPaymentMethod">
+                Método de Pago Preferido
+              </Label>
               {isEditing ? (
                 <select
                   id="preferredPaymentMethod"
@@ -428,7 +434,10 @@ export function ClientDetailsSidebar({
                       disabled={isSaving}
                       className="h-4 w-4 rounded border-gray-300"
                     />
-                    <Label htmlFor="hasCurrentAccount" className="cursor-pointer">
+                    <Label
+                      htmlFor="hasCurrentAccount"
+                      className="cursor-pointer"
+                    >
                       Tiene Cuenta Corriente
                     </Label>
                   </>

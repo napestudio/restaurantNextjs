@@ -22,7 +22,7 @@ const restaurantUpdateSchema = z.object({
   name: z.string().min(1, "El nombre del restaurante es requerido"),
   description: z.string().optional(),
   phone: z.string().optional(),
-  logoUrl: optionalUrl("URL de logo inválida"),
+  logoUrl: z.string().optional(),
 
   // Address fields
   address: z.string().optional(),

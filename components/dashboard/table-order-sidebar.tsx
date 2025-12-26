@@ -8,6 +8,7 @@ import {
   removeOrderItem,
   updateDiscount,
 } from "@/actions/Order";
+import { autoPrintOrderItems } from "@/actions/Printer";
 import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,6 +204,7 @@ export function TableOrderSidebar({
         price: Number(product.price),
         originalPrice: Number(product.price),
         notes: undefined,
+        categoryId: product.categoryId,
       },
     ]);
   };
@@ -222,6 +224,9 @@ export function TableOrderSidebar({
 
     setIsLoadingAction(true);
 
+    // Store items to print before clearing
+    const itemsToPrint = [...preOrderItems];
+
     // Add all pre-order items to the actual order
     for (const item of preOrderItems) {
       const result = await addOrderItem(order.id, {
@@ -239,6 +244,31 @@ export function TableOrderSidebar({
         return;
       }
     }
+
+    // Auto-print the newly added items
+    const waiterName = order.assignedTo?.name || order.assignedTo?.username || "—";
+    const tableName = tableNumber?.toString() || "—";
+
+    await autoPrintOrderItems(
+      {
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        waiterName,
+        branchId,
+        orderType: order.type,
+        customerName: order.client?.name,
+        discountPercentage: order.discountPercentage ? Number(order.discountPercentage) : undefined,
+      },
+      itemsToPrint.map((item) => ({
+        productId: item.productId,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        price: item.price,
+        notes: item.notes,
+        categoryId: item.categoryId,
+      }))
+    );
 
     // Clear pre-order items after successful confirmation
     setPreOrderItems([]);
