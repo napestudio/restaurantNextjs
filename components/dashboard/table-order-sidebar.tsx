@@ -15,14 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
-import {
-  ArrowRightLeft,
-  DollarSign,
-  Percent,
-  Printer,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { ArrowRightLeft, Edit, Percent, RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
@@ -366,7 +359,7 @@ export function TableOrderSidebar({
 
       if (result.success) {
         // Success notification could be added here
-        console.log("Control ticket printed:", result.message);
+        // console.log("Control ticket printed:", result.message);
       } else {
         alert(result.error || "Error al imprimir ticket de control");
       }
@@ -444,15 +437,13 @@ export function TableOrderSidebar({
   }
 
   return (
-    <div className="h-full flex flex-col gap-0 bg-neutral-50">
-      <div className="flex flex-row items-center justify-between space-y-0 bg-neutral-200 shadow-sm">
-        <div className="flex items-center gap-2 px-2 ">
+    <div className="h-full flex flex-col bg-neutral-50 overflow-hidden">
+      <div className="flex flex-row items-center justify-between shrink-0 bg-red-500 shadow-sm">
+        <div className="flex items-center gap-2 px-2 py-1 text-white">
           <div className="text-xl">
             Mesa {tableNumber}
             {tableIsShared && (
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                (Compartida)
-              </span>
+              <span className="ml-2 text-sm font-norma">(Compartida)</span>
             )}
           </div>
           <Button
@@ -467,12 +458,23 @@ export function TableOrderSidebar({
             />
           </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2 px-2">
+          {order && (
+            <button
+              onClick={() => setShowEditOrderDialog(true)}
+              className="w-max text-white cursor-pointer"
+              disabled={isLoading}
+            >
+              <Edit className="w-4" />
+            </button>
+          )}
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-6 p-2 h-full">
+      <div className="flex flex-col flex-1 min-h-0 p-2">
         {/* Order Tabs for Shared Tables */}
         {Array.isArray(allOrders) && allOrders.length > 0 && (
           <OrderTabs
@@ -501,7 +503,7 @@ export function TableOrderSidebar({
 
         {/* Party Size - Only show when no active order */}
         {!order && (
-          <div className="space-y-2">
+          <div className="space-y-2 mb-4">
             <Label htmlFor="party-size">
               Personas <span className="text-red-500">*</span>
             </Label>
@@ -519,23 +521,27 @@ export function TableOrderSidebar({
 
         {/* Client Picker - Only show when no active order */}
         {!order && (
-          <ClientPicker
-            branchId={branchId}
-            selectedClient={selectedClient}
-            onSelectClient={setSelectedClient}
-            onCreateNew={handleCreateNewClient}
-            disabled={isLoading}
-          />
+          <div className="mb-4">
+            <ClientPicker
+              branchId={branchId}
+              selectedClient={selectedClient}
+              onSelectClient={setSelectedClient}
+              onCreateNew={handleCreateNewClient}
+              disabled={isLoading}
+            />
+          </div>
         )}
 
         {/* Waiter Picker - Only show when no active order */}
         {!order && (
-          <WaiterPicker
-            branchId={branchId}
-            selectedWaiterId={selectedWaiterId}
-            onSelectWaiter={setSelectedWaiterId}
-            disabled={isLoading}
-          />
+          <div className="mb-4">
+            <WaiterPicker
+              branchId={branchId}
+              selectedWaiterId={selectedWaiterId}
+              onSelectWaiter={setSelectedWaiterId}
+              disabled={isLoading}
+            />
+          </div>
         )}
 
         {/* Open Table Button */}
@@ -549,33 +555,23 @@ export function TableOrderSidebar({
           </Button>
         )}
 
-        {/* Edit Order Button - Show when order exists */}
-        {order && (
-          <Button
-            onClick={() => setShowEditOrderDialog(true)}
-            variant="outline"
-            className="w-full"
-            disabled={isLoading}
-          >
-            Editar Venta
-          </Button>
-        )}
-
         {/* Only show product picker and items if order exists */}
         {order && (
-          <div className="flex flex-col flex-1 gap-4">
-            {/* Product Picker */}
-            <ProductPicker
-              products={products}
-              onSelectProduct={handleSelectProduct}
-              label="ADICIONAR"
-              placeholder="Buscar producto..."
-              disabled={isLoading}
-            />
+          <div className="flex flex-col flex-1 min-h-0 gap-4">
+            {/* Product Picker - Fixed at top */}
+            <div className="shrink-0">
+              <ProductPicker
+                products={products}
+                onSelectProduct={handleSelectProduct}
+                label="ADICIONAR"
+                placeholder="Buscar producto..."
+                disabled={isLoading}
+              />
+            </div>
 
-            {/* Pre-Order Items (editable with notes) */}
+            {/* Pre-Order Items (editable with notes) - Fixed at top */}
             {preOrderItems.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 shrink-0">
                 <PreOrderItemsList
                   items={preOrderItems}
                   onUpdateItem={handleUpdatePreOrderItem}
@@ -602,9 +598,9 @@ export function TableOrderSidebar({
               </div>
             )}
 
-            {/* Committed Order Items (read-only, can only remove) */}
+            {/* Committed Order Items (read-only, can only remove) - SCROLLABLE */}
             {order.items.length > 0 && (
-              <div className="space-y-2">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 <CommittedOrderItemsList
                   items={
                     order.items?.map((item) => ({
@@ -621,117 +617,115 @@ export function TableOrderSidebar({
                 />
               </div>
             )}
-          </div>
-        )}
 
-        {/* Action Buttons - Show at bottom when order exists */}
-        {order && (
-          <div className="flex gap-2 pt-4 border-t flex-wrap">
-            <Button
-              onClick={handlePrintCheck}
-              variant="outline"
-              disabled={isLoading || order.items.length === 0}
-            >
-              <Printer className="h-4 w-4" />
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="128"
-                height="128"
-                viewBox="0 0 48 48"
-              >
-                <g fill="none" stroke="currentColor" strokeWidth="4">
-                  <path
-                    strokeLinecap="round"
-                    d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
-                  />
-                  <rect width="36" height="22" x="6" y="20" rx="2" />
-                  <path
-                    fill="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M20 34h15v8H20z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 26h3"
-                  />
-                </g>
-              </svg>
-              {/* Imprimir Cuenta */}
-            </Button>
-
-            <Button
-              onClick={handleOpenMoveDialog}
-              variant="outline"
-              disabled={isLoading}
-            >
-              <ArrowRightLeft className="h-4 w-4" />
-              {/* Mover a Otra Mesa */}
-            </Button>
-
-            {/* Discount Button/Editor */}
-            {isEditingDiscount ? (
-              <div className="flex items-center gap-1 bg-white rounded px-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={discountInput}
-                  onChange={(e) => setDiscountInput(e.target.value)}
-                  className="h-8 w-16 text-sm"
-                  placeholder="%"
-                  autoFocus
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2"
-                  onClick={handleDiscountSave}
-                  disabled={isLoadingAction}
-                >
-                  ✓
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2"
-                  onClick={handleDiscountCancel}
-                  disabled={isLoadingAction}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
+            {/* Action Buttons - Fixed at bottom */}
+            <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
               <Button
-                onClick={handleDiscountEdit}
-                variant={
-                  Number(order.discountPercentage) > 0 ? "default" : "outline"
-                }
-                disabled={isLoading}
-                title={
-                  Number(order.discountPercentage) > 0
-                    ? `Descuento: ${order.discountPercentage}%`
-                    : "Agregar descuento"
-                }
+                onClick={handlePrintCheck}
+                variant="outline"
+                disabled={isLoading || order.items.length === 0}
               >
-                <Percent className="h-4 w-4" />
-                {Number(order.discountPercentage) > 0 && (
-                  <span className="ml-1 text-xs">
-                    {Number(order.discountPercentage)}%
-                  </span>
-                )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="128"
+                  height="128"
+                  viewBox="0 0 48 48"
+                >
+                  <g fill="none" stroke="currentColor" strokeWidth="4">
+                    <path
+                      strokeLinecap="round"
+                      d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
+                    />
+                    <rect width="36" height="22" x="6" y="20" rx="2" />
+                    <path
+                      fill="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M20 34h15v8H20z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 26h3"
+                    />
+                  </g>
+                </svg>
+                {/* Imprimir Cuenta */}
               </Button>
-            )}
 
-            <Button
-              onClick={handleCloseTable}
-              disabled={isLoading || order.items.length === 0}
-            >
-              <DollarSign className="h-4 w-4" />
-              {/* Cerrar Mesa */}
-            </Button>
+              <Button
+                onClick={handleOpenMoveDialog}
+                variant="outline"
+                disabled={isLoading}
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                {/* Mover a Otra Mesa */}
+              </Button>
+
+              {/* Discount Button/Editor */}
+              {isEditingDiscount ? (
+                <div className="flex items-center gap-1 bg-white rounded px-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    className="h-8 w-16 text-sm"
+                    placeholder="%"
+                    autoFocus
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountSave}
+                    disabled={isLoadingAction}
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountCancel}
+                    disabled={isLoadingAction}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleDiscountEdit}
+                  variant={
+                    Number(order.discountPercentage) > 0 ? "default" : "outline"
+                  }
+                  disabled={isLoading}
+                  title={
+                    Number(order.discountPercentage) > 0
+                      ? `Descuento: ${order.discountPercentage}%`
+                      : "Agregar descuento"
+                  }
+                >
+                  <Percent className="h-4 w-4" />
+                  {Number(order.discountPercentage) > 0 && (
+                    <span className="ml-1 text-xs">
+                      -{Number(order.discountPercentage)}%
+                    </span>
+                  )}
+                </Button>
+              )}
+
+              <Button
+                onClick={handleCloseTable}
+                className="bg-red-500"
+                disabled={isLoading || order.items.length === 0}
+              >
+                {/* <DollarSign className="h-4 w-4" /> */}
+                Cerrar Mesa
+              </Button>
+            </div>
           </div>
         )}
       </div>

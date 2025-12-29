@@ -20,11 +20,13 @@ export type { TableWithReservations };
 interface TablesClientWrapperProps {
   branchId: string;
   initialTables: TableWithReservations[];
+  editModeOnly?: boolean;
 }
 
 export function TablesClientWrapper({
   branchId,
   initialTables,
+  editModeOnly = false,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
 
@@ -141,6 +143,7 @@ export function TablesClientWrapper({
             onEditSector={openEditSector}
             onRefreshTables={refreshTables}
             onRefreshSingleTable={refreshSingleTable}
+            editModeOnly={editModeOnly}
           />
         ) : (
           <div className="flex items-center justify-center h-96">

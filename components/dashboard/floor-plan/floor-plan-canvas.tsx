@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import type { FloorTable } from "@/lib/floor-plan-utils";
 import { Grid3x3, ZoomIn, ZoomOut } from "lucide-react";
 import type React from "react";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, useCallback } from "react";
 import {
   GRID_SIZE,
   WAITER_OUTLINE_WIDTH,
@@ -20,11 +20,14 @@ interface FloorPlanCanvasProps {
   canvasWidth: number;
   canvasHeight: number;
   isEditMode: boolean;
+  editModeOnly?: boolean;
   onTableMouseDown: (e: React.MouseEvent, tableId: string) => void;
-  onCanvasClick: (x: number, y: number) => void;
+  onCanvasClick?: (x: number, y: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleGrid: () => void;
+  onRotateTable?: (tableId: string) => void;
+  onResizeTable?: (tableId: string) => void;
 }
 
 const statusColors = {
@@ -41,15 +44,36 @@ const statusStrokeColors = {
   cleaning: "#ca8a04",
 };
 
+// Edit mode colors (gray)
+const editModeColors = {
+  fill: "#9ca3af", // gray-400
+  stroke: "#6b7280", // gray-500
+};
+
 // Memoized Table Shape Component
 // Note: table.x and table.y are CENTER coordinates
 const TableShape = memo(function TableShape({
   table,
   isSelected,
+  isHovered,
+  editModeOnly,
+  onRotate,
+  onResize,
 }: {
   table: FloorTable;
   isSelected: boolean;
+  isHovered: boolean;
+  editModeOnly?: boolean;
+  onRotate?: (tableId: string) => void;
+  onResize?: (tableId: string) => void;
 }) {
+  // Determine colors based on edit mode
+  const fillColor = editModeOnly
+    ? editModeColors.fill
+    : statusColors[table.status];
+  const strokeColor = editModeOnly
+    ? editModeColors.stroke
+    : statusStrokeColors[table.status];
   // table.x and table.y are already the center
   const centerX = table.x;
   const centerY = table.y;
@@ -97,8 +121,8 @@ const TableShape = memo(function TableShape({
           cx={centerX}
           cy={centerY}
           r={table.width / 2}
-          fill={statusColors[table.status]}
-          stroke={statusStrokeColors[table.status]}
+          fill={fillColor}
+          stroke={strokeColor}
           strokeWidth={isSelected ? 3 : 2}
           opacity={0.9}
         />
@@ -110,8 +134,8 @@ const TableShape = memo(function TableShape({
           y={topLeftY}
           width={table.width}
           height={table.height}
-          fill={statusColors[table.status]}
-          stroke={statusStrokeColors[table.status]}
+          fill={fillColor}
+          stroke={strokeColor}
           strokeWidth={isSelected ? 3 : 2}
           rx={8}
           opacity={0.9}
@@ -124,8 +148,8 @@ const TableShape = memo(function TableShape({
           y={topLeftY}
           width={table.width}
           height={table.height}
-          fill={statusColors[table.status]}
-          stroke={statusStrokeColors[table.status]}
+          fill={fillColor}
+          stroke={strokeColor}
           strokeWidth={isSelected ? 3 : 2}
           rx={8}
           opacity={0.9}
@@ -138,12 +162,94 @@ const TableShape = memo(function TableShape({
           y={topLeftY}
           width={table.width}
           height={table.height}
-          fill={statusColors[table.status]}
-          stroke={statusStrokeColors[table.status]}
+          fill={fillColor}
+          stroke={strokeColor}
           strokeWidth={isSelected ? 3 : 2}
           rx={8}
           opacity={0.9}
         />
+      )}
+
+      {/* Hover icons for edit mode - positioned outside the rotation transform */}
+      {editModeOnly && isHovered && (
+        <g transform={`rotate(${-table.rotation} ${centerX} ${centerY})`}>
+          {/* Rotate icon - only for RECTANGLE and WIDE shapes, top-right corner */}
+          {(table.shape === "RECTANGLE" || table.shape === "WIDE") &&
+            onRotate && (
+              <g
+                style={{ cursor: "pointer" }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onRotate(table.id);
+                }}
+              >
+                <circle
+                  cx={centerX + table.width / 2 - 20}
+                  cy={centerY - table.height / 2 + 20}
+                  r={14}
+                  fill="#fff"
+                  stroke="#6b7280"
+                  strokeWidth={1}
+                  opacity={0.95}
+                />
+                {/* RotateCw icon as SVG path */}
+                <g
+                  transform={`translate(${
+                    centerX + table.width / 2 - 20 - 7
+                  }, ${centerY - table.height / 2 + 20 - 7})`}
+                >
+                  <path
+                    d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8"
+                    stroke="#4b5563"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    transform="scale(0.58)"
+                  />
+                </g>
+              </g>
+            )}
+
+          {/* Resize icon - bottom-right corner */}
+          {onResize && (
+            <g
+              style={{ cursor: "pointer" }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onResize(table.id);
+              }}
+            >
+              <circle
+                cx={centerX + table.width / 2 - 20}
+                cy={centerY + table.height / 2 - 20}
+                r={14}
+                fill="#fff"
+                stroke="#6b7280"
+                strokeWidth={1}
+                opacity={0.95}
+              />
+              {/* Maximize2 icon as SVG path */}
+              <g
+                transform={`translate(${centerX + table.width / 2 - 20 - 7}, ${
+                  centerY + table.height / 2 - 20 - 7
+                })`}
+              >
+                <path
+                  d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
+                  stroke="#4b5563"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  transform="scale(0.58)"
+                />
+              </g>
+            </g>
+          )}
+        </g>
       )}
 
       {/* Table number - counter-rotated to stay upright */}
@@ -160,8 +266,8 @@ const TableShape = memo(function TableShape({
         {table.number}
       </text>
 
-      {/* Party size with Users icon - counter-rotated to stay upright */}
-      {table.currentGuests > 0 && (
+      {/* Party size with Users icon - counter-rotated to stay upright (hidden in edit mode) */}
+      {!editModeOnly && table.currentGuests > 0 && (
         <g transform={`rotate(${-table.rotation} ${centerX} ${centerY + 20})`}>
           {/* Users icon (SVG path) */}
           <g
@@ -193,8 +299,8 @@ const TableShape = memo(function TableShape({
         </g>
       )}
 
-      {/* Shared table indicator - rotates with table, text stays upright */}
-      {table.isShared && (
+      {/* Shared table indicator - rotates with table, text stays upright (hidden in edit mode) */}
+      {!editModeOnly && table.isShared && (
         <>
           <circle
             cx={topLeftX + table.width - 15}
@@ -221,8 +327,8 @@ const TableShape = memo(function TableShape({
         </>
       )}
 
-      {/* Waiter name - displayed inside the table below the number */}
-      {table.hasWaiter && table.waiterName && (
+      {/* Waiter name - displayed inside the table below the number (hidden in edit mode) */}
+      {!editModeOnly && table.hasWaiter && table.waiterName && (
         <text
           x={centerX}
           y={centerY + (table.currentGuests > 0 ? 35 : 18)}
@@ -235,7 +341,7 @@ const TableShape = memo(function TableShape({
             centerY + (table.currentGuests > 0 ? 35 : 18)
           })`}
         >
-          {table.waiterName}
+          {table.waiterName.split(" ")[0]}
         </text>
       )}
     </g>
@@ -252,16 +358,36 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
   canvasWidth,
   canvasHeight,
   isEditMode,
+  editModeOnly,
   onTableMouseDown,
   onCanvasClick,
   onZoomIn,
   onZoomOut,
   onToggleGrid,
+  onRotateTable,
+  onResizeTable,
 }: FloorPlanCanvasProps) {
   // Track mouse position for hover effect
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
     null
   );
+
+  // Track hovered table for showing icons
+  const [hoveredTable, setHoveredTable] = useState<string | null>(null);
+
+  // Handle table hover
+  const handleTableMouseEnter = useCallback(
+    (tableId: string) => {
+      if (editModeOnly) {
+        setHoveredTable(tableId);
+      }
+    },
+    [editModeOnly]
+  );
+
+  const handleTableMouseLeave = useCallback(() => {
+    setHoveredTable(null);
+  }, []);
 
   // Memoize zoom percentage display
   const zoomPercentage = useMemo(() => Math.round(zoom * 100), [zoom]);
@@ -361,7 +487,7 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
     const snappedX = Math.floor(x / GRID_SIZE) * GRID_SIZE;
     const snappedY = Math.floor(y / GRID_SIZE) * GRID_SIZE;
 
-    onCanvasClick(snappedX, snappedY);
+    onCanvasClick?.(snappedX, snappedY);
   };
 
   return (
@@ -434,11 +560,17 @@ export const FloorPlanCanvas = memo(function FloorPlanCanvas({
               <g
                 key={table.id}
                 onMouseDown={(e) => onTableMouseDown(e, table.id)}
+                onMouseEnter={() => handleTableMouseEnter(table.id)}
+                onMouseLeave={handleTableMouseLeave}
                 style={{ cursor: "move" }}
               >
                 <TableShape
                   table={table}
                   isSelected={selectedTable === table.id}
+                  isHovered={hoveredTable === table.id}
+                  editModeOnly={editModeOnly}
+                  onRotate={onRotateTable}
+                  onResize={onResizeTable}
                 />
               </g>
             ))}

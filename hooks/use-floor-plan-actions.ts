@@ -2,13 +2,13 @@ import { useCallback } from "react";
 import type { TableShapeType, TableStatus } from "@/types/table";
 import type { FloorTable, TableWithReservations } from "@/lib/floor-plan-utils";
 import { shapeDefaults, reverseStatusMap } from "@/lib/floor-plan-utils";
+import { GRID_SIZE } from "@/lib/floor-plan-constants";
 import {
   updateTable,
   updateTableFloorPlan,
   updateFloorPlanBatch,
   deleteTable as deleteTableAction,
 } from "@/actions/Table";
-import { set } from "zod";
 
 interface UseFloorPlanActionsProps {
   tables: FloorTable[];
@@ -43,14 +43,28 @@ export function useFloorPlanActions({
       const table = tables.find((t) => t.id === tableId);
       if (!table) return;
 
-      // Just swap width and height for 90-degree rotation effect
+      // Swap width and height for 90-degree rotation effect
+      const newWidth = table.height;
+      const newHeight = table.width;
+
+      // Rotate around the top-left corner as pivot point
+      // 1. Calculate current top-left from center
+      const topLeftX = table.x - table.width / 2;
+      const topLeftY = table.y - table.height / 2;
+
+      // 2. Keep top-left fixed, calculate new center based on new dimensions
+      const newCenterX = topLeftX + newWidth / 2;
+      const newCenterY = topLeftY + newHeight / 2;
+
       setTables((prevTables) =>
         prevTables.map((t) =>
           t.id === tableId
             ? {
                 ...t,
-                width: table.height,
-                height: table.width,
+                width: newWidth,
+                height: newHeight,
+                x: newCenterX,
+                y: newCenterY,
               }
             : t
         )
@@ -120,25 +134,51 @@ export function useFloorPlanActions({
 
   const updateTableShape = useCallback(
     (tableId: string, shape: TableShapeType) => {
+      const table = tables.find((t) => t.id === tableId);
+      if (!table) return;
+
       const defaults = shapeDefaults[shape];
+      const newWidth = defaults.width;
+      const newHeight = defaults.height;
+
+      // Re-snap center position based on new dimensions
+      const spansMultipleCellsX = newWidth > GRID_SIZE;
+      const spansMultipleCellsY = newHeight > GRID_SIZE;
+
+      let snappedX: number;
+      let snappedY: number;
+
+      if (spansMultipleCellsX) {
+        snappedX = Math.round(table.x / GRID_SIZE) * GRID_SIZE;
+      } else {
+        snappedX = Math.floor(table.x / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+      }
+
+      if (spansMultipleCellsY) {
+        snappedY = Math.round(table.y / GRID_SIZE) * GRID_SIZE;
+      } else {
+        snappedY = Math.floor(table.y / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+      }
 
       // Update local floor plan state
       setTables((prevTables) =>
-        prevTables.map((table) =>
-          table.id === tableId
+        prevTables.map((t) =>
+          t.id === tableId
             ? {
-                ...table,
+                ...t,
                 shape,
-                width: defaults.width,
-                height: defaults.height,
+                width: newWidth,
+                height: newHeight,
+                x: snappedX,
+                y: snappedY,
               }
-            : table
+            : t
         )
       );
 
       setHasUnsavedChanges(true);
     },
-    [setTables, setHasUnsavedChanges]
+    [tables, setTables, setHasUnsavedChanges]
   );
 
   const updateTableIsShared = useCallback(
@@ -164,55 +204,72 @@ export function useFloorPlanActions({
   );
 
   const updateTableSize = useCallback(
-    (tableId: string, size: "normal" | "big") => {
-      const table = tables.find((t) => t.id === tableId);
-      if (!table) return;
-
-      // Normal size: use shapeDefaults (80/180/380)
-      // Big size: 90/190/390 (fits better in grid with outline)
-      let newWidth: number;
-      let newHeight: number;
-
-      if (size === "normal") {
-        const defaults = shapeDefaults[table.shape];
-        newWidth = defaults.width;
-        newHeight = defaults.height;
-      } else {
-        // Big size
-        switch (table.shape) {
-          case "CIRCLE":
-          case "SQUARE":
-            newWidth = 90;
-            newHeight = 90;
-            break;
-          case "RECTANGLE":
-            newWidth = 190;
-            newHeight = 90;
-            break;
-          case "WIDE":
-            newWidth = 390;
-            newHeight = 95;
-            break;
-        }
-      }
-
-      // table.x and table.y are already the center, so they stay the same
-      // Just update width and height
+    (tableId: string, size?: "normal" | "big") => {
       setTables((prevTables) =>
-        prevTables.map((t) =>
-          t.id === tableId
-            ? {
-                ...t,
-                width: newWidth,
-                height: newHeight,
-              }
-            : t
-        )
+        prevTables.map((table) => {
+          if (table.id !== tableId) return table;
+
+          // Check if table is currently in vertical orientation (rotated)
+          // For non-square shapes, vertical means height > width
+          const isVertical = table.height > table.width;
+
+          // Determine current size by comparing the larger dimension
+          // Normal: 80/180/380, Big: 90/190/390
+          const defaults = shapeDefaults[table.shape];
+          const currentLargerDim = Math.max(table.width, table.height);
+          const defaultLargerDim = Math.max(defaults.width, defaults.height);
+          const isCurrentlyBig = currentLargerDim > defaultLargerDim;
+
+          // If size is specified, use it; otherwise toggle
+          const makeBig = size ? size === "big" : !isCurrentlyBig;
+
+          // If already at target size, do nothing
+          if ((makeBig && isCurrentlyBig) || (!makeBig && !isCurrentlyBig)) {
+            return table;
+          }
+
+          let baseWidth: number;
+          let baseHeight: number;
+
+          if (makeBig) {
+            // Big size
+            switch (table.shape) {
+              case "CIRCLE":
+              case "SQUARE":
+                baseWidth = 90;
+                baseHeight = 90;
+                break;
+              case "RECTANGLE":
+                baseWidth = 190;
+                baseHeight = 90;
+                break;
+              case "WIDE":
+                baseWidth = 390;
+                baseHeight = 95;
+                break;
+            }
+          } else {
+            // Normal size: use shapeDefaults
+            baseWidth = defaults.width;
+            baseHeight = defaults.height;
+          }
+
+          // Preserve current orientation - swap if table is vertical
+          const newWidth = isVertical ? baseHeight : baseWidth;
+          const newHeight = isVertical ? baseWidth : baseHeight;
+
+          // Keep center position fixed when resizing - table grows/shrinks around its center
+          return {
+            ...table,
+            width: newWidth,
+            height: newHeight,
+          };
+        })
       );
 
       setHasUnsavedChanges(true);
     },
-    [tables, setTables, setHasUnsavedChanges]
+    [setTables, setHasUnsavedChanges]
   );
 
   const saveFloorPlanChanges = useCallback(

@@ -38,8 +38,8 @@ export const SectorSelector = memo(function SectorSelector({
             onClick={() => onSelectSector(sector.id)}
             className={
               selectedSector === sector.id
-                ? "pr-10"
-                : "hover:bg-gray-100 border-2 pr-10"
+                ? onEditSector ? "pr-10" : ""
+                : onEditSector ? "hover:bg-gray-100 border-2 pr-10" : "hover:bg-gray-100 border-2"
             }
             style={{
               backgroundColor:
@@ -57,28 +57,32 @@ export const SectorSelector = memo(function SectorSelector({
               {sector._count.tables}
             </span>
           </Button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditSector?.(sector);
-            }}
-            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/20 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{
-              color: selectedSector === sector.id ? "white" : sector.color,
-            }}
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-          </button>
+          {onEditSector && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditSector(sector);
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/20 opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{
+                color: selectedSector === sector.id ? "white" : sector.color,
+              }}
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       ))}
-      <Button
-        variant="outline"
-        onClick={() => onAddSector?.()}
-        className="border-dashed"
-        aria-label="Agregar Sector"
-      >
-        +
-      </Button>
+      {onAddSector && (
+        <Button
+          variant="outline"
+          onClick={() => onAddSector()}
+          className="border-dashed"
+          aria-label="Agregar Sector"
+        >
+          +
+        </Button>
+      )}
     </div>
   );
 });

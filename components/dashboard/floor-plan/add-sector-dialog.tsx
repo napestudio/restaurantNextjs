@@ -121,13 +121,13 @@ export function AddSectorDialog({
 
           <div>
             <Label>Color de Identificación</Label>
-            <div className="grid grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-8 gap-2 mt-2">
               {DEFAULT_COLORS.map((colorOption) => (
                 <button
                   key={colorOption.value}
                   type="button"
                   onClick={() => setColor(colorOption.value)}
-                  className={`h-10 rounded-md border-2 transition-all ${
+                  className={`h-5 rounded-md border-2 transition-all ${
                     color === colorOption.value
                       ? "border-foreground scale-110"
                       : "border-transparent hover:border-muted-foreground"
@@ -155,9 +155,7 @@ export function AddSectorDialog({
                 onChange={(e) => setWidth(e.target.value)}
                 placeholder="12"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                1-50 metros
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">1-50 metros</p>
             </div>
             <div>
               <Label htmlFor="sector-height">Alto del Plano (m)</Label>
@@ -171,9 +169,7 @@ export function AddSectorDialog({
                 onChange={(e) => setHeight(e.target.value)}
                 placeholder="8"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                1-50 metros
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">1-50 metros</p>
             </div>
           </div>
         </div>

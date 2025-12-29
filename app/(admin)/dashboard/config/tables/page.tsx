@@ -26,6 +26,12 @@ export default async function ConfigTables() {
     })),
   }));
   return (
-    <TablesClientWrapper branchId={branchId} initialTables={serializedTables} />
+    <div className="pt-5">
+      <TablesClientWrapper
+        branchId={branchId}
+        initialTables={serializedTables}
+        editModeOnly={true}
+      />
+    </div>
   );
 }
