@@ -470,7 +470,7 @@ export function EditPrinterDialog({
           </Button>
           <Button
             onClick={handleUpdate}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-red-500 hover:bg-red-600"
             disabled={isPending || !name.trim() || !ipAddress.trim()}
           >
             {isPending ? "Guardando..." : "Guardar Cambios"}

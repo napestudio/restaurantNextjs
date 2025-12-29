@@ -75,17 +75,22 @@ export function PrintersManager({
   initialStations,
 }: PrintersManagerProps) {
   const { toast } = useToast();
-  const [printers, setPrinters] = useState<PrinterWithStation[]>(initialPrinters);
-  const [stations, setStations] = useState<StationWithCounts[]>(initialStations);
+  const [printers, setPrinters] =
+    useState<PrinterWithStation[]>(initialPrinters);
+  const [stations, setStations] =
+    useState<StationWithCounts[]>(initialStations);
   const [createPrinterOpen, setCreatePrinterOpen] = useState(false);
   const [createStationOpen, setCreateStationOpen] = useState(false);
-  const [selectedPrinter, setSelectedPrinter] = useState<PrinterWithStation | null>(null);
-  const [selectedStation, setSelectedStation] = useState<StationWithCounts | null>(null);
+  const [selectedPrinter, setSelectedPrinter] =
+    useState<PrinterWithStation | null>(null);
+  const [selectedStation, setSelectedStation] =
+    useState<StationWithCounts | null>(null);
   const [printerSidebarOpen, setPrinterSidebarOpen] = useState(false);
   const [stationSidebarOpen, setStationSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteStationDialogOpen, setDeleteStationDialogOpen] = useState(false);
-  const [stationToDelete, setStationToDelete] = useState<StationWithCounts | null>(null);
+  const [stationToDelete, setStationToDelete] =
+    useState<StationWithCounts | null>(null);
   const [isDeletingStation, setIsDeletingStation] = useState(false);
 
   const handlePrinterCreated = (newPrinter: Printer) => {
@@ -245,7 +250,7 @@ export function PrintersManager({
             </div>
             <Button
               onClick={() => setCreatePrinterOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-red-500 hover:bg-red-600"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Impresora
@@ -265,7 +270,7 @@ export function PrintersManager({
               {!searchQuery && (
                 <Button
                   onClick={() => setCreatePrinterOpen(true)}
-                  className="bg-orange-500 hover:bg-orange-600"
+                  className="bg-red-500 hover:bg-red-600"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Nueva Impresora
@@ -346,7 +351,9 @@ export function PrintersManager({
                             {printer.station.name}
                           </Badge>
                         ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -377,7 +384,7 @@ export function PrintersManager({
             </p>
             <Button
               onClick={() => setCreateStationOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-red-500 hover:bg-red-600"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Estación
@@ -390,8 +397,8 @@ export function PrintersManager({
               <Settings className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium mb-2">No hay estaciones</h3>
               <p className="text-muted-foreground mb-4">
-                Las estaciones agrupan impresoras por área de trabajo (cocina, bar,
-                etc.)
+                Las estaciones agrupan impresoras por área de trabajo (cocina,
+                bar, etc.)
               </p>
               <Button
                 onClick={() => setCreateStationOpen(true)}
@@ -447,13 +454,15 @@ export function PrintersManager({
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant="outline">
-                          {station._count.printers} impresora{station._count.printers !== 1 ? "s" : ""}
+                          {station._count.printers} impresora
+                          {station._count.printers !== 1 ? "s" : ""}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
                         {station._count.stationCategories > 0 ? (
                           <Badge variant="secondary">
-                            {station._count.stationCategories} categoría{station._count.stationCategories !== 1 ? "s" : ""}
+                            {station._count.stationCategories} categoría
+                            {station._count.stationCategories !== 1 ? "s" : ""}
                           </Badge>
                         ) : (
                           <span className="text-xs text-amber-600">
@@ -517,7 +526,10 @@ export function PrintersManager({
       />
 
       {/* Delete Station Confirmation */}
-      <AlertDialog open={deleteStationDialogOpen} onOpenChange={setDeleteStationDialogOpen}>
+      <AlertDialog
+        open={deleteStationDialogOpen}
+        onOpenChange={setDeleteStationDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar estación?</AlertDialogTitle>
@@ -526,13 +538,16 @@ export function PrintersManager({
               estación &quot;{stationToDelete?.name}&quot;.
               {stationToDelete?._count.printers ? (
                 <span className="block mt-2 text-amber-600">
-                  Nota: Esta estación tiene {stationToDelete._count.printers} impresora(s) asignada(s).
+                  Nota: Esta estación tiene {stationToDelete._count.printers}{" "}
+                  impresora(s) asignada(s).
                 </span>
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingStation}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingStation}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDeleteStation}
               disabled={isDeletingStation}

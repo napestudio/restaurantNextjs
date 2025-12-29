@@ -26,7 +26,7 @@ export default async function ConfigTables() {
     })),
   }));
   return (
-    <div className="pt-5">
+    <div className="pt-3">
       <TablesClientWrapper
         branchId={branchId}
         initialTables={serializedTables}
