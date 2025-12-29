@@ -69,7 +69,9 @@ export default function FloorPlanHandler({
 
   // Edit sidebar state (for editModeOnly)
   const [tableEditSidebarOpen, setTableEditSidebarOpen] = useState(false);
-  const [selectedTableForEdit, setSelectedTableForEdit] = useState<string | null>(null);
+  const [selectedTableForEdit, setSelectedTableForEdit] = useState<
+    string | null
+  >(null);
 
   // Use external sectors and selectedSector
   const sectors = externalSectors;
@@ -184,19 +186,30 @@ export default function FloorPlanHandler({
         setSelectedTableForOrder(tableId);
       }
     },
-    [editModeOnly, isEditMode, tables, zoom, setSelectedTable, setDraggedTable, setDragOffset]
+    [
+      editModeOnly,
+      isEditMode,
+      tables,
+      zoom,
+      setSelectedTable,
+      setDraggedTable,
+      setDragOffset,
+    ]
   );
 
   // Track if a drag occurred to distinguish click from drag
   const [hasDragged, setHasDragged] = useState(false);
 
   // Handle table click to open edit sidebar (defined before useEffect that uses it)
-  const openEditSidebar = useCallback((tableId: string) => {
-    if (editModeOnly) {
-      setSelectedTableForEdit(tableId);
-      setTableEditSidebarOpen(true);
-    }
-  }, [editModeOnly]);
+  const openEditSidebar = useCallback(
+    (tableId: string) => {
+      if (editModeOnly) {
+        setSelectedTableForEdit(tableId);
+        setTableEditSidebarOpen(true);
+      }
+    },
+    [editModeOnly]
+  );
 
   // Handle mouse move and mouse up for dragging
   useEffect(() => {
@@ -235,7 +248,14 @@ export default function FloorPlanHandler({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [draggedTable, handleTableDrag, setDraggedTable, hasDragged, editModeOnly, openEditSidebar]);
+  }, [
+    draggedTable,
+    handleTableDrag,
+    setDraggedTable,
+    hasDragged,
+    editModeOnly,
+    openEditSidebar,
+  ]);
 
   // Add table handler - memoized
   // Note: FloorTable uses center coordinates, DB uses top-left
@@ -475,9 +495,17 @@ export default function FloorPlanHandler({
         )}
       </div>
 
-      <div className={`grid grid-cols-1 ${editModeOnly ? '' : 'lg:grid-cols-6'} gap-0 shadow-md`}>
+      <div
+        className={`grid grid-cols-1 ${
+          editModeOnly ? "" : "lg:grid-cols-6"
+        } gap-0 shadow-md h-[calc(100svh-7rem)]`}
+      >
         {/* Floor Plan Canvas */}
-        <div className={`${editModeOnly ? '' : 'lg:col-span-4'} relative max-h-svh`}>
+        <div
+          className={`${
+            editModeOnly ? "" : "lg:col-span-4"
+          } relative h-full overflow-hidden`}
+        >
           <FloorPlanCanvas
             tables={filteredTables}
             selectedTable={selectedTable}
@@ -501,13 +529,13 @@ export default function FloorPlanHandler({
 
         {/* Right Sidebar - Order Management or Properties Panel (not shown in editModeOnly) */}
         {!editModeOnly && (
-          <div className="lg:col-span-2 relative">
+          <div className="lg:col-span-2 relative h-full overflow-hidden">
             {selectedTableForOrder && !isEditMode ? (
               <TableOrderSidebar
                 tableId={selectedTableForOrder}
                 tableNumber={
-                  dbTables.find((t) => t.id === selectedTableForOrder)?.number ??
-                  null
+                  dbTables.find((t) => t.id === selectedTableForOrder)
+                    ?.number ?? null
                 }
                 tableIsShared={
                   dbTables.find((t) => t.id === selectedTableForOrder)

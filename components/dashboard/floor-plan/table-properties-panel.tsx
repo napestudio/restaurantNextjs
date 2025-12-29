@@ -2,6 +2,7 @@ import {} from "@/components/ui/card";
 import type { TableShapeType, TableStatus } from "@/types/table";
 import { Maximize2 } from "lucide-react";
 import { TablePropertiesForm } from "./table-properties-form";
+import TableIcon from "@/components/ui/icons/TableIcon";
 
 interface FloorTable {
   id: string;
@@ -48,14 +49,14 @@ export function TablePropertiesPanel({
   hasActiveOrders = false,
 }: TablePropertiesPanelProps) {
   return (
-    <div className="sticky top-4 gap-2 h-[calc(100svh-120px)] bg-neutral-50 ">
-      <div>
-        <div className="text-lg bg-amber-100  py-1.5">
-          Propiedades de la Mesa
+    <div className="sticky top-4 gap-2 h-[calc(100svh-120px)] bg-white">
+      <div className="h-full grid place-items-center">
+        <div className="text-lg py-1.5 w-max font-medium text-neutral-300">
+          <div className="w-30  mx-auto mb-2">
+            <TableIcon />
+          </div>
+          No hay mesas seleccionadas
         </div>
-        {!selectedTable && (
-          <div className="px-2">Selecciona una mesa para editar</div>
-        )}
       </div>
       {isEditMode ? (
         <div>
