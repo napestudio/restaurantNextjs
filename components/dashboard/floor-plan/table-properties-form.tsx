@@ -53,7 +53,7 @@ interface TablePropertiesFormProps {
   onUpdateCapacity: (tableId: string, capacity: number) => void;
   onUpdateStatus: (tableId: string, status: TableStatus) => void;
   onUpdateIsShared: (tableId: string, isShared: boolean) => void;
-  onUpdateSize: (tableId: string, size: "normal" | "big") => void;
+  onUpdateSize: (tableId: string, size?: "normal" | "big") => void;
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
   isEditMode: boolean;

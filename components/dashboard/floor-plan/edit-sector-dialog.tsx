@@ -192,13 +192,13 @@ export function EditSectorDialog({
 
             <div>
               <Label>Color de Identificación</Label>
-              <div className="grid grid-cols-4 gap-2 mt-2">
+              <div className="grid grid-cols-8 gap-2 mt-2">
                 {DEFAULT_COLORS.map((colorOption) => (
                   <button
                     key={colorOption.value}
                     type="button"
                     onClick={() => setColor(colorOption.value)}
-                    className={`h-10 rounded-md border-2 transition-all ${
+                    className={`h-5 rounded-md border-2 transition-all ${
                       color === colorOption.value
                         ? "border-foreground scale-110"
                         : "border-transparent hover:border-muted-foreground"
@@ -258,7 +258,9 @@ export function EditSectorDialog({
             <Button
               variant="destructive"
               onClick={() => setShowDeleteAlert(true)}
-              disabled={isLoading || sector._count.tables > 0 || totalSectors <= 1}
+              disabled={
+                isLoading || sector._count.tables > 0 || totalSectors <= 1
+              }
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
@@ -283,9 +285,14 @@ export function EditSectorDialog({
           </DialogFooter>
           {(sector._count.tables > 0 || totalSectors <= 1) && (
             <p className="text-xs text-muted-foreground mt-2">
-              {sector._count.tables > 0 && "* No se puede eliminar un sector que tiene mesas asignadas"}
-              {totalSectors <= 1 && sector._count.tables === 0 && "* Debe haber al menos un sector"}
-              {sector._count.tables > 0 && totalSectors <= 1 && " y debe haber al menos un sector"}
+              {sector._count.tables > 0 &&
+                "* No se puede eliminar un sector que tiene mesas asignadas"}
+              {totalSectors <= 1 &&
+                sector._count.tables === 0 &&
+                "* Debe haber al menos un sector"}
+              {sector._count.tables > 0 &&
+                totalSectors <= 1 &&
+                " y debe haber al menos un sector"}
             </p>
           )}
         </DialogContent>
