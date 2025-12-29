@@ -28,24 +28,23 @@ async function main() {
       id: "seed-restaurant-1",
       name: "Kiku Sushi",
       slug: "kiku-sushi",
-      description:
-        "Auténtica cocina japonesa con los mejores ingredientes frescos",
-      phone: "+54 11 1234-5678",
+      description: "Sushi de autor por Noe Vera",
+      phone: "+540341152764562",
       logoUrl: "/logo.png",
       isActive: true,
       // Address information
-      address: "Av. Corrientes 1234",
-      city: "Buenos Aires",
-      state: "CABA",
-      postalCode: "C1043",
+      address: "Callao Bis 139",
+      city: "Rosario",
+      state: "Santa Fe",
+      postalCode: "2000",
       country: "Argentina",
       // Social media links
-      websiteUrl: "https://www.kikusushi.com",
-      facebookUrl: "https://www.facebook.com/kikusushi",
-      instagramUrl: "https://www.instagram.com/kikusushi",
-      twitterUrl: "https://twitter.com/kikusushi",
-      linkedinUrl: "https://www.linkedin.com/company/kikusushi",
-      tiktokUrl: "https://www.tiktok.com/@kikusushi",
+      websiteUrl: "https://kikusushi.ar/",
+      facebookUrl: "https://www.facebook.com/turestaurante",
+      instagramUrl: "https://www.instagram.com/kikusushi.rosario/",
+      twitterUrl: null,
+      linkedinUrl: null,
+      tiktokUrl: "https://www.tiktok.com/@turestaurante",
     },
   });
   console.log("✅ Restaurante creado:", restaurant.name);
@@ -56,8 +55,8 @@ async function main() {
     update: {},
     create: {
       id: "seed-branch-1",
-      name: "Kiku Sushi",
-      slug: "kiku-sushi",
+      name: "Kiku Sushi Rosario",
+      slug: "rosario",
       address: "Callao Bis 139, Rosario, Santa Fe",
       restaurantId: restaurant.id,
     },
@@ -67,12 +66,12 @@ async function main() {
   // Create Admin User
   const hashedPassword = await bcrypt.hash("NoeKiku@123", 10);
   const adminUser = await prisma.user.upsert({
-    where: { username: "admin" },
+    where: { username: "noevera" },
     update: {},
     create: {
-      username: "admin",
-      email: "admin@kikusushi.com",
-      name: "Administrador",
+      username: "noevera",
+      email: "noe@kikusushi.ar",
+      name: "Noe Vera",
       password: hashedPassword,
       userOnBranches: {
         create: {
@@ -84,25 +83,43 @@ async function main() {
   });
   console.log("✅ Usuario administrador creado:", adminUser.username);
 
-  // Create Manager User
-  const managerPassword = await bcrypt.hash("Manager@123", 10);
-  const managerUser = await prisma.user.upsert({
-    where: { username: "gerente" },
+  // Create Waiter Users
+  const waiterPassword = await bcrypt.hash("Waiter@123", 10);
+  const waiter1 = await prisma.user.upsert({
+    where: { username: "maria.lopez" },
     update: {},
     create: {
-      username: "gerente",
-      email: "gerente@kikusushi.com",
-      name: "Gerente",
-      password: managerPassword,
+      username: "maria.lopez",
+      email: "maria.lopez@kikusushi.ar",
+      name: "María López",
+      password: waiterPassword,
       userOnBranches: {
         create: {
           branchId: branch.id,
-          role: UserRole.MANAGER,
+          role: UserRole.WAITER,
         },
       },
     },
   });
-  console.log("✅ Usuario gerente creado:", managerUser.username);
+  console.log("✅ Usuario mozo creado:", waiter1.username);
+
+  const waiter2 = await prisma.user.upsert({
+    where: { username: "carlos.rodriguez" },
+    update: {},
+    create: {
+      username: "carlos.rodriguez",
+      email: "carlos.rodriguez@kikusushi.ar",
+      name: "Carlos Rodríguez",
+      password: waiterPassword,
+      userOnBranches: {
+        create: {
+          branchId: branch.id,
+          role: UserRole.WAITER,
+        },
+      },
+    },
+  });
+  console.log("✅ Usuario mozo creado:", waiter2.username);
 
   // Create Categories
   const categories = await Promise.all([
@@ -384,137 +401,41 @@ async function main() {
   }
   console.log("✅ Productos creados:", products.length);
 
-  // Create Sectors
-  const salonPrincipal = await prisma.sector.upsert({
-    where: { id: "sector-salon-principal" },
+  // Create Sector
+  const mainSector = await prisma.sector.upsert({
+    where: { id: "sector-main" },
     update: {},
     create: {
-      id: "sector-salon-principal",
+      id: "sector-main",
       name: "Salón Principal",
       color: "#3b82f6", // blue
       order: 1,
-      width: 1400,
+      width: 1200,
       height: 800,
       branchId: branch.id,
       isActive: true,
     },
   });
 
-  const patio = await prisma.sector.upsert({
-    where: { id: "sector-patio" },
-    update: {},
-    create: {
-      id: "sector-patio",
-      name: "Patio",
-      color: "#10b981", // green
-      order: 2,
-      width: 1200,
-      height: 900,
-      branchId: branch.id,
-      isActive: true,
-    },
-  });
+  console.log("✅ Sector creado: 1");
 
-  const bar = await prisma.sector.upsert({
-    where: { id: "sector-bar" },
-    update: {},
-    create: {
-      id: "sector-bar",
-      name: "Área de Bar",
-      color: "#f59e0b", // amber
-      order: 3,
-      width: 1000,
-      height: 600,
-      branchId: branch.id,
-      isActive: true,
-    },
-  });
-
-  console.log("✅ Sectores creados: 3");
-
-  // Create Tables with varied positions
-  const tables = [
-    {
-      number: 1,
-      capacity: 2,
-      sectorId: salonPrincipal.id,
-      positionX: 100,
-      positionY: 100,
-      width: 80,
-      height: 80,
-      shape: "SQUARE" as const,
-    },
-    {
-      number: 2,
-      capacity: 2,
-      sectorId: salonPrincipal.id,
-      positionX: 250,
-      positionY: 100,
-      width: 80,
-      height: 80,
-      shape: "SQUARE" as const,
-    },
-    {
-      number: 3,
-      capacity: 4,
-      sectorId: salonPrincipal.id,
-      positionX: 400,
-      positionY: 100,
-      width: 120,
-      height: 80,
-      shape: "RECTANGLE" as const,
-    },
-    {
-      number: 4,
-      capacity: 4,
-      sectorId: patio.id,
-      positionX: 150,
-      positionY: 150,
-      width: 100,
-      height: 100,
-      shape: "CIRCLE" as const,
-    },
-    {
-      number: 5,
-      capacity: 4,
-      sectorId: patio.id,
-      positionX: 350,
-      positionY: 150,
-      width: 100,
-      height: 100,
-      shape: "CIRCLE" as const,
-    },
-    {
-      number: 6,
-      capacity: 6,
-      sectorId: patio.id,
-      positionX: 550,
-      positionY: 150,
-      width: 140,
-      height: 90,
-      shape: "WIDE" as const,
-    },
-    {
-      number: 7,
-      capacity: 6,
-      sectorId: bar.id,
-      positionX: 120,
-      positionY: 200,
-      width: 140,
-      height: 90,
-      shape: "RECTANGLE" as const,
-    },
-    {
-      number: 8,
-      capacity: 8,
-      sectorId: bar.id,
-      positionX: 350,
-      positionY: 200,
-      width: 160,
-      height: 100,
-      shape: "WIDE" as const,
-    },
-  ];
+  // Create 9 simple square tables in a 3x3 grid
+  const tables = [];
+  let tableNum = 1;
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      tables.push({
+        number: tableNum++,
+        capacity: 4,
+        sectorId: mainSector.id,
+        positionX: 100 + col * 200,
+        positionY: 100 + row * 200,
+        width: 100,
+        height: 100,
+        shape: "SQUARE" as const,
+      });
+    }
+  }
 
   for (const tableData of tables) {
     await prisma.table.upsert({
@@ -543,20 +464,8 @@ async function main() {
   // Create Time Slots
   const timeSlots = [
     {
-      id: `slot-${branch.id}-11:00`,
-      name: "Almuerzo Entre Semana",
-      startTime: "11:00",
-      endTime: "11:30",
-      daysOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday"],
-      pricePerPerson: 0,
-      notes: "Servicio de almuerzo entre semana",
-      moreInfoUrl: null,
-      // Link tables 1-4 (smaller tables for lunch)
-      tableNumbers: [1, 2, 3, 4],
-    },
-    {
       id: `slot-${branch.id}-12:00`,
-      name: "Almuerzo Pico",
+      name: "Almuerzo",
       startTime: "12:00",
       endTime: "13:00",
       daysOfWeek: [
@@ -569,28 +478,15 @@ async function main() {
         "sunday",
       ],
       pricePerPerson: 0,
-      notes: "Hora pico del almuerzo - todos los días",
+      notes: "Horario de almuerzo - todos los días",
       moreInfoUrl: null,
-      // All tables available for peak lunch
-      tableNumbers: [1, 2, 3, 4, 5, 6, 7, 8],
+      tableNumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     },
     {
-      id: `slot-${branch.id}-19:00`,
-      name: "Cena Premium Fin de Semana",
-      startTime: "19:00",
-      endTime: "20:00",
-      daysOfWeek: ["friday", "saturday"],
-      pricePerPerson: 2500,
-      notes: "Cena especial fin de semana - precio premium",
-      moreInfoUrl: "https://kikusushi.com/experiencia-premium",
-      // Larger tables for premium dining
-      tableNumbers: [5, 6, 7, 8],
-    },
-    {
-      id: `slot-${branch.id}-18:00`,
-      name: "Cena Temprana",
-      startTime: "18:00",
-      endTime: "19:00",
+      id: `slot-${branch.id}-20:00`,
+      name: "Cena",
+      startTime: "20:00",
+      endTime: "21:00",
       daysOfWeek: [
         "monday",
         "tuesday",
@@ -601,22 +497,9 @@ async function main() {
         "sunday",
       ],
       pricePerPerson: 0,
-      notes: "Cena temprana - todos los días gratis",
+      notes: "Horario de cena",
       moreInfoUrl: null,
-      // All tables available
-      tableNumbers: [1, 2, 3, 4, 5, 6, 7, 8],
-    },
-    {
-      id: `slot-${branch.id}-20:00`,
-      name: "Cena Nocturna",
-      startTime: "20:00",
-      endTime: "21:00",
-      daysOfWeek: ["friday", "saturday", "sunday"],
-      pricePerPerson: 1500,
-      notes: "Cena fin de semana tardía",
-      moreInfoUrl: null,
-      // Medium to large tables for late dinner
-      tableNumbers: [3, 4, 5, 6, 7, 8],
+      tableNumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     },
   ];
 
@@ -689,7 +572,7 @@ async function main() {
   });
 
   // Sample reservation for tomorrow lunch
-  const lunchSlot = allTimeSlots.find((s) => s.name === "Almuerzo Pico");
+  const lunchSlot = allTimeSlots.find((s) => s.name === "Almuerzo");
   if (lunchSlot) {
     const exactArrival = new Date(tomorrow);
     exactArrival.setHours(12, 15, 0, 0); // 12:15 PM
@@ -697,38 +580,38 @@ async function main() {
     await prisma.reservation.create({
       data: {
         branchId: branch.id,
-        customerName: "María González",
-        customerEmail: "maria.gonzalez@example.com",
-        customerPhone: "+54 11 9876-5432",
+        customerName: "Laura Fernández",
+        customerEmail: "laura.fernandez@gmail.com",
+        customerPhone: "+54 341 555-1234",
         date: tomorrow,
         people: 4,
         timeSlotId: lunchSlot.id,
         exactTime: exactArrival,
-        status: "PENDING",
-        notes: "Mesa cerca de la ventana, por favor",
+        status: "CONFIRMED",
+        notes: "Cumpleaños - por favor preparar una velita",
         createdBy: "SEED",
       },
     });
   }
 
   // Sample reservation for dinner
-  const dinnerSlot = allTimeSlots.find((s) => s.name === "Cena Temprana");
+  const dinnerSlot = allTimeSlots.find((s) => s.name === "Cena");
   if (dinnerSlot) {
     const exactArrival = new Date(tomorrow);
-    exactArrival.setHours(18, 30, 0, 0); // 6:30 PM
+    exactArrival.setHours(20, 30, 0, 0); // 8:30 PM
 
     await prisma.reservation.create({
       data: {
         branchId: branch.id,
-        customerName: "Juan Pérez",
-        customerEmail: "juan.perez@example.com",
-        customerPhone: "+54 11 5555-1234",
+        customerName: "Roberto Sánchez",
+        customerEmail: "roberto.sanchez@hotmail.com",
+        customerPhone: "+54 341 555-5678",
         date: tomorrow,
         people: 2,
         timeSlotId: dinnerSlot.id,
         exactTime: exactArrival,
-        status: "CONFIRMED",
-        dietaryRestrictions: "Sin gluten",
+        status: "PENDING",
+        notes: "Mesa cerca de la ventana preferentemente",
         createdBy: "SEED",
       },
     });
@@ -1026,17 +909,59 @@ async function main() {
   console.log("✅ Secciones de Especiales Weekend: 1");
   console.log("✅ Items de Especiales Weekend: 3");
 
+  // Create Sample Clients
+  console.log("\n👥 Creando clientes de ejemplo...");
+
+  await prisma.client.create({
+    data: {
+      branchId: branch.id,
+      name: "Laura Fernández",
+      phone: "+54 341 555-1234",
+      email: "laura.fernandez@gmail.com",
+      birthDate: new Date("1985-03-15"),
+      taxId: "27-34567890-1",
+      addressStreet: "Av. Pellegrini",
+      addressNumber: "1234",
+      addressApartment: "2A",
+      addressCity: "Rosario",
+      discountPercentage: 10,
+      hasCurrentAccount: false,
+    },
+  });
+
+  await prisma.client.create({
+    data: {
+      branchId: branch.id,
+      name: "Roberto Sánchez",
+      phone: "+54 341 555-5678",
+      email: "roberto.sanchez@hotmail.com",
+      birthDate: new Date("1978-11-22"),
+      taxId: "20-28765432-4",
+      addressStreet: "Bv. Oroño",
+      addressNumber: "567",
+      addressCity: "Rosario",
+      notes: "Cliente VIP - Prefiere mesa cerca de la ventana",
+      discountPercentage: 15,
+      hasCurrentAccount: true,
+    },
+  });
+
+  console.log("✅ Clientes creados: 2");
+
   console.log("\n🎉 ¡Base de datos poblada exitosamente!");
   console.log("\n📝 Credenciales de Acceso:");
   console.log("-----------------------------------");
   console.log("Usuario Administrador:");
-  console.log("  Username: admin");
-  console.log("  Email: admin@kikusushi.com");
-  console.log("  Password: Admin@123");
-  console.log("\nUsuario Gerente:");
-  console.log("  Username: gerente");
-  console.log("  Email: gerente@kikusushi.com");
-  console.log("  Password: Manager@123");
+  console.log("  Username: noevera");
+  console.log("  Email: noe@kikusushi.ar");
+  console.log("  Password: NoeKiku@123");
+  console.log("\nUsuarios Mozos:");
+  console.log("  Username: maria.lopez");
+  console.log("  Email: maria.lopez@kikusushi.ar");
+  console.log("  Password: Waiter@123");
+  console.log("\n  Username: carlos.rodriguez");
+  console.log("  Email: carlos.rodriguez@kikusushi.ar");
+  console.log("  Password: Waiter@123");
   console.log("-----------------------------------");
   console.log("\n📋 Menús Creados:");
   console.log("  • Menú Principal (todos los días)");

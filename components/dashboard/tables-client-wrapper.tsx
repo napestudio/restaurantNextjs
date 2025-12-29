@@ -20,11 +20,13 @@ export type { TableWithReservations };
 interface TablesClientWrapperProps {
   branchId: string;
   initialTables: TableWithReservations[];
+  editModeOnly?: boolean;
 }
 
 export function TablesClientWrapper({
   branchId,
   initialTables,
+  editModeOnly = false,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
 
@@ -141,6 +143,7 @@ export function TablesClientWrapper({
             onEditSector={openEditSector}
             onRefreshTables={refreshTables}
             onRefreshSingleTable={refreshSingleTable}
+            editModeOnly={editModeOnly}
           />
         ) : (
           <div className="flex items-center justify-center h-96">
@@ -169,12 +172,10 @@ export function TablesClientWrapper({
         open={dialogState.addTable}
         onOpenChange={closeAddTable}
         tableNumber={formState.number}
-        tableName={formState.name}
         tableShape={formState.shape}
         tableCapacity={formState.capacity}
         isShared={formState.isShared}
         onTableNumberChange={(value) => updateField("number", value)}
-        onTableNameChange={(value) => updateField("name", value)}
         onTableShapeChange={(value) => updateField("shape", value)}
         onTableCapacityChange={(value) => updateField("capacity", value)}
         onIsSharedChange={(value) => updateField("isShared", value)}

@@ -1,7 +1,13 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { OrderStatus, OrderType, PaymentMethod, type Product } from "@/app/generated/prisma";
+import {
+  OrderStatus,
+  OrderType,
+  PaymentMethod,
+  type Product,
+} from "@/app/generated/prisma";
+import { serializeClient } from "@/lib/serializers";
 
 export type OrderItemInput = {
   productId: string;
@@ -9,6 +15,7 @@ export type OrderItemInput = {
   quantity: number;
   price: number;
   originalPrice: number;
+  notes?: string;
 };
 
 // Helper to serialize product (convert Decimal fields to numbers)
@@ -20,11 +27,176 @@ function serializeProduct(product: Product | null) {
   };
 }
 
+// Create a new order (any type)
+export async function createOrder(data: {
+  branchId: string;
+  type: OrderType;
+  tableId?: string | null;
+  partySize?: number | null;
+  clientId?: string | null;
+  assignedToId?: string | null;
+  description?: string | null;
+}) {
+  try {
+    const { branchId, type, tableId, partySize, clientId, assignedToId, description } = data;
+
+    // Validation based on order type
+    if (type === OrderType.DINE_IN && !tableId) {
+      return {
+        success: false,
+        error: "Se requiere una mesa para órdenes para comer aquí",
+      };
+    }
+
+    if (type === OrderType.DELIVERY && !clientId) {
+      return {
+        success: false,
+        error: "Se requiere un cliente para órdenes de delivery",
+      };
+    }
+
+    // For DINE_IN orders, check if table exists and validate
+    if (tableId) {
+      const table = await prisma.table.findUnique({
+        where: { id: tableId },
+        select: { isShared: true, isActive: true },
+      });
+
+      if (!table) {
+        return {
+          success: false,
+          error: "Mesa no encontrada",
+        };
+      }
+
+      if (!table.isActive) {
+        return {
+          success: false,
+          error: "Mesa no activa",
+        };
+      }
+
+      // Check if table already has an active order (only for non-shared tables)
+      if (!table.isShared && type === OrderType.DINE_IN) {
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            tableId,
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        });
+
+        if (existingOrder) {
+          return {
+            success: false,
+            error: "Esta mesa ya tiene una orden activa",
+          };
+        }
+      }
+    }
+
+    // Generate a unique public code
+    const publicCode = `${type.charAt(0)}${Date.now().toString().slice(-8)}`;
+
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
+    // Create order in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          branchId,
+          tableId: tableId || null,
+          partySize: partySize || null,
+          type,
+          publicCode,
+          status: OrderStatus.PENDING,
+          clientId: clientId || null,
+          assignedToId: assignedToId || null,
+          discountPercentage: clientDiscount,
+          description: description || null,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+            orderBy: {
+              id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+            },
+          },
+          table: {
+            select: {
+              number: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Update table status to OCCUPIED if it's a dine-in order
+      if (tableId && type === OrderType.DINE_IN) {
+        await tx.table.update({
+          where: { id: tableId },
+          data: { status: "OCCUPIED" },
+        });
+      }
+
+      return newOrder;
+    });
+
+    // Serialize Decimal fields
+    const serializedOrder = {
+      ...order,
+      discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        product: serializeProduct(item.product),
+      })),
+    };
+
+    return {
+      success: true,
+      data: serializedOrder,
+    };
+  } catch (error) {
+    console.error("Error creating order:", error);
+    return {
+      success: false,
+      error: "Error al crear la orden",
+    };
+  }
+}
+
 // Create a new dine-in order for a table
 export async function createTableOrder(
   tableId: string,
   branchId: string,
-  partySize: number
+  partySize: number,
+  clientId?: string | null,
+  assignedToId?: string | null
 ) {
   try {
     // Get table info to check if it's shared
@@ -62,6 +234,18 @@ export async function createTableOrder(
     // Generate a unique public code
     const publicCode = `T${Date.now().toString().slice(-8)}`;
 
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
     // Create order and update table status in a transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
@@ -73,6 +257,9 @@ export async function createTableOrder(
           type: OrderType.DINE_IN,
           publicCode,
           status: OrderStatus.PENDING,
+          clientId: clientId || null,
+          assignedToId: assignedToId || null,
+          discountPercentage: clientDiscount,
         },
         include: {
           items: {
@@ -81,6 +268,14 @@ export async function createTableOrder(
             },
             orderBy: {
               id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
             },
           },
         },
@@ -99,6 +294,7 @@ export async function createTableOrder(
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -140,6 +336,14 @@ export async function getTableOrder(tableId: string) {
             id: "asc",
           },
         },
+        client: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -159,6 +363,20 @@ export async function getTableOrder(tableId: string) {
               : null,
             product: serializeProduct(item.product),
           })),
+          client: order.client
+            ? {
+                id: order.client.id,
+                name: order.client.name,
+                email: order.client.email,
+              }
+            : null,
+          assignedTo: order.assignedTo
+            ? {
+                id: order.assignedTo.id,
+                name: order.assignedTo.name,
+                username: order.assignedTo.username,
+              }
+            : null,
         }
       : null;
 
@@ -194,6 +412,14 @@ export async function getTableOrders(tableId: string) {
             id: "asc",
           },
         },
+        client: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -210,6 +436,20 @@ export async function getTableOrders(tableId: string) {
         originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
         product: serializeProduct(item.product),
       })),
+      client: order.client
+        ? {
+            id: order.client.id,
+            name: order.client.name,
+            email: order.client.email,
+          }
+        : null,
+      assignedTo: order.assignedTo
+        ? {
+            id: order.assignedTo.id,
+            name: order.assignedTo.name,
+            username: order.assignedTo.username,
+          }
+        : null,
     }));
 
     return {
@@ -236,6 +476,7 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
         quantity: item.quantity,
         price: item.price,
         originalPrice: item.originalPrice,
+        notes: item.notes || null,
       },
       include: {
         product: true,
@@ -340,6 +581,38 @@ export async function updateOrderItemQuantity(
   }
 }
 
+// Update order item notes
+export async function updateOrderItemNotes(itemId: string, notes: string | null) {
+  try {
+    const item = await prisma.orderItem.update({
+      where: { id: itemId },
+      data: { notes },
+      include: {
+        product: true,
+      },
+    });
+
+    // Convert Decimal to number
+    const serializedItem = {
+      ...item,
+      price: Number(item.price),
+      originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+      product: serializeProduct(item.product),
+    };
+
+    return {
+      success: true,
+      data: serializedItem,
+    };
+  } catch (error) {
+    console.error("Error updating order item notes:", error);
+    return {
+      success: false,
+      error: "Error al actualizar las notas",
+    };
+  }
+}
+
 // Remove item from order
 export async function removeOrderItem(itemId: string) {
   try {
@@ -388,11 +661,20 @@ export async function closeTable(orderId: string) {
   try {
     // Update order and check table status in a transaction
     const order = await prisma.$transaction(async (tx) => {
-      // Mark order as completed
+      // First, get the order to check its tableId
+      const existingOrder = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { tableId: true },
+      });
+
+      const previousTableId = existingOrder?.tableId;
+
+      // Mark order as completed and clear tableId
       const completedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           status: OrderStatus.COMPLETED,
+          tableId: null, // Clear table association when order is completed
         },
         include: {
           items: {
@@ -408,10 +690,10 @@ export async function closeTable(orderId: string) {
       });
 
       // Check if table has any other active orders
-      if (completedOrder.tableId) {
+      if (previousTableId) {
         const activeOrders = await tx.order.count({
           where: {
-            tableId: completedOrder.tableId,
+            tableId: previousTableId,
             status: {
               in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
             },
@@ -421,7 +703,7 @@ export async function closeTable(orderId: string) {
         // If no more active orders, clear table status
         if (activeOrders === 0) {
           await tx.table.update({
-            where: { id: completedOrder.tableId },
+            where: { id: previousTableId },
             data: { status: "EMPTY" },
           });
         }
@@ -662,7 +944,10 @@ export async function moveOrderToTable(orderId: string, targetTableId: string) {
       };
     }
 
-    if (order.status === OrderStatus.COMPLETED || order.status === OrderStatus.CANCELED) {
+    if (
+      order.status === OrderStatus.COMPLETED ||
+      order.status === OrderStatus.CANCELED
+    ) {
       return {
         success: false,
         error: "No se puede mover una orden completada o cancelada",
@@ -853,6 +1138,14 @@ export async function getOrders(filters: OrderFilters) {
             id: "asc",
           },
         },
+        client: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -863,6 +1156,7 @@ export async function getOrders(filters: OrderFilters) {
     const serializedOrders = orders.map((order) => ({
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -885,7 +1179,10 @@ export async function getOrders(filters: OrderFilters) {
 }
 
 // Update payment method
-export async function updatePaymentMethod(orderId: string, paymentMethod: PaymentMethod) {
+export async function updatePaymentMethod(
+  orderId: string,
+  paymentMethod: PaymentMethod
+) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -909,7 +1206,10 @@ export async function updatePaymentMethod(orderId: string, paymentMethod: Paymen
 }
 
 // Update discount percentage
-export async function updateDiscount(orderId: string, discountPercentage: number) {
+export async function updateDiscount(
+  orderId: string,
+  discountPercentage: number
+) {
   try {
     // Validate discount percentage (0-100)
     if (discountPercentage < 0 || discountPercentage > 100) {
@@ -941,7 +1241,10 @@ export async function updateDiscount(orderId: string, discountPercentage: number
 }
 
 // Assign staff to order
-export async function assignStaffToOrder(orderId: string, userId: string | null) {
+export async function assignStaffToOrder(
+  orderId: string,
+  userId: string | null
+) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
@@ -969,6 +1272,84 @@ export async function assignStaffToOrder(orderId: string, userId: string | null)
     return {
       success: false,
       error: "Error al asignar personal a la orden",
+    };
+  }
+}
+
+// Update order status
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus
+) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return {
+      success: false,
+      error: "Error al actualizar el estado de la orden",
+    };
+  }
+}
+
+// Assign client to order
+export async function assignClientToOrder(
+  orderId: string,
+  clientId: string | null
+) {
+  try {
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        clientId: clientId,
+        discountPercentage: clientDiscount,
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error assigning client to order:", error);
+    return {
+      success: false,
+      error: "Error al asignar cliente a la orden",
     };
   }
 }
@@ -1125,6 +1506,218 @@ export async function updateInvoice(
     return {
       success: false,
       error: "Error al actualizar la factura",
+    };
+  }
+}
+
+// Payment method type for closing tables (extended)
+export type PaymentMethodExtended =
+  | "CASH"
+  | "CARD_DEBIT"
+  | "CARD_CREDIT"
+  | "ACCOUNT"
+  | "TRANSFER";
+
+// Payment entry for split payments
+export type PaymentEntry = {
+  method: PaymentMethodExtended;
+  amount: number;
+};
+
+// Close table with payment - records payment in cash register
+export async function closeTableWithPayment(data: {
+  orderId: string;
+  payments: PaymentEntry[];
+  sessionId: string;
+  userId: string;
+  isPartialClose?: boolean;
+}) {
+  try {
+    const { orderId, payments, sessionId, userId, isPartialClose } = data;
+
+    // Validate payments array
+    if (!payments || payments.length === 0) {
+      return {
+        success: false,
+        error: "At least one payment method is required",
+      };
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Get the order with items and table
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          table: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.status === OrderStatus.COMPLETED) {
+        throw new Error("Order is already completed");
+      }
+
+      if (order.items.length === 0) {
+        throw new Error("Cannot close an order without items");
+      }
+
+      // Validate session exists and is open
+      const session = await tx.cashRegisterSession.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        throw new Error("Cash register session not found");
+      }
+
+      if (session.status === "CLOSED") {
+        throw new Error("Cannot add movements to a closed session");
+      }
+
+      // Calculate order total
+      const subtotal = order.items.reduce(
+        (sum, item) => sum + Number(item.price) * item.quantity,
+        0
+      );
+      const discountAmount =
+        subtotal * (Number(order.discountPercentage) / 100);
+      const total = subtotal - discountAmount;
+
+      // Validate payment amounts match total
+      const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Allow small rounding differences (0.01)
+      if (Math.abs(totalPayment - total) > 0.01) {
+        throw new Error(
+          `Total ($${totalPayment.toFixed(
+            2
+          )}) no coincide con el total de la mesa ($${total.toFixed(2)})`
+        );
+      }
+
+      // Create cash movements for each payment
+      for (const payment of payments) {
+        await tx.cashMovement.create({
+          data: {
+            sessionId,
+            type: "SALE",
+            paymentMethod: payment.method,
+            amount: payment.amount,
+            description: `Table ${order.table?.number || "N/A"} - Order ${
+              order.publicCode
+            }`,
+            orderId: order.id,
+            createdBy: userId,
+          },
+        });
+      }
+
+      // Determine primary payment method for the order
+      // Use the method with the highest amount
+      const primaryPayment = payments.reduce((max, p) =>
+        p.amount > max.amount ? p : max
+      );
+
+      // Map extended payment method to Order's PaymentMethod enum
+      let orderPaymentMethod: PaymentMethod;
+      switch (primaryPayment.method) {
+        case "CASH":
+          orderPaymentMethod = PaymentMethod.CASH;
+          break;
+        case "CARD_DEBIT":
+        case "CARD_CREDIT":
+          orderPaymentMethod = PaymentMethod.CARD;
+          break;
+        case "TRANSFER":
+        case "ACCOUNT":
+          orderPaymentMethod = PaymentMethod.TRANSFER;
+          break;
+        default:
+          orderPaymentMethod = PaymentMethod.CASH;
+      }
+
+      // Store tableId before clearing it
+      const previousTableId = order.tableId;
+
+      // Update order status and payment method
+      const completedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: isPartialClose
+            ? OrderStatus.IN_PROGRESS
+            : OrderStatus.COMPLETED,
+          paymentMethod: orderPaymentMethod,
+          // Clear tableId when order is fully completed
+          tableId: isPartialClose ? order.tableId : null,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          table: true,
+        },
+      });
+
+      // If not partial close, check if table should be cleared
+      if (!isPartialClose && previousTableId) {
+        const activeOrders = await tx.order.count({
+          where: {
+            tableId: previousTableId,
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        });
+
+        // If no more active orders, clear table status
+        if (activeOrders === 0) {
+          await tx.table.update({
+            where: { id: previousTableId },
+            data: { status: "EMPTY" },
+          });
+        }
+      }
+
+      return completedOrder;
+    });
+
+    // Serialize for client
+    const serializedOrder = {
+      ...result,
+      discountPercentage: Number(result.discountPercentage),
+      items: result.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        product: serializeProduct(item.product),
+      })),
+    };
+
+    return {
+      success: true,
+      data: serializedOrder,
+    };
+  } catch (error) {
+    console.error("Error closing table with payment:", error);
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+    return {
+      success: false,
+      error: "Error closing the table",
     };
   }
 }

@@ -6,7 +6,7 @@ import {
   getTimeSlots,
   updateTimeSlot,
 } from "@/actions/TimeSlot";
-import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
+import type { TimeSlot } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -133,9 +133,7 @@ export function TimeSlotsManager({
 
   const handleDeleteConfirm = async () => {
     if (slotToDelete?.dbId) {
-      console.log("hay id", slotToDelete?.dbId);
       startTransition(async () => {
-        console.log("el id es", slotToDelete?.dbId);
         const result = await deleteTimeSlot(slotToDelete.dbId!, true); // soft delete
 
         if (result.success) {

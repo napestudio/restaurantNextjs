@@ -13,7 +13,7 @@ export const transporter = nodemailer.createTransport({
 export async function verifyEmailConfig() {
   try {
     await transporter.verify();
-    console.log("Email transporter is ready to send messages");
+    // console.log("Email transporter is ready to send messages");
     return true;
   } catch (error) {
     console.error("Email transporter verification failed:", error);

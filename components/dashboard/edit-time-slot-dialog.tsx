@@ -21,11 +21,11 @@ import {
   Tag,
   Users,
 } from "lucide-react";
-import { DAYS } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
+import { DAYS } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
 import {
   formatTime,
   getDayBadges,
-} from "@/app/(admin)/dashboard/reservations/slots/lib/utils";
+} from "@/app/(admin)/dashboard/config/slots/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/slots/lib/time-slots";
+import type { TimeSlot } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
 
 interface EditSlot {
   timeFrom: string;
@@ -108,8 +108,14 @@ export function EditTimeSlotDialog({
       const startTime = new Date(timeSlot.startTime);
       const endTime = new Date(timeSlot.endTime);
 
-      const timeFrom = `${String(startTime.getUTCHours()).padStart(2, "0")}:${String(startTime.getUTCMinutes()).padStart(2, "0")}`;
-      const timeTo = `${String(endTime.getUTCHours()).padStart(2, "0")}:${String(endTime.getUTCMinutes()).padStart(2, "0")}`;
+      const timeFrom = `${String(startTime.getUTCHours()).padStart(
+        2,
+        "0"
+      )}:${String(startTime.getUTCMinutes()).padStart(2, "0")}`;
+      const timeTo = `${String(endTime.getUTCHours()).padStart(
+        2,
+        "0"
+      )}:${String(endTime.getUTCMinutes()).padStart(2, "0")}`;
 
       setEditSlot({
         timeFrom,
@@ -126,7 +132,14 @@ export function EditTimeSlotDialog({
 
   // Fetch available tables when time/days change
   useEffect(() => {
-    if (open && branchId && editSlot.timeFrom && editSlot.timeTo && editSlot.days.length > 0 && timeSlot) {
+    if (
+      open &&
+      branchId &&
+      editSlot.timeFrom &&
+      editSlot.timeTo &&
+      editSlot.days.length > 0 &&
+      timeSlot
+    ) {
       setLoadingTables(true);
       getAvailableTablesForTimeSlot({
         branchId,
@@ -144,7 +157,9 @@ export function EditTimeSlotDialog({
               .map((t) => t.id);
             setEditSlot((prev) => ({
               ...prev,
-              tableIds: prev.tableIds.filter((id) => availableTableIds.includes(id)),
+              tableIds: prev.tableIds.filter((id) =>
+                availableTableIds.includes(id)
+              ),
             }));
           }
         })
@@ -158,7 +173,14 @@ export function EditTimeSlotDialog({
       // Reset tables if criteria not met
       setTables([]);
     }
-  }, [open, branchId, editSlot.timeFrom, editSlot.timeTo, editSlot.days, timeSlot]);
+  }, [
+    open,
+    branchId,
+    editSlot.timeFrom,
+    editSlot.timeTo,
+    editSlot.days,
+    timeSlot,
+  ]);
 
   const toggleDay = (day: string) => {
     setEditSlot((prev) => ({
@@ -208,7 +230,9 @@ export function EditTimeSlotDialog({
 
   const handleSelectAllTables = () => {
     // Only select available tables
-    const availableTableIds = tables.filter((t) => t.isAvailable).map((t) => t.id);
+    const availableTableIds = tables
+      .filter((t) => t.isAvailable)
+      .map((t) => t.id);
     setEditSlot((prev) => ({ ...prev, tableIds: availableTableIds }));
   };
 
@@ -217,7 +241,12 @@ export function EditTimeSlotDialog({
   };
 
   const handleEdit = () => {
-    if (editSlot.timeFrom && editSlot.timeTo && editSlot.days.length > 0 && timeSlot) {
+    if (
+      editSlot.timeFrom &&
+      editSlot.timeTo &&
+      editSlot.days.length > 0 &&
+      timeSlot
+    ) {
       // Validation: must have at least one table selected
       if (editSlot.tableIds.length === 0) {
         alert("Debes seleccionar al menos una mesa para este turno.");
@@ -229,7 +258,8 @@ export function EditTimeSlotDialog({
 
   // Check if there are available tables
   const availableTables = tables.filter((t) => t.isAvailable);
-  const hasNoAvailableTables = tables.length > 0 && availableTables.length === 0;
+  const hasNoAvailableTables =
+    tables.length > 0 && availableTables.length === 0;
 
   if (!timeSlot) return null;
 
@@ -447,8 +477,9 @@ export function EditTimeSlotDialog({
                   <Alert className="mb-3 border-yellow-500 bg-yellow-50">
                     <AlertCircle className="h-4 w-4 text-yellow-600" />
                     <AlertDescription className="text-yellow-800">
-                      No hay mesas disponibles para el horario y días seleccionados.
-                      Todas las mesas ya están asignadas a otros turnos que se superponen.
+                      No hay mesas disponibles para el horario y días
+                      seleccionados. Todas las mesas ya están asignadas a otros
+                      turnos que se superponen.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -480,12 +511,18 @@ export function EditTimeSlotDialog({
                             <Checkbox
                               id={`table-${table.id}`}
                               checked={editSlot.tableIds?.includes(table.id)}
-                              onCheckedChange={() => handleTableToggle(table.id)}
+                              onCheckedChange={() =>
+                                handleTableToggle(table.id)
+                              }
                               disabled={isDisabled}
                             />
                             <Label
                               htmlFor={`table-${table.id}`}
-                              className={`flex-1 ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+                              className={`flex-1 ${
+                                isDisabled
+                                  ? "cursor-not-allowed"
+                                  : "cursor-pointer"
+                              }`}
                             >
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">
@@ -518,7 +555,13 @@ export function EditTimeSlotDialog({
                                   Asignada a: {table.conflictingTimeSlot.name}
                                 </p>
                                 <p className="text-xs">
-                                  {formatTime(table.conflictingTimeSlot.startTime)} - {formatTime(table.conflictingTimeSlot.endTime)}
+                                  {formatTime(
+                                    table.conflictingTimeSlot.startTime
+                                  )}{" "}
+                                  -{" "}
+                                  {formatTime(
+                                    table.conflictingTimeSlot.endTime
+                                  )}
                                 </p>
                               </TooltipContent>
                             </Tooltip>
@@ -532,13 +575,15 @@ export function EditTimeSlotDialog({
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 space-y-1">
                   <p>
-                    Selecciona las mesas que estarán disponibles para este turno.
-                    Las mesas no disponibles están ocupadas por otros turnos.
+                    Selecciona las mesas que estarán disponibles para este
+                    turno. Las mesas no disponibles están ocupadas por otros
+                    turnos.
                   </p>
                   <p className="flex items-center gap-1.5 text-blue-600">
                     <Users className="h-3 w-3" />
                     <span>
-                      Las <strong>mesas compartidas</strong> pueden tener múltiples reservas simultáneas hasta llenar su capacidad.
+                      Las <strong>mesas compartidas</strong> pueden tener
+                      múltiples reservas simultáneas hasta llenar su capacidad.
                     </span>
                   </p>
                 </div>

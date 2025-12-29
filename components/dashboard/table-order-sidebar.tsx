@@ -2,37 +2,37 @@
 
 import {
   addOrderItem,
-  closeTable,
   createTableOrder,
   getAvailableTablesForMove,
   moveOrderToTable,
   removeOrderItem,
-  updateOrderItemPrice,
-  updateOrderItemQuantity,
-  updatePartySize,
+  updateDiscount,
 } from "@/actions/Order";
+import { autoPrintOrderItems, printControlTicket } from "@/actions/Printer";
+import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
-import {
-  ArrowRightLeft,
-  DollarSign,
-  Printer,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { ArrowRightLeft, Edit, Percent, RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ClientPicker } from "./client-picker";
+import { CloseTableDialog } from "./close-table-dialog";
+import { CommittedOrderItemsList } from "./committed-order-items-list";
+import { CreateClientDialog } from "./create-client-dialog";
+import { EditOrderDialog } from "./edit-order-dialog";
 import { MoveOrderDialog } from "./move-order-dialog";
-import { OrderItemsList } from "./order-items-list";
 import { OrderTabs } from "./order-tabs";
+import { PreOrderItemsList, type PreOrderItem } from "./pre-order-items-list";
 import { ProductPicker } from "./product-picker";
+import { WaiterPicker } from "./waiter-picker";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
   tableNumber: number | null;
   tableIsShared?: boolean;
+  tableSectorId?: string | null;
   branchId: string;
   onClose: () => void;
   onOrderUpdated: (tableId: string) => void;
@@ -51,6 +51,7 @@ export function TableOrderSidebar({
   tableId,
   tableNumber,
   tableIsShared = false,
+  tableSectorId,
   branchId,
   onClose,
   onOrderUpdated,
@@ -59,6 +60,14 @@ export function TableOrderSidebar({
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
+  const [showEditOrderDialog, setShowEditOrderDialog] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -69,6 +78,9 @@ export function TableOrderSidebar({
       sectorId: string | null;
     }>
   >([]);
+
+  // Pre-order state: items that haven't been confirmed/added to the actual order yet
+  const [preOrderItems, setPreOrderItems] = useState<PreOrderItem[]>([]);
 
   // Use cached products from context
   const { products } = useProducts();
@@ -102,6 +114,9 @@ export function TableOrderSidebar({
     if (tableId) {
       setPartySize("");
       setSelectedOrderId(null);
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+      setClientSearchQuery("");
     }
   }, [tableId]);
 
@@ -134,7 +149,9 @@ export function TableOrderSidebar({
     const result = await createTableOrder(
       tableId,
       branchId,
-      parseInt(partySize)
+      parseInt(partySize),
+      selectedClient?.id || null,
+      selectedWaiterId || null
     );
 
     if (result.success && result.data) {
@@ -144,8 +161,11 @@ export function TableOrderSidebar({
       // Select the newly created order
       setSelectedOrderId(result.data.id);
 
-      // Reset party size input for next order
+      // Reset form inputs for next order
       setPartySize("");
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+      setClientSearchQuery("");
 
       // Update table status
       onOrderUpdated(tableId);
@@ -155,70 +175,97 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
-  const handlePartySizeChange = async (newSize: string) => {
-    setPartySize(newSize);
-
-    // If order exists, update it
-    if (order && newSize && parseInt(newSize) > 0 && tableId) {
-      await updatePartySize(order.id, parseInt(newSize));
-      // Refresh to get updated data
-      refresh();
-      // Update the floor plan to reflect the new party size
-      onOrderUpdated(tableId);
-    }
+  const handleCreateNewClient = (searchQuery: string) => {
+    setClientSearchQuery(searchQuery);
+    setShowCreateClientDialog(true);
   };
 
-  const handleSelectProduct = async (product: Product) => {
-    if (!order || !tableId) return;
+  const handleClientCreated = (client: ClientData) => {
+    setSelectedClient(client);
+    setShowCreateClientDialog(false);
+  };
+
+  const handleSelectProduct = (product: Product) => {
+    // Add to pre-order state instead of directly to order
+    setPreOrderItems((prev) => [
+      ...prev,
+      {
+        productId: product.id,
+        itemName: product.name,
+        quantity: 1,
+        price: Number(product.price),
+        originalPrice: Number(product.price),
+        notes: undefined,
+        categoryId: product.categoryId,
+      },
+    ]);
+  };
+
+  const handleUpdatePreOrderItem = (index: number, item: PreOrderItem) => {
+    setPreOrderItems((prev) =>
+      prev.map((existingItem, i) => (i === index ? item : existingItem))
+    );
+  };
+
+  const handleRemovePreOrderItem = (index: number) => {
+    setPreOrderItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleConfirmPreOrder = async () => {
+    if (!order || !tableId || preOrderItems.length === 0) return;
 
     setIsLoadingAction(true);
-    const result = await addOrderItem(order.id, {
-      productId: product.id,
-      itemName: product.name,
-      quantity: 1,
-      price: Number(product.price),
-      originalPrice: Number(product.price),
-    });
 
-    if (result.success) {
-      // Refresh to get updated data from server
-      await refresh();
-      onOrderUpdated(tableId);
-    } else {
-      alert(result.error || "Error al agregar el producto");
+    // Store items to print before clearing
+    const itemsToPrint = [...preOrderItems];
+
+    // Add all pre-order items to the actual order
+    for (const item of preOrderItems) {
+      const result = await addOrderItem(order.id, {
+        productId: item.productId,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        price: item.price,
+        originalPrice: item.originalPrice,
+        notes: item.notes,
+      });
+
+      if (!result.success) {
+        alert(result.error || "Error al agregar el producto");
+        setIsLoadingAction(false);
+        return;
+      }
     }
+
+    // Auto-print the newly added items (station comandas - no prices, no waiter)
+    const tableName = tableNumber?.toString() || "—";
+
+    await autoPrintOrderItems(
+      {
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        branchId,
+      },
+      itemsToPrint.map((item) => ({
+        productId: item.productId,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        notes: item.notes,
+        categoryId: item.categoryId,
+      }))
+    );
+
+    // Clear pre-order items after successful confirmation
+    setPreOrderItems([]);
+
+    // Refresh to get updated data from server
+    await refresh();
+    onOrderUpdated(tableId);
     setIsLoadingAction(false);
   };
 
-  const handleUpdatePrice = async (itemId: string, price: number) => {
-    if (!tableId || !order) return;
-
-    setIsLoadingAction(true);
-    const result = await updateOrderItemPrice(itemId, price);
-
-    if (result.success) {
-      await refresh();
-      onOrderUpdated(tableId);
-    } else {
-      alert(result.error || "Error al actualizar el precio");
-    }
-    setIsLoadingAction(false);
-  };
-
-  const handleUpdateQuantity = async (itemId: string, quantity: number) => {
-    if (!tableId || !order) return;
-
-    setIsLoadingAction(true);
-    const result = await updateOrderItemQuantity(itemId, quantity);
-
-    if (result.success) {
-      await refresh();
-      onOrderUpdated(tableId);
-    } else {
-      alert(result.error || "Error al actualizar la cantidad");
-    }
-    setIsLoadingAction(false);
-  };
+  // Remove price and quantity editing for committed items - they can only be removed
 
   const handleRemoveItem = async (itemId: string) => {
     if (!tableId || !order) return;
@@ -235,7 +282,7 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
-  const handleCloseTable = async () => {
+  const handleCloseTable = () => {
     if (!order || !tableId) return;
 
     if (order.items.length === 0) {
@@ -243,73 +290,85 @@ export function TableOrderSidebar({
       return;
     }
 
-    if (!confirm("¿Cerrar esta orden y completarla?")) {
-      return;
-    }
+    // Open the close table dialog instead of directly closing
+    setShowCloseDialog(true);
+  };
 
-    setIsLoadingAction(true);
-    const result = await closeTable(order.id);
+  const handleCloseTableSuccess = async (closedTableId: string) => {
+    onOrderUpdated(closedTableId);
 
-    if (result.success) {
-      onOrderUpdated(tableId);
+    if (tableIsShared) {
+      // Refresh to get updated orders list
+      await refresh();
 
-      if (tableIsShared) {
-        // Refresh to get updated orders list
-        await refresh();
+      // Check if there are more active orders after refresh
+      const remainingOrders = Array.isArray(allOrders)
+        ? allOrders.filter((o) => o.id !== order?.id)
+        : [];
 
-        // Check if there are more active orders after refresh
-        const remainingOrders = Array.isArray(allOrders)
-          ? allOrders.filter((o) => o.id !== order.id)
-          : [];
-
-        if (remainingOrders.length > 0) {
-          // Switch to the first remaining order
-          setSelectedOrderId(remainingOrders[0].id);
-          alert(
-            "Orden cerrada. Esta mesa compartida tiene más órdenes activas."
-          );
-        } else {
-          // Last order closed, close sidebar
-          alert("Última orden cerrada exitosamente");
-          onClose();
-        }
+      if (remainingOrders.length > 0) {
+        // Switch to the first remaining order
+        setSelectedOrderId(remainingOrders[0].id);
+        alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
       } else {
-        // Non-shared table, close sidebar
-        alert("Mesa cerrada exitosamente");
+        // Last order closed, close sidebar
+        alert("Última orden cerrada exitosamente");
         onClose();
       }
     } else {
-      alert(result.error || "Error al cerrar la orden");
+      // Non-shared table, close sidebar
+      // alert("Mesa cerrada exitosamente");
+      onClose();
     }
-    setIsLoadingAction(false);
   };
 
-  const handlePrintCheck = () => {
+  const handlePrintCheck = async () => {
     if (!order) return;
 
-    const total = order.items.reduce(
+    setIsLoadingAction(true);
+
+    const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
 
-    const checkData = {
-      tableNumber,
-      partySize: order.partySize,
-      items: order.items.map((item) => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-      })),
-      total,
-    };
+    const waiterName =
+      order.assignedTo?.name || order.assignedTo?.username || "—";
+    const tableName = tableNumber?.toString() || "—";
 
-    console.log("Print Check:", checkData);
-    alert(
-      `Cuenta de Mesa ${tableNumber}\n\nTotal: $${total.toFixed(
-        2
-      )}\n\nVer consola para detalles completos`
-    );
+    try {
+      const result = await printControlTicket({
+        orderId: order.id,
+        orderCode: order.publicCode,
+        tableName,
+        waiterName,
+        branchId,
+        items: order.items.map((item) => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          notes: item.notes,
+        })),
+        subtotal,
+        discountPercentage: order.discountPercentage
+          ? Number(order.discountPercentage)
+          : undefined,
+        orderType: order.type,
+        customerName: order.client?.name,
+      });
+
+      if (result.success) {
+        // Success notification could be added here
+        // console.log("Control ticket printed:", result.message);
+      } else {
+        alert(result.error || "Error al imprimir ticket de control");
+      }
+    } catch (error) {
+      console.error("Error printing check:", error);
+      alert("Error al imprimir ticket de control");
+    } finally {
+      setIsLoadingAction(false);
+    }
   };
 
   const handleOpenMoveDialog = async () => {
@@ -327,7 +386,6 @@ export function TableOrderSidebar({
     const result = await moveOrderToTable(order.id, targetTableId);
 
     if (result.success) {
-      alert("Orden movida exitosamente");
       setShowMoveDialog(false);
 
       // Update both tables
@@ -342,20 +400,50 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
+  const handleDiscountEdit = () => {
+    if (!order) return;
+    setDiscountInput(order.discountPercentage.toString());
+    setIsEditingDiscount(true);
+  };
+
+  const handleDiscountSave = async () => {
+    if (!order) return;
+
+    const newDiscount = parseFloat(discountInput);
+    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
+      alert("El descuento debe ser un número entre 0 y 100");
+      return;
+    }
+
+    setIsLoadingAction(true);
+    const result = await updateDiscount(order.id, newDiscount);
+
+    if (result.success) {
+      setIsEditingDiscount(false);
+      refresh(); // Refresh the order data
+    } else {
+      alert(result.error || "Error al actualizar el descuento");
+    }
+    setIsLoadingAction(false);
+  };
+
+  const handleDiscountCancel = () => {
+    setIsEditingDiscount(false);
+    setDiscountInput("");
+  };
+
   if (!tableId) {
     return null;
   }
 
   return (
-    <div className="h-full flex flex-col gap-0 bg-neutral-50">
-      <div className="flex flex-row items-center justify-between space-y-0 bg-neutral-200 shadow-sm">
-        <div className="flex items-center gap-2 px-2 ">
+    <div className="h-full flex flex-col bg-neutral-50 overflow-hidden">
+      <div className="flex flex-row items-center justify-between shrink-0 bg-red-500 shadow-sm">
+        <div className="flex items-center gap-2 px-2 py-1 text-white">
           <div className="text-xl">
             Mesa {tableNumber}
             {tableIsShared && (
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                (Compartida)
-              </span>
+              <span className="ml-2 text-sm font-norma">(Compartida)</span>
             )}
           </div>
           <Button
@@ -370,12 +458,23 @@ export function TableOrderSidebar({
             />
           </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2 px-2">
+          {order && (
+            <button
+              onClick={() => setShowEditOrderDialog(true)}
+              className="w-max text-white cursor-pointer"
+              disabled={isLoading}
+            >
+              <Edit className="w-4" />
+            </button>
+          )}
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-6 p-2 h-full">
+      <div className="flex flex-col flex-1 min-h-0 p-2">
         {/* Order Tabs for Shared Tables */}
         {Array.isArray(allOrders) && allOrders.length > 0 && (
           <OrderTabs
@@ -402,74 +501,130 @@ export function TableOrderSidebar({
           />
         )}
 
-        {/* Party Size */}
-        <div className="space-y-2">
-          <Label htmlFor="party-size">
-            Personas <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="party-size"
-            type="number"
-            min="1"
-            value={partySize}
-            onChange={(e) => handlePartySizeChange(e.target.value)}
-            placeholder="Ej: 4"
-            disabled={isLoading}
-          />
-          {!order && partySize && parseInt(partySize) > 0 && (
-            <Button
-              onClick={handleCreateOrder}
+        {/* Party Size - Only show when no active order */}
+        {!order && (
+          <div className="space-y-2 mb-4">
+            <Label htmlFor="party-size">
+              Personas <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="party-size"
+              type="number"
+              min="1"
+              value={partySize}
+              onChange={(e) => setPartySize(e.target.value)}
+              placeholder="Ej: 4"
               disabled={isLoading}
-              className="w-full"
-            >
-              Abrir Mesa
-            </Button>
-          )}
-        </div>
+            />
+          </div>
+        )}
+
+        {/* Client Picker - Only show when no active order */}
+        {!order && (
+          <div className="mb-4">
+            <ClientPicker
+              branchId={branchId}
+              selectedClient={selectedClient}
+              onSelectClient={setSelectedClient}
+              onCreateNew={handleCreateNewClient}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+
+        {/* Waiter Picker - Only show when no active order */}
+        {!order && (
+          <div className="mb-4">
+            <WaiterPicker
+              branchId={branchId}
+              selectedWaiterId={selectedWaiterId}
+              onSelectWaiter={setSelectedWaiterId}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+
+        {/* Open Table Button */}
+        {!order && partySize && parseInt(partySize) > 0 && (
+          <Button
+            onClick={handleCreateOrder}
+            disabled={isLoading}
+            className="w-full"
+          >
+            Abrir Mesa
+          </Button>
+        )}
 
         {/* Only show product picker and items if order exists */}
         {order && (
-          <div className="flex flex-col bg-red-300">
-            <div className="flex flex-col flex-1">
-              {/* Product Picker */}
+          <div className="flex flex-col flex-1 min-h-0 gap-4">
+            {/* Product Picker - Fixed at top */}
+            <div className="shrink-0">
               <ProductPicker
                 products={products}
                 onSelectProduct={handleSelectProduct}
-                label="Agregar Producto"
+                label="ADICIONAR"
                 placeholder="Buscar producto..."
                 disabled={isLoading}
               />
+            </div>
 
-              {/* Order Items */}
-              <div className="space-y-2">
-                <Label>Productos en la Orden</Label>
-                <div className="bg-amber-500">
-                  <OrderItemsList
-                    items={
-                      order.items?.map((item) => ({
-                        id: item.id,
-                        itemName: item.product.name,
-                        quantity: item.quantity,
-                        price: item.price,
-                        originalPrice: item.originalPrice,
-                      })) || []
-                    }
-                    onUpdatePrice={handleUpdatePrice}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onRemoveItem={handleRemoveItem}
+            {/* Pre-Order Items (editable with notes) - Fixed at top */}
+            {preOrderItems.length > 0 && (
+              <div className="space-y-2 shrink-0">
+                <PreOrderItemsList
+                  items={preOrderItems}
+                  onUpdateItem={handleUpdatePreOrderItem}
+                  onRemoveItem={handleRemovePreOrderItem}
+                  disabled={isLoading}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setPreOrderItems([])}
+                    variant="outline"
+                    className="flex-1"
                     disabled={isLoading}
-                  />
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleConfirmPreOrder}
+                    className="flex-1"
+                    disabled={isLoading}
+                  >
+                    Confirmar
+                  </Button>
                 </div>
               </div>
-            </div>
-            {/* Action Buttons */}
-            <div className="left-0 flex gap-2 w-full items-center justify-end p-2 bg-purple-400 absolute bottom-0">
+            )}
+
+            {/* Committed Order Items (read-only, can only remove) - SCROLLABLE */}
+            {order.items.length > 0 && (
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <CommittedOrderItemsList
+                  items={
+                    order.items?.map((item) => ({
+                      id: item.id,
+                      itemName: item.product.name,
+                      quantity: item.quantity,
+                      price: item.price,
+                      originalPrice: item.originalPrice,
+                      notes: item.notes,
+                    })) || []
+                  }
+                  onRemoveItem={handleRemoveItem}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
+            {/* Action Buttons - Fixed at bottom */}
+            <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
               <Button
                 onClick={handlePrintCheck}
                 variant="outline"
                 disabled={isLoading || order.items.length === 0}
               >
-                <Printer className="h-4 w-4" />
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="128"
@@ -507,12 +662,68 @@ export function TableOrderSidebar({
                 {/* Mover a Otra Mesa */}
               </Button>
 
+              {/* Discount Button/Editor */}
+              {isEditingDiscount ? (
+                <div className="flex items-center gap-1 bg-white rounded px-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    className="h-8 w-16 text-sm"
+                    placeholder="%"
+                    autoFocus
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountSave}
+                    disabled={isLoadingAction}
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={handleDiscountCancel}
+                    disabled={isLoadingAction}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleDiscountEdit}
+                  variant={
+                    Number(order.discountPercentage) > 0 ? "default" : "outline"
+                  }
+                  disabled={isLoading}
+                  title={
+                    Number(order.discountPercentage) > 0
+                      ? `Descuento: ${order.discountPercentage}%`
+                      : "Agregar descuento"
+                  }
+                >
+                  <Percent className="h-4 w-4" />
+                  {Number(order.discountPercentage) > 0 && (
+                    <span className="ml-1 text-xs">
+                      -{Number(order.discountPercentage)}%
+                    </span>
+                  )}
+                </Button>
+              )}
+
               <Button
                 onClick={handleCloseTable}
+                className="bg-red-500"
                 disabled={isLoading || order.items.length === 0}
               >
-                <DollarSign className="h-4 w-4" />
-                {/* Cerrar Mesa */}
+                {/* <DollarSign className="h-4 w-4" /> */}
+                Cerrar Mesa
               </Button>
             </div>
           </div>
@@ -528,6 +739,69 @@ export function TableOrderSidebar({
         onConfirm={handleMoveOrder}
         isLoading={isLoading}
       />
+
+      {/* Close Table Dialog */}
+      {order && tableId && tableNumber && (
+        <CloseTableDialog
+          open={showCloseDialog}
+          onOpenChange={setShowCloseDialog}
+          order={{
+            id: order.id,
+            publicCode: order.publicCode,
+            partySize: order.partySize,
+            discountPercentage: Number(order.discountPercentage),
+            items: order.items.map((item) => ({
+              id: item.id,
+              itemName: item.product?.name,
+              quantity: item.quantity,
+              price: item.price,
+              originalPrice: item.originalPrice,
+              product: item.product,
+            })),
+          }}
+          tableNumber={tableNumber}
+          branchId={branchId}
+          tableId={tableId}
+          tableSectorId={tableSectorId}
+          onSuccess={handleCloseTableSuccess}
+        />
+      )}
+
+      {/* Create Client Dialog */}
+      <CreateClientDialog
+        open={showCreateClientDialog}
+        onOpenChange={setShowCreateClientDialog}
+        branchId={branchId}
+        onSuccess={handleClientCreated}
+        initialName={clientSearchQuery}
+      />
+
+      {/* Edit Order Dialog */}
+      {order && (
+        <EditOrderDialog
+          open={showEditOrderDialog}
+          onOpenChange={setShowEditOrderDialog}
+          orderId={order.id}
+          branchId={branchId}
+          currentPartySize={order.partySize || 1}
+          currentClientId={order.clientId}
+          currentClient={
+            order.client
+              ? {
+                  id: order.client.id,
+                  name: order.client.name,
+                  email: order.client.email,
+                }
+              : null
+          }
+          currentWaiterId={order.assignedToId}
+          onSuccess={() => {
+            refresh();
+            if (tableId) onOrderUpdated(tableId);
+          }}
+          disabled={isLoading}
+        />
+      )}
     </div>
   );
 }

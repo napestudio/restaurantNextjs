@@ -9,6 +9,17 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   RotateCw,
   Trash2,
   Users,
@@ -36,14 +47,13 @@ interface FloorTable {
 
 interface TablePropertiesFormProps {
   selectedTable: FloorTable;
-  tableName?: string | null;
   sectorName?: string | null;
   sectorColor?: string | null;
   onUpdateShape: (tableId: string, shape: TableShapeType) => void;
   onUpdateCapacity: (tableId: string, capacity: number) => void;
   onUpdateStatus: (tableId: string, status: TableStatus) => void;
   onUpdateIsShared: (tableId: string, isShared: boolean) => void;
-  onUpdateSize: (tableId: string, size: "normal" | "big") => void;
+  onUpdateSize: (tableId: string, size?: "normal" | "big") => void;
   onRotate: (tableId: string) => void;
   onDelete: (tableId: string) => void;
   isEditMode: boolean;
@@ -52,7 +62,6 @@ interface TablePropertiesFormProps {
 
 export function TablePropertiesForm({
   selectedTable,
-  tableName,
   sectorName,
   sectorColor,
   onUpdateShape,
@@ -73,16 +82,15 @@ export function TablePropertiesForm({
       {hasActiveOrders && (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-xs text-amber-800 font-medium">
-            Esta mesa tiene órdenes activas. Solo puedes mover su posición, pero no modificar sus propiedades.
+            Esta mesa tiene órdenes activas. Solo puedes mover su posición, pero
+            no modificar sus propiedades.
           </p>
         </div>
       )}
 
       <div>
         <Label className="text-xs text-muted-foreground">Número de Mesa</Label>
-        <div className="text-lg font-bold">
-          {selectedTable.number} {tableName || ""}
-        </div>
+        <div className="text-lg font-bold">{selectedTable.number}</div>
       </div>
 
       {sectorName && (
@@ -189,14 +197,14 @@ export function TablePropertiesForm({
         </Label>
         <Select
           value={
-            // Big tables use full scale (1x), normal tables use 0.75x
-            // Check if width is greater than 0.875x of default (midpoint between 0.75x and 1x)
+            // Determine if table is "big" by checking if width is close to normal default (80/180/380)
+            // or big size (90/190/390). Use midpoint (85/185/385) as threshold
             selectedTable.width >
             (selectedTable.shape === "WIDE"
-              ? 350
+              ? 385 // Midpoint between 380 (normal) and 390 (big)
               : selectedTable.shape === "RECTANGLE"
-              ? 175
-              : 87.5)
+              ? 185 // Midpoint between 180 (normal) and 190 (big)
+              : 85) // Midpoint between 80 (normal) and 90 (big)
               ? "big"
               : "normal"
           }
@@ -209,8 +217,8 @@ export function TablePropertiesForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="big">Grande</SelectItem>
+            <SelectItem value="normal">Normal (80x80)</SelectItem>
+            <SelectItem value="big">Grande (90x90)</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground mt-1">
@@ -279,16 +287,42 @@ export function TablePropertiesForm({
               Rotar 90°
             </Button>
           )}
-          <Button
-            onClick={() => onDelete(selectedTable.id)}
-            variant="destructive"
-            className="w-full"
-            size="sm"
-            disabled={isLocked}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Eliminar Mesa
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="w-full"
+                size="sm"
+                disabled={isLocked}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar Mesa
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar mesa {selectedTable.number}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. La mesa será eliminada
+                  permanentemente del plano de planta.
+                  {selectedTable.isShared && (
+                    <span className="block mt-2 text-amber-600 font-medium">
+                      Esta es una mesa compartida y puede tener reservas asociadas.
+                    </span>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete(selectedTable.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
       {!isEditMode && (

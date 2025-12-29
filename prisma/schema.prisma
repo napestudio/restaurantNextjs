@@ -17,6 +17,7 @@ enum UserRole {
   ADMIN
   MANAGER
   EMPLOYEE
+  WAITER
 }
 
 enum OrderStatus {
@@ -85,6 +86,29 @@ enum VolumeUnit {
   MILLILITER // Mililitro
   GALLON // Galón
   FLUID_OUNCE // Onza líquida
+}
+
+//
+// CASH REGISTER (CAJAS)
+//
+enum CashRegisterStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  INCOME // Manual income (not from orders)
+  EXPENSE // Manual expense (payouts, purchases)
+  SALE // From completed orders
+  REFUND // Order refund
+}
+
+enum PaymentMethodExtended {
+  CASH
+  CARD_DEBIT
+  CARD_CREDIT
+  ACCOUNT // Current account / on account
+  TRANSFER
 }
 
 //
@@ -183,14 +207,18 @@ model Branch {
    */
   slug String? @db.Citext
 
-  reservations Reservation[]
-  orders       Order[]
-  sectors      Sector[]
-  tables       Table[]
-  timeSlots    TimeSlot[]
-  products     ProductOnBranch[]
-  userAccess   UserOnBranch[]
-  menus        Menu[]
+  reservations  Reservation[]
+  orders        Order[]
+  sectors       Sector[]
+  tables        Table[]
+  timeSlots     TimeSlot[]
+  products      ProductOnBranch[]
+  userAccess    UserOnBranch[]
+  menus         Menu[]
+  cashRegisters CashRegister[]
+  clients       Client[]
+  stations      Station[]
+  printers      Printer[]
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -225,11 +253,13 @@ model Sector {
   width     Int      @default(1200) // Ancho del canvas del plano del sector
   height    Int      @default(800) // Alto del canvas del plano del sector
   isActive  Boolean  @default(true)
-  branch    Branch   @relation(fields: [branchId], references: [id])
-  branchId  String
-  tables    Table[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  branch        Branch                @relation(fields: [branchId], references: [id])
+  branchId      String
+  tables        Table[]
+  // Many-to-many relation with cash registers
+  cashRegisters CashRegisterOnSector[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   /**
    * Un nombre de sector no se repite dentro de la misma sucursal
@@ -353,7 +383,8 @@ model Category {
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
-  products Product[]
+  products          Product[]
+  stationCategories StationCategory[]
 
   @@unique([restaurantId, name]) // mismo nombre no se repite dentro del restaurante
   @@index([restaurantId])
@@ -525,6 +556,44 @@ model StockMovement {
 }
 
 //
+// CLIENTES
+//
+model Client {
+  id       String @id @default(cuid())
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  // Basic info
+  name  String
+  phone String?
+  email String?
+
+  // Additional info
+  birthDate DateTime?
+  taxId     String? // CUIT/DNI
+  notes     String?
+
+  // Address
+  addressStreet     String?
+  addressNumber     String?
+  addressApartment  String?
+  addressCity       String?
+
+  // Preferences
+  discountPercentage    Decimal?              @default(0) @db.Decimal(5, 2)
+  preferredPaymentMethod PaymentMethod?
+  hasCurrentAccount     Boolean               @default(false)
+
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId])
+  @@index([name])
+  @@index([phone])
+}
+
+//
 // PEDIDOS
 //
 model Order {
@@ -536,6 +605,10 @@ model Order {
   table     Table?  @relation(fields: [tableId], references: [id])
   tableId   String?
   partySize Int?
+
+  // Client association
+  client   Client? @relation(fields: [clientId], references: [id])
+  clientId String?
 
   customerName  String?
   customerEmail String?
@@ -558,11 +631,14 @@ model Order {
   createdBy String?
   updatedBy String?
 
-  items    OrderItem[]
-  invoices Invoice[]
+  items         OrderItem[]
+  invoices      Invoice[]
+  cashMovements CashMovement[]
+  printJobs     PrintJob[]
 
   @@index([tableId])
   @@index([assignedToId])
+  @@index([clientId])
 }
 
 model OrderItem {
@@ -575,6 +651,7 @@ model OrderItem {
   quantity      Int
   price         Decimal // Current price (can be modified)
   originalPrice Decimal? // Original price from product
+  notes         String? // Special instructions (e.g., "no sugar", "extra spicy")
 }
 
 //
@@ -598,10 +675,238 @@ model Invoice {
 }
 
 //
+// PRINTERS & STATIONS
+//
+
+enum PrinterStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
+enum PrintJobStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  FAILED
+  CANCELED
+}
+
+// How a printer handles order printing
+enum PrintMode {
+  STATION_ITEMS   // Only prints items matching station categories (kitchen ticket)
+  FULL_ORDER      // Prints the complete order (control ticket/receipt)
+  BOTH            // Prints both station items AND full order
+}
+
+// Stations define areas where orders are prepared (kitchen, bar, etc.)
+model Station {
+  id          String  @id @default(cuid())
+  name        String // "Kitchen", "Bar", "Desserts", "Grill"
+  description String?
+  color       String  @default("#6366f1") // Hex color for UI identification
+  order       Int     @default(0) // Display order in UI
+  isActive    Boolean @default(true)
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  // Stations can have printers assigned to them
+  printers           Printer[]
+  // Categories can be assigned to stations for auto-routing
+  stationCategories  StationCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, name])
+  @@index([branchId])
+}
+
+// Many-to-many: Categories can be assigned to stations for auto-routing
+model StationCategory {
+  id         String   @id @default(cuid())
+  station    Station  @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  stationId  String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([stationId, categoryId])
+  @@index([categoryId])
+}
+
+// Physical thermal printers
+model Printer {
+  id          String        @id @default(cuid())
+  name        String // "Kitchen Printer 1", "Bar Printer"
+  description String?
+
+  // Network configuration
+  ipAddress String // Required for network printers
+  port      Int    @default(9100) // Default ESC/POS port
+
+  // Printer details
+  model    String? // "Epson TM-T88VI", "Star TSP143III", etc.
+  status   PrinterStatus @default(OFFLINE)
+
+  // Settings
+  isActive        Boolean   @default(true)
+  autoPrint       Boolean   @default(true) // Auto-print orders when items added
+  printMode       PrintMode @default(STATION_ITEMS) // What type of tickets to print
+  printCopies     Int       @default(1) // Number of copies to print
+  paperWidth      Int       @default(80) // Paper width in mm (58, 80)
+  charactersPerLine Int     @default(48) // Characters per line based on paper width
+
+  // Ticket customization
+  ticketHeader     String? // Custom header text for tickets
+  ticketHeaderSize Int     @default(2) // 0=small, 1=normal, 2=double height, 3=double width+height
+  ticketFooter     String? // Custom footer text for tickets
+  ticketFooterSize Int     @default(1) // 0=small, 1=normal, 2=double height, 3=double width+height
+
+  // Assignment
+  station   Station? @relation(fields: [stationId], references: [id])
+  stationId String?
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  branchId  String
+
+  // Track print jobs
+  printJobs PrintJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, name])
+  @@unique([branchId, ipAddress]) // One IP per branch
+  @@index([branchId])
+  @@index([stationId])
+}
+
+// Track all print jobs for debugging and audit
+model PrintJob {
+  id        String   @id @default(cuid())
+  printer   Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  printerId String
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String?
+
+  // Content and metadata
+  content     String // JSON representation of what was printed
+  jobType     String @default("ORDER") // ORDER, RECEIPT, TEST
+  status      PrintJobStatus @default(PENDING)
+  error       String? // Error message if failed
+  attempts    Int     @default(0) // Number of retry attempts
+
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime? // When the print command was sent
+  confirmedAt DateTime? // When printer confirmed (if supported)
+
+  @@index([printerId])
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+//
 // Slugs reservados para rutas del sistema (admin, api, auth, etc.)
 //
 model ReservedSlug {
-  slug      String   @id @db.Citext
+  slug      String   @id @default(cuid()) @db.Citext
   reason    String?
   createdAt DateTime @default(now())
+}
+
+//
+// CAJAS (CASH REGISTERS)
+//
+
+// Physical cash register configuration (the "Caja" entity)
+model CashRegister {
+  id       String  @id @default(cuid())
+  name     String // "Caja Principal", "Caja Barra"
+  isActive Boolean @default(true)
+
+  branch   Branch @relation(fields: [branchId], references: [id])
+  branchId String
+
+  // Many-to-many relation with sectors (one cash register can serve multiple sectors)
+  sectors CashRegisterOnSector[]
+
+  sessions CashRegisterSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, name])
+  @@index([branchId])
+}
+
+// Junction table for CashRegister <-> Sector many-to-many relationship
+model CashRegisterOnSector {
+  id             String       @id @default(cuid())
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  cashRegisterId String
+  sector         Sector       @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  sectorId       String
+
+  createdAt DateTime @default(now())
+
+  @@unique([cashRegisterId, sectorId])
+  @@index([sectorId])
+}
+
+// A session represents an open/close cycle
+model CashRegisterSession {
+  id             String       @id @default(cuid())
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
+  cashRegisterId String
+
+  status CashRegisterStatus @default(OPEN)
+
+  // Opening
+  openedAt      DateTime @default(now())
+  openedBy      String // User ID
+  openingAmount Decimal  @default(0) // Initial cash in drawer
+
+  // Closing (nullable until closed)
+  closedAt     DateTime?
+  closedBy     String?
+  expectedCash Decimal? // System-calculated expected cash
+  countedCash  Decimal? // Actual counted cash
+  variance     Decimal? // countedCash - expectedCash
+  closingNotes String?
+
+  movements CashMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cashRegisterId])
+  @@index([status])
+  @@index([openedAt])
+}
+
+// Individual money movements within a session
+model CashMovement {
+  id        String              @id @default(cuid())
+  session   CashRegisterSession @relation(fields: [sessionId], references: [id])
+  sessionId String
+
+  type          CashMovementType
+  paymentMethod PaymentMethodExtended
+  amount        Decimal // Always positive; type determines direction
+  description   String?
+
+  // Link to order (for SALE/REFUND types)
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  createdBy String // User ID
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([orderId])
 }

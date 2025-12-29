@@ -6,6 +6,7 @@ import {
   snapToGrid,
   constrainToBounds,
 } from "@/lib/floor-plan-utils";
+import { GRID_SIZE } from "@/lib/floor-plan-constants";
 
 interface UseFloorPlanStateProps {
   dbTables: TableWithReservations[];
@@ -37,7 +38,7 @@ export function useFloorPlanState({
       return dbTables.map((dbTable) => {
         // Find existing floor table to preserve position/UI state
         const existingFloorTable = prevTables.find((t) => t.id === dbTable.id);
-        const { status, currentGuests } = calculateTableStatus(dbTable);
+        const { status, currentGuests, hasWaiter, waiterName } = calculateTableStatus(dbTable);
 
         // If table exists, preserve floor plan properties but update status
         if (existingFloorTable) {
@@ -48,6 +49,8 @@ export function useFloorPlanState({
             status,
             currentGuests,
             isShared: dbTable.isShared,
+            hasWaiter,
+            waiterName,
           };
         }
 
@@ -71,6 +74,8 @@ export function useFloorPlanState({
           status,
           currentGuests,
           isShared: dbTable.isShared,
+          hasWaiter,
+          waiterName,
         };
       });
     });
@@ -113,7 +118,6 @@ export function useFloorPlanState({
           const rawCenterY = y - dragOffset.y;
 
           // Snap center to grid cell center (50, 150, 250, ...)
-          const GRID_SIZE = 100;
 
           // For tables that span multiple cells, snap to appropriate grid positions
           // If table width is greater than grid size, snap center to grid line (0, 100, 200...)

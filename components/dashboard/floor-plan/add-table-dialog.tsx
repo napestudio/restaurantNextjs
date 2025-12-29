@@ -45,12 +45,10 @@ export function AddTableDialog({
   open,
   onOpenChange,
   tableNumber,
-  tableName,
   tableShape,
   tableCapacity,
   isShared,
   onTableNumberChange,
-  onTableNameChange,
   onTableShapeChange,
   onTableCapacityChange,
   onIsSharedChange,
@@ -78,7 +76,7 @@ export function AddTableDialog({
             />
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="table-name">Nombre de Mesa (Opcional)</Label>
             <Input
               id="table-name"
@@ -91,7 +89,7 @@ export function AddTableDialog({
             <p className="text-xs text-muted-foreground mt-1">
               Ejemplo: Barra Central
             </p>
-          </div>
+          </div> */}
 
           <div>
             <Label htmlFor="table-shape">Forma de la Mesa</Label>

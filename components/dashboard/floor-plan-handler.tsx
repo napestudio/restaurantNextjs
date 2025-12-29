@@ -6,6 +6,7 @@ import type { TableShapeType } from "@/types/table";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TableWithReservations } from "@/lib/floor-plan-utils";
 import { shapeDefaults } from "@/lib/floor-plan-utils";
+import { GRID_SIZE } from "@/lib/floor-plan-constants";
 import { useFloorPlanState } from "@/hooks/use-floor-plan-state";
 import { useFloorPlanActions } from "@/hooks/use-floor-plan-actions";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
@@ -14,6 +15,7 @@ import { FloorPlanActions } from "./floor-plan/floor-plan-actions";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { SectorSelector, type Sector } from "./floor-plan/sector-selector";
 import { TableOrderSidebar } from "./table-order-sidebar";
+import { TableEditSidebar } from "./floor-plan/table-edit-sidebar";
 
 // Default canvas dimensions - can be overridden by sector dimensions
 const DEFAULT_CANVAS_WIDTH = 1200;
@@ -30,6 +32,7 @@ interface FloorPlanPageProps {
   onEditSector?: (sector: Sector) => void;
   onRefreshTables?: () => Promise<void>;
   onRefreshSingleTable?: (tableId: string) => Promise<void>;
+  editModeOnly?: boolean;
 }
 
 export default function FloorPlanHandler({
@@ -43,9 +46,10 @@ export default function FloorPlanHandler({
   onEditSector,
   onRefreshTables,
   onRefreshSingleTable,
+  editModeOnly = false,
 }: FloorPlanPageProps) {
   // UI State
-  const [zoom, setZoom] = useState(0.75);
+  const [zoom, setZoom] = useState(0.85);
   const [showGrid, setShowGrid] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ x: number; y: number }>({
@@ -54,12 +58,20 @@ export default function FloorPlanHandler({
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(editModeOnly);
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<
     string | null
   >(null);
   const [selectedTableHasOrders, setSelectedTableHasOrders] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Edit sidebar state (for editModeOnly)
+  const [tableEditSidebarOpen, setTableEditSidebarOpen] = useState(false);
+  const [selectedTableForEdit, setSelectedTableForEdit] = useState<
+    string | null
+  >(null);
 
   // Use external sectors and selectedSector
   const sectors = externalSectors;
@@ -148,8 +160,8 @@ export default function FloorPlanHandler({
     (e: React.MouseEvent, tableId: string) => {
       e.stopPropagation();
 
-      // In edit mode, allow dragging
-      if (isEditMode) {
+      // In edit mode (only available in editModeOnly pages), allow dragging
+      if (editModeOnly && isEditMode) {
         setSelectedTable(tableId);
 
         const table = tables.find((t) => t.id === tableId);
@@ -169,11 +181,34 @@ export default function FloorPlanHandler({
           y: y - table.y,
         });
       } else {
-        // In view mode, open order sidebar
+        // In view mode, open order sidebar and select table for visual feedback
+        setSelectedTable(tableId);
         setSelectedTableForOrder(tableId);
       }
     },
-    [isEditMode, tables, zoom, setSelectedTable, setDraggedTable, setDragOffset]
+    [
+      editModeOnly,
+      isEditMode,
+      tables,
+      zoom,
+      setSelectedTable,
+      setDraggedTable,
+      setDragOffset,
+    ]
+  );
+
+  // Track if a drag occurred to distinguish click from drag
+  const [hasDragged, setHasDragged] = useState(false);
+
+  // Handle table click to open edit sidebar (defined before useEffect that uses it)
+  const openEditSidebar = useCallback(
+    (tableId: string) => {
+      if (editModeOnly) {
+        setSelectedTableForEdit(tableId);
+        setTableEditSidebarOpen(true);
+      }
+    },
+    [editModeOnly]
   );
 
   // Handle mouse move and mouse up for dragging
@@ -181,6 +216,7 @@ export default function FloorPlanHandler({
     const handleMouseMove = (e: MouseEvent) => {
       if (!draggedTable) return;
 
+      setHasDragged(true);
       const svg = svgRef.current;
       if (!svg) return;
 
@@ -191,9 +227,16 @@ export default function FloorPlanHandler({
     const handleMouseUp = () => {
       if (!draggedTable) return;
 
-      // Mark as having unsaved changes instead of saving immediately
-      setHasUnsavedChanges(true);
+      // If we dragged, mark as having unsaved changes
+      if (hasDragged) {
+        setHasUnsavedChanges(true);
+      } else if (editModeOnly) {
+        // If no drag occurred and in editModeOnly, open the sidebar
+        openEditSidebar(draggedTable);
+      }
+
       setDraggedTable(null);
+      setHasDragged(false);
     };
 
     if (draggedTable) {
@@ -205,7 +248,14 @@ export default function FloorPlanHandler({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [draggedTable, handleTableDrag, setDraggedTable]);
+  }, [
+    draggedTable,
+    handleTableDrag,
+    setDraggedTable,
+    hasDragged,
+    editModeOnly,
+    openEditSidebar,
+  ]);
 
   // Add table handler - memoized
   // Note: FloorTable uses center coordinates, DB uses top-left
@@ -217,7 +267,6 @@ export default function FloorPlanHandler({
     const defaults = shapeDefaults[newTable.shape];
 
     // Calculate center position (clickPosition is top-left of grid cell)
-    const GRID_SIZE = 100;
     const centerX = clickPosition.x + GRID_SIZE / 2;
     const centerY = clickPosition.y + GRID_SIZE / 2;
 
@@ -295,12 +344,57 @@ export default function FloorPlanHandler({
       });
       setAddDialogOpen(false);
     }
-  }, [newTable, branchId, setTables, setDbTables, clickPosition, selectedSector]);
+  }, [
+    newTable,
+    branchId,
+    setTables,
+    setDbTables,
+    clickPosition,
+    selectedSector,
+  ]);
 
-  // Save handler - memoized
-  const handleSave = useCallback(() => {
-    saveFloorPlanChanges(setIsSaving, setHasUnsavedChanges, setIsEditMode);
-  }, [saveFloorPlanChanges]);
+  // Save handler - memoized (for autosave, doesn't exit edit mode)
+  const handleSave = useCallback(async () => {
+    if (!hasUnsavedChanges || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      // Use saveFloorPlanChanges but keep edit mode active
+      await saveFloorPlanChanges(
+        setIsSaving,
+        setHasUnsavedChanges,
+        () => {} // Don't exit edit mode on autosave
+      );
+
+      // Show saved indicator
+      setShowSavedIndicator(true);
+      setTimeout(() => setShowSavedIndicator(false), 2000);
+    } catch (error) {
+      console.error("Error in autosave:", error);
+    }
+  }, [saveFloorPlanChanges, hasUnsavedChanges, isSaving]);
+
+  // Autosave with debounce (1.5s after last change)
+  useEffect(() => {
+    if (!editModeOnly || !hasUnsavedChanges) return;
+
+    // Clear any existing timeout
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    // Set new timeout for autosave
+    autosaveTimeoutRef.current = setTimeout(() => {
+      handleSave();
+    }, 1500);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [editModeOnly, hasUnsavedChanges, handleSave]);
 
   // Zoom handlers - memoized
   const handleZoomIn = useCallback(() => {
@@ -315,14 +409,6 @@ export default function FloorPlanHandler({
   const handleToggleGrid = useCallback(() => {
     setShowGrid((prev) => !prev);
   }, []);
-
-  const handleToggleEditMode = useCallback(() => {
-    setIsEditMode((prev) => !prev);
-    // Close order sidebar when entering edit mode
-    if (!isEditMode) {
-      setSelectedTableForOrder(null);
-    }
-  }, [isEditMode]);
 
   const handleOrderUpdated = useCallback(
     async (tableId: string) => {
@@ -341,6 +427,18 @@ export default function FloorPlanHandler({
     setSelectedTableForOrder(null);
   }, []);
 
+  // Edit sidebar handlers (for editModeOnly)
+  const handleCloseEditSidebar = useCallback(() => {
+    setTableEditSidebarOpen(false);
+    setTimeout(() => setSelectedTableForEdit(null), 300); // Clear after animation
+  }, []);
+
+  // Get table data for edit sidebar
+  const selectedTableForEditData = useMemo(() => {
+    if (!selectedTableForEdit) return null;
+    return tables.find((t) => t.id === selectedTableForEdit) || null;
+  }, [selectedTableForEdit, tables]);
+
   // Handle canvas click to add table
   const handleCanvasClick = useCallback(
     (x: number, y: number) => {
@@ -348,7 +446,8 @@ export default function FloorPlanHandler({
 
       // Calculate next available table number
       const existingNumbers = dbTables.map((t) => t.number);
-      const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+      const maxNumber =
+        existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
       const nextNumber = maxNumber + 1;
 
       setNewTable((prev) => ({
@@ -382,22 +481,31 @@ export default function FloorPlanHandler({
           sectors={sectors}
           selectedSector={selectedSector ?? null}
           onSelectSector={(sectorId) => externalSetSelectedSector?.(sectorId)}
-          onAddSector={onAddSector}
-          onEditSector={onEditSector}
+          onAddSector={editModeOnly ? onAddSector : undefined}
+          onEditSector={editModeOnly ? onEditSector : undefined}
         />
 
-        <FloorPlanActions
-          onSave={handleSave}
-          onToggleEditMode={handleToggleEditMode}
-          hasUnsavedChanges={hasUnsavedChanges}
-          isSaving={isSaving}
-          isEditMode={isEditMode}
-        />
+        {/* Only show FloorPlanActions in editModeOnly (config page) */}
+        {editModeOnly && (
+          <FloorPlanActions
+            hasUnsavedChanges={hasUnsavedChanges}
+            isSaving={isSaving}
+            showSavedIndicator={showSavedIndicator}
+          />
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-0 shadow-md">
+      <div
+        className={`grid grid-cols-1 ${
+          editModeOnly ? "" : "lg:grid-cols-6"
+        } gap-0 shadow-md h-[calc(100svh-7rem)]`}
+      >
         {/* Floor Plan Canvas */}
-        <div className="lg:col-span-4 relative max-h-svh">
+        <div
+          className={`${
+            editModeOnly ? "" : "lg:col-span-4"
+          } relative h-full overflow-hidden`}
+        >
           <FloorPlanCanvas
             tables={filteredTables}
             selectedTable={selectedTable}
@@ -407,64 +515,81 @@ export default function FloorPlanHandler({
             svgRef={svgRef}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
-            isEditMode={isEditMode}
+            isEditMode={editModeOnly && isEditMode}
+            editModeOnly={editModeOnly}
             onTableMouseDown={handleTableMouseDown}
-            onCanvasClick={handleCanvasClick}
+            onCanvasClick={editModeOnly ? handleCanvasClick : undefined}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onToggleGrid={handleToggleGrid}
+            onRotateTable={rotateTable}
+            onResizeTable={updateTableSize}
           />
         </div>
 
-        {/* Right Sidebar - Order Management or Properties Panel */}
-        <div className="lg:col-span-2 relative">
-          {selectedTableForOrder && !isEditMode ? (
-            <TableOrderSidebar
-              tableId={selectedTableForOrder}
-              tableNumber={
-                dbTables.find((t) => t.id === selectedTableForOrder)?.number ??
-                null
-              }
-              tableIsShared={
-                dbTables.find((t) => t.id === selectedTableForOrder)
-                  ?.isShared ?? false
-              }
-              branchId={branchId}
-              onClose={handleCloseSidebar}
-              onOrderUpdated={handleOrderUpdated}
-            />
-          ) : (
-            <TablePropertiesPanel
-              selectedTable={selectedTableData}
-              tableName={selectedDbTable?.name}
-              sectorName={selectedTableSector?.name}
-              sectorColor={selectedTableSector?.color}
-              onUpdateShape={updateTableShape}
-              onUpdateCapacity={updateTableCapacity}
-              onUpdateStatus={updateTableStatus}
-              onUpdateIsShared={updateTableIsShared}
-              onUpdateSize={updateTableSize}
-              onRotate={rotateTable}
-              onDelete={deleteTable}
-              isEditMode={isEditMode}
-              hasActiveOrders={selectedTableHasOrders}
-            />
-          )}
-        </div>
+        {/* Right Sidebar - Order Management or Properties Panel (not shown in editModeOnly) */}
+        {!editModeOnly && (
+          <div className="lg:col-span-2 relative h-full overflow-hidden">
+            {selectedTableForOrder && !isEditMode ? (
+              <TableOrderSidebar
+                tableId={selectedTableForOrder}
+                tableNumber={
+                  dbTables.find((t) => t.id === selectedTableForOrder)
+                    ?.number ?? null
+                }
+                tableIsShared={
+                  dbTables.find((t) => t.id === selectedTableForOrder)
+                    ?.isShared ?? false
+                }
+                tableSectorId={
+                  dbTables.find((t) => t.id === selectedTableForOrder)
+                    ?.sectorId ?? null
+                }
+                branchId={branchId}
+                onClose={handleCloseSidebar}
+                onOrderUpdated={handleOrderUpdated}
+              />
+            ) : (
+              <TablePropertiesPanel
+                selectedTable={selectedTableData}
+                sectorName={selectedTableSector?.name}
+                sectorColor={selectedTableSector?.color}
+                onUpdateShape={updateTableShape}
+                onUpdateCapacity={updateTableCapacity}
+                onUpdateStatus={updateTableStatus}
+                onUpdateIsShared={updateTableIsShared}
+                onUpdateSize={updateTableSize}
+                onRotate={rotateTable}
+                onDelete={deleteTable}
+                isEditMode={isEditMode}
+                hasActiveOrders={selectedTableHasOrders}
+              />
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Edit sidebar for editModeOnly */}
+      {editModeOnly && (
+        <TableEditSidebar
+          table={selectedTableForEditData}
+          open={tableEditSidebarOpen}
+          onClose={handleCloseEditSidebar}
+          onUpdateCapacity={updateTableCapacity}
+          onDelete={deleteTable}
+        />
+      )}
 
       <AddTableDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         tableNumber={newTable.number}
-        tableName={newTable.name}
         tableShape={newTable.shape}
         tableCapacity={newTable.capacity}
         isShared={newTable.isShared}
         onTableNumberChange={(value) =>
           setNewTable({ ...newTable, number: value })
         }
-        onTableNameChange={(value) => setNewTable({ ...newTable, name: value })}
         onTableShapeChange={(value) =>
           setNewTable({ ...newTable, shape: value })
         }

@@ -1,14 +1,8 @@
 import type { TableShapeType, TableStatus } from "@/types/table";
+import { shapeDefaults } from "@/lib/floor-plan-constants";
 
-/**
- * Default shape dimensions for different table types
- */
-export const shapeDefaults = {
-  CIRCLE: { width: 100, height: 100 },
-  SQUARE: { width: 100, height: 100 },
-  RECTANGLE: { width: 200, height: 100 },
-  WIDE: { width: 400, height: 100 },
-} as const;
+// Re-export shapeDefaults for backwards compatibility
+export { shapeDefaults };
 
 /**
  * Map Prisma status enum to frontend status type
@@ -50,6 +44,8 @@ export interface FloorTable {
   status: TableStatus;
   currentGuests: number;
   isShared: boolean;
+  hasWaiter?: boolean; // True if any order has an assigned waiter
+  waiterName?: string; // Name of the assigned waiter (first one if multiple orders)
 }
 
 /**
@@ -86,6 +82,10 @@ export interface TableWithReservations {
     id: string;
     partySize: number | null;
     status: string;
+    assignedTo: {
+      id: string;
+      name: string | null;
+    } | null;
   }>;
 }
 
@@ -112,9 +112,16 @@ function isWithinTimeSlot(
  */
 export function calculateTableStatus(
   dbTable: TableWithReservations
-): { status: TableStatus; currentGuests: number } {
+): {
+  status: TableStatus;
+  currentGuests: number;
+  hasWaiter: boolean;
+  waiterName?: string;
+} {
   let status: TableStatus = "empty";
   let currentGuests = 0;
+  let hasWaiter = false;
+  let waiterName: string | undefined;
 
   // First, check if there are active orders (highest priority for current guests)
   if (dbTable.orders && dbTable.orders.length > 0) {
@@ -125,6 +132,13 @@ export function calculateTableStatus(
     );
     // If there are active orders, table is occupied
     status = "occupied";
+
+    // Check if any order has a waiter assigned
+    const orderWithWaiter = dbTable.orders.find(order => order.assignedTo);
+    if (orderWithWaiter?.assignedTo) {
+      hasWaiter = true;
+      waiterName = orderWithWaiter.assignedTo.name || undefined;
+    }
   } else if (dbTable.status) {
     // Use manual status from database
     status = statusMap[dbTable.status] || "empty";
@@ -155,7 +169,7 @@ export function calculateTableStatus(
     currentGuests = dbTable.reservations[0].reservation.people;
   }
 
-  return { status, currentGuests };
+  return { status, currentGuests, hasWaiter, waiterName };
 }
 
 /**
@@ -165,7 +179,7 @@ export function calculateTableStatus(
 export function transformTableToFloorTable(
   dbTable: TableWithReservations
 ): FloorTable {
-  const { status, currentGuests } = calculateTableStatus(dbTable);
+  const { status, currentGuests, hasWaiter, waiterName } = calculateTableStatus(dbTable);
 
   const width = dbTable.width ?? 80;
   const height = dbTable.height ?? 80;
@@ -186,6 +200,8 @@ export function transformTableToFloorTable(
     status,
     currentGuests,
     isShared: dbTable.isShared,
+    hasWaiter,
+    waiterName,
   };
 }
 

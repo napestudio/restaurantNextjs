@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/TODO.md
+/PerformanceTodo.md
 
 # next.js
 /.next/

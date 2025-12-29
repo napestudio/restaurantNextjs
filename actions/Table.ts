@@ -79,6 +79,12 @@ export async function getTablesWithStatus(branchId: string) {
             id: true,
             partySize: true,
             status: true,
+            assignedTo: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -169,6 +175,12 @@ export async function getTableWithStatus(tableId: string) {
             id: true,
             partySize: true,
             status: true,
+            assignedTo: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
