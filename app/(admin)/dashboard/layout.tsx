@@ -2,9 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
-
-// Optimize navigation performance
-export const dynamic = "force-dynamic";
+import { isUserAdmin } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Kiku Sushi - Panel de Administración",
@@ -30,14 +28,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Single auth check - middleware already verified authentication
+  // This check is kept for type safety and to get user data for the nav
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
+  // Pre-fetch admin status to pass to nav (avoids redundant auth calls)
+  const hasAdminRole = await isUserAdmin(session.user.id);
+
   return (
     <div className="min-h-screen bg-gray-50 w-full">
-      <DashboardNav />
+      <DashboardNav
+        userName={session.user.name || session.user.email || ""}
+        hasAdminRole={hasAdminRole}
+      />
       <main className="mx-auto">{children}</main>
     </div>
   );
