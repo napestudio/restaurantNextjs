@@ -2,13 +2,46 @@ import { getOrders } from "@/actions/Order";
 import { OrdersClient } from "./orders-client";
 import prisma from "@/lib/prisma";
 import { ProductsProvider } from "@/contexts/products-context";
+import { OrderType } from "@/app/generated/prisma";
 
-export default async function OrdersPage() {
+type SearchParams = Promise<{
+  type?: string;
+  page?: string;
+}>;
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";
 
-  // Fetch all orders
-  const ordersResult = await getOrders({ branchId });
+  // Parse search params
+  const typeParam = params.type;
+  const pageParam = params.page;
+
+  // Validate and set order type (default to DINE_IN)
+  const validTypes = ["DINE_IN", "TAKE_AWAY", "DELIVERY", "ALL"];
+  const orderType =
+    typeParam && validTypes.includes(typeParam)
+      ? typeParam === "ALL"
+        ? undefined
+        : (typeParam as OrderType)
+      : OrderType.DINE_IN;
+
+  // Validate and set page number
+  const page = pageParam ? Math.max(1, parseInt(pageParam) || 1) : 1;
+  const pageSize = 5;
+
+  // Fetch orders with pagination and type filter
+  const ordersResult = await getOrders({
+    branchId,
+    type: orderType,
+    page,
+    pageSize,
+  });
 
   const rawOrders =
     ordersResult.success && ordersResult.data ? ordersResult.data : [];
@@ -18,6 +51,13 @@ export default async function OrdersPage() {
     ...order,
     discountPercentage: Number(order.discountPercentage),
   }));
+
+  const pagination = ordersResult.pagination || {
+    page: 1,
+    pageSize: 15,
+    totalCount: 0,
+    totalPages: 0,
+  };
 
   // Fetch available tables for filter
   const tables = await prisma.table.findMany({
@@ -35,6 +75,10 @@ export default async function OrdersPage() {
     },
   });
 
+  // Determine active tab from URL or default to DINE_IN
+  const activeTab =
+    typeParam && validTypes.includes(typeParam) ? typeParam : "DINE_IN";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="px-4 sm:px-6 lg:px-8 py-16">
@@ -47,6 +91,8 @@ export default async function OrdersPage() {
             branchId={branchId}
             initialOrders={orders}
             tables={tables}
+            initialPagination={pagination}
+            initialTab={activeTab}
           />
         </ProductsProvider>
       </main>

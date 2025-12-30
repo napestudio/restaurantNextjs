@@ -38,7 +38,15 @@ export async function createOrder(data: {
   description?: string | null;
 }) {
   try {
-    const { branchId, type, tableId, partySize, clientId, assignedToId, description } = data;
+    const {
+      branchId,
+      type,
+      tableId,
+      partySize,
+      clientId,
+      assignedToId,
+      description,
+    } = data;
 
     // Validation based on order type
     if (type === OrderType.DINE_IN && !tableId) {
@@ -232,7 +240,7 @@ export async function createTableOrder(
     }
 
     // Generate a unique public code
-    const publicCode = `T${Date.now().toString().slice(-8)}`;
+    const publicCode = `KS${Date.now().toString().slice(-8)}`;
 
     // Get client discount if clientId is provided
     let clientDiscount = 0;
@@ -582,7 +590,10 @@ export async function updateOrderItemQuantity(
 }
 
 // Update order item notes
-export async function updateOrderItemNotes(itemId: string, notes: string | null) {
+export async function updateOrderItemNotes(
+  itemId: string,
+  notes: string | null
+) {
   try {
     const item = await prisma.orderItem.update({
       where: { id: itemId },
@@ -1064,12 +1075,24 @@ export type OrderFilters = {
   status?: OrderStatus;
   tableId?: string;
   type?: OrderType;
+  // Pagination
+  page?: number;
+  pageSize?: number;
 };
 
-// Get orders with filters
+// Get orders with filters and pagination
 export async function getOrders(filters: OrderFilters) {
   try {
-    const { branchId, startDate, endDate, status, tableId, type } = filters;
+    const {
+      branchId,
+      startDate,
+      endDate,
+      status,
+      tableId,
+      type,
+      page = 1,
+      pageSize = 10,
+    } = filters;
 
     // Build where clause
     type WhereClause = {
@@ -1116,41 +1139,50 @@ export async function getOrders(filters: OrderFilters) {
       where.type = type;
     }
 
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        table: {
-          select: {
-            number: true,
-            name: true,
-          },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                name: true,
-                categoryId: true,
-              },
+    // Calculate pagination
+    const skip = (page - 1) * pageSize;
+
+    // Use transaction to get both count and data
+    const [totalCount, orders] = await prisma.$transaction([
+      prisma.order.count({ where }),
+      prisma.order.findMany({
+        where,
+        include: {
+          table: {
+            select: {
+              number: true,
+              name: true,
             },
           },
-          orderBy: {
-            id: "asc",
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  categoryId: true,
+                },
+              },
+            },
+            orderBy: {
+              id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+            },
           },
         },
-        client: true,
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
+        orderBy: {
+          createdAt: "desc",
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+        skip,
+        take: pageSize,
+      }),
+    ]);
 
     // Serialize Decimal fields to numbers
     const serializedOrders = orders.map((order) => ({
@@ -1164,9 +1196,17 @@ export async function getOrders(filters: OrderFilters) {
       })),
     }));
 
+    const totalPages = Math.ceil(totalCount / pageSize);
+
     return {
       success: true,
       data: serializedOrders,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+      },
     };
   } catch (error) {
     console.error("Error getting orders:", error);
@@ -1174,6 +1214,12 @@ export async function getOrders(filters: OrderFilters) {
       success: false,
       error: "Error al obtener las órdenes",
       data: [],
+      pagination: {
+        page: 1,
+        pageSize: 15,
+        totalCount: 0,
+        totalPages: 0,
+      },
     };
   }
 }
@@ -1277,10 +1323,7 @@ export async function assignStaffToOrder(
 }
 
 // Update order status
-export async function updateOrderStatus(
-  orderId: string,
-  status: OrderStatus
-) {
+export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
