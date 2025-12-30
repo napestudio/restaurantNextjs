@@ -1,4 +1,4 @@
-import { getOrders } from "@/actions/Order";
+import { getOrders, getAvailableProductsForOrder } from "@/actions/Order";
 import { OrdersClient } from "./orders-client";
 import prisma from "@/lib/prisma";
 import { ProductsProvider } from "@/contexts/products-context";
@@ -37,14 +37,31 @@ export default async function OrdersPage({
   const page = pageParam ? Math.max(1, parseInt(pageParam) || 1) : 1;
   const pageSize = 5;
 
-  // Fetch orders with pagination and type filter
-  const ordersResult = await getOrders({
-    branchId,
-    type: orderType,
-    page,
-    pageSize,
-    search: searchParam,
-  });
+  // Fetch orders, tables, and products in parallel for faster loading
+  const [ordersResult, tables, products] = await Promise.all([
+    getOrders({
+      branchId,
+      type: orderType,
+      page,
+      pageSize,
+      search: searchParam,
+    }),
+    prisma.table.findMany({
+      where: {
+        branchId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        number: true,
+        name: true,
+      },
+      orderBy: {
+        number: "asc",
+      },
+    }),
+    getAvailableProductsForOrder(branchId),
+  ]);
 
   const rawOrders =
     ordersResult.success && ordersResult.data ? ordersResult.data : [];
@@ -62,22 +79,6 @@ export default async function OrdersPage({
     totalPages: 0,
   };
 
-  // Fetch available tables for filter
-  const tables = await prisma.table.findMany({
-    where: {
-      branchId,
-      isActive: true,
-    },
-    select: {
-      id: true,
-      number: true,
-      name: true,
-    },
-    orderBy: {
-      number: "asc",
-    },
-  });
-
   // Determine active tab from URL or default to DINE_IN
   const activeTab =
     typeParam && validTypes.includes(typeParam) ? typeParam : "DINE_IN";
@@ -89,7 +90,7 @@ export default async function OrdersPage({
           <h1 className="text-3xl font-bold text-gray-900">Ordenes</h1>
         </div>
 
-        <ProductsProvider branchId={branchId}>
+        <ProductsProvider branchId={branchId} initialProducts={products}>
           <OrdersClient
             branchId={branchId}
             initialOrders={orders}
