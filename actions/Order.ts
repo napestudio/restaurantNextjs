@@ -1075,6 +1075,8 @@ export type OrderFilters = {
   status?: OrderStatus;
   tableId?: string;
   type?: OrderType;
+  // Search
+  search?: string;
   // Pagination
   page?: number;
   pageSize?: number;
@@ -1090,6 +1092,7 @@ export async function getOrders(filters: OrderFilters) {
       status,
       tableId,
       type,
+      search,
       page = 1,
       pageSize = 10,
     } = filters;
@@ -1104,6 +1107,10 @@ export async function getOrders(filters: OrderFilters) {
       status?: OrderStatus;
       tableId?: string;
       type?: OrderType;
+      publicCode?: {
+        contains: string;
+        mode: "insensitive";
+      };
     };
 
     const where: WhereClause = {
@@ -1137,6 +1144,14 @@ export async function getOrders(filters: OrderFilters) {
     // Type filter
     if (type) {
       where.type = type;
+    }
+
+    // Search filter (by public code)
+    if (search) {
+      where.publicCode = {
+        contains: search,
+        mode: "insensitive",
+      };
     }
 
     // Calculate pagination

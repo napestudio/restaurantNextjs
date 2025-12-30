@@ -7,6 +7,7 @@ import { OrderType } from "@/app/generated/prisma";
 type SearchParams = Promise<{
   type?: string;
   page?: string;
+  search?: string;
 }>;
 
 export default async function OrdersPage({
@@ -21,6 +22,7 @@ export default async function OrdersPage({
   // Parse search params
   const typeParam = params.type;
   const pageParam = params.page;
+  const searchParam = params.search;
 
   // Validate and set order type (default to DINE_IN)
   const validTypes = ["DINE_IN", "TAKE_AWAY", "DELIVERY", "ALL"];
@@ -41,6 +43,7 @@ export default async function OrdersPage({
     type: orderType,
     page,
     pageSize,
+    search: searchParam,
   });
 
   const rawOrders =
@@ -93,6 +96,7 @@ export default async function OrdersPage({
             tables={tables}
             initialPagination={pagination}
             initialTab={activeTab}
+            initialSearch={searchParam || ""}
           />
         </ProductsProvider>
       </main>

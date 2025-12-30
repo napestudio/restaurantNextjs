@@ -21,7 +21,8 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { Plus, ChevronDown, Loader2, UtensilsCrossed, ShoppingBag, Truck } from "lucide-react";
+import { Plus, ChevronDown, Loader2, UtensilsCrossed, ShoppingBag, Truck, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { OrderListView } from "./components/order-list-view";
 import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
 import { CreateOrderSidebar } from "./components/create-order-sidebar";
@@ -85,6 +86,7 @@ interface OrdersClientProps {
   tables: Table[];
   initialPagination: PaginationInfo;
   initialTab: string;
+  initialSearch: string;
 }
 
 export function OrdersClient({
@@ -93,6 +95,7 @@ export function OrdersClient({
   tables,
   initialPagination,
   initialTab,
+  initialSearch,
 }: OrdersClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -106,9 +109,13 @@ export function OrdersClient({
   const [createOrderSidebarOpen, setCreateOrderSidebarOpen] = useState(false);
   const [createOrderType, setCreateOrderType] = useState<OrderType | null>(null);
 
+  // Search state
+  const [searchInput, setSearchInput] = useState(initialSearch);
+
   // Current tab from URL or initial
   const currentTab = searchParams.get("type") || initialTab;
   const currentPage = parseInt(searchParams.get("page") || "1");
+  const currentSearch = searchParams.get("search") || "";
 
   // Sync state with props when they change (server re-render)
   useEffect(() => {
@@ -117,22 +124,45 @@ export function OrdersClient({
   }, [initialOrders, initialPagination]);
 
   // Update URL and fetch orders
-  const updateUrlAndFetch = (type: string, page: number) => {
+  const updateUrlAndFetch = (type: string, page: number, search?: string) => {
     const params = new URLSearchParams();
     params.set("type", type);
     params.set("page", page.toString());
+    if (search) {
+      params.set("search", search);
+    }
     router.push(`/dashboard/orders?${params.toString()}`);
   };
 
   // Handle tab change
   const handleTabChange = (value: string) => {
-    // Reset to page 1 when changing tabs
-    updateUrlAndFetch(value, 1);
+    // Reset to page 1 when changing tabs, keep search
+    updateUrlAndFetch(value, 1, currentSearch);
   };
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    updateUrlAndFetch(currentTab, page);
+    updateUrlAndFetch(currentTab, page, currentSearch);
+  };
+
+  // Handle search
+  const handleSearch = () => {
+    if (searchInput.trim()) {
+      updateUrlAndFetch(currentTab, 1, searchInput.trim());
+    }
+  };
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchInput("");
+    updateUrlAndFetch(currentTab, 1);
+  };
+
+  // Handle search on enter key
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   // Refresh orders for current tab and page
@@ -144,6 +174,7 @@ export function OrdersClient({
         type: orderType,
         page: currentPage,
         pageSize: 15,
+        search: currentSearch || undefined,
       });
       if (result.success && result.data) {
         setOrders(result.data);
@@ -214,20 +245,29 @@ export function OrdersClient({
 
   return (
     <div className="space-y-6">
-      {/* Order Count and Create Button */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {isLoadingState ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando...
-            </span>
-          ) : (
-            `Mostrando ${orders.length} de ${pagination.totalCount} ${
-              pagination.totalCount === 1 ? "orden" : "órdenes"
-            }`
+      {/* Search and Create Button */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Buscar por código..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            className="pl-9 pr-9"
+          />
+          {(searchInput || currentSearch) && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
           )}
         </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button>
