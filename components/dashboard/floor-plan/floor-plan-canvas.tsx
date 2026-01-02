@@ -300,7 +300,7 @@ const TableShape = memo(function TableShape({
       )}
 
       {/* Shared table indicator - rotates with table, text stays upright (hidden in edit mode) */}
-      {!editModeOnly && table.isShared && (
+      {table.isShared && (
         <>
           <circle
             cx={topLeftX + table.width - 15}

@@ -576,6 +576,8 @@ export default function FloorPlanHandler({
           open={tableEditSidebarOpen}
           onClose={handleCloseEditSidebar}
           onUpdateCapacity={updateTableCapacity}
+          onUpdateShape={updateTableShape}
+          onUpdateIsShared={updateTableIsShared}
           onDelete={deleteTable}
         />
       )}

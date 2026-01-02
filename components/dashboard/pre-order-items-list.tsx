@@ -78,7 +78,7 @@ export function PreOrderItemsList({
         {items.map((item, index) => (
           <div
             key={`${item.productId}-${index}`}
-            className="flex flex-col gap-2 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-200"
+            className="flex flex-col gap-2 p-3 rounded-lg border-2"
           >
             {/* Header row with quantity controls */}
             <div className="flex items-start gap-2">
@@ -86,40 +86,58 @@ export function PreOrderItemsList({
                 <div className="font-medium text-sm">{item.itemName}</div>
 
                 {/* Quantity Controls */}
-                <div className="flex items-center gap-1 mt-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleQuantityChange(index, -1)}
-                    disabled={disabled || item.quantity <= 1}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
+                <div className="flex gap-2 items-center">
+                  <div className="flex items-center gap-1 mt-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleQuantityChange(index, -1)}
+                      disabled={disabled || item.quantity <= 1}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
 
-                  <Input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => {
-                      const newQuantity = parseInt(e.target.value);
-                      if (!isNaN(newQuantity) && newQuantity >= 1) {
-                        onUpdateItem(index, { ...item, quantity: newQuantity });
-                      }
-                    }}
-                    className="w-14 h-7 text-center text-sm"
-                    disabled={disabled}
-                  />
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const newQuantity = parseInt(e.target.value);
+                        if (!isNaN(newQuantity) && newQuantity >= 1) {
+                          onUpdateItem(index, {
+                            ...item,
+                            quantity: newQuantity,
+                          });
+                        }
+                      }}
+                      className="w-14 h-7 text-center text-sm"
+                      disabled={disabled}
+                    />
 
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleQuantityChange(index, 1)}
-                    disabled={disabled}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleQuantityChange(index, 1)}
+                      disabled={disabled}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Notes section */}
+
+                  <div className="flex items-start gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleNotesClick(index)}
+                      disabled={disabled || editingNotes === index}
+                      className="h-7"
+                    >
+                      <MessageSquare className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -149,9 +167,7 @@ export function PreOrderItemsList({
                 </Button>
               </div>
             </div>
-
-            {/* Notes section */}
-            {editingNotes === index ? (
+            {editingNotes === index && (
               <div className="flex flex-col gap-2">
                 <Textarea
                   value={tempNotes}
@@ -184,24 +200,11 @@ export function PreOrderItemsList({
                   </Button>
                 </div>
               </div>
-            ) : (
-              <div className="flex items-start gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleNotesClick(index)}
-                  disabled={disabled}
-                  className="h-7"
-                >
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  {item.notes ? "Editar nota" : "Agregar nota"}
-                </Button>
-                {item.notes && (
-                  <p className="text-xs text-gray-600 italic flex-1">
-                    {item.notes}
-                  </p>
-                )}
-              </div>
+            )}
+            {item.notes && (
+              <p className="text-xs text-gray-600 italic flex-1">
+                {item.notes}
+              </p>
             )}
           </div>
         ))}
