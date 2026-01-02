@@ -1,7 +1,6 @@
 import { getNavItems } from "@/lib/dashboard-nav";
-import StarIcon from "../ui/star-icon";
 import DashBoardNavItems from "./dashboard-nav-items";
-import LogoutButton from "../logout-button";
+import UserDropdown from "./user-dropdown";
 
 interface DashboardNavProps {
   userName: string;
@@ -23,19 +22,7 @@ export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
             </div>
           </div>
           <DashBoardNavItems navItems={navItems} />
-          <div className="flex items-center gap-2">
-            <div className="shrink-0">
-              <span className="text-sm text-gray-700 relative flex items-center gap-1">
-                {hasAdminRole && (
-                  <span className="text-red-500">
-                    <StarIcon />
-                  </span>
-                )}
-                {userName}
-              </span>
-            </div>
-            <LogoutButton />
-          </div>
+          <UserDropdown userName={userName} hasAdminRole={hasAdminRole} />
         </div>
       </div>
     </nav>

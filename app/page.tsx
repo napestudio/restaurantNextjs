@@ -18,7 +18,7 @@ export default async function Home() {
   const restaurant = await getRestaurant(restaurantId);
   return (
     <div className="min-h-screen place-content-center bg-black text-white">
-      <div className="max-w-[400px] mx-auto px-8 md:px-0 flex justify-center flex-col items-center gap-9">
+      <div className="max-w-100 mx-auto px-8 md:px-0 flex justify-center flex-col items-center gap-9">
         <Avatar />
         <div className="flex flex-col items-center justify-center gap-4 w-full">
           <Link
