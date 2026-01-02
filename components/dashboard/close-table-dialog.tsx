@@ -94,7 +94,9 @@ export function CloseTableDialog({
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
-  const [currentDiscount, setCurrentDiscount] = useState(order.discountPercentage);
+  const [currentDiscount, setCurrentDiscount] = useState(
+    order.discountPercentage
+  );
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Open/close dialog based on open prop
@@ -644,7 +646,7 @@ export function CloseTableDialog({
           {!noOpenRegisters && (
             <Button
               onClick={handleClose}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-red-500 hover:bg-red-600"
               disabled={isPending || !selectedRegisterId}
             >
               {isPending ? "Cerrando..." : `Cerrar Mesa ${tableNumber}`}

@@ -211,6 +211,48 @@ export function OrdersClient({
     setCreateOrderType(null);
   };
 
+  // Handle order created - switch tab, refresh and open the details sidebar
+  const handleOrderCreated = async (orderId?: string, createdOrderType?: OrderType) => {
+    // Switch to the tab matching the created order type
+    const targetTab = createdOrderType || currentTab;
+
+    // Update URL to reflect the new tab (this triggers a re-render with new data)
+    if (createdOrderType && createdOrderType !== currentTab) {
+      const params = new URLSearchParams();
+      params.set("type", createdOrderType);
+      params.set("page", "1");
+      if (currentSearch) {
+        params.set("search", currentSearch);
+      }
+      router.push(`/dashboard/orders?${params.toString()}`);
+    }
+
+    // Fetch orders for the target tab
+    const result = await getOrders({
+      branchId,
+      type: targetTab === "ALL" ? undefined : (targetTab as OrderType),
+      page: 1,
+      pageSize: 15,
+      search: currentSearch || undefined,
+    });
+
+    if (result.success && result.data) {
+      setOrders(result.data);
+      if (result.pagination) {
+        setPagination(result.pagination);
+      }
+
+      // If we have an order ID, find and open it in the sidebar
+      if (orderId) {
+        const createdOrder = result.data.find((o) => o.id === orderId);
+        if (createdOrder) {
+          setSelectedOrder(createdOrder);
+          setSidebarOpen(true);
+        }
+      }
+    }
+  };
+
   // Generate page numbers to display
   const getPageNumbers = () => {
     const { totalPages } = pagination;
@@ -368,7 +410,7 @@ export function OrdersClient({
         tables={tables}
         open={createOrderSidebarOpen}
         onClose={handleCloseCreateSidebar}
-        onOrderCreated={refreshOrders}
+        onOrderCreated={handleOrderCreated}
         initialOrderType={createOrderType}
       />
     </div>
