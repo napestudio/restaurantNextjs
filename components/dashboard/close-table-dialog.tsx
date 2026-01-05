@@ -605,7 +605,7 @@ export function CloseTableDialog({
                   )}
 
                   {/* Partial Close Option */}
-                  <div className="flex items-center gap-2 pt-2">
+                  {/* <div className="flex items-center gap-2 pt-2">
                     <Checkbox
                       id="partial-close"
                       checked={isPartialClose}
@@ -620,7 +620,7 @@ export function CloseTableDialog({
                     >
                       Cierre Parcial
                     </Label>
-                  </div>
+                  </div> */}
 
                   {/* Error Message */}
                   {error && (

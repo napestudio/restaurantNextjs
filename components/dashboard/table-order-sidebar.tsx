@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
 import { ArrowRightLeft, Edit, Percent, RefreshCw, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
 import { CommittedOrderItemsList } from "./committed-order-items-list";
@@ -101,11 +101,13 @@ export function TableOrderSidebar({
   });
 
   // Derive current order from allOrders (for shared) or singleOrder (for non-shared)
-  const order = tableIsShared
-    ? (Array.isArray(allOrders)
-        ? allOrders.find((o) => o.id === selectedOrderId)
-        : null) || null
-    : singleOrder;
+  const order = useMemo(() => {
+    return tableIsShared
+      ? (Array.isArray(allOrders)
+          ? allOrders.find((o) => o.id === selectedOrderId)
+          : null) || null
+      : singleOrder;
+  }, [tableIsShared, allOrders, selectedOrderId, singleOrder]);
 
   // Combined loading state
   const isLoading = isLoadingOrders || isLoadingAction;

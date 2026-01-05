@@ -472,6 +472,12 @@ export default function FloorPlanHandler({
       : undefined;
   }, [selectedDbTable?.sectorId, sectors]);
 
+  // Memoize table data for order sidebar to avoid multiple .find() calls on every render
+  const selectedTableForOrderData = useMemo(() => {
+    if (!selectedTableForOrder) return null;
+    return dbTables.find((t) => t.id === selectedTableForOrder) ?? null;
+  }, [selectedTableForOrder, dbTables]);
+
   return (
     <div>
       <div className="flex items-center justify-between gap-4 px-2 py-2 bg-neutral-50">
@@ -531,18 +537,9 @@ export default function FloorPlanHandler({
             {selectedTableForOrder && !editModeOnly ? (
               <TableOrderSidebar
                 tableId={selectedTableForOrder}
-                tableNumber={
-                  dbTables.find((t) => t.id === selectedTableForOrder)
-                    ?.number ?? null
-                }
-                tableIsShared={
-                  dbTables.find((t) => t.id === selectedTableForOrder)
-                    ?.isShared ?? false
-                }
-                tableSectorId={
-                  dbTables.find((t) => t.id === selectedTableForOrder)
-                    ?.sectorId ?? null
-                }
+                tableNumber={selectedTableForOrderData?.number ?? null}
+                tableIsShared={selectedTableForOrderData?.isShared ?? false}
+                tableSectorId={selectedTableForOrderData?.sectorId ?? null}
                 branchId={branchId}
                 onClose={handleCloseSidebar}
                 onOrderUpdated={handleOrderUpdated}

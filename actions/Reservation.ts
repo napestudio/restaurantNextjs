@@ -570,7 +570,7 @@ export async function getFilteredReservations(
 
     // Build the where clause based on filter type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let whereClause: any = { branchId };
+    const whereClause: any = { branchId };
 
     switch (filters.type) {
       case "today":
