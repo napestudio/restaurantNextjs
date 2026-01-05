@@ -198,6 +198,212 @@ export async function createOrder(data: {
   }
 }
 
+// Create a new order with items in a single transaction (bulk insert)
+export async function createOrderWithItems(data: {
+  branchId: string;
+  type: OrderType;
+  tableId?: string | null;
+  partySize?: number | null;
+  clientId?: string | null;
+  assignedToId?: string | null;
+  description?: string | null;
+  items: OrderItemInput[];
+}) {
+  try {
+    const {
+      branchId,
+      type,
+      tableId,
+      partySize,
+      clientId,
+      assignedToId,
+      description,
+      items,
+    } = data;
+
+    // Validation: at least one item required
+    if (!items || items.length === 0) {
+      return {
+        success: false,
+        error: "Se requiere al menos un producto",
+      };
+    }
+
+    // Validation based on order type
+    if (type === OrderType.DINE_IN && !tableId) {
+      return {
+        success: false,
+        error: "Se requiere una mesa para órdenes para comer aquí",
+      };
+    }
+
+    if (type === OrderType.DELIVERY && !clientId) {
+      return {
+        success: false,
+        error: "Se requiere un cliente para órdenes de delivery",
+      };
+    }
+
+    // For DINE_IN orders, check if table exists and validate
+    if (tableId) {
+      const table = await prisma.table.findUnique({
+        where: { id: tableId },
+        select: { isShared: true, isActive: true },
+      });
+
+      if (!table) {
+        return {
+          success: false,
+          error: "Mesa no encontrada",
+        };
+      }
+
+      if (!table.isActive) {
+        return {
+          success: false,
+          error: "Mesa no activa",
+        };
+      }
+
+      // Check if table already has an active order (only for non-shared tables)
+      if (!table.isShared && type === OrderType.DINE_IN) {
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            tableId,
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        });
+
+        if (existingOrder) {
+          return {
+            success: false,
+            error: "Esta mesa ya tiene una orden activa",
+          };
+        }
+      }
+    }
+
+    // Generate a unique public code
+    const publicCode = `${type.charAt(0)}${Date.now().toString().slice(-8)}`;
+
+    // Get client discount if clientId is provided
+    let clientDiscount = 0;
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { discountPercentage: true },
+      });
+      if (client?.discountPercentage) {
+        clientDiscount = Number(client.discountPercentage);
+      }
+    }
+
+    // Create order and items in a single transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          branchId,
+          tableId: tableId || null,
+          partySize: partySize || null,
+          type,
+          publicCode,
+          status: OrderStatus.PENDING,
+          clientId: clientId || null,
+          assignedToId: assignedToId || null,
+          discountPercentage: clientDiscount,
+          description: description || null,
+        },
+      });
+
+      // Bulk create all order items
+      await tx.orderItem.createMany({
+        data: items.map((item) => ({
+          orderId: newOrder.id,
+          productId: item.productId,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          price: item.price,
+          originalPrice: item.originalPrice,
+          notes: item.notes || null,
+        })),
+      });
+
+      // Update table status to OCCUPIED if it's a dine-in order
+      if (tableId && type === OrderType.DINE_IN) {
+        await tx.table.update({
+          where: { id: tableId },
+          data: { status: "OCCUPIED" },
+        });
+      }
+
+      // Fetch the complete order with items
+      const completeOrder = await tx.order.findUnique({
+        where: { id: newOrder.id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+            orderBy: {
+              id: "asc",
+            },
+          },
+          client: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+            },
+          },
+          table: {
+            select: {
+              number: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return completeOrder;
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        error: "Error al crear la orden",
+      };
+    }
+
+    // Serialize Decimal fields
+    const serializedOrder = {
+      ...order,
+      discountPercentage: Number(order.discountPercentage),
+      client: order.client ? serializeClient(order.client) : null,
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+        product: serializeProduct(item.product),
+      })),
+    };
+
+    return {
+      success: true,
+      data: serializedOrder,
+    };
+  } catch (error) {
+    console.error("Error creating order with items:", error);
+    return {
+      success: false,
+      error: "Error al crear la orden",
+    };
+  }
+}
+
 // Create a new dine-in order for a table
 export async function createTableOrder(
   tableId: string,
@@ -744,6 +950,74 @@ export async function closeTable(orderId: string) {
     return {
       success: false,
       error: "Error al cerrar la mesa",
+    };
+  }
+}
+
+// Close table by deleting an empty order (no items)
+export async function closeEmptyTable(orderId: string) {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Get the order with its items count
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          _count: {
+            select: { items: true },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new Error("Orden no encontrada");
+      }
+
+      // Verify order has no items
+      if (order._count.items > 0) {
+        throw new Error(
+          "No se puede eliminar una orden con productos. Use el cierre de mesa normal."
+        );
+      }
+
+      const previousTableId = order.tableId;
+
+      // Delete the empty order
+      await tx.order.delete({
+        where: { id: orderId },
+      });
+
+      // Check if table has any other active orders and set to EMPTY if not
+      if (previousTableId) {
+        const activeOrders = await tx.order.count({
+          where: {
+            tableId: previousTableId,
+            status: {
+              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+            },
+          },
+        });
+
+        if (activeOrders === 0) {
+          await tx.table.update({
+            where: { id: previousTableId },
+            data: { status: "EMPTY" },
+          });
+        }
+      }
+
+      return { tableId: previousTableId };
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    console.error("Error closing empty table:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error al cerrar la mesa",
     };
   }
 }

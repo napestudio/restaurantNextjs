@@ -36,6 +36,9 @@ const printerInputSchema = z.object({
   ticketHeaderSize: z.number().min(0).max(3).default(2),
   ticketFooter: z.string().optional().nullable(),
   ticketFooterSize: z.number().min(0).max(3).default(1),
+  // Control ticket formatting (0=small, 1=normal, 2=big)
+  controlTicketFontSize: z.number().min(0).max(2).default(1),
+  controlTicketSpacing: z.number().min(0).max(2).default(1),
 });
 
 const printerSchema = printerInputSchema.transform((data) => ({
@@ -95,6 +98,8 @@ export async function createPrinter(data: z.input<typeof printerSchema>) {
         printCopies: validatedData.printCopies,
         paperWidth: validatedData.paperWidth,
         charactersPerLine: validatedData.charactersPerLine,
+        controlTicketFontSize: validatedData.controlTicketFontSize,
+        controlTicketSpacing: validatedData.controlTicketSpacing,
         status: PrinterStatus.OFFLINE,
         isActive: true,
       },
@@ -277,6 +282,12 @@ export async function updatePrinter(
         ...(data.ticketFooterSize !== undefined && {
           ticketFooterSize: data.ticketFooterSize,
         }),
+        ...(data.controlTicketFontSize !== undefined && {
+          controlTicketFontSize: data.controlTicketFontSize,
+        }),
+        ...(data.controlTicketSpacing !== undefined && {
+          controlTicketSpacing: data.controlTicketSpacing,
+        }),
       },
     });
 
@@ -447,6 +458,8 @@ export async function testPrinter(id: string) {
       port: printer.port,
       paperWidth: printer.paperWidth,
       charactersPerLine: printer.charactersPerLine,
+      controlTicketFontSize: printer.controlTicketFontSize,
+      controlTicketSpacing: printer.controlTicketSpacing,
     };
 
     const printResult = await printTestPage(printerConfig);
@@ -774,6 +787,9 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
         ticketHeaderSize: printer.ticketHeaderSize,
         ticketFooter: printer.ticketFooter,
         ticketFooterSize: printer.ticketFooterSize,
+        // Control ticket formatting
+        controlTicketFontSize: printer.controlTicketFontSize,
+        controlTicketSpacing: printer.controlTicketSpacing,
       };
 
       const fullOrderData = {

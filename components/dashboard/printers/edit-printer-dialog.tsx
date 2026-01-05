@@ -61,6 +61,9 @@ export function EditPrinterDialog({
   const [ticketHeaderSize, setTicketHeaderSize] = useState("2");
   const [ticketFooter, setTicketFooter] = useState("");
   const [ticketFooterSize, setTicketFooterSize] = useState("1");
+  // Control ticket formatting
+  const [controlTicketFontSize, setControlTicketFontSize] = useState("1");
+  const [controlTicketSpacing, setControlTicketSpacing] = useState("1");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,6 +85,9 @@ export function EditPrinterDialog({
       setTicketHeaderSize((printer.ticketHeaderSize ?? 2).toString());
       setTicketFooter(printer.ticketFooter || "");
       setTicketFooterSize((printer.ticketFooterSize ?? 1).toString());
+      // Control ticket formatting
+      setControlTicketFontSize((printer.controlTicketFontSize ?? 1).toString());
+      setControlTicketSpacing((printer.controlTicketSpacing ?? 1).toString());
       setError(null);
     }
   }, [printer, open]);
@@ -146,6 +152,8 @@ export function EditPrinterDialog({
         ticketHeaderSize: parseInt(ticketHeaderSize),
         ticketFooter: ticketFooter.trim() || null,
         ticketFooterSize: parseInt(ticketFooterSize),
+        controlTicketFontSize: parseInt(controlTicketFontSize),
+        controlTicketSpacing: parseInt(controlTicketSpacing),
       });
 
       if (result.success && result.data) {
@@ -448,6 +456,54 @@ export function EditPrinterDialog({
               </div>
               <p className="text-xs text-muted-foreground">
                 Texto que aparece al final del ticket
+              </p>
+            </div>
+
+            {/* Control Ticket Formatting */}
+            <div className="space-y-4 pt-4 border-t border-dashed">
+              <h4 className="font-medium text-sm text-muted-foreground">
+                Formato del Ticket de Control
+              </h4>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-controlTicketFontSize">Tamaño de Fuente</Label>
+                  <Select
+                    value={controlTicketFontSize}
+                    onValueChange={setControlTicketFontSize}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger id="edit-controlTicketFontSize">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Pequeño</SelectItem>
+                      <SelectItem value="1">Normal</SelectItem>
+                      <SelectItem value="2">Grande</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-controlTicketSpacing">Espaciado</Label>
+                  <Select
+                    value={controlTicketSpacing}
+                    onValueChange={setControlTicketSpacing}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger id="edit-controlTicketSpacing">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Pequeño</SelectItem>
+                      <SelectItem value="1">Normal</SelectItem>
+                      <SelectItem value="2">Grande</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Configura el tamaño de fuente y espaciado entre secciones del ticket de control
               </p>
             </div>
           </div>
