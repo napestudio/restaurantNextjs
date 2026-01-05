@@ -9,6 +9,70 @@ import {
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
 
+// ============================================================================
+// Helper Functions (internal, not exported)
+// ============================================================================
+
+/**
+ * Validate table for order creation
+ * Returns table data if valid, or error object if invalid
+ */
+async function validateTableForOrder(
+  tableId: string,
+  type: OrderType
+): Promise<
+  | { success: true; table: { isShared: boolean; isActive: boolean } }
+  | { success: false; error: string }
+> {
+  const table = await prisma.table.findUnique({
+    where: { id: tableId },
+    select: { isShared: true, isActive: true },
+  });
+
+  if (!table) {
+    return { success: false, error: "Mesa no encontrada" };
+  }
+
+  if (!table.isActive) {
+    return { success: false, error: "Mesa no activa" };
+  }
+
+  // Check if table already has an active order (only for non-shared tables with DINE_IN)
+  if (!table.isShared && type === OrderType.DINE_IN) {
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        tableId,
+        status: { in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS] },
+      },
+    });
+
+    if (existingOrder) {
+      return { success: false, error: "Esta mesa ya tiene una orden activa" };
+    }
+  }
+
+  return { success: true, table };
+}
+
+/**
+ * Get client discount percentage
+ * Returns 0 if client not found or no discount set
+ */
+async function getClientDiscount(clientId: string | null): Promise<number> {
+  if (!clientId) return 0;
+
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    select: { discountPercentage: true },
+  });
+
+  return client?.discountPercentage ? Number(client.discountPercentage) : 0;
+}
+
+// ============================================================================
+// Types
+// ============================================================================
+
 export type OrderItemInput = {
   productId: string;
   itemName: string;
@@ -63,44 +127,11 @@ export async function createOrder(data: {
       };
     }
 
-    // For DINE_IN orders, check if table exists and validate
+    // Validate table for DINE_IN orders
     if (tableId) {
-      const table = await prisma.table.findUnique({
-        where: { id: tableId },
-        select: { isShared: true, isActive: true },
-      });
-
-      if (!table) {
-        return {
-          success: false,
-          error: "Mesa no encontrada",
-        };
-      }
-
-      if (!table.isActive) {
-        return {
-          success: false,
-          error: "Mesa no activa",
-        };
-      }
-
-      // Check if table already has an active order (only for non-shared tables)
-      if (!table.isShared && type === OrderType.DINE_IN) {
-        const existingOrder = await prisma.order.findFirst({
-          where: {
-            tableId,
-            status: {
-              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
-            },
-          },
-        });
-
-        if (existingOrder) {
-          return {
-            success: false,
-            error: "Esta mesa ya tiene una orden activa",
-          };
-        }
+      const tableValidation = await validateTableForOrder(tableId, type);
+      if (!tableValidation.success) {
+        return { success: false, error: tableValidation.error };
       }
     }
 
@@ -108,16 +139,7 @@ export async function createOrder(data: {
     const publicCode = `${type.charAt(0)}${Date.now().toString().slice(-8)}`;
 
     // Get client discount if clientId is provided
-    let clientDiscount = 0;
-    if (clientId) {
-      const client = await prisma.client.findUnique({
-        where: { id: clientId },
-        select: { discountPercentage: true },
-      });
-      if (client?.discountPercentage) {
-        clientDiscount = Number(client.discountPercentage);
-      }
-    }
+    const clientDiscount = await getClientDiscount(clientId);
 
     // Create order in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -244,44 +266,11 @@ export async function createOrderWithItems(data: {
       };
     }
 
-    // For DINE_IN orders, check if table exists and validate
+    // Validate table for DINE_IN orders
     if (tableId) {
-      const table = await prisma.table.findUnique({
-        where: { id: tableId },
-        select: { isShared: true, isActive: true },
-      });
-
-      if (!table) {
-        return {
-          success: false,
-          error: "Mesa no encontrada",
-        };
-      }
-
-      if (!table.isActive) {
-        return {
-          success: false,
-          error: "Mesa no activa",
-        };
-      }
-
-      // Check if table already has an active order (only for non-shared tables)
-      if (!table.isShared && type === OrderType.DINE_IN) {
-        const existingOrder = await prisma.order.findFirst({
-          where: {
-            tableId,
-            status: {
-              in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
-            },
-          },
-        });
-
-        if (existingOrder) {
-          return {
-            success: false,
-            error: "Esta mesa ya tiene una orden activa",
-          };
-        }
+      const tableValidation = await validateTableForOrder(tableId, type);
+      if (!tableValidation.success) {
+        return { success: false, error: tableValidation.error };
       }
     }
 
@@ -289,16 +278,7 @@ export async function createOrderWithItems(data: {
     const publicCode = `${type.charAt(0)}${Date.now().toString().slice(-8)}`;
 
     // Get client discount if clientId is provided
-    let clientDiscount = 0;
-    if (clientId) {
-      const client = await prisma.client.findUnique({
-        where: { id: clientId },
-        select: { discountPercentage: true },
-      });
-      if (client?.discountPercentage) {
-        clientDiscount = Number(client.discountPercentage);
-      }
-    }
+    const clientDiscount = await getClientDiscount(clientId);
 
     // Create order and items in a single transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -413,52 +393,17 @@ export async function createTableOrder(
   assignedToId?: string | null
 ) {
   try {
-    // Get table info to check if it's shared
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-      select: { isShared: true },
-    });
-
-    if (!table) {
-      return {
-        success: false,
-        error: "Mesa no encontrada",
-      };
-    }
-
-    // Check if table already has an active order (only for non-shared tables)
-    if (!table.isShared) {
-      const existingOrder = await prisma.order.findFirst({
-        where: {
-          tableId,
-          status: {
-            in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
-          },
-        },
-      });
-
-      if (existingOrder) {
-        return {
-          success: false,
-          error: "Esta mesa ya tiene una orden activa",
-        };
-      }
+    // Validate table for order
+    const tableValidation = await validateTableForOrder(tableId, OrderType.DINE_IN);
+    if (!tableValidation.success) {
+      return { success: false, error: tableValidation.error };
     }
 
     // Generate a unique public code
     const publicCode = `KS${Date.now().toString().slice(-8)}`;
 
     // Get client discount if clientId is provided
-    let clientDiscount = 0;
-    if (clientId) {
-      const client = await prisma.client.findUnique({
-        where: { id: clientId },
-        select: { discountPercentage: true },
-      });
-      if (client?.discountPercentage) {
-        clientDiscount = Number(client.discountPercentage);
-      }
-    }
+    const clientDiscount = await getClientDiscount(clientId);
 
     // Create order and update table status in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -1642,16 +1587,7 @@ export async function assignClientToOrder(
 ) {
   try {
     // Get client discount if clientId is provided
-    let clientDiscount = 0;
-    if (clientId) {
-      const client = await prisma.client.findUnique({
-        where: { id: clientId },
-        select: { discountPercentage: true },
-      });
-      if (client?.discountPercentage) {
-        clientDiscount = Number(client.discountPercentage);
-      }
-    }
+    const clientDiscount = await getClientDiscount(clientId);
 
     const order = await prisma.order.update({
       where: { id: orderId },
