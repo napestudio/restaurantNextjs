@@ -765,6 +765,10 @@ model Printer {
   ticketFooter     String? // Custom footer text for tickets
   ticketFooterSize Int     @default(1) // 0=small, 1=normal, 2=double height, 3=double width+height
 
+  // Control ticket formatting (for FULL_ORDER and BOTH modes)
+  controlTicketFontSize Int @default(1) // 0=small, 1=normal, 2=big
+  controlTicketSpacing  Int @default(1) // 0=small, 1=normal, 2=big
+
   // Assignment
   station   Station? @relation(fields: [stationId], references: [id])
   stationId String?

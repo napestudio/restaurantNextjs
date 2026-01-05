@@ -17,6 +17,9 @@ export interface PrinterConfig {
   ticketHeaderSize?: number; // 0=small, 1=normal, 2=double height, 3=double size
   ticketFooter?: string | null;
   ticketFooterSize?: number; // 0=small, 1=normal, 2=double height, 3=double size
+  // Control ticket formatting
+  controlTicketFontSize?: number; // 0=small, 1=normal, 2=big
+  controlTicketSpacing?: number; // 0=small, 1=normal, 2=big
 }
 
 export interface PrintResult {
@@ -220,6 +223,44 @@ function getSizeCommand(size: number): string {
 }
 
 /**
+ * Get the ESC/POS command for control ticket font size
+ * 0 = small (normal size)
+ * 1 = normal (normal size, standard)
+ * 2 = big (double height)
+ */
+function getControlFontSizeCommand(size: number): string {
+  switch (size) {
+    case 0:
+      return Commands.NORMAL_SIZE; // Small
+    case 1:
+      return Commands.NORMAL_SIZE; // Normal
+    case 2:
+      return Commands.DOUBLE_HEIGHT_ON; // Big
+    default:
+      return Commands.NORMAL_SIZE;
+  }
+}
+
+/**
+ * Get the number of line feeds based on spacing setting
+ * 0 = small (0 extra lines)
+ * 1 = normal (1 extra line)
+ * 2 = big (2 extra lines)
+ */
+function getSpacingLines(spacing: number): number {
+  switch (spacing) {
+    case 0:
+      return 0; // Small - no extra spacing
+    case 1:
+      return 1; // Normal - 1 line
+    case 2:
+      return 2; // Big - 2 lines
+    default:
+      return 1;
+  }
+}
+
+/**
  * Send data to printer via TCP socket
  * Encodes the data using CP850 code page for proper Spanish character support
  */
@@ -298,6 +339,13 @@ export async function printTestPage(
   config: PrinterConfig
 ): Promise<PrintResult> {
   const width = config.charactersPerLine;
+  const fontSize = config.controlTicketFontSize ?? 1;
+  const spacing = config.controlTicketSpacing ?? 1;
+  const spacingLines = getSpacingLines(spacing);
+
+  // Font size labels
+  const fontSizeLabels = ["Pequeño", "Normal", "Grande"];
+  const spacingLabels = ["Pequeño", "Normal", "Grande"];
 
   let content = Commands.INIT;
 
@@ -328,6 +376,15 @@ export async function printTestPage(
 
   content += separator(width) + "\n";
 
+  // Control ticket settings
+  content += Commands.BOLD_ON;
+  content += "Config. Ticket Control\n";
+  content += Commands.BOLD_OFF;
+  content += formatTwoColumns("Tam. Fuente:", fontSizeLabels[fontSize] || "Normal", width) + "\n";
+  content += formatTwoColumns("Espaciado:", spacingLabels[spacing] || "Normal", width) + "\n";
+
+  content += separator(width) + "\n";
+
   // Date/Time
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-AR");
@@ -337,18 +394,38 @@ export async function printTestPage(
 
   content += separator(width) + "\n";
 
-  // Test patterns
+  // Font size demonstration
   content += Commands.BOLD_ON;
-  content += "Prueba de Formatos\n";
+  content += "Prueba de Tamaños de Fuente\n";
   content += Commands.BOLD_OFF;
 
-  content += "Normal: ABCDEFGabcdefg 0123456789\n";
+  content += "Pequeño (0):\n";
+  content += Commands.NORMAL_SIZE;
+  content += "  Texto de ejemplo pequeño\n";
+  if (spacingLines > 0) content += Commands.FEED_LINES(spacingLines);
+
+  content += "Normal (1):\n";
+  content += Commands.NORMAL_SIZE;
+  content += "  Texto de ejemplo normal\n";
+  if (spacingLines > 0) content += Commands.FEED_LINES(spacingLines);
+
+  content += "Grande (2):\n";
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += "  Texto grande\n";
+  content += Commands.NORMAL_SIZE;
+  if (spacingLines > 0) content += Commands.FEED_LINES(spacingLines);
+
+  content += separator(width) + "\n";
+
+  // Current config preview
   content += Commands.BOLD_ON;
-  content += "Negrita: ABCDEFGabcdefg 0123456789\n";
+  content += "Vista Previa Config. Actual\n";
   content += Commands.BOLD_OFF;
-  content += Commands.UNDERLINE_ON;
-  content += "Subrayado: ABCDEFGabcdefg\n";
-  content += Commands.UNDERLINE_OFF;
+  content += getControlFontSizeCommand(fontSize);
+  content += "Este texto usa tu config:\n";
+  content += `Fuente: ${fontSizeLabels[fontSize] || "Normal"}\n`;
+  content += `Espaciado: ${spacingLabels[spacing] || "Normal"}\n`;
+  content += Commands.NORMAL_SIZE;
 
   content += separator(width) + "\n";
 
@@ -495,6 +572,16 @@ export async function printFullOrder(
   order: FullOrderData
 ): Promise<PrintResult> {
   const width = config.charactersPerLine;
+  const fontSize = config.controlTicketFontSize ?? 1;
+  const spacingLines = getSpacingLines(config.controlTicketSpacing ?? 1);
+
+  // Helper to add section spacing
+  const addSpacing = () => {
+    if (spacingLines > 0) {
+      return Commands.FEED_LINES(spacingLines);
+    }
+    return "";
+  };
 
   let content = Commands.INIT;
 
@@ -511,10 +598,11 @@ export async function printFullOrder(
 
   // Header
   content += Commands.ALIGN_CENTER;
-  // content += Commands.NORMAL_SIZE;
+  content += getControlFontSizeCommand(fontSize);
   content += "TICKET DE CONTROL\n";
   content += Commands.NORMAL_SIZE;
   content += Commands.FEED_LINE;
+  content += addSpacing();
 
   // Order info
   content += Commands.ALIGN_LEFT;
@@ -525,8 +613,10 @@ export async function printFullOrder(
   content += Commands.NORMAL_SIZE;
 
   content += separator(width, "=") + "\n";
+  content += addSpacing();
 
   const now = new Date();
+  content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
   content +=
     formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
@@ -539,16 +629,21 @@ export async function printFullOrder(
   if (order.orderType) {
     content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
   }
+  content += Commands.NORMAL_SIZE;
 
   content += separator(width) + "\n";
+  content += addSpacing();
 
   // Items header
   content += Commands.BOLD_ON;
+  content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("CANT ITEM", "PRECIO", width) + "\n";
   content += Commands.BOLD_OFF;
+  content += Commands.NORMAL_SIZE;
   content += separator(width) + "\n";
 
   // Items with prices
+  content += getControlFontSizeCommand(fontSize);
   for (const item of order.items) {
     const itemTotal = item.quantity * item.price;
     const qtyName = `${item.quantity}x ${item.name}`;
@@ -566,13 +661,18 @@ export async function printFullOrder(
     }
 
     if (item.notes) {
+      content += Commands.NORMAL_SIZE;
       content += `   Nota: ${item.notes}\n`;
+      content += getControlFontSizeCommand(fontSize);
     }
   }
+  content += Commands.NORMAL_SIZE;
 
   content += separator(width) + "\n";
+  content += addSpacing();
 
   // Totals
+  content += getControlFontSizeCommand(fontSize);
   content +=
     formatTwoColumns(
       "Subtotal:",
@@ -592,6 +692,7 @@ export async function printFullOrder(
         width
       ) + "\n";
   }
+  content += Commands.NORMAL_SIZE;
 
   content += separator(width) + "\n";
   content += Commands.BOLD_ON;
@@ -606,13 +707,16 @@ export async function printFullOrder(
   content += Commands.BOLD_OFF;
 
   content += separator(width) + "\n";
+  content += addSpacing();
 
   // General notes
   if (order.notes) {
     content += Commands.BOLD_ON;
     content += "NOTAS:\n";
     content += Commands.BOLD_OFF;
+    content += getControlFontSizeCommand(fontSize);
     content += order.notes + "\n";
+    content += Commands.NORMAL_SIZE;
     content += separator(width) + "\n";
   }
 
