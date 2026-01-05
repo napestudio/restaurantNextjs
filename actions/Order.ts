@@ -58,7 +58,7 @@ async function validateTableForOrder(
  * Get client discount percentage
  * Returns 0 if client not found or no discount set
  */
-async function getClientDiscount(clientId: string | null): Promise<number> {
+async function getClientDiscount(clientId: string | null | undefined): Promise<number> {
   if (!clientId) return 0;
 
   const client = await prisma.client.findUnique({
