@@ -1,19 +1,13 @@
-import { auth } from "@/lib/auth";
 import { getNavItems } from "@/lib/dashboard-nav";
-import { isUserAdmin } from "@/lib/permissions";
-import StarIcon from "../ui/star-icon";
 import DashBoardNavItems from "./dashboard-nav-items";
-import LogoutButton from "../logout-button";
+import UserDropdown from "./user-dropdown";
 
-export async function DashboardNav() {
-  const session = await auth();
+interface DashboardNavProps {
+  userName: string;
+  hasAdminRole: boolean;
+}
 
-  if (!session?.user) {
-    return null;
-  }
-
-  // Check if user has admin role in any branch
-  const hasAdminRole = await isUserAdmin(session.user.id);
+export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
   const navItems = getNavItems(hasAdminRole);
 
   return (
@@ -28,19 +22,7 @@ export async function DashboardNav() {
             </div>
           </div>
           <DashBoardNavItems navItems={navItems} />
-          <div className="flex items-center gap-2">
-            <div className="shrink-0">
-              <span className="text-sm text-gray-700 relative flex items-center gap-1">
-                {hasAdminRole && (
-                  <span className="text-red-500">
-                    <StarIcon />
-                  </span>
-                )}
-                {session.user.name || session.user.email}
-              </span>
-            </div>
-            <LogoutButton />
-          </div>
+          <UserDropdown userName={userName} hasAdminRole={hasAdminRole} />
         </div>
       </div>
     </nav>

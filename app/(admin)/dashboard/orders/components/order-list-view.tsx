@@ -92,8 +92,10 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
     );
   }
 
-  const calculateTotal = (items: Order["items"]) => {
-    return items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const calculateTotal = (order: Order) => {
+    const subtotal = order.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    const discount = subtotal * (order.discountPercentage / 100);
+    return subtotal - discount;
   };
 
   return (
@@ -128,7 +130,7 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
           <tbody className="bg-white divide-y divide-gray-200">
             {orders.map((order) => {
               const TypeIcon = typeIcons[order.type];
-              const total = calculateTotal(order.items);
+              const total = calculateTotal(order);
 
               return (
                 <tr

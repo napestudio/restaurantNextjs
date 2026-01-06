@@ -50,7 +50,7 @@ export default function FloorPlanHandler({
 }: FloorPlanPageProps) {
   // UI State
   const [zoom, setZoom] = useState(0.85);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(editModeOnly);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ x: number; y: number }>({
     x: 50,
@@ -59,8 +59,7 @@ export default function FloorPlanHandler({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(editModeOnly);
-  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<
     string | null
   >(null);
@@ -161,7 +160,7 @@ export default function FloorPlanHandler({
       e.stopPropagation();
 
       // In edit mode (only available in editModeOnly pages), allow dragging
-      if (editModeOnly && isEditMode) {
+      if (editModeOnly) {
         setSelectedTable(tableId);
 
         const table = tables.find((t) => t.id === tableId);
@@ -188,7 +187,6 @@ export default function FloorPlanHandler({
     },
     [
       editModeOnly,
-      isEditMode,
       tables,
       zoom,
       setSelectedTable,
@@ -398,11 +396,11 @@ export default function FloorPlanHandler({
 
   // Zoom handlers - memoized
   const handleZoomIn = useCallback(() => {
-    setZoom((prev) => Math.min(2, prev + 0.1));
+    setZoom((prev) => Math.min(1, prev + 0.05));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoom((prev) => Math.max(0.5, prev - 0.1));
+    setZoom((prev) => Math.max(0.5, prev - 0.05));
   }, []);
 
   // Toggle handlers - memoized
@@ -474,6 +472,12 @@ export default function FloorPlanHandler({
       : undefined;
   }, [selectedDbTable?.sectorId, sectors]);
 
+  // Memoize table data for order sidebar to avoid multiple .find() calls on every render
+  const selectedTableForOrderData = useMemo(() => {
+    if (!selectedTableForOrder) return null;
+    return dbTables.find((t) => t.id === selectedTableForOrder) ?? null;
+  }, [selectedTableForOrder, dbTables]);
+
   return (
     <div>
       <div className="flex items-center justify-between gap-4 px-2 py-2 bg-neutral-50">
@@ -515,7 +519,7 @@ export default function FloorPlanHandler({
             svgRef={svgRef}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
-            isEditMode={editModeOnly && isEditMode}
+            isEditMode={editModeOnly}
             editModeOnly={editModeOnly}
             onTableMouseDown={handleTableMouseDown}
             onCanvasClick={editModeOnly ? handleCanvasClick : undefined}
@@ -530,21 +534,12 @@ export default function FloorPlanHandler({
         {/* Right Sidebar - Order Management or Properties Panel (not shown in editModeOnly) */}
         {!editModeOnly && (
           <div className="lg:col-span-2 relative h-full overflow-hidden">
-            {selectedTableForOrder && !isEditMode ? (
+            {selectedTableForOrder && !editModeOnly ? (
               <TableOrderSidebar
                 tableId={selectedTableForOrder}
-                tableNumber={
-                  dbTables.find((t) => t.id === selectedTableForOrder)
-                    ?.number ?? null
-                }
-                tableIsShared={
-                  dbTables.find((t) => t.id === selectedTableForOrder)
-                    ?.isShared ?? false
-                }
-                tableSectorId={
-                  dbTables.find((t) => t.id === selectedTableForOrder)
-                    ?.sectorId ?? null
-                }
+                tableNumber={selectedTableForOrderData?.number ?? null}
+                tableIsShared={selectedTableForOrderData?.isShared ?? false}
+                tableSectorId={selectedTableForOrderData?.sectorId ?? null}
                 branchId={branchId}
                 onClose={handleCloseSidebar}
                 onOrderUpdated={handleOrderUpdated}
@@ -561,7 +556,7 @@ export default function FloorPlanHandler({
                 onUpdateSize={updateTableSize}
                 onRotate={rotateTable}
                 onDelete={deleteTable}
-                isEditMode={isEditMode}
+                isEditMode={editModeOnly}
                 hasActiveOrders={selectedTableHasOrders}
               />
             )}
@@ -576,6 +571,8 @@ export default function FloorPlanHandler({
           open={tableEditSidebarOpen}
           onClose={handleCloseEditSidebar}
           onUpdateCapacity={updateTableCapacity}
+          onUpdateShape={updateTableShape}
+          onUpdateIsShared={updateTableIsShared}
           onDelete={deleteTable}
         />
       )}

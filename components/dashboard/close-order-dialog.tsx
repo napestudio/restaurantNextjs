@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Settings, Plus, X, Receipt, CreditCard, Percent } from "lucide-react";
 import {
   closeTableWithPayment,
@@ -14,6 +13,7 @@ import {
 } from "@/actions/Order";
 import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
 import { PAYMENT_METHODS } from "@/types/cash-register";
+import { OrderType } from "@/app/generated/prisma";
 
 interface OrderItem {
   id: string;
@@ -22,17 +22,22 @@ interface OrderItem {
   price: number;
   originalPrice: number | null;
   product: {
-    id: string;
     name: string;
-    description?: string | null;
+    categoryId: string | null;
   } | null;
 }
 
 interface Order {
   id: string;
   publicCode: string;
+  type: OrderType;
   partySize: number | null;
   discountPercentage: number;
+  tableId: string | null;
+  table: {
+    number: number;
+    name: string | null;
+  } | null;
   items: OrderItem[];
 }
 
@@ -51,16 +56,13 @@ interface CashRegisterWithSession {
   } | null;
 }
 
-interface CloseTableDialogProps {
+interface CloseOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: Order;
-  tableNumber: number;
   branchId: string;
   branchName?: string;
-  onSuccess: (tableId: string) => void;
-  tableId: string;
-  tableSectorId?: string | null;
+  onSuccess: () => void;
 }
 
 type PaymentLine = {
@@ -69,21 +71,23 @@ type PaymentLine = {
   amount: string;
 };
 
-export function CloseTableDialog({
+const typeLabels: Record<OrderType, string> = {
+  [OrderType.DINE_IN]: "Para Comer Aquí",
+  [OrderType.TAKE_AWAY]: "Para Llevar",
+  [OrderType.DELIVERY]: "Delivery",
+};
+
+export function CloseOrderDialog({
   open,
   onOpenChange,
   order,
-  tableNumber,
   branchId,
   branchName = "Principal",
   onSuccess,
-  tableId,
-  tableSectorId,
-}: CloseTableDialogProps) {
+}: CloseOrderDialogProps) {
   const [payments, setPayments] = useState<PaymentLine[]>([
     { id: "1", method: "CASH", amount: "" },
   ]);
-  const [isPartialClose, setIsPartialClose] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,9 +98,7 @@ export function CloseTableDialog({
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
-  const [currentDiscount, setCurrentDiscount] = useState(
-    order.discountPercentage
-  );
+  const [currentDiscount, setCurrentDiscount] = useState(order.discountPercentage);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Open/close dialog based on open prop
@@ -136,7 +138,6 @@ export function CloseTableDialog({
   useEffect(() => {
     setPayments((prevPayments) => {
       if (prevPayments.length === 1) {
-        // Update the first payment amount to match the new total
         return [{ ...prevPayments[0], amount: total.toFixed(2) }];
       }
       return prevPayments;
@@ -160,19 +161,8 @@ export function CloseTableDialog({
       if (result.success && result.data) {
         setCashRegisters(result.data);
 
-        // Check if the table's sector has an assigned cash register with an open session
-        if (tableSectorId) {
-          const sectorRegister = result.data.find(
-            (r) => r.sectors?.some((s) => s.id === tableSectorId) && r.session
-          );
-          if (sectorRegister) {
-            setSelectedRegisterId(sectorRegister.id);
-          } else if (result.data.length === 1 && result.data[0].session) {
-            // Auto-select first register if only one
-            setSelectedRegisterId(result.data[0].id);
-          }
-        } else if (result.data.length === 1 && result.data[0].session) {
-          // Auto-select first register if only one
+        // Auto-select first register with session if only one exists
+        if (result.data.length === 1 && result.data[0].session) {
           setSelectedRegisterId(result.data[0].id);
         }
       }
@@ -182,7 +172,7 @@ export function CloseTableDialog({
     if (open) {
       loadCashRegisters();
     }
-  }, [open, branchId, tableSectorId]);
+  }, [open, branchId]);
 
   // Set initial payment amount when total changes
   useEffect(() => {
@@ -294,18 +284,18 @@ export function CloseTableDialog({
         payments: validPayments,
         sessionId: selectedRegister.session.id,
         userId,
-        isPartialClose,
+        isPartialClose: false,
       });
 
       if (result.success) {
-        onSuccess(tableId);
+        onSuccess();
         resetForm();
         onOpenChange(false);
       } else {
-        setError(result.error || "Error al cerrar la mesa");
+        setError(result.error || "Error al finalizar la venta");
       }
     } catch {
-      setError("Error al cerrar la mesa");
+      setError("Error al finalizar la venta");
     } finally {
       setIsPending(false);
     }
@@ -313,7 +303,6 @@ export function CloseTableDialog({
 
   const resetForm = () => {
     setPayments([{ id: "1", method: "CASH", amount: "" }]);
-    setIsPartialClose(false);
     setError(null);
     setSelectedRegisterId("");
   };
@@ -336,6 +325,14 @@ export function CloseTableDialog({
   // Check if there are no open cash registers
   const noOpenRegisters = !isLoadingRegisters && cashRegisters.length === 0;
 
+  // Get order title based on type
+  const getOrderTitle = () => {
+    if (order.type === OrderType.DINE_IN && order.table) {
+      return `Mesa ${order.table.number}`;
+    }
+    return `${typeLabels[order.type]} - ${order.publicCode}`;
+  };
+
   return (
     <dialog
       ref={dialogRef}
@@ -353,12 +350,11 @@ export function CloseTableDialog({
         <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
           <div>
             <h2 className="text-xl font-semibold">
-              Cerrar Mesa {tableNumber} - {branchName}
+              Finalizar Venta - {getOrderTitle()}
             </h2>
-            {/* <p className="text-sm text-muted-foreground mt-1">
-              Revisa los items de la orden y procesa el pago para cerrar la
-              mesa.
-            </p> */}
+            <p className="text-sm text-muted-foreground mt-1">
+              {branchName}
+            </p>
           </div>
           <button
             onClick={() => handleOpenChange(false)}
@@ -379,7 +375,7 @@ export function CloseTableDialog({
                 No hay cajas abiertas
               </h3>
               <p className="text-muted-foreground mb-4">
-                Para cerrar una mesa, primero debes abrir una caja registradora.
+                Para finalizar una venta, primero debes abrir una caja registradora.
               </p>
             </div>
           ) : (
@@ -604,24 +600,6 @@ export function CloseTableDialog({
                     </div>
                   )}
 
-                  {/* Partial Close Option */}
-                  {/* <div className="flex items-center gap-2 pt-2">
-                    <Checkbox
-                      id="partial-close"
-                      checked={isPartialClose}
-                      onCheckedChange={(checked) =>
-                        setIsPartialClose(checked as boolean)
-                      }
-                      disabled={isPending}
-                    />
-                    <Label
-                      htmlFor="partial-close"
-                      className="text-sm cursor-pointer"
-                    >
-                      Cierre Parcial
-                    </Label>
-                  </div> */}
-
                   {/* Error Message */}
                   {error && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
@@ -646,10 +624,10 @@ export function CloseTableDialog({
           {!noOpenRegisters && (
             <Button
               onClick={handleClose}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-green-600 hover:bg-green-700"
               disabled={isPending || !selectedRegisterId}
             >
-              {isPending ? "Cerrando..." : `Cerrar Mesa ${tableNumber}`}
+              {isPending ? "Procesando..." : "Finalizar Venta"}
             </Button>
           )}
         </div>

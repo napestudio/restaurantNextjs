@@ -14,7 +14,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { UserPlus } from "lucide-react";
-import { createClient, type ClientData, type ClientInput } from "@/actions/clients";
+import {
+  createClient,
+  type ClientData,
+  type ClientInput,
+} from "@/actions/clients";
 import { PaymentMethod } from "@/app/generated/prisma";
 
 interface CreateClientDialogProps {
@@ -337,7 +341,10 @@ export function CreateClientDialog({
                       disabled={isPending}
                       className="h-4 w-4 rounded border-gray-300"
                     />
-                    <Label htmlFor="hasCurrentAccount" className="cursor-pointer">
+                    <Label
+                      htmlFor="hasCurrentAccount"
+                      className="cursor-pointer"
+                    >
                       Tiene Cuenta Corriente
                     </Label>
                   </div>
@@ -379,7 +386,7 @@ export function CreateClientDialog({
             <Button
               type="submit"
               disabled={isPending || !formData.name.trim()}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-red-500 hover:bg-red-600"
             >
               {isPending ? "Creando..." : "Crear Cliente"}
             </Button>

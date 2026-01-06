@@ -20,7 +20,12 @@ import {
   testPrinter,
 } from "@/actions/Printer";
 import { useToast } from "@/hooks/use-toast";
-import type { Printer, PrinterStatus, PrintMode, Station } from "@/app/generated/prisma";
+import type {
+  Printer,
+  PrinterStatus,
+  PrintMode,
+  Station,
+} from "@/app/generated/prisma";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -236,7 +241,7 @@ export function PrinterDetailsSidebar({
         )}
       >
         {/* Header */}
-        <div className="bg-orange-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-red-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <PrinterIcon className="h-5 w-5" />
             <h2 className="text-lg font-semibold">Detalles de Impresora</h2>
@@ -245,7 +250,7 @@ export function PrinterDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={() => setEditDialogOpen(true)}
             >
               <Pencil className="h-4 w-4" />
@@ -253,7 +258,7 @@ export function PrinterDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -417,7 +422,14 @@ export function PrinterDetailsSidebar({
                   <Label>Encabezado</Label>
                   <p className="text-sm">{printer.ticketHeader}</p>
                   <p className="text-xs text-muted-foreground">
-                    Tamaño: {printer.ticketHeaderSize === 0 ? "Pequeño" : printer.ticketHeaderSize === 1 ? "Normal" : printer.ticketHeaderSize === 2 ? "Mediano" : "Grande"}
+                    Tamaño:{" "}
+                    {printer.ticketHeaderSize === 0
+                      ? "Pequeño"
+                      : printer.ticketHeaderSize === 1
+                      ? "Normal"
+                      : printer.ticketHeaderSize === 2
+                      ? "Mediano"
+                      : "Grande"}
                   </p>
                 </div>
               )}
@@ -427,7 +439,14 @@ export function PrinterDetailsSidebar({
                   <Label>Pie</Label>
                   <p className="text-sm">{printer.ticketFooter}</p>
                   <p className="text-xs text-muted-foreground">
-                    Tamaño: {printer.ticketFooterSize === 0 ? "Pequeño" : printer.ticketFooterSize === 1 ? "Normal" : printer.ticketFooterSize === 2 ? "Mediano" : "Grande"}
+                    Tamaño:{" "}
+                    {printer.ticketFooterSize === 0
+                      ? "Pequeño"
+                      : printer.ticketFooterSize === 1
+                      ? "Normal"
+                      : printer.ticketFooterSize === 2
+                      ? "Mediano"
+                      : "Grande"}
                   </p>
                 </div>
               )}
@@ -464,7 +483,7 @@ export function PrinterDetailsSidebar({
           <Button
             onClick={handleTestPrint}
             disabled={!printer.isActive || isTesting}
-            className="w-full bg-orange-500 hover:bg-orange-600"
+            className="w-full bg-red-500 hover:bg-red-600"
           >
             {isTesting ? (
               "Enviando prueba..."

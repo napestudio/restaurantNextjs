@@ -91,7 +91,7 @@ export default function RestaurantConfigForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="px-6 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Guardando..." : "Guardar Cambios"}
         </button>

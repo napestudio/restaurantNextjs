@@ -7,14 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  X,
-  Save,
-  Settings,
-  Printer,
-  Tag,
-  Loader2,
-} from "lucide-react";
+import { X, Save, Settings, Printer, Tag, Loader2 } from "lucide-react";
 import {
   updateStation,
   assignCategoriesToStation,
@@ -73,7 +66,8 @@ export function StationDetailsSidebar({
   const [error, setError] = useState<string | null>(null);
 
   // Full station details
-  const [stationDetails, setStationDetails] = useState<StationWithDetails | null>(null);
+  const [stationDetails, setStationDetails] =
+    useState<StationWithDetails | null>(null);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   // Form state
@@ -309,7 +303,6 @@ export function StationDetailsSidebar({
                   </p>
                 )}
               </div>
-
             </div>
 
             {/* Categories */}
@@ -480,7 +473,7 @@ export function StationDetailsSidebar({
             <Button
               onClick={() => setIsEditing(true)}
               disabled={isLoading}
-              className="w-full bg-orange-500 hover:bg-orange-600"
+              className="w-full bg-red-500 hover:bg-red-600"
             >
               Editar Estación
             </Button>

@@ -2,6 +2,7 @@
 
 import {
   addOrderItem,
+  closeEmptyTable,
   createTableOrder,
   getAvailableTablesForMove,
   moveOrderToTable,
@@ -16,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
 import { ArrowRightLeft, Edit, Percent, RefreshCw, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
 import { CommittedOrderItemsList } from "./committed-order-items-list";
@@ -100,11 +101,13 @@ export function TableOrderSidebar({
   });
 
   // Derive current order from allOrders (for shared) or singleOrder (for non-shared)
-  const order = tableIsShared
-    ? (Array.isArray(allOrders)
-        ? allOrders.find((o) => o.id === selectedOrderId)
-        : null) || null
-    : singleOrder;
+  const order = useMemo(() => {
+    return tableIsShared
+      ? (Array.isArray(allOrders)
+          ? allOrders.find((o) => o.id === selectedOrderId)
+          : null) || null
+      : singleOrder;
+  }, [tableIsShared, allOrders, selectedOrderId, singleOrder]);
 
   // Combined loading state
   const isLoading = isLoadingOrders || isLoadingAction;
@@ -282,11 +285,26 @@ export function TableOrderSidebar({
     setIsLoadingAction(false);
   };
 
-  const handleCloseTable = () => {
+  const handleCloseTable = async () => {
     if (!order || !tableId) return;
 
+    // If order has no items, delete it directly and free the table
     if (order.items.length === 0) {
-      alert("No se puede cerrar una orden sin productos");
+      if (
+        !confirm("¿Cerrar mesa sin productos? La orden vacía será eliminada.")
+      ) {
+        return;
+      }
+
+      setIsLoadingAction(true);
+      const result = await closeEmptyTable(order.id);
+      setIsLoadingAction(false);
+
+      if (result.success) {
+        await handleCloseTableSuccess(tableId);
+      } else {
+        alert(result.error || "Error al cerrar la mesa");
+      }
       return;
     }
 
@@ -309,10 +327,10 @@ export function TableOrderSidebar({
       if (remainingOrders.length > 0) {
         // Switch to the first remaining order
         setSelectedOrderId(remainingOrders[0].id);
-        alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
+        // alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
       } else {
         // Last order closed, close sidebar
-        alert("Última orden cerrada exitosamente");
+        // alert("Última orden cerrada exitosamente");
         onClose();
       }
     } else {
@@ -720,10 +738,9 @@ export function TableOrderSidebar({
               <Button
                 onClick={handleCloseTable}
                 className="bg-red-500"
-                disabled={isLoading || order.items.length === 0}
+                disabled={isLoading}
               >
-                {/* <DollarSign className="h-4 w-4" /> */}
-                Cerrar Mesa
+                {order.items.length === 0 ? "Eliminar Orden" : "Cerrar Mesa"}
               </Button>
             </div>
           </div>

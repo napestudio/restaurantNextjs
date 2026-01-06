@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   CalendarDays,
   ChevronDown,
@@ -290,7 +291,9 @@ export function ReservationsTable({
                   <TableCell>
                     <div className="text-sm">
                       <div className="font-medium">
-                        {format(parseISO(reservation.date), "MMM dd, yyyy")}
+                        {format(parseISO(reservation.date), "dd MMM yyyy", {
+                          locale: es,
+                        })}
                       </div>
                       <div className="text-muted-foreground">
                         {reservation.timeSlot
@@ -373,7 +376,7 @@ export function ReservationsTable({
               variant="outline"
               onClick={onLoadMore}
               disabled={isPending}
-              className="min-w-[200px]"
+              className="min-w-50"
             >
               {isPending ? (
                 <>

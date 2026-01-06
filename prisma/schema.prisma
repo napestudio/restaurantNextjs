@@ -521,6 +521,7 @@ model ProductOnBranch {
 
   @@unique([productId, branchId])
   @@index([branchId])
+  @@index([productId])
 }
 
 model ProductPrice {
@@ -639,6 +640,8 @@ model Order {
   @@index([tableId])
   @@index([assignedToId])
   @@index([clientId])
+  @@index([branchId, status])
+  @@index([branchId, createdAt])
 }
 
 model OrderItem {
@@ -652,6 +655,8 @@ model OrderItem {
   price         Decimal // Current price (can be modified)
   originalPrice Decimal? // Original price from product
   notes         String? // Special instructions (e.g., "no sugar", "extra spicy")
+
+  @@index([orderId])
 }
 
 //
@@ -764,6 +769,10 @@ model Printer {
   ticketHeaderSize Int     @default(2) // 0=small, 1=normal, 2=double height, 3=double width+height
   ticketFooter     String? // Custom footer text for tickets
   ticketFooterSize Int     @default(1) // 0=small, 1=normal, 2=double height, 3=double width+height
+
+  // Control ticket formatting (for FULL_ORDER and BOTH modes)
+  controlTicketFontSize Int @default(1) // 0=small, 1=normal, 2=big
+  controlTicketSpacing  Int @default(1) // 0=small, 1=normal, 2=big
 
   // Assignment
   station   Station? @relation(fields: [stationId], references: [id])

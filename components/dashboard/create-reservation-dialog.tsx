@@ -225,7 +225,7 @@ export function CreateReservationDialog({
                     name: e.target.value,
                   }))
                 }
-                placeholder="John Doe"
+                placeholder="Nombre Apellido"
               />
             </div>
             <div>
@@ -240,7 +240,7 @@ export function CreateReservationDialog({
                     email: e.target.value,
                   }))
                 }
-                placeholder="nombre@eejemplo.com"
+                placeholder="nombre@ejemplo.com"
               />
             </div>
           </div>
@@ -366,7 +366,7 @@ export function CreateReservationDialog({
                   accessibilityNeeds: e.target.value,
                 }))
               }
-              placeholder="e.g., Wheelchair accessible, Ground floor preferred"
+              placeholder="e.j., Silla de ruedas, prefiere abajo"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Ayudanos a prepararnos para tu visita.

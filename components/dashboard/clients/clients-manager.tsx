@@ -115,7 +115,9 @@ export function ClientsManager({
   };
 
   const hasActiveFilters =
-    searchQuery.trim() || filterHasAccount !== "all" || filterHasDiscount !== "all";
+    searchQuery.trim() ||
+    filterHasAccount !== "all" ||
+    filterHasDiscount !== "all";
 
   return (
     <div className="p-6">
@@ -129,7 +131,7 @@ export function ClientsManager({
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}
-          className="bg-orange-500 hover:bg-orange-600"
+          className="bg-red-500 hover:bg-red-600"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Cliente
@@ -154,9 +156,7 @@ export function ClientsManager({
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              hasActiveFilters && "border-orange-500 text-orange-600"
-            )}
+            className={cn(hasActiveFilters && "border-red-500 text-red-600")}
           >
             <Filter className="h-4 w-4 mr-2" />
             Filtros

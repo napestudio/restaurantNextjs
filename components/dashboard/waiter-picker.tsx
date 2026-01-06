@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import useSWR from "swr";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getWaitersForBranch, type WaiterData } from "@/actions/users";
+import { getWaitersForBranch } from "@/actions/users";
 
 interface WaiterPickerProps {
   branchId: string;
@@ -20,6 +20,15 @@ interface WaiterPickerProps {
   disabled?: boolean;
 }
 
+// SWR fetcher for waiters
+const fetchWaiters = async (branchId: string) => {
+  const result = await getWaitersForBranch(branchId);
+  if (result.success && result.data) {
+    return result.data;
+  }
+  return [];
+};
+
 export function WaiterPicker({
   branchId,
   selectedWaiterId,
@@ -28,21 +37,17 @@ export function WaiterPicker({
   placeholder = "Seleccionar camarero",
   disabled = false,
 }: WaiterPickerProps) {
-  const [waiters, setWaiters] = useState<WaiterData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchWaiters() {
-      setIsLoading(true);
-      const result = await getWaitersForBranch(branchId);
-      if (result.success && result.data) {
-        setWaiters(result.data);
-      }
-      setIsLoading(false);
+  // Use SWR for caching waiters data across component mounts
+  const { data: waiters = [], isLoading } = useSWR(
+    branchId ? `waiters-${branchId}` : null,
+    () => fetchWaiters(branchId),
+    {
+      revalidateOnFocus: false, // Don't refetch when tab regains focus
+      revalidateOnReconnect: false, // Don't refetch on reconnect
+      dedupingInterval: 60000, // Dedupe requests within 1 minute
+      staleTime: 300000, // Consider data fresh for 5 minutes
     }
-
-    fetchWaiters();
-  }, [branchId]);
+  );
 
   const handleValueChange = (value: string) => {
     if (value === "__none__") {

@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getOrders } from "@/actions/Order";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import { Plus, ChevronDown, Loader2, UtensilsCrossed, ShoppingBag, Truck, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { OrderListView } from "./components/order-list-view";
 import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
 import { CreateOrderSidebar } from "./components/create-order-sidebar";
@@ -56,45 +73,117 @@ type Table = {
   name: string | null;
 };
 
+type PaginationInfo = {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
 interface OrdersClientProps {
   branchId: string;
   initialOrders: Order[];
   tables: Table[];
+  initialPagination: PaginationInfo;
+  initialTab: string;
+  initialSearch: string;
 }
 
 export function OrdersClient({
   branchId,
   initialOrders,
   tables,
+  initialPagination,
+  initialTab,
+  initialSearch,
 }: OrdersClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [, startTransition] = useTransition();
+  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
+  const [isPending, startTransition] = useTransition();
 
   // Sidebar state
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createOrderSidebarOpen, setCreateOrderSidebarOpen] = useState(false);
+  const [createOrderType, setCreateOrderType] = useState<OrderType | null>(null);
 
-  // Refresh orders - used after creating/updating orders
+  // Search state
+  const [searchInput, setSearchInput] = useState(initialSearch);
+
+  // Current tab from URL or initial
+  const currentTab = searchParams.get("type") || initialTab;
+  const currentPage = parseInt(searchParams.get("page") || "1");
+  const currentSearch = searchParams.get("search") || "";
+
+  // Sync state with props when they change (server re-render)
+  useEffect(() => {
+    setOrders(initialOrders);
+    setPagination(initialPagination);
+  }, [initialOrders, initialPagination]);
+
+  // Update URL and fetch orders
+  const updateUrlAndFetch = (type: string, page: number, search?: string) => {
+    const params = new URLSearchParams();
+    params.set("type", type);
+    params.set("page", page.toString());
+    if (search) {
+      params.set("search", search);
+    }
+    router.push(`/dashboard/orders?${params.toString()}`);
+  };
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    // Reset to page 1 when changing tabs, keep search
+    updateUrlAndFetch(value, 1, currentSearch);
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    updateUrlAndFetch(currentTab, page, currentSearch);
+  };
+
+  // Handle search
+  const handleSearch = () => {
+    if (searchInput.trim()) {
+      updateUrlAndFetch(currentTab, 1, searchInput.trim());
+    }
+  };
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchInput("");
+    updateUrlAndFetch(currentTab, 1);
+  };
+
+  // Handle search on enter key
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // Refresh orders for current tab and page
   const refreshOrders = () => {
     startTransition(async () => {
-      const result = await getOrders({ branchId });
+      const orderType = currentTab === "ALL" ? undefined : (currentTab as OrderType);
+      const result = await getOrders({
+        branchId,
+        type: orderType,
+        page: currentPage,
+        pageSize: 15,
+        search: currentSearch || undefined,
+      });
       if (result.success && result.data) {
         setOrders(result.data);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       }
     });
   };
-
-  // Filter orders by type for tabs
-  const dineInOrders = orders.filter(
-    (order) => order.type === OrderType.DINE_IN
-  );
-  const takeAwayOrders = orders.filter(
-    (order) => order.type === OrderType.TAKE_AWAY
-  );
-  const deliveryOrders = orders.filter(
-    (order) => order.type === OrderType.DELIVERY
-  );
 
   // Handle order click
   const handleOrderClick = (order: Order) => {
@@ -108,63 +197,203 @@ export function OrdersClient({
   };
 
   const handleOrderUpdated = () => {
-    // Refresh orders after updating client/waiter/status
     refreshOrders();
   };
 
+  // Handle create order
+  const handleCreateOrder = (type: OrderType) => {
+    setCreateOrderType(type);
+    setCreateOrderSidebarOpen(true);
+  };
+
+  const handleCloseCreateSidebar = () => {
+    setCreateOrderSidebarOpen(false);
+    setCreateOrderType(null);
+  };
+
+  // Handle order created - switch tab, refresh and open the details sidebar
+  const handleOrderCreated = async (orderId?: string, createdOrderType?: OrderType) => {
+    // Switch to the tab matching the created order type
+    const targetTab = createdOrderType || currentTab;
+
+    // Update URL to reflect the new tab (this triggers a re-render with new data)
+    if (createdOrderType && createdOrderType !== currentTab) {
+      const params = new URLSearchParams();
+      params.set("type", createdOrderType);
+      params.set("page", "1");
+      if (currentSearch) {
+        params.set("search", currentSearch);
+      }
+      router.push(`/dashboard/orders?${params.toString()}`);
+    }
+
+    // Fetch orders for the target tab
+    const result = await getOrders({
+      branchId,
+      type: targetTab === "ALL" ? undefined : (targetTab as OrderType),
+      page: 1,
+      pageSize: 15,
+      search: currentSearch || undefined,
+    });
+
+    if (result.success && result.data) {
+      setOrders(result.data);
+      if (result.pagination) {
+        setPagination(result.pagination);
+      }
+
+      // If we have an order ID, find and open it in the sidebar
+      if (orderId) {
+        const createdOrder = result.data.find((o) => o.id === orderId);
+        if (createdOrder) {
+          setSelectedOrder(createdOrder);
+          setSidebarOpen(true);
+        }
+      }
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const { totalPages } = pagination;
+    const pages: (number | "ellipsis")[] = [];
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push("ellipsis");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1);
+        pages.push("ellipsis");
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push("ellipsis");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push("ellipsis");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  const isLoadingState = isPending;
+
   return (
     <div className="space-y-6">
-      {/* Order Count and Create Button */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          Mostrando {orders.length} {orders.length === 1 ? "orden" : "órdenes"}
+      {/* Search and Create Button */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Buscar por código..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            className="pl-9 pr-9"
+          />
+          {(searchInput || currentSearch) && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <Button onClick={() => setCreateOrderSidebarOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Orden
-        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Orden
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => handleCreateOrder(OrderType.TAKE_AWAY)}>
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Para Llevar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleCreateOrder(OrderType.DINE_IN)}>
+              <UtensilsCrossed className="h-4 w-4 mr-2" />
+              Para Comer Aquí
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleCreateOrder(OrderType.DELIVERY)}>
+              <Truck className="h-4 w-4 mr-2" />
+              Delivery
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Order Type Tabs */}
-      <Tabs defaultValue="ALL" className="w-full">
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="ALL">Todas ({orders.length})</TabsTrigger>
-          <TabsTrigger value={OrderType.DINE_IN}>
-            Para Comer Aquí ({dineInOrders.length})
-          </TabsTrigger>
-          <TabsTrigger value={OrderType.TAKE_AWAY}>
-            Para Llevar ({takeAwayOrders.length})
-          </TabsTrigger>
-          <TabsTrigger value={OrderType.DELIVERY}>
-            Delivery ({deliveryOrders.length})
-          </TabsTrigger>
+          <TabsTrigger value="DINE_IN">Para Comer Aquí</TabsTrigger>
+          <TabsTrigger value="TAKE_AWAY">Para Llevar</TabsTrigger>
+          <TabsTrigger value="DELIVERY">Delivery</TabsTrigger>
+          <TabsTrigger value="ALL">Todas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ALL" className="mt-6">
-          <OrderListView orders={orders} onOrderClick={handleOrderClick} />
-        </TabsContent>
-
-        <TabsContent value={OrderType.DINE_IN} className="mt-6">
-          <OrderListView
-            orders={dineInOrders}
-            onOrderClick={handleOrderClick}
-          />
-        </TabsContent>
-
-        <TabsContent value={OrderType.TAKE_AWAY} className="mt-6">
-          <OrderListView
-            orders={takeAwayOrders}
-            onOrderClick={handleOrderClick}
-          />
-        </TabsContent>
-
-        <TabsContent value={OrderType.DELIVERY} className="mt-6">
-          <OrderListView
-            orders={deliveryOrders}
-            onOrderClick={handleOrderClick}
-          />
+        <TabsContent value={currentTab} className="mt-6">
+          {isLoadingState ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No hay órdenes para mostrar
+            </div>
+          ) : (
+            <OrderListView orders={orders} onOrderClick={handleOrderClick} />
+          )}
         </TabsContent>
       </Tabs>
+
+      {/* Pagination */}
+      {!isLoadingState && pagination.totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              />
+            </PaginationItem>
+            {getPageNumbers().map((pageNum, index) =>
+              pageNum === "ellipsis" ? (
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink
+                    onClick={() => handlePageChange(pageNum)}
+                    isActive={currentPage === pageNum}
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === pagination.totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
       {/* Order Details Sidebar */}
       <OrderDetailsSidebar
@@ -180,8 +409,9 @@ export function OrdersClient({
         branchId={branchId}
         tables={tables}
         open={createOrderSidebarOpen}
-        onClose={() => setCreateOrderSidebarOpen(false)}
-        onOrderCreated={refreshOrders}
+        onClose={handleCloseCreateSidebar}
+        onOrderCreated={handleOrderCreated}
+        initialOrderType={createOrderType}
       />
     </div>
   );

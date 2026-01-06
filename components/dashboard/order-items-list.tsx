@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Minus, Plus } from "lucide-react";
@@ -119,9 +119,9 @@ export function OrderItemsList({
     }
   };
 
-  const calculateTotal = () => {
+  const total = useMemo(() => {
     return items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  };
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -258,7 +258,7 @@ export function OrderItemsList({
       <div className="border-t pt-3">
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
-          <span>${calculateTotal().toFixed(2)}</span>
+          <span>${total.toFixed(2)}</span>
         </div>
       </div>
     </div>

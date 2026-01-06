@@ -1,8 +1,62 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { ReservationStatus } from "@/app/generated/prisma";
+import { ReservationStatus, Table } from "@/app/generated/prisma";
 import { TableShapeType } from "@/types/table";
+
+/**
+ * Batch calculate remaining capacity for multiple tables
+ * This avoids N+1 queries by fetching all reservations in a single query
+ */
+async function batchGetRemainingCapacity(
+  tables: Pick<Table, "id" | "capacity" | "isShared">[],
+  date: Date,
+  timeSlotId: string
+): Promise<Map<string, number>> {
+  const tableIds = tables.map((t) => t.id);
+
+  // Single query to get all reservations for all tables
+  const reservations = await prisma.reservationTable.findMany({
+    where: {
+      tableId: { in: tableIds },
+      reservation: {
+        date,
+        timeSlotId,
+        status: {
+          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
+      },
+    },
+    include: {
+      reservation: {
+        select: { people: true },
+      },
+    },
+  });
+
+  // Group reservations by tableId
+  const reservationsByTable = new Map<string, number>();
+  for (const rt of reservations) {
+    const current = reservationsByTable.get(rt.tableId) || 0;
+    reservationsByTable.set(rt.tableId, current + rt.reservation.people);
+  }
+
+  // Calculate remaining capacity for each table
+  const capacityMap = new Map<string, number>();
+  for (const table of tables) {
+    const occupiedSeats = reservationsByTable.get(table.id) || 0;
+
+    if (!table.isShared) {
+      // For non-shared tables: 0 if any reservation, full capacity if none
+      capacityMap.set(table.id, occupiedSeats > 0 ? 0 : table.capacity);
+    } else {
+      // For shared tables: remaining capacity
+      capacityMap.set(table.id, Math.max(0, table.capacity - occupiedSeats));
+    }
+  }
+
+  return capacityMap;
+}
 
 /**
  * Get all tables for a branch
@@ -348,20 +402,14 @@ export async function findAvailableTables(
       }
     }
 
-    // Calculate remaining capacity for each table
-    const tablesWithCapacity = await Promise.all(
-      allTables.map(async (table) => {
-        const remainingCapacity = await getRemainingCapacity(
-          table.id,
-          date,
-          timeSlotId
-        );
-        return {
-          ...table,
-          remainingCapacity,
-        };
-      })
-    );
+    // Calculate remaining capacity for all tables in a single batch query
+    const capacityMap = await batchGetRemainingCapacity(allTables, date, timeSlotId);
+
+    // Map tables with their remaining capacity
+    const tablesWithCapacity = allTables.map((table) => ({
+      ...table,
+      remainingCapacity: capacityMap.get(table.id) ?? 0,
+    }));
 
     // Filter to only tables with available capacity AND not manually occupied/reserved/cleaning
     const availableTables = tablesWithCapacity.filter(

@@ -10,7 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Trash2, Users, LayoutGrid } from "lucide-react";
+import {
+  X,
+  Trash2,
+  Users,
+  LayoutGrid,
+  Circle,
+  Square,
+  RectangleHorizontal,
+  RectangleVertical,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,14 +30,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { FloorTable } from "@/lib/floor-plan-utils";
+import type { TableShapeType } from "@/types/table";
 
 interface TableEditSidebarProps {
   table: FloorTable | null;
   open: boolean;
   onClose: () => void;
   onUpdateCapacity: (tableId: string, capacity: number) => void;
+  onUpdateShape: (tableId: string, shape: TableShapeType) => void;
+  onUpdateIsShared: (tableId: string, isShared: boolean) => void;
   onDelete: (tableId: string) => void;
 }
 
@@ -37,6 +50,8 @@ export function TableEditSidebar({
   open,
   onClose,
   onUpdateCapacity,
+  onUpdateShape,
+  onUpdateIsShared,
   onDelete,
 }: TableEditSidebarProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -59,6 +74,14 @@ export function TableEditSidebar({
     onUpdateCapacity(table.id, Number.parseInt(value));
   };
 
+  const handleShapeChange = (value: TableShapeType) => {
+    onUpdateShape(table.id, value);
+  };
+
+  const handleIsSharedChange = (checked: boolean) => {
+    onUpdateIsShared(table.id, checked);
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -78,7 +101,7 @@ export function TableEditSidebar({
         )}
       >
         {/* Header */}
-        <div className="bg-amber-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-red-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5" />
             <h2 className="text-lg font-semibold">Mesa {table.number}</h2>
@@ -95,12 +118,45 @@ export function TableEditSidebar({
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Table Number */}
+          {/* Shape */}
           <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">
-              Numero de Mesa
+            <Label
+              htmlFor="edit-shape"
+              className="text-sm text-muted-foreground"
+            >
+              Forma de la Mesa
             </Label>
-            <div className="text-2xl font-bold">{table.number}</div>
+            <Select value={table.shape} onValueChange={handleShapeChange}>
+              <SelectTrigger id="edit-shape" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CIRCLE">
+                  <div className="flex items-center space-x-2">
+                    <Circle className="h-4 w-4" />
+                    <span>Círculo</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="SQUARE">
+                  <div className="flex items-center space-x-2">
+                    <Square className="h-4 w-4" />
+                    <span>Cuadrada</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="RECTANGLE">
+                  <div className="flex items-center space-x-2">
+                    <RectangleHorizontal className="h-4 w-4" />
+                    <span>Rectangular</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="WIDE">
+                  <div className="flex items-center space-x-2">
+                    <RectangleVertical className="h-4 w-4" />
+                    <span>Barra</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Capacity */}
@@ -119,11 +175,13 @@ export function TableEditSidebar({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2, 4, 6, 8, 10, 12].map((num) => (
+                {Array.from({ length: 8 }, (_, i) => i + 1).map((num) => (
                   <SelectItem key={num} value={num.toString()}>
                     <div className="flex items-center space-x-2">
                       <Users className="h-4 w-4" />
-                      <span>{num} comensales</span>
+                      <span>
+                        {num} {num === 1 ? "comensal" : "comensales"}
+                      </span>
                     </div>
                   </SelectItem>
                 ))}
@@ -134,39 +192,21 @@ export function TableEditSidebar({
             </p>
           </div>
 
-          {/* Table Info */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-medium text-sm text-muted-foreground">
-              Informacion
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Forma:</span>
-                <p className="font-medium">
-                  {table.shape === "CIRCLE"
-                    ? "Circulo"
-                    : table.shape === "SQUARE"
-                    ? "Cuadrada"
-                    : table.shape === "RECTANGLE"
-                    ? "Rectangular"
-                    : "Barra"}
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Tamano:</span>
-                <p className="font-medium">
-                  {table.width}x{table.height}
-                </p>
-              </div>
-              {table.isShared && (
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">
-                    Mesa compartida:
-                  </span>
-                  <p className="font-medium">Si</p>
-                </div>
-              )}
-            </div>
+          {/* Is Shared */}
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="edit-is-shared"
+              checked={table.isShared}
+              onCheckedChange={(checked) =>
+                handleIsSharedChange(checked === true)
+              }
+            />
+            <Label
+              htmlFor="edit-is-shared"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Mesa compartida (puede tener múltiples reservas)
+            </Label>
           </div>
         </div>
 

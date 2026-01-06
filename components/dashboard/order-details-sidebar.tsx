@@ -33,11 +33,13 @@ import {
   User,
   UtensilsCrossed,
   X,
+  Banknote,
 } from "lucide-react";
 import { useState } from "react";
 import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
+import { CloseOrderDialog } from "./close-order-dialog";
 
 type Order = {
   id: string;
@@ -133,6 +135,7 @@ export function OrderDetailsSidebar({
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
 
   if (!order) return null;
 
@@ -280,6 +283,18 @@ export function OrderDetailsSidebar({
       setIsPrinting(false);
     }
   };
+
+  const handleCloseOrderSuccess = () => {
+    setIsCloseOrderDialogOpen(false);
+    onOrderUpdated?.();
+    onClose();
+  };
+
+  // Check if order can be finalized (not already completed or canceled)
+  const canFinalizeOrder =
+    order.status !== OrderStatus.COMPLETED &&
+    order.status !== OrderStatus.CANCELED &&
+    order.items.length > 0;
 
   return (
     <>
@@ -629,7 +644,16 @@ export function OrderDetailsSidebar({
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-3">
+          {canFinalizeOrder && (
+            <Button
+              onClick={() => setIsCloseOrderDialogOpen(true)}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <Banknote className="h-4 w-4 mr-2" />
+              Finalizar Venta
+            </Button>
+          )}
           <Button
             onClick={handlePrintControlTicket}
             disabled={isPrinting || order.items.length === 0}
@@ -641,6 +665,15 @@ export function OrderDetailsSidebar({
           </Button>
         </div>
       </div>
+
+      {/* Close Order Dialog */}
+      <CloseOrderDialog
+        open={isCloseOrderDialogOpen}
+        onOpenChange={setIsCloseOrderDialogOpen}
+        order={order}
+        branchId={branchId}
+        onSuccess={handleCloseOrderSuccess}
+      />
     </>
   );
 }

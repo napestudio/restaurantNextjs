@@ -6,16 +6,17 @@ export default async function ReservationsPage() {
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";
 
-  // Fetch time slots for creating reservations
-  const timeSlotsResult = await getTimeSlots(branchId);
+  // Fetch time slots and reservations in parallel for faster loading
+  const [timeSlotsResult, reservationsResult] = await Promise.all([
+    getTimeSlots(branchId),
+    getFilteredReservations(branchId, {
+      type: "today",
+      limit: 10,
+    }),
+  ]);
+
   const timeSlots =
     timeSlotsResult.success && timeSlotsResult.data ? timeSlotsResult.data : [];
-
-  // Fetch only today's reservations initially (most efficient for common use case)
-  const reservationsResult = await getFilteredReservations(branchId, {
-    type: "today",
-    limit: 10,
-  });
 
   const reservations =
     reservationsResult.success && reservationsResult.data

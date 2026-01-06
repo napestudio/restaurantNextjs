@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { getAvailableProductsForOrder } from "@/actions/Order";
 
 type Product = {
@@ -24,11 +24,13 @@ const ProductsContext = createContext<ProductsContextType | undefined>(undefined
 interface ProductsProviderProps {
   branchId: string;
   children: ReactNode;
+  initialProducts?: Product[];
 }
 
-export function ProductsProvider({ branchId, children }: ProductsProviderProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function ProductsProvider({ branchId, children, initialProducts }: ProductsProviderProps) {
+  // Use initial products if provided, avoiding double fetch
+  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
+  const [isLoading, setIsLoading] = useState(!initialProducts);
   const [error, setError] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
@@ -47,10 +49,12 @@ export function ProductsProvider({ branchId, children }: ProductsProviderProps) 
     }
   }, [branchId]);
 
-  // Load products on mount and when branchId changes
+  // Fetch products on mount if no initial products were provided
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    if (!initialProducts) {
+      loadProducts();
+    }
+  }, [initialProducts, loadProducts]);
 
   const refreshProducts = useCallback(async () => {
     await loadProducts();

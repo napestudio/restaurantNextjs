@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import type { FloorTable, TableWithReservations } from "@/lib/floor-plan-utils";
+import type { TableShapeType } from "@/types/table";
 import {
   transformTables,
   calculateTableStatus,
-  snapToGrid,
   constrainToBounds,
 } from "@/lib/floor-plan-utils";
 import { GRID_SIZE } from "@/lib/floor-plan-constants";
@@ -69,7 +69,7 @@ export function useFloorPlanState({
           width,
           height,
           rotation: dbTable.rotation ?? 0,
-          shape: (dbTable.shape ?? "SQUARE") as any,
+          shape: (dbTable.shape ?? "SQUARE") as TableShapeType,
           capacity: dbTable.capacity,
           status,
           currentGuests,
