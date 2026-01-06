@@ -74,7 +74,7 @@ export function EditUserDialog({
   });
 
   const selectedRole = watch("role");
-  const selectedBranchId = watch("branchId");
+  // const selectedBranchId = watch("branchId");
 
   useEffect(() => {
     async function loadBranches() {
@@ -140,9 +140,7 @@ export function EditUserDialog({
             <Pencil className="h-5 w-5" />
             Editar Usuario
           </DialogTitle>
-          <DialogDescription>
-            Modifica los datos del usuario.
-          </DialogDescription>
+          <DialogDescription>Modifica los datos del usuario.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -162,7 +160,9 @@ export function EditUserDialog({
                 disabled={isPending}
               />
               {errors.username && (
-                <p className="text-sm text-red-600">{errors.username.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.username.message}
+                </p>
               )}
             </div>
 
@@ -205,7 +205,9 @@ export function EditUserDialog({
                 disabled={isPending}
               />
               {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
                 Si se completa: mínimo 8 caracteres, mayúsculas, minúsculas y
@@ -243,7 +245,7 @@ export function EditUserDialog({
               )}
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="edit-branchId">Sucursal *</Label>
               <Select
                 value={selectedBranchId}
@@ -264,7 +266,7 @@ export function EditUserDialog({
               {errors.branchId && (
                 <p className="text-sm text-red-600">{errors.branchId.message}</p>
               )}
-            </div>
+            </div> */}
           </div>
 
           <DialogFooter>
