@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  cancelReservation,
   createReservation,
+  deleteReservation,
   getFilteredReservations,
   updateReservationStatus,
   type ReservationFilterType,
@@ -16,7 +16,7 @@ import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
-import { CancelReservationDialog } from "./cancel-reservation-dialog";
+import { DeleteReservationDialog } from "./delete-reservation-dialog";
 import { CreateReservationDialog } from "./create-reservation-dialog";
 import { ReservationsTable } from "./reservations-table";
 import { ViewReservationDialog } from "./view-reservation-dialog";
@@ -54,9 +54,9 @@ export function ReservationsManager({
   const [selectedReservation, setSelectedReservation] =
     useState<SerializedReservation | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [reservationToCancel, setReservationToCancel] = useState<string | null>(
+  const [reservationToDelete, setReservationToDelete] = useState<string | null>(
     null
   );
 
@@ -180,22 +180,22 @@ export function ReservationsManager({
     setViewDialogOpen(true);
   };
 
-  const handleCancelClick = (id: string) => {
-    setReservationToCancel(id);
-    setCancelDialogOpen(true);
+  const handleDeleteClick = (id: string) => {
+    setReservationToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
-  const handleCancelConfirm = async () => {
-    if (reservationToCancel) {
+  const handleDeleteConfirm = async () => {
+    if (reservationToDelete) {
       startTransition(async () => {
-        const result = await cancelReservation(reservationToCancel);
+        const result = await deleteReservation(reservationToDelete);
 
         if (result.success) {
-          setCancelDialogOpen(false);
-          setReservationToCancel(null);
+          setDeleteDialogOpen(false);
+          setReservationToDelete(null);
           mutate();
         } else {
-          console.error("Failed to cancel reservation:", result.error);
+          console.error("Failed to delete reservation:", result.error);
         }
       });
     }
@@ -271,7 +271,7 @@ export function ReservationsManager({
         onDateRangeChange={(from, to) => handleFilterChange("dateRange", from, to)}
         onStatusUpdate={handleStatusUpdate}
         onView={handleView}
-        onCancel={handleCancelClick}
+        onDelete={handleDeleteClick}
         onLoadMore={handleLoadMore}
       />
 
@@ -290,10 +290,10 @@ export function ReservationsManager({
         branchId={branchId}
       />
 
-      <CancelReservationDialog
-        open={cancelDialogOpen}
-        onOpenChange={setCancelDialogOpen}
-        onConfirm={handleCancelConfirm}
+      <DeleteReservationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
         isPending={isPending}
       />
     </div>
