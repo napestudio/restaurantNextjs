@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useCallback, useState, useTransition } from "react";
 import { DeleteReservationDialog } from "./delete-reservation-dialog";
-import { CreateReservationDialog } from "./create-reservation-dialog";
+import { CreateReservationSidebar } from "./create-reservation-sidebar";
 import { ReservationsTable } from "./reservations-table";
 import { ViewReservationDialog } from "./view-reservation-dialog";
 import LoadingToast from "./loading-toast";
@@ -207,11 +207,13 @@ export function ReservationsManager({
     phone: string;
     date: string;
     time: string;
+    exactTime: string;
     guests: string;
     dietaryRestrictions: string;
     accessibilityNeeds: string;
     notes: string;
     status: string;
+    clientId?: string;
   }) => {
     startTransition(async () => {
       const result = await createReservation({
@@ -220,9 +222,10 @@ export function ReservationsManager({
         customerEmail: newReservation.email,
         customerPhone: newReservation.phone,
         date: newReservation.date,
-        time: newReservation.time,
+        time: newReservation.exactTime || newReservation.time,
         guests: Number.parseInt(newReservation.guests),
         timeSlotId: newReservation.time,
+        exactTime: newReservation.exactTime || undefined,
         dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
         accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
         notes: newReservation.notes || undefined,
@@ -281,7 +284,7 @@ export function ReservationsManager({
         onOpenChange={setViewDialogOpen}
       />
 
-      <CreateReservationDialog
+      <CreateReservationSidebar
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onCreate={handleCreate}
