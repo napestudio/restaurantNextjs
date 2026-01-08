@@ -35,7 +35,7 @@ export async function isUserAdminInBranch(
     where: {
       userId,
       branchId,
-      role: UserRole.ADMIN,
+      role: UserRole.ADMIN || UserRole.MANAGER,
     },
   });
 
