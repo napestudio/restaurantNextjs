@@ -5,20 +5,19 @@ export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
 
-  // Protect dashboard routes
-  if (pathname.startsWith("/dashboard")) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
+  // Redirect logged-in users away from login page
+  if (pathname === "/login" && isLoggedIn) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Note: For admin-only routes, check permissions in the page/API route itself
-  // Middleware should only handle authentication, not authorization
-  // Use the isUserAdmin() helper from lib/permissions.ts in your pages/actions
+  // Protect dashboard routes
+  if (pathname.startsWith("/dashboard") && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
 
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/dashboard/:path*", "/login"],
 };

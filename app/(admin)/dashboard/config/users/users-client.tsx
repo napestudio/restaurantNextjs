@@ -17,8 +17,9 @@ import {
   EditUserDialog,
   DeleteUserDialog,
 } from "@/components/dashboard/users";
-import { UserWithBranches, USER_ROLE_LABELS } from "@/types/user";
+import { UserWithBranches, USER_ROLE_LABELS, UserRole } from "@/types/user";
 import { getUsers } from "@/actions/users";
+import { useToast } from "@/hooks/use-toast";
 
 interface UsersClientProps {
   initialUsers: UserWithBranches[];
@@ -38,12 +39,62 @@ export function UsersClient({
   const [selectedUser, setSelectedUser] = useState<UserWithBranches | null>(
     null
   );
+  const { toast } = useToast();
 
   const refreshUsers = async () => {
     const result = await getUsers();
     if (result.success && result.data) {
       setUsers(result.data);
     }
+  };
+
+  // Optimistic create: immediately add user to list
+  const handleOptimisticCreate = (userData: {
+    tempId: string;
+    username: string;
+    name: string;
+    role: UserRole;
+  }) => {
+    const optimisticUser: UserWithBranches = {
+      id: userData.tempId,
+      username: userData.username,
+      name: userData.name,
+      email: null,
+      image: null,
+      createdAt: new Date(),
+      userOnBranches: [
+        {
+          id: userData.tempId,
+          name: "",
+          role: userData.role,
+          restaurant: { id: "", name: "" },
+        },
+      ],
+    };
+    setUsers((prev) => [optimisticUser, ...prev]);
+  };
+
+  // On success: replace temp ID with real ID and show toast
+  const handleCreateSuccess = (tempId: string, realId: string) => {
+    setUsers((prev) =>
+      prev.map((user) => (user.id === tempId ? { ...user, id: realId } : user))
+    );
+    toast({
+      title: "Usuario creado",
+      description: "El usuario ha sido creado correctamente.",
+    });
+    // Refresh to get complete data from server
+    refreshUsers();
+  };
+
+  // On error: remove optimistic user and show error toast
+  const handleCreateError = (tempId: string, error: string) => {
+    setUsers((prev) => prev.filter((user) => user.id !== tempId));
+    toast({
+      variant: "destructive",
+      title: "Error al crear usuario",
+      description: error,
+    });
   };
 
   const handleEdit = (user: UserWithBranches) => {
@@ -87,7 +138,10 @@ export function UsersClient({
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="bg-red-500 hover:bg-red-600"
+          >
             <UserPlus className="mr-2 h-4 w-4" />
             Agregar Usuario
           </Button>
@@ -200,7 +254,9 @@ export function UsersClient({
       <CreateUserDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onCreated={refreshUsers}
+        onOptimisticCreate={handleOptimisticCreate}
+        onCreateSuccess={handleCreateSuccess}
+        onCreateError={handleCreateError}
         branchId={branchId}
       />
 

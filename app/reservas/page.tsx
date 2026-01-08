@@ -11,7 +11,7 @@ export default function ReservationPage() {
   return (
     <>
       <div className="min-h-screen text-center place-content-center py-16 space-y-6 bg-black">
-        <div className="max-w-[500px] mx-auto px-4 md:px-0 flex justify-center flex-col items-center gap-4">
+        <div className="max-w-125 mx-auto px-4 md:px-0 flex justify-center flex-col items-center gap-4">
           <Avatar />
           <h1 className="text-4xl text-white leading-none">Reservá tu mesa</h1>
           <div className="bg-white rounded-md w-full py-6 px-2">

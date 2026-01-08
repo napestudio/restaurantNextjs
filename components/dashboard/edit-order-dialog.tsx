@@ -103,11 +103,17 @@ export function EditOrderDialog({
   }, [open, currentPartySize, currentClient, currentWaiterId]);
 
   const handleSave = async () => {
-    setIsLoading(true);
+    // Store values before closing
+    const newPartySize = parseInt(partySize);
+    const newClientId = selectedClient?.id || null;
+    const newWaiterId = selectedWaiterId;
+
+    // Optimistic update - close dialog immediately
+    onOpenChange(false);
+    onSuccess();
 
     try {
       // Update party size if changed
-      const newPartySize = parseInt(partySize);
       if (
         !isNaN(newPartySize) &&
         newPartySize > 0 &&
@@ -115,43 +121,28 @@ export function EditOrderDialog({
       ) {
         const result = await updatePartySize(orderId, newPartySize);
         if (!result.success) {
-          alert(result.error || "Error al actualizar el número de personas");
-          setIsLoading(false);
-          return;
+          console.error("Failed to update party size:", result.error);
         }
       }
 
       // Update client if changed
-      if (selectedClient?.id !== currentClientId) {
-        const result = await assignClientToOrder(
-          orderId,
-          selectedClient?.id || null
-        );
+      if (newClientId !== currentClientId) {
+        const result = await assignClientToOrder(orderId, newClientId);
         if (!result.success) {
-          alert(result.error || "Error al actualizar el cliente");
-          setIsLoading(false);
-          return;
+          console.error("Failed to update client:", result.error);
         }
       }
 
       // Update waiter if changed
-      if (selectedWaiterId !== currentWaiterId) {
-        const result = await assignStaffToOrder(orderId, selectedWaiterId);
+      if (newWaiterId !== currentWaiterId) {
+        const result = await assignStaffToOrder(orderId, newWaiterId);
         if (!result.success) {
-          alert(result.error || "Error al actualizar el camarero");
-          setIsLoading(false);
-          return;
+          console.error("Failed to update waiter:", result.error);
         }
       }
-
-      onSuccess();
-      onOpenChange(false);
     } catch (error) {
       console.error("Error updating order:", error);
-      alert("Error al actualizar la orden");
     }
-
-    setIsLoading(false);
   };
 
   return (

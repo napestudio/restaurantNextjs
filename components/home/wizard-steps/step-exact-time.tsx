@@ -29,14 +29,16 @@ function generateFifteenMinuteIntervals(
   dateStr: string
 ): TimeInterval[] {
   const intervals: TimeInterval[] = [];
-  const selectedDate = new Date(dateStr);
+  // Parse date string as local date (not UTC) by using yyyy/mm/dd format or splitting
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const selectedDate = new Date(year, month - 1, day);
   const now = new Date();
 
-  // Extract hours and minutes from slot times using UTC to avoid timezone issues
-  const startHour = startTime.getUTCHours();
-  const startMin = startTime.getUTCMinutes();
-  const endHour = endTime.getUTCHours();
-  const endMin = endTime.getUTCMinutes();
+  // Extract hours and minutes from slot times using local time
+  const startHour = startTime.getHours();
+  const startMin = startTime.getMinutes();
+  const endHour = endTime.getHours();
+  const endMin = endTime.getMinutes();
 
   // Generate 15-min intervals
   let currentHour = startHour;

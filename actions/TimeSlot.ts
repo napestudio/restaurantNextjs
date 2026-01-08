@@ -94,6 +94,17 @@ export async function createTimeSlot(data: {
         ...timeSlot,
         capacity,
         pricePerPerson: timeSlot.pricePerPerson?.toNumber() || 0,
+        startTime: timeSlot.startTime.toISOString(),
+        endTime: timeSlot.endTime.toISOString(),
+        createdAt: timeSlot.createdAt.toISOString(),
+        updatedAt: timeSlot.updatedAt.toISOString(),
+        tables: timeSlot.tables.map((tt) => ({
+          id: tt.table.id,
+          number: tt.table.number,
+          name: tt.table.name,
+          capacity: tt.table.capacity,
+          isActive: tt.table.isActive,
+        })),
       },
     };
   } catch (error) {
@@ -270,6 +281,17 @@ export async function updateTimeSlot(
         ...timeSlot,
         capacity,
         pricePerPerson: timeSlot.pricePerPerson?.toNumber() || 0,
+        startTime: timeSlot.startTime.toISOString(),
+        endTime: timeSlot.endTime.toISOString(),
+        createdAt: timeSlot.createdAt.toISOString(),
+        updatedAt: timeSlot.updatedAt.toISOString(),
+        tables: timeSlot.tables.map((tt) => ({
+          id: tt.table.id,
+          number: tt.table.number,
+          name: tt.table.name,
+          capacity: tt.table.capacity,
+          isActive: tt.table.isActive,
+        })),
       },
     };
   } catch (error) {

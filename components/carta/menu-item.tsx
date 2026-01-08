@@ -18,7 +18,7 @@ export function MenuItem({
   return (
     <div className="flex gap-4 group border-b border-white p-4">
       {imageUrl && (
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <Image
             src={imageUrl}
             alt={name}
@@ -39,7 +39,7 @@ export function MenuItem({
             )}
           </h3>
           {price !== null && price !== undefined && (
-            <span className="font-bold text-lg text-white flex-shrink-0">
+            <span className="font-bold text-lg text-white shrink-0">
               ${price}
             </span>
           )}

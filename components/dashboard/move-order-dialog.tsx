@@ -59,7 +59,7 @@ export function MoveOrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>Mover Orden a Otra Mesa</DialogTitle>
           <DialogDescription>
@@ -74,7 +74,9 @@ export function MoveOrderDialog({
             <div className="flex items-center justify-center gap-4 py-2 px-4 bg-muted rounded-lg">
               <div className="text-center">
                 <div className="text-sm text-muted-foreground">Desde</div>
-                <div className="text-lg font-bold">Mesa {currentTableNumber}</div>
+                <div className="text-lg font-bold">
+                  Mesa {currentTableNumber}
+                </div>
               </div>
               <ArrowRight className="h-5 w-5 text-muted-foreground" />
               <div className="text-center">
@@ -93,7 +95,7 @@ export function MoveOrderDialog({
                 No hay mesas disponibles en este momento
               </div>
             ) : (
-              <ScrollArea className="h-[300px] rounded-md border">
+              <ScrollArea className="h-75 rounded-md border">
                 <div className="p-4 space-y-2">
                   {availableTables.map((table) => (
                     <button
@@ -153,11 +155,7 @@ export function MoveOrderDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             Cancelar
           </Button>
           <Button

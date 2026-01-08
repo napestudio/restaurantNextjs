@@ -122,7 +122,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
   }
 
   return (
-    <div className="space-y-8 ">
+    <div className="space-y-8 md:px-3">
       {/* Stepper */}
       {/* <Stepper steps={WIZARD_STEPS} currentStep={currentStep} /> */}
 

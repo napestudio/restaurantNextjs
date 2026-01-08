@@ -62,26 +62,36 @@ interface CreateReservationSidebarProps {
     clientId?: string;
   }) => void;
   timeSlots: TimeSlot[];
-  isPending?: boolean;
   branchId: string;
 }
 
 function generateFifteenMinuteIntervals(
-  startTime: Date,
-  endTime: Date,
+  startTime: Date | string,
+  endTime: Date | string,
   dateStr: string
 ): TimeInterval[] {
   const intervals: TimeInterval[] = [];
-  const selectedDate = new Date(dateStr);
   const now = new Date();
 
-  // Extract hours and minutes from slot times using UTC to avoid timezone issues
-  const startHour = startTime.getUTCHours();
-  const startMin = startTime.getUTCMinutes();
-  const endHour = endTime.getUTCHours();
-  const endMin = endTime.getUTCMinutes();
+  // Parse date string as local date (not UTC)
+  const [year, month, day] = dateStr.split("-").map(Number);
 
-  // Generate 15-min intervals
+  // Convert to Date if string (server actions serialize dates as ISO strings)
+  const startDate = typeof startTime === "string" ? new Date(startTime) : startTime;
+  const endDate = typeof endTime === "string" ? new Date(endTime) : endTime;
+
+  // Extract hours and minutes from slot times using UTC
+  const startHour = startDate.getUTCHours();
+  const startMin = startDate.getUTCMinutes();
+  let endHour = endDate.getUTCHours();
+  const endMin = endDate.getUTCMinutes();
+
+  // Handle slots that span midnight (e.g., 23:00 - 00:00)
+  // If end hour is less than start hour, it means the slot crosses midnight
+  if (endHour < startHour || (endHour === startHour && endMin <= startMin && endHour === 0)) {
+    endHour = 24; // Treat as 24:00 for loop purposes
+  }
+
   let currentHour = startHour;
   let currentMin = startMin;
 
@@ -89,8 +99,8 @@ function generateFifteenMinuteIntervals(
     currentHour < endHour ||
     (currentHour === endHour && currentMin < endMin)
   ) {
-    const intervalTime = new Date(selectedDate);
-    intervalTime.setHours(currentHour, currentMin, 0, 0);
+    // Create date in local timezone
+    const intervalTime = new Date(year, month - 1, day, currentHour, currentMin, 0, 0);
 
     intervals.push({
       value: intervalTime.toISOString(),
@@ -100,7 +110,6 @@ function generateFifteenMinuteIntervals(
       isPast: intervalTime < now,
     });
 
-    // Increment by 15 minutes
     currentMin += 15;
     if (currentMin >= 60) {
       currentMin = 0;
@@ -115,7 +124,6 @@ export function CreateReservationSidebar({
   open,
   onOpenChange,
   onCreate,
-  isPending,
   branchId,
 }: CreateReservationSidebarProps) {
   const [newReservation, setNewReservation] = useState<NewReservation>({
@@ -136,8 +144,8 @@ export function CreateReservationSidebar({
     {
       id: string;
       name?: string;
-      startTime: Date;
-      endTime: Date;
+      startTime: Date | string;
+      endTime: Date | string;
       pricePerPerson: number;
       daysOfWeek: string[];
     }[]
@@ -365,7 +373,6 @@ export function CreateReservationSidebar({
                 onSelectClient={handleSelectClient}
                 onCreateNew={handleCreateNewClient}
                 label="Cliente"
-                disabled={isPending}
               />
               {!selectedClient && (
                 <p className="text-xs text-muted-foreground">
@@ -425,7 +432,7 @@ export function CreateReservationSidebar({
               <Select
                 value={newReservation.time}
                 onValueChange={handleTimeSlotChange}
-                disabled={!newReservation.date || isPending}
+                disabled={!newReservation.date}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -489,7 +496,7 @@ export function CreateReservationSidebar({
                           : "outline"
                       }
                       onClick={() => handleExactTimeChange(interval.value)}
-                      disabled={interval.isPast || isPending}
+                      disabled={interval.isPast}
                       className={cn(
                         "h-12 text-sm font-semibold transition-all duration-200",
                         {
@@ -537,7 +544,6 @@ export function CreateReservationSidebar({
                   }))
                 }
                 placeholder="ej, Vegetarianismo, Celiaquia"
-                disabled={isPending}
               />
             </div>
 
@@ -556,7 +562,6 @@ export function CreateReservationSidebar({
                   }))
                 }
                 placeholder="e.j., Silla de ruedas, prefiere abajo"
-                disabled={isPending}
               />
             </div>
 
@@ -568,7 +573,6 @@ export function CreateReservationSidebar({
                 onValueChange={(value) =>
                   setNewReservation((prev) => ({ ...prev, status: value }))
                 }
-                disabled={isPending}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -596,7 +600,6 @@ export function CreateReservationSidebar({
                 }
                 placeholder="Ocasión especial, Cumpleaños, etc."
                 rows={3}
-                disabled={isPending}
               />
             </div>
           </form>
@@ -607,7 +610,6 @@ export function CreateReservationSidebar({
           <Button
             variant="outline"
             onClick={handleClose}
-            disabled={isPending}
             className="flex-1"
           >
             Cancelar
@@ -616,13 +618,12 @@ export function CreateReservationSidebar({
             onClick={handleCreate}
             className="flex-1 bg-red-600 hover:bg-red-700"
             disabled={
-              isPending ||
               !newReservation.time ||
               !newReservation.exactTime ||
               (!selectedClient && !newReservation.name)
             }
           >
-            {isPending ? "Creando..." : "Reservar"}
+            Reservar
           </Button>
         </div>
       </div>

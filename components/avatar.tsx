@@ -20,7 +20,8 @@ export default function Avatar({
         alt={alt}
         width={256}
         height={256}
-        className="h-24"
+        priority
+        className="h-24 w-auto"
       />
     </div>
   );

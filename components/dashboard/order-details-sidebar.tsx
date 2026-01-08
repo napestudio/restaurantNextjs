@@ -183,63 +183,63 @@ export function OrderDetailsSidebar({
   const handleSaveChanges = async () => {
     if (!order) return;
 
-    setIsSaving(true);
+    // Store previous values for potential error message
+    const clientId = selectedClient?.id || null;
+    const currentClientId = order.client?.id || null;
+    const waiterId = selectedWaiterId || null;
+    const currentWaiterId = order.assignedTo?.id || null;
+
+    // Optimistic update - close edit mode immediately
+    setIsEditing(false);
+    setSelectedClient(null);
+    setSelectedWaiterId(null);
+
     try {
       // Update client if changed
-      const clientId = selectedClient?.id || null;
-      const currentClientId = order.client?.id || null;
-
       if (clientId !== currentClientId) {
         const result = await assignClientToOrder(order.id, clientId);
         if (!result.success) {
-          alert(result.error || "Error al actualizar el cliente");
-          setIsSaving(false);
-          return;
+          console.error("Failed to update client:", result.error);
         }
       }
 
       // Update waiter if changed
-      const waiterId = selectedWaiterId || null;
-      const currentWaiterId = order.assignedTo?.id || null;
-
       if (waiterId !== currentWaiterId) {
         const result = await assignStaffToOrder(order.id, waiterId);
         if (!result.success) {
-          alert(result.error || "Error al actualizar el mesero");
-          setIsSaving(false);
-          return;
+          console.error("Failed to update waiter:", result.error);
         }
       }
 
-      // Success - refresh and close edit mode
+      // Refresh to get updated data
       onOrderUpdated?.();
-      setIsEditing(false);
-      setSelectedClient(null);
-      setSelectedWaiterId(null);
     } catch (error) {
       console.error("Error updating order:", error);
-      alert("Error al actualizar la orden");
-    } finally {
-      setIsSaving(false);
+      // Refresh to restore correct state
+      onOrderUpdated?.();
     }
   };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     if (!order) return;
 
-    setIsUpdatingStatus(true);
+    // Store previous status for rollback message
+    const previousStatus = order.status;
+
+    // Perform server update (UI will update on refresh)
     try {
       const result = await updateOrderStatus(order.id, newStatus);
       if (result.success) {
         onOrderUpdated?.();
       } else {
-        alert(result.error || "Error al actualizar el estado");
+        // Refresh to restore correct state
+        onOrderUpdated?.();
+        console.error("Failed to update status:", result.error);
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Error al actualizar el estado");
-    } finally {
-      setIsUpdatingStatus(false);
+      // Refresh to restore correct state
+      onOrderUpdated?.();
     }
   };
 

@@ -33,14 +33,14 @@ interface FloorPlanCanvasProps {
 const statusColors = {
   empty: "#22c55e",
   occupied: "#ef4444",
-  reserved: "#3b82f6",
+  reserved: "#22c55e",
   cleaning: "#eab308",
 };
 
 const statusStrokeColors = {
   empty: "#16a34a",
   occupied: "#dc2626",
-  reserved: "#2563eb",
+  reserved: "#16a34a",
   cleaning: "#ca8a04",
 };
 
