@@ -232,9 +232,6 @@ export function EditUserDialog({
                   <SelectItem value={UserRole.MANAGER}>
                     {USER_ROLE_LABELS.MANAGER}
                   </SelectItem>
-                  <SelectItem value={UserRole.EMPLOYEE}>
-                    {USER_ROLE_LABELS.EMPLOYEE}
-                  </SelectItem>
                   <SelectItem value={UserRole.WAITER}>
                     {USER_ROLE_LABELS.WAITER}
                   </SelectItem>

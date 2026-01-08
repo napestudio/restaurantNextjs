@@ -3,7 +3,6 @@
 import {
   createTimeSlot,
   deleteTimeSlot,
-  getTimeSlots,
   updateTimeSlot,
 } from "@/actions/TimeSlot";
 import type { TimeSlot } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
@@ -36,16 +35,6 @@ export function TimeSlotsManager({
     dbId?: string;
   } | null>(null);
 
-  // Refetch data helper
-  const mutate = () => {
-    startTransition(async () => {
-      const result = await getTimeSlots(branchId);
-      if (result.success && result.data) {
-        setTimeSlots(result.data);
-      }
-    });
-  };
-
   const handleCreate = async (newSlot: {
     timeFrom: string;
     timeTo: string;
@@ -56,27 +45,58 @@ export function TimeSlotsManager({
     moreInfoUrl?: string;
     tableIds: string[];
   }) => {
-    startTransition(async () => {
-      const result = await createTimeSlot({
-        branchId,
-        name: newSlot.name || "Unnamed Slot",
-        startTime: newSlot.timeFrom,
-        endTime: newSlot.timeTo,
-        daysOfWeek: newSlot.days,
-        pricePerPerson: newSlot.price ? parseFloat(newSlot.price) : 0,
-        notes: newSlot.notes,
-        moreInfoUrl: newSlot.moreInfoUrl,
-        tableIds: newSlot.tableIds,
-      });
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
 
-      if (result.success) {
-        setCreateDialogOpen(false);
-        mutate();
-      } else {
-        // TODO: Show error toast/notification
-        console.error("Failed to create time slot:", result.error);
-      }
+    // Create optimistic time slot object
+    const optimisticSlot: TimeSlot = {
+      id: tempId,
+      name: newSlot.name || "Unnamed Slot",
+      startTime: `1970-01-01T${newSlot.timeFrom}:00.000Z`,
+      endTime: `1970-01-01T${newSlot.timeTo}:00.000Z`,
+      daysOfWeek: newSlot.days,
+      pricePerPerson: newSlot.price ? parseFloat(newSlot.price) : 0,
+      notes: newSlot.notes || null,
+      moreInfoUrl: newSlot.moreInfoUrl || null,
+      isActive: true,
+      branchId,
+      createdAt: now,
+      updatedAt: now,
+      tables: [],
+    };
+
+    // Store previous state for rollback
+    const previousSlots = timeSlots;
+
+    // Optimistic update - add to list
+    setTimeSlots((prev) => [...prev, optimisticSlot]);
+
+    // Close dialog immediately
+    setCreateDialogOpen(false);
+
+    // Perform server create
+    const result = await createTimeSlot({
+      branchId,
+      name: newSlot.name || "Unnamed Slot",
+      startTime: newSlot.timeFrom,
+      endTime: newSlot.timeTo,
+      daysOfWeek: newSlot.days,
+      pricePerPerson: newSlot.price ? parseFloat(newSlot.price) : 0,
+      notes: newSlot.notes,
+      moreInfoUrl: newSlot.moreInfoUrl,
+      tableIds: newSlot.tableIds,
     });
+
+    if (result.success && result.data) {
+      // Replace temp slot with real one from server
+      setTimeSlots((prev) =>
+        prev.map((s) => (s.id === tempId ? (result.data as TimeSlot) : s))
+      );
+    } else {
+      // Rollback on failure
+      setTimeSlots(previousSlots);
+      console.error("Failed to create time slot:", result.error);
+    }
   };
 
   const handleEditClick = (slotId: string) => {
@@ -101,27 +121,54 @@ export function TimeSlotsManager({
       tableIds: string[];
     }
   ) => {
-    startTransition(async () => {
-      const result = await updateTimeSlot(slotId, {
-        name: updatedSlot.name || "Unnamed Slot",
-        startTime: updatedSlot.timeFrom,
-        endTime: updatedSlot.timeTo,
-        daysOfWeek: updatedSlot.days,
-        pricePerPerson: updatedSlot.price ? parseFloat(updatedSlot.price) : 0,
-        notes: updatedSlot.notes,
-        moreInfoUrl: updatedSlot.moreInfoUrl,
-        tableIds: updatedSlot.tableIds,
-      });
+    // Store previous state for rollback
+    const previousSlots = timeSlots;
+    const now = new Date().toISOString();
 
-      if (result.success) {
-        setEditDialogOpen(false);
-        setSlotToEdit(null);
-        mutate();
-      } else {
-        // TODO: Show error toast/notification
-        console.error("Failed to update time slot:", result.error);
-      }
+    // Create optimistic updated slot
+    const optimisticUpdate: TimeSlot = {
+      ...timeSlots.find((s) => s.id === slotId)!,
+      name: updatedSlot.name || "Unnamed Slot",
+      startTime: `1970-01-01T${updatedSlot.timeFrom}:00.000Z`,
+      endTime: `1970-01-01T${updatedSlot.timeTo}:00.000Z`,
+      daysOfWeek: updatedSlot.days,
+      pricePerPerson: updatedSlot.price ? parseFloat(updatedSlot.price) : 0,
+      notes: updatedSlot.notes || null,
+      moreInfoUrl: updatedSlot.moreInfoUrl || null,
+      updatedAt: now,
+    };
+
+    // Optimistic update
+    setTimeSlots((prev) =>
+      prev.map((s) => (s.id === slotId ? optimisticUpdate : s))
+    );
+
+    // Close dialog immediately
+    setEditDialogOpen(false);
+    setSlotToEdit(null);
+
+    // Perform server update
+    const result = await updateTimeSlot(slotId, {
+      name: updatedSlot.name || "Unnamed Slot",
+      startTime: updatedSlot.timeFrom,
+      endTime: updatedSlot.timeTo,
+      daysOfWeek: updatedSlot.days,
+      pricePerPerson: updatedSlot.price ? parseFloat(updatedSlot.price) : 0,
+      notes: updatedSlot.notes,
+      moreInfoUrl: updatedSlot.moreInfoUrl,
+      tableIds: updatedSlot.tableIds,
     });
+
+    if (result.success && result.data) {
+      // Replace with real data from server
+      setTimeSlots((prev) =>
+        prev.map((s) => (s.id === slotId ? (result.data as TimeSlot) : s))
+      );
+    } else {
+      // Rollback on failure
+      setTimeSlots(previousSlots);
+      console.error("Failed to update time slot:", result.error);
+    }
   };
 
   const handleDeleteClick = (slotId: string) => {
@@ -133,18 +180,25 @@ export function TimeSlotsManager({
 
   const handleDeleteConfirm = async () => {
     if (slotToDelete?.dbId) {
-      startTransition(async () => {
-        const result = await deleteTimeSlot(slotToDelete.dbId!, true); // soft delete
+      // Store previous state for rollback
+      const previousSlots = timeSlots;
+      const slotIdToDelete = slotToDelete.dbId;
 
-        if (result.success) {
-          setDeleteDialogOpen(false);
-          setSlotToDelete(null);
-          mutate();
-        } else {
-          // TODO: Show error toast/notification
-          console.error("Failed to delete time slot:", result.error);
-        }
-      });
+      // Optimistic update - remove from list
+      setTimeSlots((prev) => prev.filter((s) => s.id !== slotIdToDelete));
+
+      // Close dialog immediately
+      setDeleteDialogOpen(false);
+      setSlotToDelete(null);
+
+      // Perform server delete
+      const result = await deleteTimeSlot(slotIdToDelete, true); // soft delete
+
+      if (!result.success) {
+        // Rollback on failure
+        setTimeSlots(previousSlots);
+        console.error("Failed to delete time slot:", result.error);
+      }
     }
   };
 

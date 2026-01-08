@@ -231,15 +231,20 @@ export function CloseTableDialog({
       return;
     }
 
-    setIsLoadingAction(true);
-    const result = await updateDiscount(order.id, newDiscount);
-    setIsLoadingAction(false);
+    // Store previous discount for rollback
+    const previousDiscount = currentDiscount;
 
-    if (result.success) {
-      setCurrentDiscount(newDiscount);
-      setIsEditingDiscount(false);
-      setError(null);
-    } else {
+    // Optimistic update - update UI immediately
+    setCurrentDiscount(newDiscount);
+    setIsEditingDiscount(false);
+    setError(null);
+
+    // Perform server update
+    const result = await updateDiscount(order.id, newDiscount);
+
+    if (!result.success) {
+      // Rollback on failure
+      setCurrentDiscount(previousDiscount);
       setError(result.error || "Error al actualizar el descuento");
     }
   };
@@ -282,9 +287,11 @@ export function CloseTableDialog({
       return;
     }
 
-    setIsPending(true);
-    setError(null);
+    // Close dialog immediately for snappy feel
+    resetForm();
+    onOpenChange(false);
 
+    // Perform server action and then update UI
     try {
       // TODO: Get actual user ID from session
       const userId = "system";
@@ -298,16 +305,13 @@ export function CloseTableDialog({
       });
 
       if (result.success) {
+        // Update table state after server confirms
         onSuccess(tableId);
-        resetForm();
-        onOpenChange(false);
       } else {
-        setError(result.error || "Error al cerrar la mesa");
+        console.error("Failed to close table:", result.error);
       }
-    } catch {
-      setError("Error al cerrar la mesa");
-    } finally {
-      setIsPending(false);
+    } catch (err) {
+      console.error("Error closing table:", err);
     }
   };
 

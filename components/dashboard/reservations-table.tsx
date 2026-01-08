@@ -4,13 +4,6 @@ import type { ReservationFilterType } from "@/actions/Reservation";
 import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -62,7 +55,7 @@ interface ReservationsTableProps {
   onDateRangeChange: (dateFrom: string, dateTo: string) => void;
   onStatusUpdate: (id: string, status: string) => void;
   onView: (reservation: SerializedReservation) => void;
-  onCancel: (id: string) => void;
+  onDelete: (id: string) => void;
   onLoadMore: () => void;
 }
 
@@ -79,7 +72,7 @@ export function ReservationsTable({
   onDateRangeChange,
   onStatusUpdate,
   onView,
-  onCancel,
+  onDelete,
   onLoadMore,
 }: ReservationsTableProps) {
   const handleSetToday = () => {
@@ -116,23 +109,23 @@ export function ReservationsTable({
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+      <div className="flex flex-col space-y-1.5 p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                 Gestión de Reservas
                 {/* <Badge variant="secondary" className="ml-2">
                   {pagination.totalCount} total
                 </Badge> */}
-              </CardTitle>
-              <CardDescription>
+              </h3>
+              <p className="text-sm text-muted-foreground">
                 {filterType === "today" && "Mostrando reservas de hoy"}
                 {filterType === "past" && "Mostrando reservas pasadas"}
                 {filterType === "dateRange" &&
                   "Mostrando rango de fechas seleccionado"}
-              </CardDescription>
+              </p>
             </div>
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -140,13 +133,20 @@ export function ReservationsTable({
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="pending">Pendientes</SelectItem>
-                  <SelectItem value="confirmed">Confirmadas</SelectItem>
-                  <SelectItem value="seated">Sentadas</SelectItem>
-                  <SelectItem value="completed">Completadas</SelectItem>
-                  <SelectItem value="canceled">Canceladas</SelectItem>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all" className="bg-white">
+                    Todas
+                  </SelectItem>
+                  <SelectItem value="pending" className="bg-white">
+                    Pendientes
+                  </SelectItem>
+                  <SelectItem value="confirmed" className="bg-white">
+                    Confirmadas
+                  </SelectItem>
+
+                  <SelectItem value="canceled" className="bg-white">
+                    Canceladas
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -238,8 +238,8 @@ export function ReservationsTable({
             )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-6 pt-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -356,8 +356,8 @@ export function ReservationsTable({
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => onCancel(reservation.id)}
-                        title="Cancelar Reserva"
+                        onClick={() => onDelete(reservation.id)}
+                        title="Eliminar Reserva"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -399,7 +399,7 @@ export function ReservationsTable({
             Mostrando {reservations.length} de {pagination.totalCount} reservas
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

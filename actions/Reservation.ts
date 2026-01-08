@@ -600,8 +600,13 @@ export async function getFilteredReservations(
     }
 
     // Add status filter if provided
+    // When no status filter is specified, exclude canceled reservations by default
     if (filters.status) {
       whereClause.status = filters.status;
+    } else {
+      whereClause.status = {
+        not: ReservationStatus.CANCELED,
+      };
     }
 
     // Get total count for this filter

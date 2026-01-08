@@ -1,6 +1,6 @@
 "use server";
 
-import type { Menu, MenuItem, MenuSection } from "@/app/generated/prisma";
+import type { Menu, MenuItem, MenuSection, MenuItemGroup } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -23,6 +23,16 @@ export type SerializedMenuSection = Omit<
   createdAt: string;
   updatedAt: string;
   menuItems?: SerializedMenuItem[];
+  menuItemGroups?: SerializedMenuItemGroup[];
+};
+
+export type SerializedMenuItemGroup = Omit<
+  MenuItemGroup,
+  "createdAt" | "updatedAt"
+> & {
+  createdAt: string;
+  updatedAt: string;
+  menuItems?: SerializedMenuItem[];
 };
 
 export type SerializedMenuItem = Omit<
@@ -32,6 +42,7 @@ export type SerializedMenuItem = Omit<
   createdAt: string;
   updatedAt: string;
   customPrice: number | null;
+  menuItemGroupId: string | null;
   product?: {
     id: string;
     name: string;
@@ -45,6 +56,75 @@ export type SerializedMenuItem = Omit<
 /**
  * Get all menus for a restaurant with their sections and items
  */
+// Helper type for menu item with product from Prisma query
+type MenuItemWithProduct = MenuItem & {
+  product: {
+    id: string;
+    name: string;
+    description: string | null;
+    imageUrl: string | null;
+    categoryId: string | null;
+    branches: {
+      branchId: string;
+      prices: { price: unknown }[];
+    }[];
+  };
+};
+
+// Helper to serialize menu items
+function serializeMenuItem(
+  item: MenuItemWithProduct,
+  branchId: string
+): SerializedMenuItem {
+  const branchProduct = item.product.branches.find(
+    (b) => b.branchId === branchId
+  );
+  const basePrice = branchProduct?.prices[0]?.price;
+
+  return {
+    id: item.id,
+    menuSectionId: item.menuSectionId,
+    menuItemGroupId: item.menuItemGroupId,
+    productId: item.productId,
+    order: item.order,
+    isAvailable: item.isAvailable,
+    isFeatured: item.isFeatured,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    customPrice: item.customPrice ? Number(item.customPrice) : null,
+    product: {
+      id: item.product.id,
+      name: item.product.name,
+      description: item.product.description,
+      imageUrl: item.product.imageUrl,
+      categoryId: item.product.categoryId,
+      basePrice: basePrice ? Number(basePrice) : null,
+    },
+  };
+}
+
+// Common include for menu items with product
+const menuItemInclude = {
+  product: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      imageUrl: true,
+      categoryId: true,
+      branches: {
+        select: {
+          branchId: true,
+          prices: {
+            where: { type: "DINE_IN" as const },
+            select: { price: true },
+          },
+        },
+      },
+    },
+  },
+};
+
 export async function getMenus(
   restaurantId: string
 ): Promise<SerializedMenu[]> {
@@ -56,24 +136,14 @@ export async function getMenus(
         include: {
           menuItems: {
             orderBy: { order: "asc" },
+            include: menuItemInclude,
+          },
+          menuItemGroups: {
+            orderBy: { order: "asc" },
             include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  description: true,
-                  imageUrl: true,
-                  categoryId: true,
-                  branches: {
-                    select: {
-                      branchId: true,
-                      prices: {
-                        where: { type: "DINE_IN" },
-                        select: { price: true },
-                      },
-                    },
-                  },
-                },
+              menuItems: {
+                orderBy: { order: "asc" },
+                include: menuItemInclude,
               },
             },
           },
@@ -93,28 +163,18 @@ export async function getMenus(
       ...section,
       createdAt: section.createdAt.toISOString(),
       updatedAt: section.updatedAt.toISOString(),
-      menuItems: section.menuItems.map((item) => {
-        // Get price from ProductOnBranch for this menu's branch
-        const branchProduct = item.product.branches.find(
-          (b) => b.branchId === menu.branchId
-        );
-        const basePrice = branchProduct?.prices[0]?.price;
-
-        return {
-          ...item,
-          createdAt: item.createdAt.toISOString(),
-          updatedAt: item.updatedAt.toISOString(),
-          customPrice: item.customPrice ? Number(item.customPrice) : null,
-          product: {
-            id: item.product.id,
-            name: item.product.name,
-            description: item.product.description,
-            imageUrl: item.product.imageUrl,
-            categoryId: item.product.categoryId,
-            basePrice: basePrice ? Number(basePrice) : null,
-          },
-        };
-      }),
+      // Only include ungrouped items at section level
+      menuItems: section.menuItems
+        .filter((item) => !item.menuItemGroupId)
+        .map((item) => serializeMenuItem(item, menu.branchId)),
+      menuItemGroups: section.menuItemGroups.map((group) => ({
+        ...group,
+        createdAt: group.createdAt.toISOString(),
+        updatedAt: group.updatedAt.toISOString(),
+        menuItems: group.menuItems.map((item) =>
+          serializeMenuItem(item, menu.branchId)
+        ),
+      })),
     })),
   }));
 }
@@ -131,24 +191,14 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
         include: {
           menuItems: {
             orderBy: { order: "asc" },
+            include: menuItemInclude,
+          },
+          menuItemGroups: {
+            orderBy: { order: "asc" },
             include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  description: true,
-                  imageUrl: true,
-                  categoryId: true,
-                  branches: {
-                    select: {
-                      branchId: true,
-                      prices: {
-                        where: { type: "DINE_IN" },
-                        select: { price: true },
-                      },
-                    },
-                  },
-                },
+              menuItems: {
+                orderBy: { order: "asc" },
+                include: menuItemInclude,
               },
             },
           },
@@ -169,28 +219,18 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
       ...section,
       createdAt: section.createdAt.toISOString(),
       updatedAt: section.updatedAt.toISOString(),
-      menuItems: section.menuItems.map((item) => {
-        // Get price from ProductOnBranch for this menu's branch
-        const branchProduct = item.product.branches.find(
-          (b) => b.branchId === menu.branchId
-        );
-        const basePrice = branchProduct?.prices[0]?.price;
-
-        return {
-          ...item,
-          createdAt: item.createdAt.toISOString(),
-          updatedAt: item.updatedAt.toISOString(),
-          customPrice: item.customPrice ? Number(item.customPrice) : null,
-          product: {
-            id: item.product.id,
-            name: item.product.name,
-            description: item.product.description,
-            imageUrl: item.product.imageUrl,
-            categoryId: item.product.categoryId,
-            basePrice: basePrice ? Number(basePrice) : null,
-          },
-        };
-      }),
+      // Only include ungrouped items at section level
+      menuItems: section.menuItems
+        .filter((item) => !item.menuItemGroupId)
+        .map((item) => serializeMenuItem(item, menu.branchId)),
+      menuItemGroups: section.menuItemGroups.map((group) => ({
+        ...group,
+        createdAt: group.createdAt.toISOString(),
+        updatedAt: group.updatedAt.toISOString(),
+        menuItems: group.menuItems.map((item) =>
+          serializeMenuItem(item, menu.branchId)
+        ),
+      })),
     })),
   };
 }
@@ -384,11 +424,12 @@ export async function deleteMenuSection(sectionId: string) {
 }
 
 /**
- * Add a product to a menu section
+ * Add a product to a menu section (optionally within a group)
  */
 export async function addMenuItem(data: {
   menuSectionId: string;
   productId: string;
+  menuItemGroupId?: string | null;
   order?: number;
   isAvailable?: boolean;
   isFeatured?: boolean;
@@ -399,6 +440,7 @@ export async function addMenuItem(data: {
       data: {
         menuSectionId: data.menuSectionId,
         productId: data.productId,
+        menuItemGroupId: data.menuItemGroupId ?? null,
         order: data.order ?? 0,
         isAvailable: data.isAvailable ?? true,
         isFeatured: data.isFeatured ?? false,
@@ -442,6 +484,7 @@ export async function updateMenuItem(
     isAvailable?: boolean;
     isFeatured?: boolean;
     customPrice?: number | null;
+    menuItemGroupId?: string | null;
   }
 ) {
   try {
@@ -455,6 +498,9 @@ export async function updateMenuItem(
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
         ...(data.customPrice !== undefined && {
           customPrice: data.customPrice,
+        }),
+        ...(data.menuItemGroupId !== undefined && {
+          menuItemGroupId: data.menuItemGroupId,
         }),
       },
     });
@@ -615,24 +661,17 @@ export async function getMenuBySlug(slug: string): Promise<{
             where: {
               isAvailable: true,
             },
+            include: menuItemInclude,
+          },
+          menuItemGroups: {
+            orderBy: { order: "asc" },
             include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  description: true,
-                  imageUrl: true,
-                  categoryId: true,
-                  branches: {
-                    select: {
-                      branchId: true,
-                      prices: {
-                        where: { type: "DINE_IN" },
-                        select: { price: true },
-                      },
-                    },
-                  },
+              menuItems: {
+                orderBy: { order: "asc" },
+                where: {
+                  isAvailable: true,
                 },
+                include: menuItemInclude,
               },
             },
           },
@@ -654,30 +693,200 @@ export async function getMenuBySlug(slug: string): Promise<{
         ...section,
         createdAt: section.createdAt.toISOString(),
         updatedAt: section.updatedAt.toISOString(),
-        menuItems: section.menuItems.map((item) => {
-          // Get price from ProductOnBranch for this menu's branch
-          const branchProduct = item.product.branches.find(
-            (b) => b.branchId === menu.branchId
-          );
-          const basePrice = branchProduct?.prices[0]?.price;
-
-          return {
-            ...item,
-            createdAt: item.createdAt.toISOString(),
-            updatedAt: item.updatedAt.toISOString(),
-            customPrice: item.customPrice ? Number(item.customPrice) : null,
-            product: {
-              id: item.product.id,
-              name: item.product.name,
-              description: item.product.description,
-              imageUrl: item.product.imageUrl,
-              categoryId: item.product.categoryId,
-              basePrice: basePrice ? Number(basePrice) : null,
-            },
-          };
-        }),
+        // Only include ungrouped items at section level
+        menuItems: section.menuItems
+          .filter((item) => !item.menuItemGroupId)
+          .map((item) => serializeMenuItem(item, menu.branchId)),
+        menuItemGroups: section.menuItemGroups.map((group) => ({
+          ...group,
+          createdAt: group.createdAt.toISOString(),
+          updatedAt: group.updatedAt.toISOString(),
+          menuItems: group.menuItems.map((item) =>
+            serializeMenuItem(item, menu.branchId)
+          ),
+        })),
       })),
     },
     restaurant: menu.restaurant,
   };
+}
+
+// ============================================
+// MENU ITEM GROUP CRUD OPERATIONS
+// ============================================
+
+/**
+ * Create a menu item group within a section
+ */
+export async function createMenuItemGroup(data: {
+  menuSectionId: string;
+  name: string;
+  description?: string;
+  order?: number;
+}) {
+  try {
+    const group = await prisma.menuItemGroup.create({
+      data: {
+        menuSectionId: data.menuSectionId,
+        name: data.name,
+        description: data.description,
+        order: data.order ?? 0,
+      },
+    });
+
+    revalidatePath("/dashboard/menus");
+    return {
+      success: true,
+      group: {
+        ...group,
+        createdAt: group.createdAt.toISOString(),
+        updatedAt: group.updatedAt.toISOString(),
+        menuItems: [],
+      } as SerializedMenuItemGroup,
+    };
+  } catch (error) {
+    console.error("Error creating menu item group:", error);
+    return { success: false, error: "Failed to create menu item group" };
+  }
+}
+
+/**
+ * Update a menu item group
+ */
+export async function updateMenuItemGroup(
+  groupId: string,
+  data: {
+    name?: string;
+    description?: string;
+    order?: number;
+  }
+) {
+  try {
+    const group = await prisma.menuItemGroup.update({
+      where: { id: groupId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.order !== undefined && { order: data.order }),
+      },
+    });
+
+    revalidatePath("/dashboard/menus");
+    return {
+      success: true,
+      group: {
+        ...group,
+        createdAt: group.createdAt.toISOString(),
+        updatedAt: group.updatedAt.toISOString(),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating menu item group:", error);
+    return { success: false, error: "Failed to update menu item group" };
+  }
+}
+
+/**
+ * Delete a menu item group (items become ungrouped)
+ */
+export async function deleteMenuItemGroup(groupId: string) {
+  try {
+    await prisma.menuItemGroup.delete({
+      where: { id: groupId },
+    });
+
+    revalidatePath("/dashboard/menus");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting menu item group:", error);
+    return { success: false, error: "Failed to delete menu item group" };
+  }
+}
+
+/**
+ * Reorder menu item groups within a section
+ */
+export async function reorderMenuItemGroups(
+  groups: { id: string; order: number }[]
+) {
+  try {
+    await prisma.$transaction(
+      groups.map((group) =>
+        prisma.menuItemGroup.update({
+          where: { id: group.id },
+          data: { order: group.order },
+        })
+      )
+    );
+
+    revalidatePath("/dashboard/menus");
+    return { success: true };
+  } catch (error) {
+    console.error("Error reordering menu item groups:", error);
+    return { success: false, error: "Failed to reorder menu item groups" };
+  }
+}
+
+/**
+ * Move a menu item to a group (or remove from group)
+ */
+export async function moveMenuItemToGroup(
+  itemId: string,
+  groupId: string | null
+) {
+  try {
+    const menuItem = await prisma.menuItem.update({
+      where: { id: itemId },
+      data: { menuItemGroupId: groupId },
+    });
+
+    revalidatePath("/dashboard/menus");
+    return {
+      success: true,
+      menuItem: {
+        ...menuItem,
+        customPrice: menuItem.customPrice ? Number(menuItem.customPrice) : null,
+      },
+    };
+  } catch (error) {
+    console.error("Error moving menu item to group:", error);
+    return { success: false, error: "Failed to move menu item to group" };
+  }
+}
+
+/**
+ * Reorder section content (items and groups together) with support for moving items in/out of groups
+ * This handles the mixed ordering where items and groups can be interleaved
+ */
+export async function reorderSectionContent(data: {
+  items: { id: string; order: number; menuItemGroupId: string | null }[];
+  groups: { id: string; order: number }[];
+}) {
+  try {
+    await prisma.$transaction([
+      // Update all items with their new order and group assignment
+      ...data.items.map((item) =>
+        prisma.menuItem.update({
+          where: { id: item.id },
+          data: {
+            order: item.order,
+            menuItemGroupId: item.menuItemGroupId,
+          },
+        })
+      ),
+      // Update all groups with their new order
+      ...data.groups.map((group) =>
+        prisma.menuItemGroup.update({
+          where: { id: group.id },
+          data: { order: group.order },
+        })
+      ),
+    ]);
+
+    revalidatePath("/dashboard/menus");
+    return { success: true };
+  } catch (error) {
+    console.error("Error reordering section content:", error);
+    return { success: false, error: "Failed to reorder section content" };
+  }
 }

@@ -1,17 +1,17 @@
 "use client";
 
+import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
-import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
+import { es } from "date-fns/locale";
 
 interface ViewReservationDialogProps {
   reservation: SerializedReservation | null;
@@ -52,9 +52,6 @@ export function ViewReservationDialog({
       <DialogContent className="max-w-2xl max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detalles de la reserva</DialogTitle>
-          <DialogDescription>
-            Información completa de la reserva #{reservation?.id}
-          </DialogDescription>
         </DialogHeader>
         {reservation && (
           <div className="space-y-6">
@@ -96,7 +93,9 @@ export function ViewReservationDialog({
                   Fecha
                 </h3>
                 <p className="text-sm font-semibold">
-                  {format(parseISO(reservation.date), "MMMM dd, yyyy")}
+                  {format(parseISO(reservation.date), "d 'de' MMMM, yyyy", {
+                    locale: es,
+                  })}
                 </p>
               </div>
               <div>
@@ -125,7 +124,7 @@ export function ViewReservationDialog({
               </div>
             </div>
 
-            <div>
+            {/* <div>
               <h3 className="text-sm font-medium text-gray-500 mb-1">
                 Mesas Asignadas
               </h3>
@@ -146,7 +145,7 @@ export function ViewReservationDialog({
                   Sin mesas asignadas
                 </p>
               )}
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-2 gap-6">
               <div>
@@ -183,7 +182,8 @@ export function ViewReservationDialog({
               <p className="text-sm">
                 {format(
                   parseISO(reservation.createdAt),
-                  "MMM dd, yyyy hh:mm a"
+                  "d 'de' MMMM, yyyy HH:mm",
+                  { locale: es }
                 )}
               </p>
             </div>

@@ -24,12 +24,12 @@ export default async function CartaPage({ params }: CartaPageProps) {
   return (
     <div className="min-h-screen bg-black text-white py-16">
       <div className="max-w-4xl mx-auto px-4 md:px-8">
-        <div className="flex flex-col items-center gap-6 mb-12">
+        <div className="flex flex-col items-center gap-6">
           <Avatar alt={restaurant.name} />
         </div>
 
         <div className="text-white py-12 px-6 md:px-8 ">
-          <div className="text-left space-y-2 mb-2">
+          <div className="text-center space-y-2 mb-8">
             <h1 className="text-4xl font-bold">{menu.name}</h1>
             {menu.description && (
               <p className="text-neutral-400">{menu.description}</p>
