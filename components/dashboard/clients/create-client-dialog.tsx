@@ -79,7 +79,6 @@ export function CreateClientDialog({
       discountPercentage: formData.discountPercentage || 0,
       preferredPaymentMethod: formData.preferredPaymentMethod || null,
       hasCurrentAccount: formData.hasCurrentAccount || false,
-      branchId,
       createdAt: now,
       updatedAt: now,
     };
