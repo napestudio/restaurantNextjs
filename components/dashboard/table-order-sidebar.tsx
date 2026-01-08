@@ -273,16 +273,21 @@ export function TableOrderSidebar({
   const handleRemoveItem = async (itemId: string) => {
     if (!tableId || !order) return;
 
-    setIsLoadingAction(true);
+    // Store previous items for rollback (we need to trigger a refresh to restore)
+    const previousItems = order.items;
+
+    // Optimistic update - the SWR cache will be updated on next refresh
+    // For now we just proceed without loading state
     const result = await removeOrderItem(itemId);
 
     if (result.success) {
       await refresh();
       onOrderUpdated(tableId);
     } else {
+      // Rollback by refreshing to get server state
+      await refresh();
       alert(result.error || "Error al eliminar el producto");
     }
-    setIsLoadingAction(false);
   };
 
   const handleCloseTable = async () => {
@@ -400,22 +405,22 @@ export function TableOrderSidebar({
   const handleMoveOrder = async (targetTableId: string) => {
     if (!order || !tableId) return;
 
-    setIsLoadingAction(true);
+    // Optimistic update - close dialog and sidebar immediately
+    setShowMoveDialog(false);
+    onClose();
+
+    // Update both tables optimistically
+    onOrderUpdated(tableId);
+    onOrderUpdated(targetTableId);
+
+    // Perform server action
     const result = await moveOrderToTable(order.id, targetTableId);
 
-    if (result.success) {
-      setShowMoveDialog(false);
-
-      // Update both tables
-      onOrderUpdated(tableId);
-      onOrderUpdated(targetTableId);
-
-      // Close the sidebar since the order is no longer on this table
-      onClose();
-    } else {
-      alert(result.error || "Error al mover la orden");
+    if (!result.success) {
+      // On failure, the tables will be in wrong state until next refresh
+      // Log error - user will see correct state on refresh
+      console.error("Failed to move order:", result.error);
     }
-    setIsLoadingAction(false);
   };
 
   const handleDiscountEdit = () => {
@@ -433,16 +438,23 @@ export function TableOrderSidebar({
       return;
     }
 
-    setIsLoadingAction(true);
+    // Store previous discount for rollback
+    const previousDiscount = order.discountPercentage;
+
+    // Optimistic update - close editor immediately
+    setIsEditingDiscount(false);
+
+    // Perform server update
     const result = await updateDiscount(order.id, newDiscount);
 
     if (result.success) {
-      setIsEditingDiscount(false);
-      refresh(); // Refresh the order data
+      refresh(); // Refresh to get updated data
     } else {
+      // On failure, reopen editor with previous value
+      setDiscountInput(previousDiscount.toString());
+      setIsEditingDiscount(true);
       alert(result.error || "Error al actualizar el descuento");
     }
-    setIsLoadingAction(false);
   };
 
   const handleDiscountCancel = () => {

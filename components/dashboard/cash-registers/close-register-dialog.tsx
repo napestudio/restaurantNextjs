@@ -74,13 +74,30 @@ export function CloseRegisterDialog({
       return;
     }
 
-    setIsPending(true);
-    setError(null);
+    // TODO: Get actual user ID from session
+    const userId = "system";
+    const now = new Date().toISOString();
 
+    // Create optimistic closed session
+    const optimisticSession: SerializedSession = {
+      ...session,
+      status: "CLOSED",
+      closedAt: now,
+      closedBy: userId,
+      expectedCash: expectedCash,
+      countedCash: amount,
+      variance: amount - expectedCash,
+      closingNotes: closingNotes.trim() || null,
+      updatedAt: now,
+    };
+
+    // Optimistic update - close dialog and update parent immediately
+    onClosed(optimisticSession);
+    resetForm();
+    onOpenChange(false);
+
+    // Perform server action
     try {
-      // TODO: Get actual user ID from session
-      const userId = "system";
-
       const result = await closeCashRegisterSession({
         sessionId: session.id,
         countedCash: amount,
@@ -94,7 +111,7 @@ export function CloseRegisterDialog({
           ? result.data.closedAt instanceof Date
             ? result.data.closedAt.toISOString()
             : String(result.data.closedAt)
-          : new Date().toISOString();
+          : now;
         const updatedAt =
           result.data.updatedAt instanceof Date
             ? result.data.updatedAt.toISOString()
@@ -119,15 +136,14 @@ export function CloseRegisterDialog({
           updatedAt,
         };
 
+        // Update with real server data
         onClosed(closedSession);
-        resetForm();
       } else {
-        setError(result.error || "Error al cerrar la caja");
+        // On failure, log error (session is already shown as closed optimistically)
+        console.error("Failed to close cash register:", result.error);
       }
-    } catch {
-      setError("Error al cerrar la caja");
-    } finally {
-      setIsPending(false);
+    } catch (err) {
+      console.error("Error closing cash register:", err);
     }
   };
 

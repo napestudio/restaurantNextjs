@@ -153,26 +153,29 @@ export function ReservationsManager({
     });
   }, [pagination.hasMore, pagination.nextCursor, fetchReservations]);
 
-  // Refetch current view (after mutations)
-  const mutate = useCallback(() => {
-    startTransition(async () => {
-      await fetchReservations();
-    });
-  }, [fetchReservations]);
-
   const handleStatusUpdate = async (id: string, status: string) => {
-    startTransition(async () => {
-      const result = await updateReservationStatus(
-        id,
-        status.toUpperCase() as ReservationStatus
-      );
+    // Store previous state for rollback
+    const previousReservations = reservations;
+    const newStatus = status.toUpperCase() as ReservationStatus;
 
-      if (result.success) {
-        mutate();
-      } else {
-        console.error("Failed to update reservation status:", result.error);
-      }
-    });
+    // Optimistic update - immediately update UI
+    setReservations((prev) =>
+      prev.map((reservation) =>
+        reservation.id === id
+          ? { ...reservation, status: newStatus }
+          : reservation
+      )
+    );
+
+    // Perform server update
+    const result = await updateReservationStatus(id, newStatus);
+
+    if (!result.success) {
+      // Rollback on failure
+      setReservations(previousReservations);
+      console.error("Failed to update reservation status:", result.error);
+    }
+    // No need to refetch on success - optimistic update already applied
   };
 
   const handleView = (reservation: SerializedReservation) => {
@@ -187,17 +190,32 @@ export function ReservationsManager({
 
   const handleDeleteConfirm = async () => {
     if (reservationToDelete) {
-      startTransition(async () => {
-        const result = await deleteReservation(reservationToDelete);
+      // Store previous state for rollback
+      const previousReservations = reservations;
+      const previousPagination = pagination;
 
-        if (result.success) {
-          setDeleteDialogOpen(false);
-          setReservationToDelete(null);
-          mutate();
-        } else {
-          console.error("Failed to delete reservation:", result.error);
-        }
-      });
+      // Optimistic update - immediately remove from UI
+      setReservations((prev) =>
+        prev.filter((reservation) => reservation.id !== reservationToDelete)
+      );
+      setPagination((prev) => ({
+        ...prev,
+        totalCount: Math.max(0, prev.totalCount - 1),
+      }));
+
+      // Close dialog immediately for snappy UX
+      setDeleteDialogOpen(false);
+      setReservationToDelete(null);
+
+      // Perform server delete
+      const result = await deleteReservation(reservationToDelete);
+
+      if (!result.success) {
+        // Rollback on failure
+        setReservations(previousReservations);
+        setPagination(previousPagination);
+        console.error("Failed to delete reservation:", result.error);
+      }
     }
   };
 
@@ -215,30 +233,96 @@ export function ReservationsManager({
     status: string;
     clientId?: string;
   }) => {
-    startTransition(async () => {
-      const result = await createReservation({
-        branchId,
-        customerName: newReservation.name,
-        customerEmail: newReservation.email,
-        customerPhone: newReservation.phone,
-        date: newReservation.date,
-        time: newReservation.exactTime || newReservation.time,
-        guests: Number.parseInt(newReservation.guests),
-        timeSlotId: newReservation.time,
-        exactTime: newReservation.exactTime || undefined,
-        dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
-        accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
-        notes: newReservation.notes || undefined,
-        status: newReservation.status.toUpperCase() as ReservationStatus,
-      });
+    // Find the selected time slot for optimistic data
+    const selectedTimeSlot = timeSlots.find((ts) => ts.id === newReservation.time);
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
 
-      if (result.success) {
-        setCreateDialogOpen(false);
-        mutate();
-      } else {
-        console.error("Failed to create reservation:", result.error);
-      }
+    // Create optimistic reservation object
+    const optimisticReservation: SerializedReservation = {
+      id: tempId,
+      branchId,
+      customerName: newReservation.name,
+      customerEmail: newReservation.email,
+      customerPhone: newReservation.phone || null,
+      date: new Date(newReservation.date).toISOString(),
+      people: Number.parseInt(newReservation.guests),
+      timeSlotId: newReservation.time,
+      exactTime: newReservation.exactTime ? new Date(newReservation.exactTime).toISOString() : null,
+      status: newReservation.status.toUpperCase() as ReservationStatus,
+      dietaryRestrictions: newReservation.dietaryRestrictions || null,
+      accessibilityNeeds: newReservation.accessibilityNeeds || null,
+      notes: newReservation.notes || null,
+      createdAt: now,
+      createdBy: null,
+      updatedBy: null,
+      timeSlot: selectedTimeSlot
+        ? {
+            id: selectedTimeSlot.id,
+            startTime: typeof selectedTimeSlot.startTime === "string"
+              ? selectedTimeSlot.startTime
+              : selectedTimeSlot.startTime.toISOString(),
+            endTime: typeof selectedTimeSlot.endTime === "string"
+              ? selectedTimeSlot.endTime
+              : selectedTimeSlot.endTime.toISOString(),
+            daysOfWeek: selectedTimeSlot.daysOfWeek,
+            pricePerPerson: selectedTimeSlot.pricePerPerson || 0,
+            notes: selectedTimeSlot.notes,
+            isActive: selectedTimeSlot.isActive,
+            branchId: selectedTimeSlot.branchId,
+            createdAt: typeof selectedTimeSlot.createdAt === "string"
+              ? selectedTimeSlot.createdAt
+              : selectedTimeSlot.createdAt.toISOString(),
+            updatedAt: typeof selectedTimeSlot.updatedAt === "string"
+              ? selectedTimeSlot.updatedAt
+              : selectedTimeSlot.updatedAt.toISOString(),
+          }
+        : null,
+      tables: [],
+    };
+
+    // Store previous state for rollback
+    const previousReservations = reservations;
+    const previousPagination = pagination;
+
+    // Optimistic update - add to beginning of list
+    setReservations((prev) => [optimisticReservation, ...prev]);
+    setPagination((prev) => ({
+      ...prev,
+      totalCount: prev.totalCount + 1,
+    }));
+
+    // Close sidebar immediately for snappy UX
+    setCreateDialogOpen(false);
+
+    // Perform server create
+    const result = await createReservation({
+      branchId,
+      customerName: newReservation.name,
+      customerEmail: newReservation.email,
+      customerPhone: newReservation.phone,
+      date: newReservation.date,
+      time: newReservation.exactTime || newReservation.time,
+      guests: Number.parseInt(newReservation.guests),
+      timeSlotId: newReservation.time,
+      exactTime: newReservation.exactTime || undefined,
+      dietaryRestrictions: newReservation.dietaryRestrictions || undefined,
+      accessibilityNeeds: newReservation.accessibilityNeeds || undefined,
+      notes: newReservation.notes || undefined,
+      status: newReservation.status.toUpperCase() as ReservationStatus,
     });
+
+    if (result.success && result.data) {
+      // Replace temp reservation with real one from server
+      setReservations((prev) =>
+        prev.map((r) => (r.id === tempId ? result.data! : r))
+      );
+    } else {
+      // Rollback on failure
+      setReservations(previousReservations);
+      setPagination(previousPagination);
+      console.error("Failed to create reservation:", result.error);
+    }
   };
 
   return (
@@ -289,7 +373,6 @@ export function ReservationsManager({
         onOpenChange={setCreateDialogOpen}
         onCreate={handleCreate}
         timeSlots={timeSlots}
-        isPending={isPending}
         branchId={branchId}
       />
 

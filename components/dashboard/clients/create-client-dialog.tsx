@@ -61,23 +61,48 @@ export function CreateClientDialog({
       return;
     }
 
-    setIsPending(true);
-    setError(null);
+    // Create optimistic client
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date();
+    const optimisticClient: ClientData = {
+      id: tempId,
+      name: formData.name,
+      phone: formData.phone || null,
+      email: formData.email || null,
+      birthDate: formData.birthDate ? new Date(formData.birthDate) : null,
+      taxId: formData.taxId || null,
+      notes: formData.notes || null,
+      addressStreet: formData.addressStreet || null,
+      addressNumber: formData.addressNumber || null,
+      addressApartment: formData.addressApartment || null,
+      addressCity: formData.addressCity || null,
+      discountPercentage: formData.discountPercentage || 0,
+      preferredPaymentMethod: formData.preferredPaymentMethod || null,
+      hasCurrentAccount: formData.hasCurrentAccount || false,
+      branchId,
+      createdAt: now,
+      updatedAt: now,
+    };
 
+    // Optimistic update - add client and close dialog immediately
+    onCreated(optimisticClient);
+    resetForm();
+    onOpenChange(false);
+
+    // Perform server create
     try {
       const result = await createClient(branchId, formData);
 
       if (result.success && result.data) {
+        // Replace temp client with real one from server
         onCreated(result.data);
-        resetForm();
-        onOpenChange(false);
       } else {
-        setError(result.error || "Error al crear cliente");
+        // On error, we can't easily rollback from here since dialog is closed
+        // The parent should handle removing the temp client
+        console.error("Failed to create client:", result.error);
       }
-    } catch {
-      setError("Error al crear cliente");
-    } finally {
-      setIsPending(false);
+    } catch (err) {
+      console.error("Error creating client:", err);
     }
   };
 

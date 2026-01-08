@@ -55,7 +55,7 @@ export function StepCustomerInfo({ data, onChange }: StepCustomerInfoProps) {
       )} */}
 
       {/* Form Fields */}
-      <div className="space-y-4 overflow-y-scroll">
+      <div className="space-y-4 overflow-y-scroll md:overflow-visible">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="name">

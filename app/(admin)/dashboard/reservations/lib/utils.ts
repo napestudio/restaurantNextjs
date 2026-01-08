@@ -19,8 +19,9 @@ export function getDayOfWeek(dateString: string): string {
  * Formats a 24-hour time string to 12-hour format with AM/PM
  */
 
-export const formatTime = (date: Date): string => {
-    const hours = date.getUTCHours();
-    const minutes = date.getUTCMinutes();
+export const formatTime = (date: Date | string): string => {
+    const d = typeof date === "string" ? new Date(date) : date;
+    const hours = d.getUTCHours();
+    const minutes = d.getUTCMinutes();
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   };

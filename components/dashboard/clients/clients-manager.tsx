@@ -51,8 +51,18 @@ export function ClientsManager({
   >("all");
 
   const handleCreated = (newClient: ClientData) => {
-    setClients((prev) => [newClient, ...prev]);
-    setCreateDialogOpen(false);
+    setClients((prev) => {
+      // Check if this is replacing a temp client (real client from server)
+      const tempClientIndex = prev.findIndex(
+        (c) => c.id.startsWith("temp-") && c.name === newClient.name
+      );
+      if (tempClientIndex !== -1) {
+        // Replace temp client with real one
+        return prev.map((c, idx) => (idx === tempClientIndex ? newClient : c));
+      }
+      // Otherwise add as new client
+      return [newClient, ...prev];
+    });
   };
 
   const handleClientUpdated = (updatedClient: ClientData) => {

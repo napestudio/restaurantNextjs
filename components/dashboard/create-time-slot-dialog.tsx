@@ -236,6 +236,27 @@ export function CreateTimeSlotDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
+          <div>
+            <Label htmlFor="name">
+              Titulo <span className="text-red-500"></span>
+            </Label>
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                id="name"
+                value={newSlot.name || ""}
+                onChange={(e) =>
+                  setNewSlot({ ...newSlot, name: e.target.value })
+                }
+                placeholder="ej., Experiencia OMAKASE"
+                className="pl-10"
+                required
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Este nombre aparecerá en el formulario de reserva.
+            </p>
+          </div>
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -340,27 +361,6 @@ export function CreateTimeSlotDialog({
           </div>
 
           {/* Notes */}
-          <div>
-            <Label htmlFor="name">
-              Titulo <span className="text-red-500"></span>
-            </Label>
-            <div className="relative">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                id="name"
-                value={newSlot.name || ""}
-                onChange={(e) =>
-                  setNewSlot({ ...newSlot, name: e.target.value })
-                }
-                placeholder="ej., Experiencia OMAKASE"
-                className="pl-10"
-                required
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Este nombre aparecerá en el formulario de reserva.
-            </p>
-          </div>
 
           <div>
             <Label htmlFor="moreInfoUrl">Más info URL (Opcional)</Label>

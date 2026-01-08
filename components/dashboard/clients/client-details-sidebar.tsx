@@ -91,22 +91,50 @@ export function ClientDetailsSidebar({
   const handleSave = async () => {
     if (!client) return;
 
-    setIsSaving(true);
-    setError(null);
+    // Store previous state for rollback
+    const previousClient = client;
 
+    // Create optimistic updated client
+    const optimisticClient: ClientData = {
+      ...client,
+      name: formData.name,
+      phone: formData.phone || null,
+      email: formData.email || null,
+      birthDate: formData.birthDate ? new Date(formData.birthDate) : null,
+      taxId: formData.taxId || null,
+      notes: formData.notes || null,
+      addressStreet: formData.addressStreet || null,
+      addressNumber: formData.addressNumber || null,
+      addressApartment: formData.addressApartment || null,
+      addressCity: formData.addressCity || null,
+      discountPercentage: formData.discountPercentage || 0,
+      preferredPaymentMethod: formData.preferredPaymentMethod || null,
+      hasCurrentAccount: formData.hasCurrentAccount || false,
+      updatedAt: new Date(),
+    };
+
+    // Optimistic update - update immediately and exit edit mode
+    onClientUpdated(optimisticClient);
+    setIsEditing(false);
+
+    // Perform server update
     try {
       const result = await updateClient(client.id, formData);
 
       if (result.success && result.data) {
+        // Replace with real data from server
         onClientUpdated(result.data);
-        setIsEditing(false);
       } else {
+        // Rollback on failure
+        onClientUpdated(previousClient);
         setError(result.error || "Error al actualizar cliente");
+        setIsEditing(true);
       }
     } catch {
+      // Rollback on failure
+      onClientUpdated(previousClient);
       setError("Error al actualizar cliente");
-    } finally {
-      setIsSaving(false);
+      setIsEditing(true);
     }
   };
 

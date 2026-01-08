@@ -110,9 +110,7 @@ function isWithinTimeSlot(
 /**
  * Calculate table status based on reservations, orders, and manual status
  */
-export function calculateTableStatus(
-  dbTable: TableWithReservations
-): {
+export function calculateTableStatus(dbTable: TableWithReservations): {
   status: TableStatus;
   currentGuests: number;
   hasWaiter: boolean;
@@ -134,7 +132,7 @@ export function calculateTableStatus(
     status = "occupied";
 
     // Check if any order has a waiter assigned
-    const orderWithWaiter = dbTable.orders.find(order => order.assignedTo);
+    const orderWithWaiter = dbTable.orders.find((order) => order.assignedTo);
     if (orderWithWaiter?.assignedTo) {
       hasWaiter = true;
       waiterName = orderWithWaiter.assignedTo.name || undefined;
@@ -142,32 +140,12 @@ export function calculateTableStatus(
   } else if (dbTable.status) {
     // Use manual status from database
     status = statusMap[dbTable.status] || "empty";
-  } else if (dbTable.reservations.length > 0) {
-    // Calculate status from reservations
-    const reservation = dbTable.reservations[0].reservation;
-    currentGuests = reservation.people;
-
-    const reservationDate = new Date(reservation.date);
-    const today = new Date();
-    const isToday =
-      reservationDate.getDate() === today.getDate() &&
-      reservationDate.getMonth() === today.getMonth() &&
-      reservationDate.getFullYear() === today.getFullYear();
-
-    if (isToday && isWithinTimeSlot(reservation.timeSlot)) {
-      // Only show as reserved/occupied if current time is within the time slot
-      status = reservation.status === "CONFIRMED" ? "occupied" : "reserved";
-    } else if (!isToday) {
-      // Future reservations show as reserved
-      status = "reserved";
-    }
-    // If isToday but NOT within time slot, status remains "empty"
   }
 
   // Fallback: Set currentGuests from reservations if no orders and reservations exist
-  if (currentGuests === 0 && dbTable.reservations.length > 0) {
-    currentGuests = dbTable.reservations[0].reservation.people;
-  }
+  // if (currentGuests === 0 && dbTable.reservations.length > 0) {
+  //   currentGuests = dbTable.reservations[0].reservation.people;
+  // }
 
   return { status, currentGuests, hasWaiter, waiterName };
 }
@@ -179,7 +157,8 @@ export function calculateTableStatus(
 export function transformTableToFloorTable(
   dbTable: TableWithReservations
 ): FloorTable {
-  const { status, currentGuests, hasWaiter, waiterName } = calculateTableStatus(dbTable);
+  const { status, currentGuests, hasWaiter, waiterName } =
+    calculateTableStatus(dbTable);
 
   const width = dbTable.width ?? 80;
   const height = dbTable.height ?? 80;

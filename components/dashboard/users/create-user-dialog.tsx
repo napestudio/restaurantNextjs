@@ -30,17 +30,28 @@ import {
 import { UserRole } from "@/app/generated/prisma";
 import { USER_ROLE_LABELS } from "@/types/user";
 
+interface OptimisticUserData {
+  tempId: string;
+  username: string;
+  name: string;
+  role: UserRole;
+}
+
 interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated: () => void;
+  onOptimisticCreate: (userData: OptimisticUserData) => void;
+  onCreateSuccess: (tempId: string, realId: string) => void;
+  onCreateError: (tempId: string, error: string) => void;
   branchId: string;
 }
 
 export function CreateUserDialog({
   open,
   onOpenChange,
-  onCreated,
+  onOptimisticCreate,
+  onCreateSuccess,
+  onCreateError,
   branchId,
 }: CreateUserDialogProps) {
   const [isPending, setIsPending] = useState(false);
@@ -94,17 +105,29 @@ export function CreateUserDialog({
     setIsPending(true);
     setError(null);
 
+    const tempId = `temp-${Date.now()}`;
+
+    // Notify parent immediately with optimistic data (before server response)
+    onOptimisticCreate({
+      tempId,
+      username: data.username,
+      name: data.name,
+      role: data.role,
+    });
+
+    // Close dialog immediately for better UX
+    reset();
+    onOpenChange(false);
+    setIsPending(false);
+
+    // Execute server action in background
     const result = await createUser({ ...data, branchId });
 
-    if (result.success) {
-      reset();
-      onOpenChange(false);
-      onCreated();
+    if (result.success && result.data) {
+      onCreateSuccess(tempId, result.data.id);
     } else {
-      setError(result.error || "Error al crear usuario");
+      onCreateError(tempId, result.error || "Error al crear usuario");
     }
-
-    setIsPending(false);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -159,10 +182,13 @@ export function CreateUserDialog({
                 disabled={isPending}
               />
               {errors.username && (
-                <p className="text-sm text-red-600">{errors.username.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.username.message}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Se genera automáticamente del nombre. Solo letras, números y guiones bajos (_)
+                Se genera automáticamente del nombre. Solo letras, números y
+                guiones bajos (_)
               </p>
             </div>
 
@@ -176,7 +202,9 @@ export function CreateUserDialog({
                 disabled={isPending}
               />
               {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
+                <p className="text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
                 Mínimo 8 caracteres, mayúsculas, minúsculas y números.
@@ -199,9 +227,6 @@ export function CreateUserDialog({
                   </SelectItem>
                   <SelectItem value={UserRole.MANAGER}>
                     {USER_ROLE_LABELS.MANAGER}
-                  </SelectItem>
-                  <SelectItem value={UserRole.EMPLOYEE}>
-                    {USER_ROLE_LABELS.EMPLOYEE}
                   </SelectItem>
                   <SelectItem value={UserRole.WAITER}>
                     {USER_ROLE_LABELS.WAITER}

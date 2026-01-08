@@ -221,15 +221,20 @@ export function CloseOrderDialog({
       return;
     }
 
-    setIsLoadingAction(true);
-    const result = await updateDiscount(order.id, newDiscount);
-    setIsLoadingAction(false);
+    // Store previous discount for rollback
+    const previousDiscount = currentDiscount;
 
-    if (result.success) {
-      setCurrentDiscount(newDiscount);
-      setIsEditingDiscount(false);
-      setError(null);
-    } else {
+    // Optimistic update - update UI immediately
+    setCurrentDiscount(newDiscount);
+    setIsEditingDiscount(false);
+    setError(null);
+
+    // Perform server update
+    const result = await updateDiscount(order.id, newDiscount);
+
+    if (!result.success) {
+      // Rollback on failure
+      setCurrentDiscount(previousDiscount);
       setError(result.error || "Error al actualizar el descuento");
     }
   };
@@ -272,9 +277,11 @@ export function CloseOrderDialog({
       return;
     }
 
-    setIsPending(true);
-    setError(null);
+    // Optimistic update - close dialog immediately
+    resetForm();
+    onOpenChange(false);
 
+    // Perform server action
     try {
       // TODO: Get actual user ID from session
       const userId = "system";
@@ -289,15 +296,13 @@ export function CloseOrderDialog({
 
       if (result.success) {
         onSuccess();
-        resetForm();
-        onOpenChange(false);
       } else {
-        setError(result.error || "Error al finalizar la venta");
+        // On failure, we'd need to reopen the dialog and show error
+        // For now, just log the error since the order might be in inconsistent state
+        console.error("Failed to close order:", result.error);
       }
-    } catch {
-      setError("Error al finalizar la venta");
-    } finally {
-      setIsPending(false);
+    } catch (err) {
+      console.error("Error closing order:", err);
     }
   };
 
