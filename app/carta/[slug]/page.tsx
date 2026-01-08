@@ -24,7 +24,7 @@ export default async function CartaPage({ params }: CartaPageProps) {
   return (
     <div className="min-h-screen bg-black text-white py-16">
       <div className="max-w-4xl mx-auto px-4 md:px-8">
-        <div className="flex flex-col items-center gap-6 mb-8">
+        <div className="flex flex-col items-center gap-6">
           <Avatar alt={restaurant.name} />
         </div>
 
