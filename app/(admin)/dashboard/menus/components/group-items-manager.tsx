@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useOptimistic, useTransition } from "react";
-import type { SerializedMenuSection, SerializedMenuItem } from "@/actions/menus";
+import type {
+  SerializedMenuSection,
+  SerializedMenuItemGroup,
+  SerializedMenuItem,
+} from "@/actions/menus";
 import {
   addMenuItem,
   updateMenuItem,
@@ -23,7 +27,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Star, Eye, EyeOff } from "lucide-react";
 
-interface MenuItemsManagerProps {
+interface GroupItemsManagerProps {
+  group: SerializedMenuItemGroup;
   section: SerializedMenuSection;
   restaurantId: string;
   onUpdate: () => void;
@@ -34,17 +39,14 @@ type OptimisticAction =
   | { type: "update"; itemId: string; data: Partial<SerializedMenuItem> }
   | { type: "delete"; itemId: string };
 
-export function MenuItemsManager({
+export function GroupItemsManager({
+  group,
   section,
   restaurantId,
   onUpdate,
-}: MenuItemsManagerProps) {
+}: GroupItemsManagerProps) {
   const [isPending, startTransition] = useTransition();
-
-  // Only show ungrouped items (menuItemGroupId is null)
-  const menuItems = (section.menuItems || []).filter(
-    (item) => !item.menuItemGroupId
-  );
+  const menuItems = group.menuItems || [];
 
   // Optimistic state
   const [optimisticItems, addOptimisticAction] = useOptimistic(
@@ -65,6 +67,7 @@ export function MenuItemsManager({
     }
   );
 
+  // UI state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<
     Array<{
@@ -95,7 +98,6 @@ export function MenuItemsManager({
 
   const loadAvailableProducts = useCallback(async () => {
     const products = await getAvailableProducts(restaurantId);
-    // Filter out products already in this section (including groups)
     const alreadyAdded = getAllSectionItemIds();
     setAvailableProducts(products.filter((p) => !alreadyAdded.has(p.id)));
   }, [restaurantId, getAllSectionItemIds]);
@@ -120,7 +122,7 @@ export function MenuItemsManager({
     const optimisticItem: SerializedMenuItem = {
       id: tempId,
       menuSectionId: section.id,
-      menuItemGroupId: null,
+      menuItemGroupId: group.id,
       productId: selectedProductId,
       order: optimisticItems.length,
       isAvailable: true,
@@ -146,6 +148,7 @@ export function MenuItemsManager({
       const result = await addMenuItem({
         menuSectionId: section.id,
         productId: selectedProductId,
+        menuItemGroupId: group.id,
         order: menuItems.length,
         isAvailable: true,
         isFeatured,
@@ -217,7 +220,7 @@ export function MenuItemsManager({
   };
 
   const handleRemoveProduct = async (itemId: string) => {
-    if (!confirm("Eliminar este producto de la seccion?")) return;
+    if (!confirm("Eliminar este producto del grupo?")) return;
 
     startTransition(async () => {
       addOptimisticAction({ type: "delete", itemId });
@@ -230,55 +233,50 @@ export function MenuItemsManager({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Items List */}
       {optimisticItems.length === 0 ? (
-        <div className="text-center py-6 text-gray-500 text-sm">
-          No hay productos sin agrupar en esta seccion
+        <div className="text-center py-4 text-gray-500 text-xs">
+          No hay productos en este grupo
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {optimisticItems.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center gap-3 p-3 bg-gray-50 rounded-lg ${
+              className={`flex items-center gap-2 p-2 bg-gray-50 rounded-md ${
                 isPending && item.id.startsWith("temp-") ? "opacity-50" : ""
               }`}
             >
-              <div className="flex-1">
-                <div className="font-medium text-sm">
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-xs truncate">
                   {item.product?.name || "Producto desconocido"}
                 </div>
-                {item.product?.description && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {item.product.description}
-                  </div>
-                )}
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-1 mt-1 flex-wrap">
                   {item.isFeatured && (
-                    <Badge variant="default" className="text-xs bg-amber-500">
-                      <Star className="mr-1 h-3 w-3" />
+                    <Badge variant="default" className="text-[10px] h-4 bg-amber-500">
+                      <Star className="mr-0.5 h-2 w-2" />
                       Destacado
                     </Badge>
                   )}
                   {!item.isAvailable && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-[10px] h-4">
                       No disponible
                     </Badge>
                   )}
                   {item.customPrice && (
-                    <Badge variant="outline" className="text-xs">
-                      Precio: ${item.customPrice}
+                    <Badge variant="outline" className="text-[10px] h-4">
+                      ${item.customPrice}
                     </Badge>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-1">
+              <div className="flex gap-0.5">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-6 w-6"
                   onClick={() => handleToggleFeatured(item.id, item.isFeatured)}
                   disabled={isPending}
                   title={
@@ -288,7 +286,7 @@ export function MenuItemsManager({
                   }
                 >
                   <Star
-                    className={`h-4 w-4 ${
+                    className={`h-3 w-3 ${
                       item.isFeatured ? "fill-amber-500 text-amber-500" : ""
                     }`}
                   />
@@ -296,7 +294,7 @@ export function MenuItemsManager({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-6 w-6"
                   onClick={() =>
                     handleToggleAvailability(item.id, item.isAvailable)
                   }
@@ -308,19 +306,19 @@ export function MenuItemsManager({
                   }
                 >
                   {item.isAvailable ? (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-3 w-3" />
                   ) : (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-3 w-3" />
                   )}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-red-600"
+                  className="h-6 w-6 text-red-600"
                   onClick={() => handleRemoveProduct(item.id)}
                   disabled={isPending}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
             </div>
@@ -333,10 +331,10 @@ export function MenuItemsManager({
         variant="outline"
         size="sm"
         onClick={() => setIsAddDialogOpen(true)}
-        className="w-full border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800 hover:border-green-700"
+        className="w-full text-xs h-7 border-green-600 text-green-700 hover:bg-green-50"
       >
-        <Plus className="mr-2 h-4 w-4" />
-        Agregar Producto a esta Sección
+        <Plus className="mr-1 h-3 w-3" />
+        Agregar Producto al Grupo
       </Button>
 
       {/* Add Product Dialog */}
@@ -345,7 +343,7 @@ export function MenuItemsManager({
           <DialogHeader>
             <DialogTitle>Agregar Producto</DialogTitle>
             <DialogDescription>
-              Selecciona un producto para agregar a {section.name}
+              Selecciona un producto para agregar al grupo &quot;{group.name}&quot;
             </DialogDescription>
           </DialogHeader>
 
@@ -367,7 +365,6 @@ export function MenuItemsManager({
                   }}
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => {
-                    // Delay to allow click on suggestion
                     setTimeout(() => setShowSuggestions(false), 200);
                   }}
                   placeholder="Buscar producto..."
@@ -388,7 +385,7 @@ export function MenuItemsManager({
                           key={product.id}
                           type="button"
                           onMouseDown={(e) => {
-                            e.preventDefault(); // Prevent blur
+                            e.preventDefault();
                             handleSelectProduct(product);
                           }}
                           className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0"
@@ -399,11 +396,6 @@ export function MenuItemsManager({
                           {product.category && (
                             <div className="text-xs text-gray-500 mt-0.5">
                               {product.category.name}
-                            </div>
-                          )}
-                          {product.description && (
-                            <div className="text-xs text-gray-400 truncate mt-0.5">
-                              {product.description}
                             </div>
                           )}
                         </button>
@@ -418,9 +410,7 @@ export function MenuItemsManager({
                 </p>
               )}
               {selectedProductId && (
-                <p className="text-xs text-green-600">
-                  ✓ Producto seleccionado
-                </p>
+                <p className="text-xs text-green-600">Producto seleccionado</p>
               )}
             </div>
 
@@ -435,11 +425,8 @@ export function MenuItemsManager({
                 step="0.01"
                 value={customPrice}
                 onChange={(e) => setCustomPrice(e.target.value)}
-                placeholder="Deja vacío para usar precio base"
+                placeholder="Deja vacio para usar precio base"
               />
-              <p className="text-xs text-gray-500">
-                Útil para promociones o precios especiales de este menú
-              </p>
             </div>
 
             {/* Featured */}
