@@ -16,7 +16,7 @@ export function MenuItem({
   isFeatured = false,
 }: MenuItemProps) {
   return (
-    <div className="flex gap-4 group border-b border-white p-4">
+    <div className="flex gap-4 group py-2 px-4">
       {imageUrl && (
         <div className="shrink-0">
           <Image

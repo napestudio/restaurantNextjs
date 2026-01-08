@@ -432,12 +432,30 @@ model MenuSection {
   menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
   menuId String
 
-  menuItems MenuItem[]
+  menuItems      MenuItem[]
+  menuItemGroups MenuItemGroup[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([menuId, order])
+}
+
+model MenuItemGroup {
+  id          String  @id @default(cuid())
+  name        String // "Gyozas", "Ramen", etc.
+  description String?
+  order       Int     @default(0) // Para ordenar los grupos dentro de la sección
+
+  menuSection   MenuSection @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
+  menuSectionId String
+
+  menuItems MenuItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([menuSectionId, order])
 }
 
 model MenuItem {
@@ -446,10 +464,14 @@ model MenuItem {
   menuSection   MenuSection @relation(fields: [menuSectionId], references: [id], onDelete: Cascade)
   menuSectionId String
 
+  // Optional group within the section (null = ungrouped item directly in section)
+  menuItemGroup   MenuItemGroup? @relation(fields: [menuItemGroupId], references: [id], onDelete: SetNull)
+  menuItemGroupId String?
+
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
 
-  order       Int      @default(0) // Orden dentro de la sección
+  order       Int      @default(0) // Orden dentro de la sección o grupo
   isAvailable Boolean  @default(true) // Override de disponibilidad del producto
   isFeatured  Boolean  @default(false) // Destacar en el menú (chef's special, etc.)
   customPrice Decimal? // Override de precio (opcional, para promociones)
@@ -459,6 +481,7 @@ model MenuItem {
 
   @@unique([menuSectionId, productId])
   @@index([menuSectionId, order])
+  @@index([menuItemGroupId, order])
   @@index([productId])
 }
 

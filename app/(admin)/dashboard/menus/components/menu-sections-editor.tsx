@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
-import { MenuItemsManager } from "./menu-items-manager";
+import { SectionContentManager } from "./section-content-manager";
 
 interface MenuSectionsEditorProps {
   menu: SerializedMenu;
@@ -300,24 +300,22 @@ export function MenuSectionsEditor({
           {editingSectionId !== section.id && (
             <CardContent>
               {isSectionExpanded(section.id) && (
-                <div className="mb-4">
-                  <MenuItemsManager
-                    section={section}
-                    restaurantId={restaurantId}
-                    onUpdate={onUpdate}
-                  />
-                </div>
+                <SectionContentManager
+                  section={section}
+                  restaurantId={restaurantId}
+                  onUpdate={onUpdate}
+                />
               )}
 
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleToggleSection(section.id)}
-                className="w-full text-gray-600"
+                className="w-full text-gray-600 mt-4"
               >
                 {isSectionExpanded(section.id)
-                  ? "Ocultar Productos"
-                  : "Mostrar Productos"}
+                  ? "Ocultar Contenido"
+                  : "Mostrar Contenido"}
               </Button>
             </CardContent>
           )}
