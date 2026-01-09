@@ -7,20 +7,23 @@ import {
   PrinterStatus,
   PrintJobStatus,
   PrintMode,
+  PrinterConnectionType,
 } from "@/app/generated/prisma";
 import { printTestPage } from "@/lib/printer/escpos";
+import { discoverPrinters } from "@/lib/printer/relay";
 
 const printerInputSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   description: z.string().optional(),
-  ipAddress: z
-    .string()
-    .min(1, "La dirección IP es requerida")
-    .regex(
-      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-      "Dirección IP inválida"
-    ),
+  // Connection type
+  connectionType: z.enum(["NETWORK", "USB"]).default("NETWORK"),
+  // Network configuration (required for NETWORK type)
+  ipAddress: z.string().optional().nullable(),
   port: z.number().min(1).max(65535).default(9100),
+  // USB/Serial configuration (required for USB type)
+  usbPath: z.string().optional().nullable(),
+  baudRate: z.number().min(1200).max(115200).default(9600),
+  // Other fields
   model: z.string().optional(),
   branchId: z.string().min(1, "La sucursal es requerida"),
   stationId: z.string().optional().nullable(),
@@ -39,6 +42,18 @@ const printerInputSchema = z.object({
   // Control ticket formatting (0=small, 1=normal, 2=big)
   controlTicketFontSize: z.number().min(0).max(2).default(1),
   controlTicketSpacing: z.number().min(0).max(2).default(1),
+}).refine((data) => {
+  // Validate that network printers have IP address
+  if (data.connectionType === "NETWORK" && !data.ipAddress) {
+    return false;
+  }
+  // Validate that USB printers have usbPath
+  if (data.connectionType === "USB" && !data.usbPath) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Se requiere dirección IP para impresoras de red o puerto USB para impresoras USB",
 });
 
 const printerSchema = printerInputSchema.transform((data) => ({
@@ -67,29 +82,17 @@ export async function createPrinter(data: z.input<typeof printerSchema>) {
       };
     }
 
-    // Check if IP address already exists in this branch
-    const existingIP = await prisma.printer.findUnique({
-      where: {
-        branchId_ipAddress: {
-          branchId: validatedData.branchId,
-          ipAddress: validatedData.ipAddress,
-        },
-      },
-    });
-
-    if (existingIP) {
-      return {
-        success: false,
-        error: "Ya existe una impresora con esa dirección IP en esta sucursal",
-      };
-    }
-
     const printer = await prisma.printer.create({
       data: {
         name: validatedData.name,
         description: validatedData.description,
+        // Connection configuration
+        connectionType: validatedData.connectionType as PrinterConnectionType,
         ipAddress: validatedData.ipAddress,
         port: validatedData.port,
+        usbPath: validatedData.usbPath,
+        baudRate: validatedData.baudRate,
+        // Other fields
         model: validatedData.model,
         branchId: validatedData.branchId,
         stationId: validatedData.stationId,
@@ -113,6 +116,12 @@ export async function createPrinter(data: z.input<typeof printerSchema>) {
     };
   } catch (error) {
     console.error("Error creating printer:", error);
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || "Error de validación",
+      };
+    }
     return {
       success: false,
       error: "Error al crear la impresora",
@@ -222,30 +231,6 @@ export async function updatePrinter(
       }
     }
 
-    // If updating IP, check it doesn't exist
-    if (data.ipAddress) {
-      const printer = await prisma.printer.findUnique({ where: { id } });
-      if (!printer) {
-        return { success: false, error: "Impresora no encontrada" };
-      }
-
-      const existingIP = await prisma.printer.findFirst({
-        where: {
-          branchId: printer.branchId,
-          ipAddress: data.ipAddress,
-          id: { not: id },
-        },
-      });
-
-      if (existingIP) {
-        return {
-          success: false,
-          error:
-            "Ya existe una impresora con esa dirección IP en esta sucursal",
-        };
-      }
-    }
-
     const printer = await prisma.printer.update({
       where: { id },
       data: {
@@ -253,8 +238,15 @@ export async function updatePrinter(
         ...(data.description !== undefined && {
           description: data.description,
         }),
-        ...(data.ipAddress && { ipAddress: data.ipAddress }),
+        // Connection configuration
+        ...(data.connectionType !== undefined && {
+          connectionType: data.connectionType as PrinterConnectionType,
+        }),
+        ...(data.ipAddress !== undefined && { ipAddress: data.ipAddress }),
         ...(data.port !== undefined && { port: data.port }),
+        ...(data.usbPath !== undefined && { usbPath: data.usbPath }),
+        ...(data.baudRate !== undefined && { baudRate: data.baudRate }),
+        // Other fields
         ...(data.model !== undefined && { model: data.model }),
         ...(data.stationId !== undefined && { stationId: data.stationId }),
         ...(data.autoPrint !== undefined && { autoPrint: data.autoPrint }),
@@ -434,8 +426,10 @@ export async function testPrinter(id: string) {
       printer: {
         name: printer.name,
         model: printer.model,
-        ip: printer.ipAddress,
-        port: printer.port,
+        connectionType: printer.connectionType,
+        ...(printer.connectionType === "NETWORK"
+          ? { ip: printer.ipAddress, port: printer.port }
+          : { usbPath: printer.usbPath, baudRate: printer.baudRate }),
       },
       branch: printer.branch.name,
       station: printer.station?.name || "Sin estación",
@@ -452,10 +446,16 @@ export async function testPrinter(id: string) {
       },
     });
 
-    // Attempt to print to the actual printer
+    // Build printer config based on connection type
     const printerConfig = {
-      ipAddress: printer.ipAddress,
+      connectionType: printer.connectionType,
+      // Network config
+      ipAddress: printer.ipAddress || undefined,
       port: printer.port,
+      // USB config
+      usbPath: printer.usbPath || undefined,
+      baudRate: printer.baudRate,
+      // Paper config
       paperWidth: printer.paperWidth,
       charactersPerLine: printer.charactersPerLine,
       controlTicketFontSize: printer.controlTicketFontSize,
@@ -634,9 +634,16 @@ export async function autoPrintOrderItems(
     }[] = [];
 
     for (const printer of printers) {
+      // Build printer config based on connection type
       const printerConfig = {
-        ipAddress: printer.ipAddress,
+        connectionType: printer.connectionType,
+        // Network config
+        ipAddress: printer.ipAddress || undefined,
         port: printer.port,
+        // USB config
+        usbPath: printer.usbPath || undefined,
+        baudRate: printer.baudRate,
+        // Paper config
         paperWidth: printer.paperWidth,
         charactersPerLine: printer.charactersPerLine,
       };
@@ -777,9 +784,16 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
     }[] = [];
 
     for (const printer of printers) {
+      // Build printer config based on connection type
       const printerConfig = {
-        ipAddress: printer.ipAddress,
+        connectionType: printer.connectionType,
+        // Network config
+        ipAddress: printer.ipAddress || undefined,
         port: printer.port,
+        // USB config
+        usbPath: printer.usbPath || undefined,
+        baudRate: printer.baudRate,
+        // Paper config
         paperWidth: printer.paperWidth,
         charactersPerLine: printer.charactersPerLine,
         // Ticket customization
@@ -861,6 +875,35 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
     return {
       success: false,
       error: "Error al imprimir ticket de control",
+    };
+  }
+}
+
+/**
+ * Discover USB/Serial printers connected to the relay machine
+ */
+export async function discoverUsbPrinters() {
+  try {
+    const result = await discoverPrinters();
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error || "Error al descubrir impresoras USB",
+        printers: [],
+      };
+    }
+
+    return {
+      success: true,
+      printers: result.printers,
+    };
+  } catch (error) {
+    console.error("Error discovering USB printers:", error);
+    return {
+      success: false,
+      error: "Error al conectar con el servicio de impresión",
+      printers: [],
     };
   }
 }

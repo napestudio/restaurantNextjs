@@ -198,7 +198,8 @@ export function PrintersManager({
       const query = searchQuery.toLowerCase();
       return (
         printer.name.toLowerCase().includes(query) ||
-        printer.ipAddress.toLowerCase().includes(query) ||
+        printer.ipAddress?.toLowerCase().includes(query) ||
+        printer.usbPath?.toLowerCase().includes(query) ||
         printer.model?.toLowerCase().includes(query) ||
         printer.station?.name.toLowerCase().includes(query)
       );
@@ -286,7 +287,7 @@ export function PrintersManager({
                       Nombre
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                      IP / Puerto
+                      Conexión
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                       Estado
@@ -326,7 +327,9 @@ export function PrintersManager({
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-mono text-sm">
-                          {printer.ipAddress}:{printer.port}
+                          {printer.connectionType === "USB"
+                            ? printer.usbPath
+                            : `${printer.ipAddress}:${printer.port}`}
                         </span>
                       </td>
                       <td className="py-3 px-4">

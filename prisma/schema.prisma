@@ -712,6 +712,11 @@ enum PrinterStatus {
   ERROR
 }
 
+enum PrinterConnectionType {
+  NETWORK // TCP/IP connection (ipAddress:port)
+  USB     // USB/Serial connection (COM port)
+}
+
 enum PrintJobStatus {
   PENDING
   SENT
@@ -771,9 +776,16 @@ model Printer {
   name        String // "Kitchen Printer 1", "Bar Printer"
   description String?
 
-  // Network configuration
-  ipAddress String // Required for network printers
-  port      Int    @default(9100) // Default ESC/POS port
+  // Connection configuration
+  connectionType PrinterConnectionType @default(NETWORK)
+
+  // Network configuration (for NETWORK type)
+  ipAddress String? // IP address for network printers
+  port      Int     @default(9100) // Default ESC/POS port
+
+  // USB/Serial configuration (for USB type)
+  usbPath  String? // COM port path (e.g., "COM3", "COM4")
+  baudRate Int     @default(9600) // Serial baud rate
 
   // Printer details
   model    String? // "Epson TM-T88VI", "Star TSP143III", etc.
@@ -810,9 +822,9 @@ model Printer {
   updatedAt DateTime @updatedAt
 
   @@unique([branchId, name])
-  @@unique([branchId, ipAddress]) // One IP per branch
   @@index([branchId])
   @@index([stationId])
+  @@index([connectionType])
 }
 
 // Track all print jobs for debugging and audit
