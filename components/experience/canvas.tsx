@@ -18,7 +18,7 @@ export default function CanvasExperience() {
       />
       <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI} />
       <NotFoundText />
-      <SushiModel position-z={2} />
+      <SushiModel position-z={2} rotation-z={-0.25} />
     </Canvas>
   );
 }
