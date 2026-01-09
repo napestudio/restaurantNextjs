@@ -207,6 +207,11 @@ model Branch {
    */
   slug String? @db.Citext
 
+  // Print relay configuration (auto-updated by relay service)
+  relayUrl      String?   // Tunnel URL for print relay
+  relayApiKey   String?   // API key for authenticating with relay
+  relayLastSeen DateTime? // Last heartbeat from relay
+
   reservations  Reservation[]
   orders        Order[]
   sectors       Sector[]
