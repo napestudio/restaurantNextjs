@@ -119,7 +119,7 @@ export async function createPrinter(data: z.input<typeof printerSchema>) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0]?.message || "Error de validación",
+        error: error.issues[0]?.message || "Error de validación",
       };
     }
     return {
