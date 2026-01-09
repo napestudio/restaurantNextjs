@@ -48,4 +48,4 @@ export function SushiModel(props: JSX.IntrinsicElements["group"]) {
   );
 }
 
-useGLTF.preload("/sushi.glb");
+useGLTF.preload("/models/sushi.glb");
