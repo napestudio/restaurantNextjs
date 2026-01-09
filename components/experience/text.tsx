@@ -11,6 +11,7 @@ export default function NotFoundText() {
       color="white"
       anchorX="center"
       anchorY="middle"
+      fontWeight={700}
       fontSize={responsiveFontSize}
       maxWidth={responsiveMaxWidth}
       position-z={0}
