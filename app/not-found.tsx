@@ -1,11 +1,16 @@
-import Link from "next/link";
+import { Metadata } from "next";
+import CanvasExperience from "@/components/experience/canvas";
+
+export const metadata: Metadata = {
+  title: "Kiku Sushi - Página no encontrada",
+  description: "404 - Página no encontrada",
+  // manifest: "/manifest.json",
+};
 
 export default function NotFound() {
   return (
-    <div>
-      <h2>Not Found</h2>
-      <p>Could not find requested resource</p>
-      <Link href="/">Return Home</Link>
+    <div className="bg-neutral-950 h-svh w-svw ">
+      <CanvasExperience />
     </div>
   );
 }
