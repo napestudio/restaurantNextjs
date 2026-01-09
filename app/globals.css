@@ -80,7 +80,7 @@
   --color-chart-1: var(--chart-1);
 }
 
-@media (prefers-color-scheme: light) {
+/* @media (prefers-color-scheme: light) {
   :root {
     --card: #171717;
     --card-foreground: #ededed;
@@ -100,7 +100,7 @@
     --input: #262626;
     --ring: #d4d4d4;
   }
-}
+} */
 
 @layer base {
   * {
