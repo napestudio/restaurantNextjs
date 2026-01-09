@@ -8,15 +8,27 @@
 import { Socket } from "net";
 
 export interface PrinterConfig {
-  ipAddress: string;
-  port: number;
+  // Connection type
+  connectionType?: "NETWORK" | "USB"; // Default: NETWORK
+
+  // Network configuration (for NETWORK type)
+  ipAddress?: string;
+  port?: number;
+
+  // USB/Serial configuration (for USB type)
+  usbPath?: string; // COM port path (e.g., "COM3")
+  baudRate?: number; // Serial baud rate (default: 9600)
+
+  // Paper configuration
   paperWidth: number; // 58 or 80 mm
   charactersPerLine: number;
+
   // Ticket customization (optional)
   ticketHeader?: string | null;
   ticketHeaderSize?: number; // 0=small, 1=normal, 2=double height, 3=double size
   ticketFooter?: string | null;
   ticketFooterSize?: number; // 0=small, 1=normal, 2=double height, 3=double size
+
   // Control ticket formatting
   controlTicketFontSize?: number; // 0=small, 1=normal, 2=big
   controlTicketSpacing?: number; // 0=small, 1=normal, 2=big
@@ -261,11 +273,23 @@ function getSpacingLines(spacing: number): number {
 }
 
 /**
- * Send data to printer via TCP socket
- * Encodes the data using CP850 code page for proper Spanish character support
+ * Prepare ESC/POS data for sending (add codepage and encode)
+ * Returns the encoded buffer ready to be sent to printer
  */
-async function sendToPrinter(
-  config: PrinterConfig,
+export function prepareEscPosData(data: string): Buffer {
+  const dataWithCodepage = Commands.CODEPAGE_CP850 + data;
+  return encodeForPrinter(dataWithCodepage);
+}
+
+/**
+ * Send data to printer via TCP socket (legacy direct connection)
+ * Encodes the data using CP850 code page for proper Spanish character support
+ *
+ * @deprecated Use the print relay service instead for production
+ */
+async function sendToPrinterDirect(
+  ipAddress: string,
+  port: number,
   data: string
 ): Promise<PrintResult> {
   return new Promise((resolve) => {
@@ -290,9 +314,7 @@ async function sendToPrinter(
       }
     }, 5000);
 
-    // Prepend code page selection command and encode the data
-    const dataWithCodepage = Commands.CODEPAGE_CP850 + data;
-    const encodedData = encodeForPrinter(dataWithCodepage);
+    const encodedData = prepareEscPosData(data);
 
     socket.on("connect", () => {
       socket.write(encodedData, (err) => {
@@ -328,8 +350,94 @@ async function sendToPrinter(
       });
     });
 
-    socket.connect(config.port, config.ipAddress);
+    socket.connect(port, ipAddress);
   });
+}
+
+/**
+ * Send data to printer - uses relay service if configured, otherwise direct TCP
+ */
+async function sendToPrinter(
+  config: PrinterConfig,
+  data: string
+): Promise<PrintResult> {
+  const connectionType = config.connectionType || "NETWORK";
+
+  // Check if relay is configured
+  const relayUrl = process.env.PRINT_RELAY_URL;
+  const relayApiKey = process.env.PRINT_RELAY_API_KEY;
+
+  if (relayUrl && relayApiKey) {
+    // Use relay service
+    try {
+      const encodedData = prepareEscPosData(data);
+      const base64Data = encodedData.toString("base64");
+
+      // Build request based on connection type
+      const requestBody: Record<string, unknown> = {
+        data: base64Data,
+        copies: 1,
+      };
+
+      if (connectionType === "USB") {
+        if (!config.usbPath) {
+          return { success: false, error: "USB path not configured" };
+        }
+        requestBody.printerId = config.usbPath;
+        requestBody.connectionType = "usb";
+        requestBody.usbPath = config.usbPath;
+        requestBody.baudRate = config.baudRate || 9600;
+      } else {
+        if (!config.ipAddress) {
+          return { success: false, error: "IP address not configured" };
+        }
+        const port = config.port || 9100;
+        requestBody.printerId = `${config.ipAddress}:${port}`;
+        requestBody.connectionType = "network";
+        requestBody.address = config.ipAddress;
+        requestBody.port = port;
+      }
+
+      const response = await fetch(`${relayUrl}/api/print`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": relayApiKey,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: result.message || result.error || "Error al imprimir",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: `Error de conexión con relay: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  // Fallback to direct TCP connection (for localhost development - only network printers)
+  if (connectionType === "USB") {
+    return {
+      success: false,
+      error: "USB printing requires the print relay service",
+    };
+  }
+
+  if (!config.ipAddress) {
+    return { success: false, error: "IP address not configured" };
+  }
+
+  return sendToPrinterDirect(config.ipAddress, config.port || 9100, data);
 }
 
 /**
@@ -364,8 +472,16 @@ export async function printTestPage(
   content += Commands.BOLD_ON;
   content += "Informacion de Impresora\n";
   content += Commands.BOLD_OFF;
-  content += formatTwoColumns("IP:", config.ipAddress, width) + "\n";
-  content += formatTwoColumns("Puerto:", config.port.toString(), width) + "\n";
+  const connectionType = config.connectionType || "NETWORK";
+  if (connectionType === "USB") {
+    content += formatTwoColumns("Tipo:", "USB/Serial", width) + "\n";
+    content += formatTwoColumns("Puerto:", config.usbPath || "N/A", width) + "\n";
+    content += formatTwoColumns("Baud Rate:", (config.baudRate || 9600).toString(), width) + "\n";
+  } else {
+    content += formatTwoColumns("Tipo:", "Red (TCP/IP)", width) + "\n";
+    content += formatTwoColumns("IP:", config.ipAddress || "N/A", width) + "\n";
+    content += formatTwoColumns("Puerto:", (config.port || 9100).toString(), width) + "\n";
+  }
   content += formatTwoColumns("Ancho:", `${config.paperWidth}mm`, width) + "\n";
   content +=
     formatTwoColumns(
@@ -739,9 +855,78 @@ export async function printFullOrder(
 /**
  * Test printer connectivity
  */
+/**
+ * Test printer connectivity - uses relay service if configured
+ */
 export async function testConnection(
   config: PrinterConfig
 ): Promise<PrintResult> {
+  const connectionType = config.connectionType || "NETWORK";
+
+  // Check if relay is configured
+  const relayUrl = process.env.PRINT_RELAY_URL;
+  const relayApiKey = process.env.PRINT_RELAY_API_KEY;
+
+  if (relayUrl && relayApiKey) {
+    // Use relay service for test
+    try {
+      const requestBody: Record<string, unknown> = {};
+
+      if (connectionType === "USB") {
+        if (!config.usbPath) {
+          return { success: false, error: "USB path not configured" };
+        }
+        requestBody.connectionType = "usb";
+        requestBody.usbPath = config.usbPath;
+        requestBody.baudRate = config.baudRate || 9600;
+      } else {
+        if (!config.ipAddress) {
+          return { success: false, error: "IP address not configured" };
+        }
+        requestBody.connectionType = "network";
+        requestBody.address = config.ipAddress;
+        requestBody.port = config.port || 9100;
+      }
+
+      const response = await fetch(`${relayUrl}/api/printers/test`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": relayApiKey,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: result.message || result.details || "Error en prueba de conexión",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: `Error de conexión con relay: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  // Fallback to direct TCP test (only for network printers in localhost development)
+  if (connectionType === "USB") {
+    return {
+      success: false,
+      error: "USB printer testing requires the print relay service",
+    };
+  }
+
+  if (!config.ipAddress) {
+    return { success: false, error: "IP address not configured" };
+  }
+
   return new Promise((resolve) => {
     const socket = new Socket();
     let resolved = false;
@@ -779,6 +964,6 @@ export async function testConnection(
       });
     });
 
-    socket.connect(config.port, config.ipAddress);
+    socket.connect(config.port || 9100, config.ipAddress!);
   });
 }

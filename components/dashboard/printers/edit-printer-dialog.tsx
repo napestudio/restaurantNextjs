@@ -21,9 +21,21 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Pencil } from "lucide-react";
-import { updatePrinter } from "@/actions/Printer";
-import type { Station, Printer, PrintMode } from "@/app/generated/prisma";
+import { Pencil, Wifi, Usb, RefreshCw, Loader2 } from "lucide-react";
+import { updatePrinter, discoverUsbPrinters } from "@/actions/Printer";
+import type {
+  Station,
+  Printer,
+  PrintMode,
+  PrinterConnectionType,
+} from "@/app/generated/prisma";
+
+interface DiscoveredPrinter {
+  name: string;
+  path: string;
+  type: string;
+  manufacturer?: string;
+}
 
 type PrinterWithStation = Printer & {
   station: { id: string; name: string; color: string } | null;
@@ -45,34 +57,61 @@ export function EditPrinterDialog({
   stations,
   onUpdated,
 }: EditPrinterDialogProps) {
+  // Connection type
+  const [connectionType, setConnectionType] =
+    useState<PrinterConnectionType>("NETWORK");
+
+  // Basic info
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [ipAddress, setIpAddress] = useState("");
-  const [port, setPort] = useState("9100");
   const [model, setModel] = useState("");
   const [stationId, setStationId] = useState<string | undefined>(undefined);
+
+  // Network configuration
+  const [ipAddress, setIpAddress] = useState("");
+  const [port, setPort] = useState("9100");
+
+  // USB configuration
+  const [usbPath, setUsbPath] = useState("");
+  const [baudRate, setBaudRate] = useState("9600");
+  const [discoveredPrinters, setDiscoveredPrinters] = useState<
+    DiscoveredPrinter[]
+  >([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+
+  // Print settings
   const [autoPrint, setAutoPrint] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("STATION_ITEMS");
   const [printCopies, setPrintCopies] = useState("1");
   const [paperWidth, setPaperWidth] = useState<"58" | "80">("80");
   const [charactersPerLine, setCharactersPerLine] = useState("48");
+
   // Ticket customization
   const [ticketHeader, setTicketHeader] = useState("");
   const [ticketHeaderSize, setTicketHeaderSize] = useState("2");
   const [ticketFooter, setTicketFooter] = useState("");
   const [ticketFooterSize, setTicketFooterSize] = useState("1");
+
   // Control ticket formatting
   const [controlTicketFontSize, setControlTicketFontSize] = useState("1");
   const [controlTicketSpacing, setControlTicketSpacing] = useState("1");
+
+  // State
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (printer && open) {
+      setConnectionType(printer.connectionType);
       setName(printer.name);
       setDescription(printer.description || "");
-      setIpAddress(printer.ipAddress);
+      // Network config
+      setIpAddress(printer.ipAddress || "");
       setPort(printer.port.toString());
+      // USB config
+      setUsbPath(printer.usbPath || "");
+      setBaudRate(printer.baudRate.toString());
+      // Other fields
       setModel(printer.model || "");
       setStationId(printer.stationId || undefined);
       setAutoPrint(printer.autoPrint);
@@ -89,6 +128,7 @@ export function EditPrinterDialog({
       setControlTicketFontSize((printer.controlTicketFontSize ?? 1).toString());
       setControlTicketSpacing((printer.controlTicketSpacing ?? 1).toString());
       setError(null);
+      setDiscoveredPrinters([]);
     }
   }, [printer, open]);
 
@@ -98,26 +138,58 @@ export function EditPrinterDialog({
     return ipRegex.test(ip);
   };
 
+  const handleDiscoverPrinters = async () => {
+    setIsDiscovering(true);
+    setError(null);
+
+    try {
+      const result = await discoverUsbPrinters();
+      if (result.success) {
+        setDiscoveredPrinters(result.printers);
+        if (result.printers.length === 0) {
+          setError(
+            "No se encontraron impresoras USB. Asegúrate de que el servicio de impresión esté activo."
+          );
+        }
+      } else {
+        setError(
+          result.error ||
+            "Error al buscar impresoras. Verifica que el servicio de impresión esté activo."
+        );
+      }
+    } catch {
+      setError("Error al conectar con el servicio de impresión");
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!name.trim()) {
       setError("El nombre es requerido");
       return;
     }
 
-    if (!ipAddress.trim()) {
-      setError("La dirección IP es requerida");
-      return;
-    }
-
-    if (!validateIP(ipAddress)) {
-      setError("Dirección IP inválida");
-      return;
-    }
-
-    const portNum = parseInt(port);
-    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-      setError("Puerto inválido (1-65535)");
-      return;
+    // Validate based on connection type
+    if (connectionType === "NETWORK") {
+      if (!ipAddress.trim()) {
+        setError("La dirección IP es requerida");
+        return;
+      }
+      if (!validateIP(ipAddress)) {
+        setError("Dirección IP inválida");
+        return;
+      }
+      const portNum = parseInt(port);
+      if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+        setError("Puerto inválido (1-65535)");
+        return;
+      }
+    } else {
+      if (!usbPath.trim()) {
+        setError("El puerto USB es requerido");
+        return;
+      }
     }
 
     const copies = parseInt(printCopies);
@@ -139,8 +211,14 @@ export function EditPrinterDialog({
       const result = await updatePrinter(printer.id, {
         name: name.trim(),
         description: description.trim() || undefined,
-        ipAddress: ipAddress.trim(),
-        port: portNum,
+        connectionType,
+        // Network config
+        ipAddress: connectionType === "NETWORK" ? ipAddress.trim() : null,
+        port: connectionType === "NETWORK" ? parseInt(port) : 9100,
+        // USB config
+        usbPath: connectionType === "USB" ? usbPath.trim() : null,
+        baudRate: connectionType === "USB" ? parseInt(baudRate) : 9600,
+        // Other fields
         model: model.trim() || undefined,
         stationId: stationId === "none" ? null : stationId,
         autoPrint,
@@ -169,6 +247,10 @@ export function EditPrinterDialog({
     }
   };
 
+  const isFormValid =
+    name.trim() &&
+    (connectionType === "NETWORK" ? ipAddress.trim() : usbPath.trim());
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -183,8 +265,64 @@ export function EditPrinterDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Basic Info */}
+          {/* Connection Type Selection */}
           <div className="space-y-4">
+            <h3 className="font-medium text-sm">Tipo de Conexión</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setConnectionType("NETWORK")}
+                disabled={isPending}
+                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
+                  connectionType === "NETWORK"
+                    ? "border-orange-500 bg-orange-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <Wifi
+                  className={`h-6 w-6 ${
+                    connectionType === "NETWORK"
+                      ? "text-orange-500"
+                      : "text-gray-400"
+                  }`}
+                />
+                <div className="text-left">
+                  <p className="font-medium">Red (TCP/IP)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Impresora conectada a la red
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setConnectionType("USB")}
+                disabled={isPending}
+                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
+                  connectionType === "USB"
+                    ? "border-orange-500 bg-orange-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <Usb
+                  className={`h-6 w-6 ${
+                    connectionType === "USB"
+                      ? "text-orange-500"
+                      : "text-gray-400"
+                  }`}
+                />
+                <div className="text-left">
+                  <p className="font-medium">USB / Serial</p>
+                  <p className="text-xs text-muted-foreground">
+                    Impresora conectada por USB
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Basic Info */}
+          <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-sm">Información Básica</h3>
 
             <div className="space-y-2">
@@ -237,37 +375,120 @@ export function EditPrinterDialog({
             </div>
           </div>
 
-          {/* Network Configuration */}
+          {/* Connection Configuration */}
           <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-medium text-sm">Configuración de Red</h3>
+            <h3 className="font-medium text-sm">
+              {connectionType === "NETWORK"
+                ? "Configuración de Red"
+                : "Configuración USB"}
+            </h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-ipAddress">Dirección IP *</Label>
-                <Input
-                  id="edit-ipAddress"
-                  value={ipAddress}
-                  onChange={(e) => setIpAddress(e.target.value)}
-                  placeholder="192.168.1.100"
-                  disabled={isPending}
-                />
-              </div>
+            {connectionType === "NETWORK" ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-ipAddress">Dirección IP *</Label>
+                    <Input
+                      id="edit-ipAddress"
+                      value={ipAddress}
+                      onChange={(e) => setIpAddress(e.target.value)}
+                      placeholder="192.168.1.100"
+                      disabled={isPending}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-port">Puerto</Label>
-                <Input
-                  id="edit-port"
-                  type="number"
-                  value={port}
-                  onChange={(e) => setPort(e.target.value)}
-                  placeholder="9100"
-                  disabled={isPending}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Por defecto: 9100
-                </p>
-              </div>
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-port">Puerto</Label>
+                    <Input
+                      id="edit-port"
+                      type="number"
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                      placeholder="9100"
+                      disabled={isPending}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Por defecto: 9100
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-usbPath">Puerto USB *</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDiscoverPrinters}
+                      disabled={isPending || isDiscovering}
+                    >
+                      {isDiscovering ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Buscar Impresoras
+                    </Button>
+                  </div>
+
+                  {discoveredPrinters.length > 0 ? (
+                    <Select
+                      value={usbPath}
+                      onValueChange={setUsbPath}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger id="edit-usbPath">
+                        <SelectValue placeholder="Selecciona una impresora" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {discoveredPrinters.map((printer) => (
+                          <SelectItem key={printer.path} value={printer.path}>
+                            {printer.name} ({printer.path})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="edit-usbPath"
+                      value={usbPath}
+                      onChange={(e) => setUsbPath(e.target.value)}
+                      placeholder="COM3"
+                      disabled={isPending}
+                    />
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Ej: COM3, COM4 (Windows) o /dev/ttyUSB0 (Linux)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-baudRate">Baud Rate</Label>
+                  <Select
+                    value={baudRate}
+                    onValueChange={setBaudRate}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger id="edit-baudRate">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="9600">9600</SelectItem>
+                      <SelectItem value="19200">19200</SelectItem>
+                      <SelectItem value="38400">38400</SelectItem>
+                      <SelectItem value="57600">57600</SelectItem>
+                      <SelectItem value="115200">115200</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Velocidad de comunicación (por defecto: 9600)
+                  </p>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="edit-model">Modelo</Label>
@@ -467,7 +688,9 @@ export function EditPrinterDialog({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-controlTicketFontSize">Tamaño de Fuente</Label>
+                  <Label htmlFor="edit-controlTicketFontSize">
+                    Tamaño de Fuente
+                  </Label>
                   <Select
                     value={controlTicketFontSize}
                     onValueChange={setControlTicketFontSize}
@@ -503,7 +726,8 @@ export function EditPrinterDialog({
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Configura el tamaño de fuente y espaciado entre secciones del ticket de control
+                Configura el tamaño de fuente y espaciado entre secciones del
+                ticket de control
               </p>
             </div>
           </div>
@@ -526,8 +750,8 @@ export function EditPrinterDialog({
           </Button>
           <Button
             onClick={handleUpdate}
-            className="bg-red-500 hover:bg-red-600"
-            disabled={isPending || !name.trim() || !ipAddress.trim()}
+            className="bg-orange-500 hover:bg-orange-600"
+            disabled={isPending || !isFormValid}
           >
             {isPending ? "Guardando..." : "Guardar Cambios"}
           </Button>
