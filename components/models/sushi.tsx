@@ -10,7 +10,7 @@ import * as THREE from "three";
 import React, { JSX, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -22,13 +22,18 @@ type GLTFResult = GLTF & {
 };
 
 export function SushiModel(props: JSX.IntrinsicElements["group"]) {
+  const { size } = useThree();
   const { nodes, materials } = useGLTF(
     "/models/sushi.glb"
   ) as unknown as GLTFResult;
   const meshRef = useRef<THREE.Mesh>(null);
+  const isMobile = size.width < 768;
+
+  const scale = isMobile ? 1 : 2;
+  const positionY = isMobile ? 1 : 0;
   useFrame((state, delta) => (meshRef.current!.rotation.y += delta * 0.5));
   return (
-    <group {...props} dispose={null}>
+    <group {...props} dispose={null} position-y={positionY} scale={scale}>
       <group scale={0.01}>
         <mesh
           castShadow

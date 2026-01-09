@@ -1,12 +1,13 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
+
 import { SushiModel } from "@/components/models/sushi";
+import NotFoundText from "./text";
 
 export default function CanvasExperience() {
   return (
-    <Canvas>
+    <Canvas className="h-full w-full absolute inset-0">
       <ambientLight intensity={Math.PI / 2} />
       <spotLight
         position={[10, 10, 10]}
@@ -16,16 +17,8 @@ export default function CanvasExperience() {
         intensity={Math.PI}
       />
       <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI} />
-      <Text
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-        fontSize={8}
-        position-z={0}
-      >
-        404
-      </Text>
-      <SushiModel scale={2} position-z={2} />
+      <NotFoundText />
+      <SushiModel position-z={2} />
     </Canvas>
   );
 }
