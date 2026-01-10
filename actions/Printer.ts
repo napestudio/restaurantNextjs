@@ -10,7 +10,6 @@ import {
   PrinterConnectionType,
 } from "@/app/generated/prisma";
 import { printTestPage } from "@/lib/printer/escpos";
-import { discoverPrinters } from "@/lib/printer/relay";
 
 const printerInputSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -447,6 +446,8 @@ export async function testPrinter(id: string) {
     });
 
     // Build printer config based on connection type
+    // Note: This uses direct TCP and only works for network printers
+    // For full support (USB + network), use the new QZ Tray flow via PrinterQz.ts
     const printerConfig = {
       connectionType: printer.connectionType,
       // Network config
@@ -564,6 +565,9 @@ interface ControlTicketInfo {
  * This prints kitchen/bar tickets WITHOUT prices and WITHOUT waiter name
  * Only prints to printers with STATION_ITEMS or BOTH print mode
  */
+/**
+ * @deprecated Use prepareOrderItemsPrint from PrinterQz.ts instead for QZ Tray printing
+ */
 export async function autoPrintOrderItems(
   orderInfo: OrderInfoForPrint,
   items: OrderItemForPrint[]
@@ -635,6 +639,7 @@ export async function autoPrintOrderItems(
 
     for (const printer of printers) {
       // Build printer config based on connection type
+      // Note: This uses direct TCP and only works for network printers
       const printerConfig = {
         connectionType: printer.connectionType,
         // Network config
@@ -749,6 +754,7 @@ async function updatePrinterStatusFromResult(
 /**
  * Print control ticket (full order with prices) - triggered manually by user
  * This prints to printers with FULL_ORDER or BOTH print mode
+ * @deprecated Use prepareControlTicketPrint from PrinterQz.ts instead for QZ Tray printing
  */
 export async function printControlTicket(ticketInfo: ControlTicketInfo) {
   try {
@@ -785,6 +791,7 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
 
     for (const printer of printers) {
       // Build printer config based on connection type
+      // Note: This uses direct TCP and only works for network printers
       const printerConfig = {
         connectionType: printer.connectionType,
         // Network config
@@ -880,30 +887,15 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
 }
 
 /**
- * Discover USB/Serial printers connected to the relay machine
+ * Discover USB/Serial printers
+ * @deprecated Printer discovery now happens client-side via QZ Tray.
+ * Use the useQzTrayContext().printers to get available printers.
  */
 export async function discoverUsbPrinters() {
-  try {
-    const result = await discoverPrinters();
-
-    if (!result.success) {
-      return {
-        success: false,
-        error: result.error || "Error al descubrir impresoras USB",
-        printers: [],
-      };
-    }
-
-    return {
-      success: true,
-      printers: result.printers,
-    };
-  } catch (error) {
-    console.error("Error discovering USB printers:", error);
-    return {
-      success: false,
-      error: "Error al conectar con el servicio de impresión",
-      printers: [],
-    };
-  }
+  // This function is deprecated - printer discovery is now done client-side via QZ Tray
+  return {
+    success: false,
+    error: "La detección de impresoras ahora se realiza desde el navegador con QZ Tray",
+    printers: [],
+  };
 }

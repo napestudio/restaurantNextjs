@@ -1,12 +1,13 @@
 "use client";
 
+import React from "react";
 import type { ClientData } from "@/actions/clients";
 import {
   assignClientToOrder,
   assignStaffToOrder,
   updateOrderStatus,
 } from "@/actions/Order";
-import { printControlTicket } from "@/actions/Printer";
+import { usePrint } from "@/hooks/use-print";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import {
@@ -134,8 +135,18 @@ export function OrderDetailsSidebar({
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
+  const [hasPrinters, setHasPrinters] = useState<boolean | null>(null);
+
+  // QZ Tray printing
+  const { printControlTicket, isPrinting, checkHasControlTicketPrinters } = usePrint();
+
+  // Check if branch has printers configured
+  React.useEffect(() => {
+    if (branchId) {
+      checkHasControlTicketPrinters(branchId).then(setHasPrinters);
+    }
+  }, [branchId, checkHasControlTicketPrinters]);
 
   if (!order) return null;
 
@@ -246,42 +257,29 @@ export function OrderDetailsSidebar({
   const handlePrintControlTicket = async () => {
     if (!order) return;
 
-    setIsPrinting(true);
-    try {
-      const waiterName =
-        order.assignedTo?.name || order.assignedTo?.username || "—";
-      const tableName = order.table?.number?.toString() || "—";
+    const waiterName =
+      order.assignedTo?.name || order.assignedTo?.username || "—";
+    const tableName = order.table?.number?.toString() || "—";
 
-      const result = await printControlTicket({
-        orderId: order.id,
-        orderCode: order.publicCode,
-        tableName,
-        waiterName,
-        branchId,
-        items: order.items.map((item) => ({
-          name: item.itemName,
-          quantity: item.quantity,
-          price: item.price,
-          notes: null,
-        })),
-        subtotal,
-        discountPercentage:
-          order.discountPercentage > 0 ? order.discountPercentage : undefined,
-        orderType: order.type,
-        customerName: order.client?.name || order.customerName || undefined,
-      });
-
-      if (result.success) {
-        console.log("Control ticket printed:", result.message);
-      } else {
-        alert(result.error || "Error al imprimir ticket de control");
-      }
-    } catch (error) {
-      console.error("Error printing control ticket:", error);
-      alert("Error al imprimir ticket de control");
-    } finally {
-      setIsPrinting(false);
-    }
+    // Print via QZ Tray - optimistic updates handled by usePrint hook
+    await printControlTicket({
+      orderId: order.id,
+      orderCode: order.publicCode,
+      tableName,
+      waiterName,
+      branchId,
+      items: order.items.map((item) => ({
+        name: item.itemName,
+        quantity: item.quantity,
+        price: Number(item.price),
+        notes: null,
+      })),
+      subtotal,
+      discountPercentage:
+        order.discountPercentage > 0 ? order.discountPercentage : undefined,
+      orderType: order.type,
+      customerName: order.client?.name || order.customerName || undefined,
+    });
   };
 
   const handleCloseOrderSuccess = () => {
@@ -654,15 +652,18 @@ export function OrderDetailsSidebar({
               Finalizar Venta
             </Button>
           )}
-          <Button
-            onClick={handlePrintControlTicket}
-            disabled={isPrinting || order.items.length === 0}
-            variant="outline"
-            className="w-full"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            {isPrinting ? "Imprimiendo..." : "Imprimir Ticket de Control"}
-          </Button>
+          {/* Only show print button if branch has printers configured */}
+          {hasPrinters && (
+            <Button
+              onClick={handlePrintControlTicket}
+              disabled={isPrinting || order.items.length === 0}
+              variant="outline"
+              className="w-full"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              {isPrinting ? "Imprimiendo..." : "Imprimir Ticket de Control"}
+            </Button>
+          )}
         </div>
       </div>
 

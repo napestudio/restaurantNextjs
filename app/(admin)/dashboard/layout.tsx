@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
 import { isUserAdmin } from "@/lib/permissions";
+import { QzTrayProviderWrapper } from "@/components/providers/qz-tray-provider-wrapper";
 
 export const metadata: Metadata = {
   title: "Kiku Sushi - Panel de Administración",
@@ -39,12 +40,14 @@ export default async function DashboardLayout({
   const hasAdminRole = await isUserAdmin(session.user.id);
 
   return (
-    <div className="min-h-screen bg-gray-50 w-full">
-      <DashboardNav
-        userName={session.user.name || session.user.email || ""}
-        hasAdminRole={hasAdminRole}
-      />
-      <main className="mx-auto">{children}</main>
-    </div>
+    <QzTrayProviderWrapper>
+      <div className="min-h-screen bg-gray-50 w-full">
+        <DashboardNav
+          userName={session.user.name || session.user.email || ""}
+          hasAdminRole={hasAdminRole}
+        />
+        <main className="mx-auto">{children}</main>
+      </div>
+    </QzTrayProviderWrapper>
   );
 }

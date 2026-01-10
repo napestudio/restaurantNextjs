@@ -282,6 +282,15 @@ export function prepareEscPosData(data: string): Buffer {
 }
 
 /**
+ * Prepare ESC/POS data and return as base64 string for QZ Tray
+ * This is the primary method for client-side printing
+ */
+export function prepareEscPosBase64(data: string): string {
+  const buffer = prepareEscPosData(data);
+  return buffer.toString("base64");
+}
+
+/**
  * Send data to printer via TCP socket (legacy direct connection)
  * Encodes the data using CP850 code page for proper Spanish character support
  *
@@ -355,7 +364,9 @@ async function sendToPrinterDirect(
 }
 
 /**
- * Send data to printer - uses relay service if configured, otherwise direct TCP
+ * Send data to printer via direct TCP connection
+ * @deprecated Use QZ Tray for production. This is kept for backwards compatibility
+ * and local development with network printers only.
  */
 async function sendToPrinter(
   config: PrinterConfig,
@@ -363,73 +374,11 @@ async function sendToPrinter(
 ): Promise<PrintResult> {
   const connectionType = config.connectionType || "NETWORK";
 
-  // Check if relay is configured
-  const relayUrl = process.env.PRINT_RELAY_URL;
-  const relayApiKey = process.env.PRINT_RELAY_API_KEY;
-
-  if (relayUrl && relayApiKey) {
-    // Use relay service
-    try {
-      const encodedData = prepareEscPosData(data);
-      const base64Data = encodedData.toString("base64");
-
-      // Build request based on connection type
-      const requestBody: Record<string, unknown> = {
-        data: base64Data,
-        copies: 1,
-      };
-
-      if (connectionType === "USB") {
-        if (!config.usbPath) {
-          return { success: false, error: "USB path not configured" };
-        }
-        requestBody.printerId = config.usbPath;
-        requestBody.connectionType = "usb";
-        requestBody.usbPath = config.usbPath;
-        requestBody.baudRate = config.baudRate || 9600;
-      } else {
-        if (!config.ipAddress) {
-          return { success: false, error: "IP address not configured" };
-        }
-        const port = config.port || 9100;
-        requestBody.printerId = `${config.ipAddress}:${port}`;
-        requestBody.connectionType = "network";
-        requestBody.address = config.ipAddress;
-        requestBody.port = port;
-      }
-
-      const response = await fetch(`${relayUrl}/api/print`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": relayApiKey,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          error: result.message || result.error || "Error al imprimir",
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Error de conexión con relay: ${error instanceof Error ? error.message : "Unknown error"}`,
-      };
-    }
-  }
-
-  // Fallback to direct TCP connection (for localhost development - only network printers)
+  // Only network printers supported via direct TCP
   if (connectionType === "USB") {
     return {
       success: false,
-      error: "USB printing requires the print relay service",
+      error: "USB printing requires QZ Tray. Use the new printing flow.",
     };
   }
 
@@ -852,74 +801,348 @@ export async function printFullOrder(
   return sendToPrinter(config, content);
 }
 
+// ============================================================================
+// DATA GENERATION FUNCTIONS (for QZ Tray - returns ESC/POS data without printing)
+// ============================================================================
+
 /**
- * Test printer connectivity
+ * Generate test page ESC/POS data (base64 encoded)
+ * Used for QZ Tray printing from client
  */
+export function generateTestPageData(config: PrinterConfig): string {
+  const width = config.charactersPerLine;
+  const fontSize = config.controlTicketFontSize ?? 1;
+  const spacing = config.controlTicketSpacing ?? 1;
+  const spacingLines = getSpacingLines(spacing);
+
+  const fontSizeLabels = ["Pequeño", "Normal", "Grande"];
+  const spacingLabels = ["Pequeño", "Normal", "Grande"];
+
+  let content = Commands.INIT;
+
+  content += Commands.ALIGN_CENTER;
+  content += Commands.DOUBLE_SIZE_ON;
+  content += "PRUEBA DE IMPRESION\n";
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width) + "\n";
+
+  content += Commands.BOLD_ON;
+  content += "Informacion de Impresora\n";
+  content += Commands.BOLD_OFF;
+  const connectionType = config.connectionType || "NETWORK";
+  if (connectionType === "USB") {
+    content += formatTwoColumns("Tipo:", "USB/Serial", width) + "\n";
+    content += formatTwoColumns("Puerto:", config.usbPath || "N/A", width) + "\n";
+    content += formatTwoColumns("Baud Rate:", (config.baudRate || 9600).toString(), width) + "\n";
+  } else {
+    content += formatTwoColumns("Tipo:", "Red (TCP/IP)", width) + "\n";
+    content += formatTwoColumns("IP:", config.ipAddress || "N/A", width) + "\n";
+    content += formatTwoColumns("Puerto:", (config.port || 9100).toString(), width) + "\n";
+  }
+  content += formatTwoColumns("Ancho:", `${config.paperWidth}mm`, width) + "\n";
+  content += formatTwoColumns("Caracteres:", config.charactersPerLine.toString(), width) + "\n";
+
+  content += separator(width) + "\n";
+
+  content += Commands.BOLD_ON;
+  content += "Config. Ticket Control\n";
+  content += Commands.BOLD_OFF;
+  content += formatTwoColumns("Tam. Fuente:", fontSizeLabels[fontSize] || "Normal", width) + "\n";
+  content += formatTwoColumns("Espaciado:", spacingLabels[spacing] || "Normal", width) + "\n";
+
+  content += separator(width) + "\n";
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("es-AR");
+  const timeStr = now.toLocaleTimeString("es-AR", { hour12: false });
+  content += formatTwoColumns("Fecha:", dateStr, width) + "\n";
+  content += formatTwoColumns("Hora:", timeStr, width) + "\n";
+
+  content += separator(width) + "\n";
+
+  content += Commands.BOLD_ON;
+  content += "Prueba de Tamaños de Fuente\n";
+  content += Commands.BOLD_OFF;
+
+  content += "Pequeño (0):\n";
+  content += Commands.NORMAL_SIZE;
+  content += "  Texto de ejemplo pequeño\n";
+  if (spacingLines > 0) content += Commands.FEED_LINES(spacingLines);
+
+  content += "Normal (1):\n";
+  content += Commands.NORMAL_SIZE;
+  content += "  Texto de ejemplo normal\n";
+  if (spacingLines > 0) content += Commands.FEED_LINES(spacingLines);
+
+  content += "Grande (2):\n";
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += "  Texto grande\n";
+  content += Commands.NORMAL_SIZE;
+  if (spacingLines > 0) content += Commands.FEED_LINES(spacingLines);
+
+  content += separator(width) + "\n";
+
+  content += Commands.BOLD_ON;
+  content += "Vista Previa Config. Actual\n";
+  content += Commands.BOLD_OFF;
+  content += getControlFontSizeCommand(fontSize);
+  content += "Este texto usa tu config:\n";
+  content += `Fuente: ${fontSizeLabels[fontSize] || "Normal"}\n`;
+  content += `Espaciado: ${spacingLabels[spacing] || "Normal"}\n`;
+  content += Commands.NORMAL_SIZE;
+
+  content += separator(width) + "\n";
+
+  content += Commands.ALIGN_CENTER;
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += "PRUEBA EXITOSA\n";
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width, "=") + "\n";
+
+  content += Commands.FEED_LINES(3);
+  content += Commands.CUT_PARTIAL;
+
+  return prepareEscPosBase64(content);
+}
+
 /**
- * Test printer connectivity - uses relay service if configured
+ * Generate order (comanda) ESC/POS data (base64 encoded)
+ * Used for station tickets - NO prices, NO waiter
+ */
+export function generateOrderData(config: PrinterConfig, order: OrderData): string {
+  const width = config.charactersPerLine;
+
+  let content = Commands.INIT;
+
+  content += Commands.ALIGN_CENTER;
+  content += Commands.DOUBLE_SIZE_ON;
+  if (order.stationName) {
+    content += `${order.stationName.toUpperCase()}\n`;
+  } else {
+    content += "ORDEN\n";
+  }
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width, "=") + "\n";
+
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += formatLine(`MESA ${order.tableName}`, width, "center") + "\n";
+  content += Commands.NORMAL_SIZE;
+
+  content += separator(width, "=") + "\n";
+
+  const now = new Date();
+  content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
+  content += formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+  content += formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
+  if (order.waiterName) {
+    content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  }
+
+  content += separator(width) + "\n";
+
+  content += Commands.BOLD_ON;
+  content += "ITEMS\n";
+  content += Commands.BOLD_OFF;
+  content += separator(width) + "\n";
+
+  for (const item of order.items) {
+    content += Commands.DOUBLE_HEIGHT_ON;
+    content += `${item.quantity}x ${item.name}\n`;
+    content += Commands.NORMAL_SIZE;
+
+    if (item.notes) {
+      content += `   Nota: ${item.notes}\n`;
+    }
+    content += "\n";
+  }
+
+  content += separator(width) + "\n";
+
+  if (order.notes) {
+    content += Commands.BOLD_ON;
+    content += "NOTAS GENERALES:\n";
+    content += Commands.BOLD_OFF;
+    content += order.notes + "\n";
+    content += separator(width) + "\n";
+  }
+
+  content += Commands.FEED_LINES(3);
+  content += Commands.CUT_PARTIAL;
+
+  return prepareEscPosBase64(content);
+}
+
+/**
+ * Generate full order (control ticket) ESC/POS data (base64 encoded)
+ * Used for control tickets - WITH prices
+ */
+export function generateFullOrderData(config: PrinterConfig, order: FullOrderData): string {
+  const width = config.charactersPerLine;
+  const fontSize = config.controlTicketFontSize ?? 1;
+  const spacingLines = getSpacingLines(config.controlTicketSpacing ?? 1);
+
+  const addSpacing = () => {
+    if (spacingLines > 0) {
+      return Commands.FEED_LINES(spacingLines);
+    }
+    return "";
+  };
+
+  let content = Commands.INIT;
+
+  if (config.ticketHeader) {
+    content += Commands.ALIGN_CENTER;
+    content += getSizeCommand(config.ticketHeaderSize ?? 2);
+    content += Commands.BOLD_ON;
+    content += `${config.ticketHeader}\n`;
+    content += Commands.BOLD_OFF;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
+
+  content += Commands.ALIGN_CENTER;
+  content += getControlFontSizeCommand(fontSize);
+  content += "TICKET DE CONTROL\n";
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+  content += addSpacing();
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width, "=") + "\n";
+
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += formatLine(`MESA ${order.tableName}`, width, "center") + "\n";
+  content += Commands.NORMAL_SIZE;
+
+  content += separator(width, "=") + "\n";
+  content += addSpacing();
+
+  const now = new Date();
+  content += getControlFontSizeCommand(fontSize);
+  content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
+  content += formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+  content += formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
+  content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  if (order.customerName) {
+    content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
+  }
+  if (order.orderType) {
+    content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
+  }
+  content += Commands.NORMAL_SIZE;
+
+  content += separator(width) + "\n";
+  content += addSpacing();
+
+  content += Commands.BOLD_ON;
+  content += getControlFontSizeCommand(fontSize);
+  content += formatTwoColumns("CANT ITEM", "PRECIO", width) + "\n";
+  content += Commands.BOLD_OFF;
+  content += Commands.NORMAL_SIZE;
+  content += separator(width) + "\n";
+
+  content += getControlFontSizeCommand(fontSize);
+  for (const item of order.items) {
+    const itemTotal = item.quantity * item.price;
+    const qtyName = `${item.quantity}x ${item.name}`;
+    const priceStr = `$${itemTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+
+    const maxNameLength = width - priceStr.length - 1;
+    if (qtyName.length > maxNameLength) {
+      content += qtyName.substring(0, maxNameLength) + "\n";
+      content += formatTwoColumns("", priceStr, width) + "\n";
+    } else {
+      content += formatTwoColumns(qtyName, priceStr, width) + "\n";
+    }
+
+    if (item.notes) {
+      content += Commands.NORMAL_SIZE;
+      content += `   Nota: ${item.notes}\n`;
+      content += getControlFontSizeCommand(fontSize);
+    }
+  }
+  content += Commands.NORMAL_SIZE;
+
+  content += separator(width) + "\n";
+  content += addSpacing();
+
+  content += getControlFontSizeCommand(fontSize);
+  content += formatTwoColumns(
+    "Subtotal:",
+    `$${order.subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+    width
+  ) + "\n";
+
+  if (order.discountPercentage && order.discountPercentage > 0) {
+    content += formatTwoColumns(
+      `Descuento (${order.discountPercentage}%):`,
+      `-$${(order.discountAmount || 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+      width
+    ) + "\n";
+  }
+  content += Commands.NORMAL_SIZE;
+
+  content += separator(width) + "\n";
+  content += Commands.BOLD_ON;
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += formatTwoColumns(
+    "TOTAL:",
+    `$${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+    width
+  ) + "\n";
+  content += Commands.NORMAL_SIZE;
+  content += Commands.BOLD_OFF;
+
+  content += separator(width) + "\n";
+  content += addSpacing();
+
+  if (order.notes) {
+    content += Commands.BOLD_ON;
+    content += "NOTAS:\n";
+    content += Commands.BOLD_OFF;
+    content += getControlFontSizeCommand(fontSize);
+    content += order.notes + "\n";
+    content += Commands.NORMAL_SIZE;
+    content += separator(width) + "\n";
+  }
+
+  if (config.ticketFooter) {
+    content += Commands.ALIGN_CENTER;
+    content += getSizeCommand(config.ticketFooterSize ?? 1);
+    content += `${config.ticketFooter}\n`;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
+
+  content += Commands.FEED_LINES(3);
+  content += Commands.CUT_PARTIAL;
+
+  return prepareEscPosBase64(content);
+}
+
+/**
+ * Test printer connectivity via direct TCP connection
+ * @deprecated Use QZ Tray for printing instead. This only works for network printers.
  */
 export async function testConnection(
   config: PrinterConfig
 ): Promise<PrintResult> {
   const connectionType = config.connectionType || "NETWORK";
 
-  // Check if relay is configured
-  const relayUrl = process.env.PRINT_RELAY_URL;
-  const relayApiKey = process.env.PRINT_RELAY_API_KEY;
-
-  if (relayUrl && relayApiKey) {
-    // Use relay service for test
-    try {
-      const requestBody: Record<string, unknown> = {};
-
-      if (connectionType === "USB") {
-        if (!config.usbPath) {
-          return { success: false, error: "USB path not configured" };
-        }
-        requestBody.connectionType = "usb";
-        requestBody.usbPath = config.usbPath;
-        requestBody.baudRate = config.baudRate || 9600;
-      } else {
-        if (!config.ipAddress) {
-          return { success: false, error: "IP address not configured" };
-        }
-        requestBody.connectionType = "network";
-        requestBody.address = config.ipAddress;
-        requestBody.port = config.port || 9100;
-      }
-
-      const response = await fetch(`${relayUrl}/api/printers/test`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": relayApiKey,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          error: result.message || result.details || "Error en prueba de conexión",
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Error de conexión con relay: ${error instanceof Error ? error.message : "Unknown error"}`,
-      };
-    }
-  }
-
-  // Fallback to direct TCP test (only for network printers in localhost development)
+  // Only network printers supported via direct TCP
   if (connectionType === "USB") {
     return {
       success: false,
-      error: "USB printer testing requires the print relay service",
+      error: "USB printer testing requires QZ Tray. Use the new printing flow.",
     };
   }
 
