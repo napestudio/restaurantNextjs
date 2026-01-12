@@ -14,11 +14,8 @@ import {
   Trash2,
   Pencil,
 } from "lucide-react";
-import {
-  togglePrinterStatus,
-  deletePrinter,
-  testPrinter,
-} from "@/actions/Printer";
+import { togglePrinterStatus, deletePrinter } from "@/actions/Printer";
+import { usePrint } from "@/hooks/use-print";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Printer,
@@ -84,10 +81,12 @@ export function PrinterDetailsSidebar({
 }: PrinterDetailsSidebarProps) {
   const { toast } = useToast();
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // QZ Tray printing
+  const { printTest, isPrinting: isTesting, printStatus } = usePrint();
 
   if (!printer) return null;
 
@@ -143,30 +142,19 @@ export function PrinterDetailsSidebar({
   };
 
   const handleTestPrint = async () => {
-    setIsTesting(true);
-    try {
-      const result = await testPrinter(printer.id);
+    const success = await printTest(printer.id);
 
-      if (result.success) {
-        toast({
-          title: "Éxito",
-          description: "Impresión de prueba enviada",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.error || "Error al realizar la prueba",
-        });
-      }
-    } catch {
+    if (success) {
+      toast({
+        title: "Éxito",
+        description: "Impresión de prueba enviada",
+      });
+    } else {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al realizar la prueba",
+        description: printStatus.message || "Error al realizar la prueba",
       });
-    } finally {
-      setIsTesting(false);
     }
   };
 

@@ -121,7 +121,7 @@ export function useOrdersData({
     order: !isShared ? (data as OrderWithItems | null | undefined) ?? null : null,
     isLoading,
     error: error?.message ?? null,
-    // Manual refresh function
+    // Manual refresh function - returns promise for proper awaiting
     refresh: () => mutate(),
     // Mutate function for optimistic updates
     mutate,

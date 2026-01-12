@@ -28,7 +28,8 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react";
-import { createPrinter, discoverUsbPrinters } from "@/actions/Printer";
+import { createPrinter } from "@/actions/Printer";
+import { useQzTrayOptional } from "@/contexts/qz-tray-context";
 import type {
   Station,
   Printer,
@@ -58,6 +59,9 @@ export function CreatePrinterDialog({
   stations,
   onCreated,
 }: CreatePrinterDialogProps) {
+  // QZ Tray context for printer discovery
+  const qz = useQzTrayOptional();
+
   // Connection type
   const [connectionType, setConnectionType] =
     useState<PrinterConnectionType>("NETWORK");
@@ -106,22 +110,46 @@ export function CreatePrinterDialog({
     setError(null);
 
     try {
-      const result = await discoverUsbPrinters();
-      if (result.success) {
-        setDiscoveredPrinters(result.printers);
-        if (result.printers.length === 0) {
-          setError(
-            "No se encontraron impresoras USB. Asegúrate de que el servicio de impresión esté activo."
-          );
-        }
-      } else {
+      // Use QZ Tray for printer discovery (client-side)
+      if (!qz) {
         setError(
-          result.error ||
-            "Error al buscar impresoras. Verifica que el servicio de impresión esté activo."
+          "QZ Tray no está disponible. Asegúrate de que esté instalado y ejecutándose."
+        );
+        return;
+      }
+
+      // Connect to QZ Tray if not connected
+      if (!qz.isConnected) {
+        const connectResult = await qz.connect();
+        if (connectResult.state !== "connected") {
+          setError(
+            connectResult.error ||
+              "No se pudo conectar a QZ Tray. ¿Está ejecutándose?"
+          );
+          return;
+        }
+      }
+
+      // Refresh printer list from QZ Tray
+      await qz.refreshPrinters();
+
+      // Convert QZ Tray printer format to our format
+      const qzPrinters = qz.printers.map((p) => ({
+        name: p.name,
+        path: p.name, // Use printer name as path for USB/local printers
+        type: p.connection || "USB",
+        manufacturer: p.driver,
+      }));
+
+      setDiscoveredPrinters(qzPrinters);
+
+      if (qzPrinters.length === 0) {
+        setError(
+          "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema."
         );
       }
     } catch {
-      setError("Error al conectar con el servicio de impresión");
+      setError("Error al buscar impresoras con QZ Tray");
     } finally {
       setIsDiscovering(false);
     }
