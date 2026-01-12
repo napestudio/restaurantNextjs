@@ -25,11 +25,11 @@ export interface QzTrayAPI {
     // QZ Tray 2.x expects callbacks with resolve/reject parameters, not functions returning Promises
     // See: https://qz.io/docs/signing
     setCertificatePromise: (
-      callback: (resolve: (cert: string) => void, reject: (error: any) => void) => void
+      callback: (resolve: (cert: string) => void, reject: (error: Error) => void) => void
     ) => void;
     setSignatureAlgorithm: (algorithm: string) => void;
     setSignaturePromise: (
-      callback: (toSign: string) => (resolve: (sig: string) => void, reject: (error: any) => void) => void
+      callback: (toSign: string) => (resolve: (sig: string) => void, reject: (error: Error) => void) => void
     ) => void;
   };
   printers: {
