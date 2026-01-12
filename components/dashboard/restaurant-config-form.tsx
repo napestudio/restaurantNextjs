@@ -87,15 +87,7 @@ export default function RestaurantConfigForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
       {/* Submit Button */}
-      <div className="flex justify-end fixed top-32 right-12">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-6 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? "Guardando..." : "Guardar Cambios"}
-        </button>
-      </div>
+
       {/* Messages */}
       {error && (
         <div className="rounded-md bg-red-50 p-4">
@@ -348,6 +340,15 @@ export default function RestaurantConfigForm({
             />
           </div>
         </div>
+      </div>
+      <div className="flex justify-end ">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-6 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? "Guardando..." : "Guardar Cambios"}
+        </button>
       </div>
     </form>
   );

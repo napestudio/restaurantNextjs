@@ -16,7 +16,7 @@ export default function ConfigLayoutClient({
       {/* Mobile menu button */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="lg:hidden fixed left-4 top-14 z-30 bg-red-500 text-white p-2 rounded-lg shadow-lg hover:bg-red-600 transition-colors"
+        className="lg:hidden fixed right-4 bottom-14 z-30 bg-red-500 text-white p-2 rounded-lg shadow-lg hover:bg-red-600 transition-colors"
         aria-label="Open menu"
       >
         <Menu className="h-6 w-6" />
