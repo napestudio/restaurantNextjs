@@ -96,6 +96,7 @@ export function TableOrderSidebar({
     order: singleOrder,
     isLoading: isLoadingOrders,
     refresh,
+    mutate,
   } = useOrdersData({
     tableId,
     isShared: tableIsShared,
@@ -274,8 +275,9 @@ export function TableOrderSidebar({
     // Clear pre-order items after successful confirmation
     setPreOrderItems([]);
 
-    // Refresh to get updated data from server
-    await refresh();
+    // Force refresh to get updated data from server
+    // Using mutate directly to ensure revalidation happens
+    await mutate(undefined, { revalidate: true });
     onOrderUpdated(tableId);
     setIsLoadingAction(false);
   };
@@ -359,6 +361,12 @@ export function TableOrderSidebar({
 
   const handlePrintCheck = async () => {
     if (!order) return;
+
+    // Check if branch has printers configured
+    if (!hasPrinters) {
+      alert("No hay impresoras configuradas para esta sucursal. Por favor, configura una impresora en Configuración → Impresoras.");
+      return;
+    }
 
     const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -657,7 +665,7 @@ export function TableOrderSidebar({
                 <Button
                   onClick={handlePrintCheck}
                   variant="outline"
-                  disabled={isLoading || isPrinting || order.items.length === 0}
+                  disabled={isPrinting}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

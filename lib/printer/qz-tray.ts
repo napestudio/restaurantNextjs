@@ -168,22 +168,52 @@ export function setupQzSecurity(): void {
   const qz = getQz();
   if (!qz) return;
 
-  // QZ Tray 2.x security callbacks receive resolve/reject parameters
-  // For development/testing, we pass empty strings which triggers the "Allow/Block" dialog
-  // Once users click "Allow" and check "Remember", it won't show again for that site
+  // QZ Tray 2.x security callbacks with self-signed certificate
+  // Certificate is fetched from server and installed by clients in QZ Tray settings
+  // This enables the "Remember" option and eliminates repeated dialogs
   // See: https://qz.io/docs/signing
 
-  // Certificate callback - receives resolve/reject and calls resolve with certificate
+  // Certificate callback - fetches public certificate from server
   qz.security.setCertificatePromise(function(resolve, reject) {
-    resolve(""); // Empty string for unsigned mode (triggers Allow/Block dialog)
+    fetch("/api/qz/certificate", {
+      cache: "no-store",
+      headers: { "Content-Type": "text/plain" },
+    })
+      .then((response) => {
+        if (response.ok) {
+          return response.text();
+        }
+        throw new Error("Failed to fetch certificate");
+      })
+      .then((certificate) => resolve(certificate))
+      .catch((error) => {
+        console.error("[QZ Security] Certificate fetch failed:", error);
+        reject(error);
+      });
   });
 
   qz.security.setSignatureAlgorithm("SHA512");
 
-  // Signature callback - receives toSign and returns a function with resolve/reject
+  // Signature callback - signs requests on server using private key
   qz.security.setSignaturePromise(function(toSign) {
     return function(resolve, reject) {
-      resolve(""); // Empty string for unsigned mode
+      fetch("/api/qz/sign", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toSign }),
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error("Failed to sign request");
+        })
+        .then((data) => resolve(data.signature))
+        .catch((error) => {
+          console.error("[QZ Security] Signing failed:", error);
+          reject(error);
+        });
     };
   });
 }

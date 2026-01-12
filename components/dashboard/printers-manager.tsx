@@ -14,6 +14,7 @@ import {
   Power,
   PowerOff,
   Trash2,
+  HelpCircle,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -249,13 +250,24 @@ export function PrintersManager({
                 className="pl-10"
               />
             </div>
-            <Button
-              onClick={() => setCreatePrinterOpen(true)}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Impresora
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  window.open("/dashboard/ayuda/qz-tray", "_blank")
+                }
+              >
+                <HelpCircle className="h-4 w-4 " />
+                Guía de instalación
+              </Button>
+              <Button
+                onClick={() => setCreatePrinterOpen(true)}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Impresora
+              </Button>
+            </div>
           </div>
 
           {/* Printers List */}
