@@ -9,7 +9,7 @@ import {
   removeOrderItem,
   updateDiscount,
 } from "@/actions/Order";
-import { autoPrintOrderItems, printControlTicket } from "@/actions/Printer";
+import { usePrint } from "@/hooks/use-print";
 import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,12 +86,17 @@ export function TableOrderSidebar({
   // Use cached products from context
   const { products } = useProducts();
 
+  // QZ Tray printing
+  const { printOrderItems, printControlTicket, isPrinting, checkHasControlTicketPrinters } = usePrint();
+  const [hasPrinters, setHasPrinters] = useState<boolean | null>(null);
+
   // Use SWR for order data fetching with auto-refresh
   const {
     orders: allOrders,
     order: singleOrder,
     isLoading: isLoadingOrders,
     refresh,
+    mutate,
   } = useOrdersData({
     tableId,
     isShared: tableIsShared,
@@ -111,6 +116,13 @@ export function TableOrderSidebar({
 
   // Combined loading state
   const isLoading = isLoadingOrders || isLoadingAction;
+
+  // Check if branch has printers configured
+  useEffect(() => {
+    if (branchId) {
+      checkHasControlTicketPrinters(branchId).then(setHasPrinters);
+    }
+  }, [branchId, checkHasControlTicketPrinters]);
 
   // Reset state when table changes
   useEffect(() => {
@@ -240,10 +252,11 @@ export function TableOrderSidebar({
       }
     }
 
-    // Auto-print the newly added items (station comandas - no prices, no waiter)
+    // Auto-print the newly added items via QZ Tray (station comandas - no prices, no waiter)
     const tableName = tableNumber?.toString() || "—";
 
-    await autoPrintOrderItems(
+    // Fire and forget - printing happens in background via QZ Tray
+    printOrderItems(
       {
         orderId: order.id,
         orderCode: order.publicCode,
@@ -262,8 +275,9 @@ export function TableOrderSidebar({
     // Clear pre-order items after successful confirmation
     setPreOrderItems([]);
 
-    // Refresh to get updated data from server
-    await refresh();
+    // Force refresh to get updated data from server
+    // Using mutate directly to ensure revalidation happens
+    await mutate(undefined, { revalidate: true });
     onOrderUpdated(tableId);
     setIsLoadingAction(false);
   };
@@ -348,7 +362,11 @@ export function TableOrderSidebar({
   const handlePrintCheck = async () => {
     if (!order) return;
 
-    setIsLoadingAction(true);
+    // Check if branch has printers configured
+    if (!hasPrinters) {
+      alert("No hay impresoras configuradas para esta sucursal. Por favor, configura una impresora en Configuración → Impresoras.");
+      return;
+    }
 
     const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -359,38 +377,30 @@ export function TableOrderSidebar({
       order.assignedTo?.name || order.assignedTo?.username || "—";
     const tableName = tableNumber?.toString() || "—";
 
-    try {
-      const result = await printControlTicket({
-        orderId: order.id,
-        orderCode: order.publicCode,
-        tableName,
-        waiterName,
-        branchId,
-        items: order.items.map((item) => ({
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.price,
-          notes: item.notes,
-        })),
-        subtotal,
-        discountPercentage: order.discountPercentage
-          ? Number(order.discountPercentage)
-          : undefined,
-        orderType: order.type,
-        customerName: order.client?.name,
-      });
+    // Print via QZ Tray - optimistic updates handled by usePrint hook
+    const success = await printControlTicket({
+      orderId: order.id,
+      orderCode: order.publicCode,
+      tableName,
+      waiterName,
+      branchId,
+      items: order.items.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+        notes: item.notes,
+      })),
+      subtotal,
+      discountPercentage: order.discountPercentage
+        ? Number(order.discountPercentage)
+        : undefined,
+      orderType: order.type,
+      customerName: order.client?.name,
+    });
 
-      if (result.success) {
-        // Success notification could be added here
-        // console.log("Control ticket printed:", result.message);
-      } else {
-        alert(result.error || "Error al imprimir ticket de control");
-      }
-    } catch (error) {
-      console.error("Error printing check:", error);
-      alert("Error al imprimir ticket de control");
-    } finally {
-      setIsLoadingAction(false);
+    if (!success) {
+      // Error is already shown by the hook via printStatus
+      // Could also show a toast here if needed
     }
   };
 
@@ -650,38 +660,41 @@ export function TableOrderSidebar({
 
             {/* Action Buttons - Fixed at bottom */}
             <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
-              <Button
-                onClick={handlePrintCheck}
-                variant="outline"
-                disabled={isLoading || order.items.length === 0}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="128"
-                  height="128"
-                  viewBox="0 0 48 48"
+              {/* Only show print button if branch has printers configured */}
+              {hasPrinters && (
+                <Button
+                  onClick={handlePrintCheck}
+                  variant="outline"
+                  disabled={isPrinting}
                 >
-                  <g fill="none" stroke="currentColor" strokeWidth="4">
-                    <path
-                      strokeLinecap="round"
-                      d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
-                    />
-                    <rect width="36" height="22" x="6" y="20" rx="2" />
-                    <path
-                      fill="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M20 34h15v8H20z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 26h3"
-                    />
-                  </g>
-                </svg>
-                {/* Imprimir Cuenta */}
-              </Button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="128"
+                    height="128"
+                    viewBox="0 0 48 48"
+                  >
+                    <g fill="none" stroke="currentColor" strokeWidth="4">
+                      <path
+                        strokeLinecap="round"
+                        d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
+                      />
+                      <rect width="36" height="22" x="6" y="20" rx="2" />
+                      <path
+                        fill="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M20 34h15v8H20z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 26h3"
+                      />
+                    </g>
+                  </svg>
+                  {/* Imprimir Cuenta */}
+                </Button>
+              )}
 
               <Button
                 onClick={handleOpenMoveDialog}

@@ -1,0 +1,554 @@
+"use server";
+
+import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { PrintJobStatus, PrinterStatus } from "@/app/generated/prisma";
+import {
+  generateTestPageData,
+  generateOrderData,
+  generateFullOrderData,
+  type PrinterConfig,
+} from "@/lib/printer/escpos";
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface PrinterTarget {
+  type: "network" | "usb";
+  ipAddress?: string;
+  port?: number;
+  printerName?: string;
+  usbPath?: string;
+  copies?: number;
+}
+
+export interface PrintJobData {
+  printerId: string;
+  printerName: string;
+  target: PrinterTarget;
+  escPosData: string; // base64 encoded
+  copies: number;
+}
+
+export interface PreparedPrintResult {
+  success: boolean;
+  error?: string;
+  jobs?: PrintJobData[];
+  printJobIds?: string[];
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function buildPrinterConfig(printer: {
+  connectionType: string;
+  ipAddress: string | null;
+  port: number;
+  usbPath: string | null;
+  baudRate: number;
+  paperWidth: number;
+  charactersPerLine: number;
+  ticketHeader?: string | null;
+  ticketHeaderSize?: number;
+  ticketFooter?: string | null;
+  ticketFooterSize?: number;
+  controlTicketFontSize?: number;
+  controlTicketSpacing?: number;
+}): PrinterConfig {
+  return {
+    connectionType: printer.connectionType as "NETWORK" | "USB",
+    ipAddress: printer.ipAddress || undefined,
+    port: printer.port,
+    usbPath: printer.usbPath || undefined,
+    baudRate: printer.baudRate,
+    paperWidth: printer.paperWidth,
+    charactersPerLine: printer.charactersPerLine,
+    ticketHeader: printer.ticketHeader,
+    ticketHeaderSize: printer.ticketHeaderSize,
+    ticketFooter: printer.ticketFooter,
+    ticketFooterSize: printer.ticketFooterSize,
+    controlTicketFontSize: printer.controlTicketFontSize,
+    controlTicketSpacing: printer.controlTicketSpacing,
+  };
+}
+
+function buildPrinterTarget(printer: {
+  connectionType: string;
+  ipAddress: string | null;
+  port: number;
+  usbPath: string | null;
+  name: string;
+  printCopies: number;
+}): PrinterTarget {
+  if (printer.connectionType === "USB") {
+    return {
+      type: "usb",
+      printerName: printer.name,
+      usbPath: printer.usbPath || undefined,
+      copies: printer.printCopies,
+    };
+  }
+  return {
+    type: "network",
+    ipAddress: printer.ipAddress || undefined,
+    port: printer.port,
+    copies: printer.printCopies,
+  };
+}
+
+// ============================================================================
+// PREPARE TEST PRINT
+// ============================================================================
+
+/**
+ * Prepare a test print job - returns ESC/POS data for client to send via QZ Tray
+ */
+export async function prepareTestPrint(printerId: string): Promise<PreparedPrintResult> {
+  try {
+    const printer = await prisma.printer.findUnique({
+      where: { id: printerId },
+      include: {
+        station: { select: { name: true } },
+      },
+    });
+
+    if (!printer) {
+      return { success: false, error: "Impresora no encontrada" };
+    }
+
+    if (!printer.isActive) {
+      return { success: false, error: "La impresora está desactivada" };
+    }
+
+    const config = buildPrinterConfig(printer);
+    const escPosData = generateTestPageData(config);
+
+    // Create print job record (pending - will be updated by client)
+    const printJob = await prisma.printJob.create({
+      data: {
+        printerId: printer.id,
+        orderId: null,
+        content: JSON.stringify({ type: "TEST", timestamp: new Date().toISOString() }),
+        jobType: "TEST",
+        status: PrintJobStatus.PENDING,
+      },
+    });
+
+    const target = buildPrinterTarget(printer);
+
+    return {
+      success: true,
+      jobs: [
+        {
+          printerId: printer.id,
+          printerName: printer.name,
+          target,
+          escPosData,
+          copies: printer.printCopies,
+        },
+      ],
+      printJobIds: [printJob.id],
+    };
+  } catch (error) {
+    console.error("Error preparing test print:", error);
+    return { success: false, error: "Error al preparar la impresión de prueba" };
+  }
+}
+
+// ============================================================================
+// PREPARE ORDER ITEMS PRINT (COMANDAS)
+// ============================================================================
+
+interface OrderItemForPrint {
+  productId: string;
+  itemName: string;
+  quantity: number;
+  notes?: string | null;
+  categoryId?: string | null;
+}
+
+interface OrderInfoForPrint {
+  orderId: string;
+  orderCode: string;
+  tableName: string;
+  branchId: string;
+}
+
+/**
+ * Prepare print jobs for order items (station comandas)
+ * Returns ESC/POS data for each printer that should receive items
+ */
+export async function prepareOrderItemsPrint(
+  orderInfo: OrderInfoForPrint,
+  items: OrderItemForPrint[]
+): Promise<PreparedPrintResult> {
+  try {
+    // Get all active auto-print printers for this branch
+    const printers = await prisma.printer.findMany({
+      where: {
+        branchId: orderInfo.branchId,
+        isActive: true,
+        autoPrint: true,
+        printMode: { in: ["STATION_ITEMS", "BOTH"] },
+      },
+      include: {
+        station: {
+          include: {
+            stationCategories: { select: { categoryId: true } },
+          },
+        },
+      },
+    });
+
+    if (printers.length === 0) {
+      return {
+        success: true,
+        jobs: [],
+        printJobIds: [],
+      };
+    }
+
+    // Get category IDs for items that don't have categoryId
+    const productIds = items
+      .filter((item) => !item.categoryId && item.productId)
+      .map((item) => item.productId);
+
+    const products =
+      productIds.length > 0
+        ? await prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, categoryId: true },
+          })
+        : [];
+
+    const productCategoryMap = new Map(products.map((p) => [p.id, p.categoryId]));
+
+    // Enrich items with category IDs
+    const enrichedItems = items.map((item) => ({
+      ...item,
+      categoryId: item.categoryId || productCategoryMap.get(item.productId) || null,
+    }));
+
+    const jobs: PrintJobData[] = [];
+    const printJobIds: string[] = [];
+
+    for (const printer of printers) {
+      // Determine which items this printer should receive
+      let stationItems = enrichedItems;
+
+      if (printer.station) {
+        const stationCategoryIds = new Set(
+          printer.station.stationCategories.map((sc) => sc.categoryId)
+        );
+
+        if (stationCategoryIds.size > 0) {
+          stationItems = enrichedItems.filter(
+            (item) => item.categoryId && stationCategoryIds.has(item.categoryId)
+          );
+        } else {
+          // Station has no categories - skip
+          stationItems = [];
+        }
+      }
+
+      if (stationItems.length === 0) {
+        continue;
+      }
+
+      const config = buildPrinterConfig(printer);
+      const orderData = {
+        orderNumber: orderInfo.orderCode,
+        tableName: orderInfo.tableName,
+        stationName: printer.station?.name,
+        items: stationItems.map((item) => ({
+          name: item.itemName,
+          quantity: item.quantity,
+          notes: item.notes || undefined,
+        })),
+      };
+
+      const escPosData = generateOrderData(config, orderData);
+
+      // Create print job record
+      const printJob = await prisma.printJob.create({
+        data: {
+          printerId: printer.id,
+          orderId: orderInfo.orderId,
+          content: JSON.stringify(orderData),
+          jobType: "STATION_ORDER",
+          status: PrintJobStatus.PENDING,
+        },
+      });
+
+      const target = buildPrinterTarget(printer);
+
+      // Add job for each copy
+      for (let i = 0; i < printer.printCopies; i++) {
+        jobs.push({
+          printerId: printer.id,
+          printerName: printer.name,
+          target,
+          escPosData,
+          copies: 1, // Already handled by loop
+        });
+      }
+
+      printJobIds.push(printJob.id);
+    }
+
+    return {
+      success: true,
+      jobs,
+      printJobIds,
+    };
+  } catch (error) {
+    console.error("Error preparing order items print:", error);
+    return { success: false, error: "Error al preparar la impresión de comanda" };
+  }
+}
+
+// ============================================================================
+// PREPARE CONTROL TICKET PRINT
+// ============================================================================
+
+interface ControlTicketItem {
+  name: string;
+  quantity: number;
+  price: number;
+  notes?: string | null;
+}
+
+interface ControlTicketInfo {
+  orderId: string;
+  orderCode: string;
+  tableName: string;
+  waiterName: string;
+  branchId: string;
+  items: ControlTicketItem[];
+  subtotal: number;
+  discountPercentage?: number;
+  orderType?: string;
+  customerName?: string;
+}
+
+/**
+ * Prepare print jobs for control ticket (full order with prices)
+ */
+export async function prepareControlTicketPrint(
+  ticketInfo: ControlTicketInfo
+): Promise<PreparedPrintResult> {
+  try {
+    // Get printers configured for control tickets
+    const printers = await prisma.printer.findMany({
+      where: {
+        branchId: ticketInfo.branchId,
+        isActive: true,
+        printMode: { in: ["FULL_ORDER", "BOTH"] },
+      },
+    });
+
+    if (printers.length === 0) {
+      // No printers configured - this is not an error for clients without printers
+      return {
+        success: true,
+        jobs: [],
+        printJobIds: [],
+      };
+    }
+
+    const subtotal = ticketInfo.subtotal;
+    const discountAmount = ticketInfo.discountPercentage
+      ? subtotal * (ticketInfo.discountPercentage / 100)
+      : 0;
+    const total = subtotal - discountAmount;
+
+    const jobs: PrintJobData[] = [];
+    const printJobIds: string[] = [];
+
+    for (const printer of printers) {
+      const config = buildPrinterConfig(printer);
+
+      const fullOrderData = {
+        orderNumber: ticketInfo.orderCode,
+        tableName: ticketInfo.tableName,
+        waiterName: ticketInfo.waiterName,
+        items: ticketInfo.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          notes: item.notes || undefined,
+        })),
+        subtotal,
+        discountPercentage: ticketInfo.discountPercentage,
+        discountAmount,
+        total,
+        orderType: ticketInfo.orderType,
+        customerName: ticketInfo.customerName,
+      };
+
+      const escPosData = generateFullOrderData(config, fullOrderData);
+
+      // Create print job record
+      const printJob = await prisma.printJob.create({
+        data: {
+          printerId: printer.id,
+          orderId: ticketInfo.orderId,
+          content: JSON.stringify(fullOrderData),
+          jobType: "FULL_ORDER",
+          status: PrintJobStatus.PENDING,
+        },
+      });
+
+      const target = buildPrinterTarget(printer);
+
+      for (let i = 0; i < printer.printCopies; i++) {
+        jobs.push({
+          printerId: printer.id,
+          printerName: printer.name,
+          target,
+          escPosData,
+          copies: 1,
+        });
+      }
+
+      printJobIds.push(printJob.id);
+    }
+
+    return {
+      success: true,
+      jobs,
+      printJobIds,
+    };
+  } catch (error) {
+    console.error("Error preparing control ticket print:", error);
+    return { success: false, error: "Error al preparar el ticket de control" };
+  }
+}
+
+// ============================================================================
+// UPDATE PRINT JOB STATUS (called by client after printing)
+// ============================================================================
+
+/**
+ * Update print job status after client sends to printer via QZ Tray
+ */
+export async function updatePrintJobStatus(
+  printJobId: string,
+  success: boolean,
+  error?: string
+): Promise<{ success: boolean }> {
+  try {
+    const printJob = await prisma.printJob.update({
+      where: { id: printJobId },
+      data: {
+        status: success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
+        error: error || null,
+        sentAt: success ? new Date() : null,
+        attempts: { increment: 1 },
+      },
+    });
+
+    // Update printer status
+    await prisma.printer.update({
+      where: { id: printJob.printerId },
+      data: {
+        status: success ? PrinterStatus.ONLINE : PrinterStatus.ERROR,
+      },
+    });
+
+    revalidatePath("/dashboard/config/printers");
+
+    return { success: true };
+  } catch (err) {
+    console.error("Error updating print job status:", err);
+    return { success: false };
+  }
+}
+
+/**
+ * Batch update multiple print job statuses
+ */
+export async function updatePrintJobStatuses(
+  results: Array<{ printJobId: string; success: boolean; error?: string }>
+): Promise<{ success: boolean }> {
+  try {
+    await Promise.all(
+      results.map(async (result) => {
+        await prisma.printJob.update({
+          where: { id: result.printJobId },
+          data: {
+            status: result.success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
+            error: result.error || null,
+            sentAt: result.success ? new Date() : null,
+            attempts: { increment: 1 },
+          },
+        });
+
+        const printJob = await prisma.printJob.findUnique({
+          where: { id: result.printJobId },
+          select: { printerId: true },
+        });
+
+        if (printJob) {
+          await prisma.printer.update({
+            where: { id: printJob.printerId },
+            data: {
+              status: result.success ? PrinterStatus.ONLINE : PrinterStatus.ERROR,
+            },
+          });
+        }
+      })
+    );
+
+    revalidatePath("/dashboard/config/printers");
+
+    return { success: true };
+  } catch (err) {
+    console.error("Error updating print job statuses:", err);
+    return { success: false };
+  }
+}
+
+// ============================================================================
+// CHECK IF BRANCH HAS PRINTERS
+// ============================================================================
+
+/**
+ * Check if a branch has any active printers configured
+ * Used to conditionally show/hide print buttons in the UI
+ */
+export async function hasBranchPrinters(branchId: string): Promise<boolean> {
+  try {
+    const count = await prisma.printer.count({
+      where: {
+        branchId,
+        isActive: true,
+      },
+    });
+    return count > 0;
+  } catch (error) {
+    console.error("Error checking branch printers:", error);
+    return false;
+  }
+}
+
+/**
+ * Check if a branch has control ticket printers (FULL_ORDER or BOTH mode)
+ */
+export async function hasBranchControlTicketPrinters(branchId: string): Promise<boolean> {
+  try {
+    const count = await prisma.printer.count({
+      where: {
+        branchId,
+        isActive: true,
+        printMode: { in: ["FULL_ORDER", "BOTH"] },
+      },
+    });
+    return count > 0;
+  } catch (error) {
+    console.error("Error checking branch control ticket printers:", error);
+    return false;
+  }
+}
