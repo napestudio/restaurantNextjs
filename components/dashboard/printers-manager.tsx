@@ -405,7 +405,7 @@ export function PrintersManager({
               </p>
               <Button
                 onClick={() => setCreateStationOpen(true)}
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-red-500 hover:bg-red-600"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Estación

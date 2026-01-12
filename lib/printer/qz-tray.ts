@@ -22,16 +22,14 @@ export interface QzTrayAPI {
     getConnectionInfo: () => { host: string; port: string | number };
   };
   security: {
+    // QZ Tray 2.x expects callbacks with resolve/reject parameters, not functions returning Promises
+    // See: https://qz.io/docs/signing
     setCertificatePromise: (
-      callback: (resolve: (cert: string) => void) => void
+      callback: (resolve: (cert: string) => void, reject: (error: any) => void) => void
     ) => void;
     setSignatureAlgorithm: (algorithm: string) => void;
     setSignaturePromise: (
-      callback: (
-        resolve: (signature: string) => void,
-        reject: (err: Error) => void,
-        toSign: string
-      ) => void
+      callback: (toSign: string) => (resolve: (sig: string) => void, reject: (error: any) => void) => void
     ) => void;
   };
   printers: {
@@ -42,6 +40,12 @@ export interface QzTrayAPI {
   print: (config: PrintConfig, data: PrintData[]) => Promise<void>;
   configs: {
     create: (printer: string | null, options?: PrinterOptions) => PrintConfig;
+  };
+  // Socket API for direct TCP connections (QZ Tray 2.1+)
+  socket: {
+    open: (host: string, port: number | string) => Promise<void>;
+    close: (host: string, port: number | string) => Promise<void>;
+    sendData: (host: string, port: number | string, data: string) => Promise<void>;
   };
   api: {
     getVersion: () => string;
@@ -79,6 +83,9 @@ export interface PrinterOptions {
   jobName?: string;
   rasterize?: boolean;
   scaleContent?: boolean;
+  // Raw socket printing options
+  host?: string;
+  port?: number;
 }
 
 export interface PrintConfig {
@@ -89,8 +96,10 @@ export interface PrintConfig {
 export interface PrintData {
   type: "raw" | "pixel" | "pdf" | "html" | "image";
   data: string;
-  format?: "base64" | "hex" | "plain" | "file" | "image";
-  flavor?: "base64" | "file" | "hex" | "plain";
+  // format: for raw type, use "command", "image", "pdf", "html"
+  format?: "command" | "image" | "pdf" | "html" | "base64" | "hex" | "plain" | "file";
+  // flavor: encoding of the data - "base64", "file", "hex", "plain", "xml"
+  flavor?: "base64" | "file" | "hex" | "plain" | "xml";
   options?: Record<string, unknown>;
 }
 
@@ -159,30 +168,48 @@ export function setupQzSecurity(): void {
   const qz = getQz();
   if (!qz) return;
 
-  // For development: Use a permissive certificate promise
-  // This tells QZ Tray to trust this website
-  qz.security.setCertificatePromise((resolve) => {
-    // In production, fetch your certificate from your server
-    // For development/testing, we return an empty promise which
-    // will trigger the "Allow/Block" dialog for first-time users
-    // Once they click "Allow" and "Remember", it won't show again
-    resolve("");
+  // QZ Tray 2.x security callbacks receive resolve/reject parameters
+  // For development/testing, we pass empty strings which triggers the "Allow/Block" dialog
+  // Once users click "Allow" and check "Remember", it won't show again for that site
+  // See: https://qz.io/docs/signing
+
+  // Certificate callback - receives resolve/reject and calls resolve with certificate
+  qz.security.setCertificatePromise(function(resolve, reject) {
+    resolve(""); // Empty string for unsigned mode (triggers Allow/Block dialog)
   });
 
-  // For development: Use a permissive signature promise
-  // QZ Tray setSignaturePromise receives a function that takes (resolve, reject, toSign)
   qz.security.setSignatureAlgorithm("SHA512");
-  qz.security.setSignaturePromise(
-    (
-      resolve: (signature: string) => void,
-      _reject: (err: Error) => void,
-      _toSign: string
-    ) => {
-      // In production, sign the message on your server
-      // For development, return empty to use unsigned mode
-      resolve("");
+
+  // Signature callback - receives toSign and returns a function with resolve/reject
+  qz.security.setSignaturePromise(function(toSign) {
+    return function(resolve, reject) {
+      resolve(""); // Empty string for unsigned mode
+    };
+  });
+}
+
+/**
+ * Wait for QZ Tray websocket to be fully ready
+ * Sometimes the connection is established but internal state isn't ready yet
+ */
+async function waitForQzReady(qz: QzTrayAPI, maxWait: number = 2000): Promise<boolean> {
+  const startTime = Date.now();
+  const checkInterval = 100;
+
+  while (Date.now() - startTime < maxWait) {
+    try {
+      // Try to get version - if this works, QZ is ready
+      if (qz.websocket.isActive()) {
+        qz.api.getVersion();
+        return true;
+      }
+    } catch {
+      // Not ready yet, wait and retry
     }
-  );
+    await new Promise(resolve => setTimeout(resolve, checkInterval));
+  }
+
+  return qz.websocket.isActive();
 }
 
 /**
@@ -203,20 +230,47 @@ export async function connectToQz(
   // Setup security (certificates) before connecting
   setupQzSecurity();
 
-  // Already connected
+  // Already connected - verify it's fully ready
   if (qz.websocket.isActive()) {
-    return {
-      state: "connected",
-      version: qz.api.getVersion(),
-    };
+    try {
+      const version = qz.api.getVersion();
+      return {
+        state: "connected",
+        version,
+      };
+    } catch {
+      // Connection exists but not ready, try reconnecting
+      try {
+        await qz.websocket.disconnect();
+      } catch {
+        // Ignore disconnect errors
+      }
+    }
   }
 
   try {
     await qz.websocket.connect(options);
 
+    // Wait for QZ to be fully ready before returning
+    const isReady = await waitForQzReady(qz);
+
+    if (!isReady) {
+      return {
+        state: "error",
+        error: "QZ Tray se conectó pero no responde. Intenta reiniciar QZ Tray.",
+      };
+    }
+
+    let version: string | undefined;
+    try {
+      version = qz.api.getVersion();
+    } catch {
+      // Version call failed but connection is active
+    }
+
     return {
       state: "connected",
-      version: qz.api.getVersion(),
+      version,
     };
   } catch (err) {
     const error = err instanceof Error ? err.message : "Error de conexión";
@@ -328,11 +382,12 @@ export async function printRaw(
   try {
     const config = qz.configs.create(printerName, { copies });
 
+    // QZ Tray 2.x uses 'flavor' instead of 'format' for raw data
     const data: PrintData[] = [
       {
         type: "raw",
         data: escPosData,
-        format: "base64",
+        flavor: "base64",
       },
     ];
 
@@ -353,7 +408,7 @@ export async function printRaw(
 
 /**
  * Print raw ESC/POS data to a network printer via TCP
- * QZ Tray can send directly to a network address
+ * Uses QZ Tray's Socket API for direct TCP connection
  *
  * @param ipAddress - Printer IP address
  * @param port - Printer port (usually 9100)
@@ -364,37 +419,73 @@ export async function printToNetwork(
   port: number,
   escPosData: string
 ): Promise<QzPrintResult> {
+  console.log("[QZ] printToNetwork called:", { ipAddress, port, dataLength: escPosData.length });
+
   const qz = getQz();
 
-  if (!qz || !qz.websocket.isActive()) {
+  if (!qz) {
+    console.error("[QZ] QZ Tray not loaded");
     return {
       success: false,
-      error: "QZ Tray no está conectado",
+      error: "QZ Tray no está cargado. Recarga la página.",
+    };
+  }
+
+  if (!qz.websocket.isActive()) {
+    console.error("[QZ] QZ Tray websocket not active");
+    return {
+      success: false,
+      error: "QZ Tray no está conectado. Asegúrate de que QZ Tray esté ejecutándose.",
     };
   }
 
   try {
-    // For network printers, use the host:port format
-    const config = qz.configs.create(`${ipAddress}:${port}`);
+    console.log("[QZ] Using Socket API for direct TCP connection to:", ipAddress, port);
 
-    const data: PrintData[] = [
-      {
-        type: "raw",
-        data: escPosData,
-        format: "base64",
-      },
-    ];
+    // Decode base64 to raw binary string for socket transmission
+    const rawData = atob(escPosData);
+    console.log("[QZ] Decoded data length:", rawData.length);
 
-    await qz.print(config, data);
+    // Use QZ Tray Socket API for direct TCP connection
+    // This is more reliable for raw socket printing than qz.print with host/port config
+    console.log("[QZ] Opening socket connection...");
+    await qz.socket.open(ipAddress, port);
+    console.log("[QZ] Socket opened, sending data...");
+
+    await qz.socket.sendData(ipAddress, port, rawData);
+    console.log("[QZ] Data sent, closing socket...");
+
+    await qz.socket.close(ipAddress, port);
+    console.log("[QZ] Socket closed, print successful");
 
     return {
       success: true,
       printerId: `${ipAddress}:${port}`,
     };
   } catch (err) {
+    console.error("[QZ] Print error:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+
+    // Try to close socket in case of error
+    try {
+      await qz.socket.close(ipAddress, port);
+    } catch {
+      // Ignore close errors
+    }
+
+    // Provide more helpful error messages
+    let friendlyError = errorMessage;
+    if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("connection refused")) {
+      friendlyError = `No se puede conectar a la impresora en ${ipAddress}:${port}. Verifica que la impresora esté encendida y conectada a la red.`;
+    } else if (errorMessage.includes("ETIMEDOUT") || errorMessage.includes("timeout")) {
+      friendlyError = `Tiempo de espera agotado al conectar con ${ipAddress}:${port}. Verifica la IP y que la impresora esté accesible.`;
+    } else if (errorMessage.includes("EHOSTUNREACH")) {
+      friendlyError = `No se puede alcanzar la impresora en ${ipAddress}. Verifica que esté en la misma red.`;
+    }
+
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Error al imprimir",
+      error: friendlyError,
       printerId: `${ipAddress}:${port}`,
     };
   }

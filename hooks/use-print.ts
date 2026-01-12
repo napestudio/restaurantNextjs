@@ -100,6 +100,8 @@ export function usePrint(): UsePrintReturn {
       jobs: PrintJobData[],
       printJobIds: string[]
     ): Promise<{ success: boolean; successCount: number; failCount: number }> => {
+      console.log("[usePrint] executePrintJobs called with", jobs.length, "jobs");
+
       if (jobs.length === 0) {
         return { success: true, successCount: 0, failCount: 0 };
       }
@@ -128,12 +130,15 @@ export function usePrint(): UsePrintReturn {
               usbPath: job.target.usbPath,
             };
 
+        console.log("[usePrint] Sending to printer:", target);
         const result = await qz.print(target, job.escPosData);
+        console.log("[usePrint] Print result for job", i, ":", result);
 
         if (result.success) {
           successCount++;
         } else {
           failCount++;
+          console.error("[usePrint] Print failed:", result.error);
         }
 
         results.push({
@@ -156,12 +161,16 @@ export function usePrint(): UsePrintReturn {
    */
   const printTest = useCallback(
     async (printerId: string): Promise<boolean> => {
+      console.log("[usePrint] Starting test print for printer:", printerId);
       setPrintStatus({ status: "preparing", message: "Preparando impresión de prueba..." });
 
       try {
+        console.log("[usePrint] Calling prepareTestPrint...");
         const result = await prepareTestPrint(printerId);
+        console.log("[usePrint] prepareTestPrint result:", result);
 
         if (!result.success || !result.jobs || result.jobs.length === 0) {
+          console.error("[usePrint] Prepare failed:", result.error);
           setPrintStatus({
             status: "error",
             message: result.error || "Error al preparar la impresión",
@@ -169,7 +178,9 @@ export function usePrint(): UsePrintReturn {
           return false;
         }
 
+        console.log("[usePrint] Executing print jobs:", result.jobs.length, "jobs");
         const printResult = await executePrintJobs(result.jobs, result.printJobIds || []);
+        console.log("[usePrint] Print result:", printResult);
 
         if (printResult.success) {
           setPrintStatus({ status: "success", message: "Impresión de prueba enviada" });
@@ -185,6 +196,7 @@ export function usePrint(): UsePrintReturn {
 
         return printResult.success;
       } catch (error) {
+        console.error("[usePrint] Exception during print:", error);
         const message = error instanceof Error ? error.message : "Error desconocido";
         setPrintStatus({ status: "error", message });
         return false;
