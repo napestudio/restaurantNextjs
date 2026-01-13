@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Search, Filter } from "lucide-react";
-import { getMenuItems } from "@/actions/menuItems";
+import { Plus, Search, Filter, FolderPlus } from "lucide-react";
+import { getMenuItems, getCategories } from "@/actions/menuItems";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemDialog } from "./menu-item-dialog";
+import { CategoryDialog } from "./category-dialog";
 import type {
   UnitType,
   WeightUnit,
@@ -71,14 +72,16 @@ type MenuItemsClientProps = {
 
 export function MenuItemsClient({
   initialMenuItems,
-  categories,
+  categories: initialCategories,
   restaurantId,
   branchId,
 }: MenuItemsClientProps) {
   const [menuItems, setMenuItems] = useState(initialMenuItems);
+  const [categories, setCategories] = useState(initialCategories);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showDialog, setShowDialog] = useState(false);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemWithRelations | null>(
     null
   );
@@ -115,11 +118,17 @@ export function MenuItemsClient({
   const handleSuccess = () => {
     // Refetch data using restaurantId for better performance and UX
     startTransition(async () => {
-      const result = await getMenuItems(restaurantId);
+      const [menuItemsResult, categoriesResult] = await Promise.all([
+        getMenuItems(restaurantId),
+        getCategories(restaurantId),
+      ]);
 
-      if (result.success && result.data) {
-        // Data is already serialized by the server action
-        setMenuItems(result.data);
+      if (menuItemsResult.success && menuItemsResult.data) {
+        setMenuItems(menuItemsResult.data);
+      }
+
+      if (categoriesResult.success && categoriesResult.data) {
+        setCategories(categoriesResult.data);
       }
     });
   };
@@ -158,6 +167,15 @@ export function MenuItemsClient({
               </option>
             ))}
           </select>
+
+          <button
+            onClick={() => setShowCategoryDialog(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            title="Gestionar categorías"
+          >
+            <FolderPlus className="w-5 h-5" />
+            <span className="hidden sm:inline">Categorías</span>
+          </button>
 
           <button
             onClick={handleAddNew}
@@ -229,6 +247,16 @@ export function MenuItemsClient({
           restaurantId={restaurantId}
           branchId={branchId}
           onClose={handleCloseDialog}
+          onSuccess={handleSuccess}
+        />
+      )}
+
+      {/* Diálogo de gestión de categorías */}
+      {showCategoryDialog && (
+        <CategoryDialog
+          categories={categories}
+          restaurantId={restaurantId}
+          onClose={() => setShowCategoryDialog(false)}
           onSuccess={handleSuccess}
         />
       )}

@@ -391,3 +391,100 @@ export async function getCategories(restaurantId: string) {
     };
   }
 }
+
+/**
+ * Crea una nueva categoría
+ */
+export async function createCategory(input: {
+  name: string;
+  order?: number;
+  restaurantId: string;
+}) {
+  try {
+    // Si no se especifica orden, obtener el siguiente disponible
+    if (input.order === undefined) {
+      const lastCategory = await prisma.category.findFirst({
+        where: { restaurantId: input.restaurantId },
+        orderBy: { order: "desc" },
+      });
+      input.order = lastCategory ? lastCategory.order + 1 : 0;
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name: input.name,
+        order: input.order,
+        restaurantId: input.restaurantId,
+      },
+    });
+
+    revalidatePath("/dashboard/menu-items");
+    return { success: true, data: category };
+  } catch (error) {
+    console.error("Error creating category:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error al crear la categoría"
+    };
+  }
+}
+
+/**
+ * Actualiza una categoría existente
+ */
+export async function updateCategory(input: {
+  id: string;
+  name?: string;
+  order?: number;
+}) {
+  try {
+    const category = await prisma.category.update({
+      where: { id: input.id },
+      data: {
+        name: input.name,
+        order: input.order,
+      },
+    });
+
+    revalidatePath("/dashboard/menu-items");
+    return { success: true, data: category };
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error al actualizar la categoría"
+    };
+  }
+}
+
+/**
+ * Elimina una categoría
+ */
+export async function deleteCategory(id: string) {
+  try {
+    // Verificar si hay productos asociados
+    const productsCount = await prisma.product.count({
+      where: { categoryId: id },
+    });
+
+    if (productsCount > 0) {
+      return {
+        success: false,
+        error: `No se puede eliminar la categoría porque tiene ${productsCount} producto(s) asociado(s)`
+      };
+    }
+
+    await prisma.category.delete({
+      where: { id },
+    });
+
+    revalidatePath("/dashboard/menu-items");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error al eliminar la categoría"
+    };
+  }
+}
