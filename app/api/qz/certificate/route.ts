@@ -24,10 +24,11 @@ export async function GET() {
       certificate = readFileSync(certificatePath, "utf-8");
     }
 
-    // Return as plain text
+    // Return as downloadable file
     return new NextResponse(certificate, {
       headers: {
-        "Content-Type": "text/plain",
+        "Content-Type": "application/x-pem-file",
+        "Content-Disposition": 'attachment; filename="qz-certificate.pem"',
         "Cache-Control": "public, max-age=3600", // Cache for 1 hour
       },
     });
