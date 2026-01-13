@@ -91,14 +91,38 @@ export default function QzTraySetupPage() {
         </div>
       </div>
 
-      {/* Step 3: Verify */}
+      {/* Step 3: Allow Site Access */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">3</span>
+          Permitir Acceso al Sitio Web
+        </h2>
+        <p className="text-gray-600 mb-4">
+          QZ Tray debe autorizar este sitio web para conectarse y usar las impresoras.
+        </p>
+        <ol className="list-decimal list-inside space-y-2 mb-4">
+          <li>Abre QZ Tray desde la bandeja del sistema</li>
+          <li>Ve a <strong>Settings (Configuración)</strong> → <strong>Site Manager (Administrador de Sitios)</strong></li>
+          <li>Haz clic en <strong>Add Site (Agregar Sitio)</strong></li>
+          <li>Copia y pega esta URL: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all">{typeof window !== &quot;undefined&quot; ? window.location.origin : &quot;https://tu-sitio.vercel.app&quot;}</code></li>
+          <li>Marca la opción <strong>&quot;Trust this site&quot; (Confiar en este sitio)</strong></li>
+          <li>Haz clic en <strong>Add (Agregar)</strong></li>
+        </ol>
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+          <p className="text-sm text-yellow-800">
+            <strong>Importante:</strong> Sin este paso, las impresoras USB no aparecerán en la lista y la impresión no funcionará.
+          </p>
+        </div>
+      </div>
+
+      {/* Step 4: Verify */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-3">
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">4</span>
           Verificar Instalación
         </h2>
         <ol className="list-decimal list-inside space-y-2">
-          <li>Abre el sistema POS en tu navegador</li>
+          <li>Actualiza esta página en tu navegador (F5)</li>
           <li>Ve a <strong>Dashboard</strong> → <strong>Configuración</strong> → <strong>Impresoras</strong></li>
           <li>Agrega tu impresora (de red o USB)</li>
           <li>Haz clic en <strong>Prueba de Impresión</strong></li>
@@ -165,12 +189,26 @@ export default function QzTraySetupPage() {
 
           <div>
             <h3 className="font-semibold mb-2">Error: &quot;QZ Tray no está conectado&quot;</h3>
-            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> La aplicación QZ Tray no está ejecutándose.</p>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> La aplicación QZ Tray no está ejecutándose o el sitio no está autorizado.</p>
             <p className="text-sm mb-1"><strong>Solución:</strong></p>
             <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
               <li>Revisa la bandeja del sistema para el ícono de QZ Tray</li>
               <li>Si no está ejecutándose, inicia QZ Tray desde tu carpeta de Aplicaciones</li>
+              <li>Verifica que el sitio web esté autorizado en QZ Tray Settings → Site Manager (ver Paso 3)</li>
               <li>Actualiza tu navegador</li>
+            </ol>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">No Aparecen Impresoras USB</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> El sitio web no está autorizado en QZ Tray.</p>
+            <p className="text-sm mb-1"><strong>Solución:</strong></p>
+            <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
+              <li>Abre QZ Tray desde la bandeja del sistema</li>
+              <li>Ve a Settings → Site Manager</li>
+              <li>Verifica que la URL de este sitio esté en la lista de sitios autorizados</li>
+              <li>Si no está, agrégala siguiendo el Paso 3</li>
+              <li>Actualiza tu navegador (F5) y vuelve a intentar</li>
             </ol>
           </div>
 
