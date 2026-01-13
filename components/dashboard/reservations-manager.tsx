@@ -317,6 +317,15 @@ export function ReservationsManager({
       setReservations((prev) =>
         prev.map((r) => (r.id === tempId ? result.data! : r))
       );
+
+      // NEW: Show warning if assigned to shared table only
+      if ((result as { isSharedTableOnly?: boolean }).isSharedTableOnly) {
+        setTimeout(() => {
+          alert(
+            "Nota: Esta reserva fue asignada a una mesa compartida. La mesa puede ser compartida con otros clientes."
+          );
+        }, 300);
+      }
     } else {
       // Rollback on failure
       setReservations(previousReservations);

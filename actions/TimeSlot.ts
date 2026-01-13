@@ -11,15 +11,17 @@ export async function calculateTimeSlotCapacity(
   timeSlotId: string
 ): Promise<number> {
   const timeSlotTables = await prisma.timeSlotTable.findMany({
-    where: { timeSlotId },
+    where: { timeSlotId, isExclusive: true }, // NEW: Only count exclusive tables
     include: { table: true },
   });
 
   if (timeSlotTables.length === 0) {
-    return 0; // No tables assigned = unlimited capacity
+    return 0; // No exclusive tables = unlimited (shared pool)
   }
 
-  return timeSlotTables.reduce((sum, tst) => sum + tst.table.capacity, 0);
+  return timeSlotTables
+    .filter((tst) => tst.table.isActive) // Only count active tables
+    .reduce((sum, tst) => sum + tst.table.capacity, 0);
 }
 
 /**
@@ -44,9 +46,10 @@ export async function createTimeSlot(data: {
   endTime: string; // HH:mm format (e.g., "20:00")
   daysOfWeek: string[]; // ["monday", "tuesday", etc.]
   pricePerPerson?: number;
+  customerLimit?: number | null; // NEW: NULL = no limit (shared pool), >0 = manual limit
   notes?: string;
   moreInfoUrl?: string;
-  tableIds?: string[]; // IDs of tables to link to this time slot
+  tableIds?: string[]; // IDs of tables to link to this time slot (will be marked as exclusive)
   isActive?: boolean;
 }) {
   try {
@@ -63,14 +66,16 @@ export async function createTimeSlot(data: {
         endTime,
         daysOfWeek: data.daysOfWeek,
         pricePerPerson: data.pricePerPerson ?? 0,
+        customerLimit: data.customerLimit ?? null, // NEW
         notes: data.notes,
         moreInfoUrl: data.moreInfoUrl,
         isActive: data.isActive ?? true,
-        // Create table relationships if tableIds provided
+        // Create table relationships if tableIds provided (all marked as exclusive)
         tables: data.tableIds
           ? {
               create: data.tableIds.map((tableId) => ({
                 tableId,
+                isExclusive: true, // NEW: All selected tables are exclusive
               })),
             }
           : undefined,
@@ -194,9 +199,10 @@ export async function updateTimeSlot(
     endTime?: string; // HH:mm format
     daysOfWeek?: string[];
     pricePerPerson?: number;
+    customerLimit?: number | null; // NEW
     notes?: string;
     moreInfoUrl?: string;
-    tableIds?: string[]; // Replace table relationships
+    tableIds?: string[]; // Replace table relationships (will be marked as exclusive)
     isActive?: boolean;
   }
 ) {
@@ -207,6 +213,7 @@ export async function updateTimeSlot(
       endTime?: Date;
       daysOfWeek?: string[];
       pricePerPerson?: number;
+      customerLimit?: number | null; // NEW
       notes?: string | null;
       moreInfoUrl?: string | null;
       isActive?: boolean;
@@ -226,6 +233,9 @@ export async function updateTimeSlot(
     }
     if (data.pricePerPerson !== undefined) {
       updateData.pricePerPerson = data.pricePerPerson;
+    }
+    if (data.customerLimit !== undefined) {
+      updateData.customerLimit = data.customerLimit; // NEW
     }
     if (data.notes !== undefined) {
       updateData.notes = data.notes;
@@ -250,6 +260,7 @@ export async function updateTimeSlot(
           data: data.tableIds.map((tableId) => ({
             timeSlotId: id,
             tableId,
+            isExclusive: true, // NEW: All selected tables are exclusive
           })),
         });
       }
@@ -530,7 +541,7 @@ export async function getAvailableTablesForTimeSlot(params: {
     });
 
     // Build a map of table ID to conflicting time slot
-    // ALL tables (both shared and regular) are unavailable if assigned to overlapping slots
+    // NEW: Only EXCLUSIVE tables assigned to overlapping slots create conflicts
     const tableConflicts = new Map<
       string,
       { id: string; name: string; startTime: Date; endTime: Date }
@@ -538,17 +549,20 @@ export async function getAvailableTablesForTimeSlot(params: {
 
     conflictingSlots.forEach((slot) => {
       slot.tables.forEach((tt) => {
-        // Only add if this table's days actually overlap with requested days
-        const hasCommonDay = daysOfWeek.some((day) =>
-          slot.daysOfWeek.includes(day)
-        );
-        if (hasCommonDay) {
-          tableConflicts.set(tt.tableId, {
-            id: slot.id,
-            name: slot.name,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-          });
+        // NEW: Only add if this is an EXCLUSIVE assignment
+        if (tt.isExclusive) {
+          // Only add if this table's days actually overlap with requested days
+          const hasCommonDay = daysOfWeek.some((day) =>
+            slot.daysOfWeek.includes(day)
+          );
+          if (hasCommonDay) {
+            tableConflicts.set(tt.tableId, {
+              id: slot.id,
+              name: slot.name,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+            });
+          }
         }
       });
     });
