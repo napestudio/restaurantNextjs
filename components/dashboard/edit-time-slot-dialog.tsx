@@ -52,6 +52,7 @@ interface EditSlot {
   name?: string;
   tableIds: string[];
   moreInfoUrl?: string;
+  customerLimit: number | null; // NEW
 }
 
 interface TableWithAvailability {
@@ -99,7 +100,13 @@ export function EditTimeSlotDialog({
     notes: "",
     name: "",
     moreInfoUrl: "",
+    customerLimit: null, // NEW
   });
+
+  // NEW: State for customer limit feature
+  const [branchCapacity, setBranchCapacity] = useState(0);
+  const [selectedTablesCapacity, setSelectedTablesCapacity] = useState(0);
+  const [customerLimitError, setCustomerLimitError] = useState("");
 
   // Initialize form with time slot data when dialog opens
   useEffect(() => {
@@ -126,9 +133,30 @@ export function EditTimeSlotDialog({
         name: timeSlot.name || "",
         moreInfoUrl: timeSlot.moreInfoUrl || "",
         tableIds: timeSlot.tables?.map((t) => t.id) || [],
+        customerLimit: (timeSlot as { customerLimit?: number | null }).customerLimit || null, // NEW
       });
     }
   }, [open, timeSlot]);
+
+  // NEW: Fetch branch capacity on mount
+  useEffect(() => {
+    if (branchId && open) {
+      import("@/actions/Table").then(({ getBranchCapacity }) => {
+        getBranchCapacity(branchId).then((result) => {
+          if (result.success && result.data) {
+            setBranchCapacity(result.data);
+          }
+        });
+      });
+    }
+  }, [branchId, open]);
+
+  // NEW: Recalculate selected tables capacity when selection changes
+  useEffect(() => {
+    const selected = tables.filter((t) => editSlot.tableIds.includes(t.id));
+    const totalCap = selected.reduce((sum, t) => sum + t.capacity, 0);
+    setSelectedTablesCapacity(totalCap);
+  }, [editSlot.tableIds, tables]);
 
   // Fetch available tables when time/days change
   useEffect(() => {
@@ -217,6 +245,29 @@ export function EditTimeSlotDialog({
     }));
   };
 
+  // NEW: Handle customer limit changes
+  const handleCustomerLimitChange = (value: string) => {
+    const limit = value === "" ? null : parseInt(value);
+
+    // Warn if removing limit with exclusive tables
+    if (limit === null && editSlot.tableIds.length > 0) {
+      const confirmed = confirm(
+        "Removing the customer limit will return these tables to the shared pool. Continue?"
+      );
+      if (!confirmed) return;
+    }
+
+    if (limit !== null && limit > branchCapacity) {
+      setCustomerLimitError(
+        `Customer limit (${limit}) exceeds branch capacity (${branchCapacity})`
+      );
+    } else {
+      setCustomerLimitError("");
+    }
+
+    setEditSlot((prev) => ({ ...prev, customerLimit: limit }));
+  };
+
   const handleTableToggle = (tableId: string) => {
     setEditSlot((prev) => {
       const tableIds = prev.tableIds || [];
@@ -247,11 +298,24 @@ export function EditTimeSlotDialog({
       editSlot.days.length > 0 &&
       timeSlot
     ) {
-      // Validation: must have at least one table selected
-      if (editSlot.tableIds.length === 0) {
-        alert("Debes seleccionar al menos una mesa para este turno.");
-        return;
+      // Validation: must have at least one table selected (removed as tables are now optional)
+      // NEW: Validate customer limit
+      if (editSlot.customerLimit && editSlot.customerLimit > 0) {
+        if (editSlot.tableIds.length === 0) {
+          alert(
+            "You must select at least one exclusive table when setting a customer limit."
+          );
+          return;
+        }
+
+        if (selectedTablesCapacity < editSlot.customerLimit) {
+          const confirmed = confirm(
+            `Selected tables (${selectedTablesCapacity} seats) don't meet the customer limit (${editSlot.customerLimit}). Continue anyway?`
+          );
+          if (!confirmed) return;
+        }
       }
+
       onEdit(timeSlot.id, editSlot);
     }
   };
@@ -430,6 +494,69 @@ export function EditTimeSlotDialog({
               rows={3}
             />
           </div>
+
+          {/* NEW: Customer Limit Section */}
+          <div className="space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-gray-600" />
+              <Label htmlFor="customerLimit" className="font-semibold">
+                Customer Limit (Optional)
+              </Label>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Set a maximum number of customers for this time slot. You&apos;ll then
+              select exclusive tables to meet this capacity.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="customerLimit">Customer Limit</Label>
+                <Input
+                  id="customerLimit"
+                  type="number"
+                  min="0"
+                  value={editSlot.customerLimit || ""}
+                  onChange={(e) => handleCustomerLimitChange(e.target.value)}
+                  placeholder="Leave empty for unlimited"
+                />
+              </div>
+
+              <div>
+                <Label>Branch Capacity</Label>
+                <div className="h-10 px-3 flex items-center bg-white border rounded-md">
+                  <span className="text-sm font-medium text-gray-700">
+                    {branchCapacity} seats
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {customerLimitError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{customerLimitError}</AlertDescription>
+              </Alert>
+            )}
+
+            {editSlot.customerLimit && editSlot.customerLimit > 0 && (
+              <Alert className="border-blue-500 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  {selectedTablesCapacity} / {editSlot.customerLimit} seats
+                  selected.
+                  {selectedTablesCapacity < editSlot.customerLimit && (
+                    <span className="block mt-1 font-semibold">
+                      Select{" "}
+                      {editSlot.customerLimit - selectedTablesCapacity} more
+                      seats to meet the limit.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
             <CollapsibleTrigger asChild>
               <Button
@@ -449,7 +576,18 @@ export function EditTimeSlotDialog({
             <CollapsibleContent className="mt-4 space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <Label>Mesas disponibles</Label>
+                  <div>
+                    <Label>
+                      {editSlot.customerLimit && editSlot.customerLimit > 0
+                        ? "Select Exclusive Tables (Required)"
+                        : "Select Exclusive Tables (Optional)"}
+                    </Label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {editSlot.customerLimit && editSlot.customerLimit > 0
+                        ? "These tables will ONLY be available to this time slot"
+                        : "By default, all tables are shared. Select tables to make them exclusive to this slot."}
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       type="button"

@@ -345,7 +345,8 @@ model TimeSlot {
   endTime        DateTime @db.Time
   daysOfWeek     String[]
   pricePerPerson Decimal? @default(0)
-  capacity       Int      @default(0) // Total capacity: 0 = unlimited (uses all branch tables), >0 = sum of assigned tables
+  customerLimit  Int?     // NULL = no limit (shared pool), >0 = manual limit with exclusive tables
+  capacity       Int      @default(0) // Auto-calculated from exclusive tables OR 0 if using shared pool
   notes          String?
   moreInfoUrl    String?
   isActive       Boolean  @default(true)
@@ -359,11 +360,13 @@ model TimeSlot {
 }
 
 model TimeSlotTable {
-  id         String   @id @default(cuid())
-  timeSlot   TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
-  timeSlotId String
-  table      Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  tableId    String
+  id          String   @id @default(cuid())
+  timeSlot    TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+  timeSlotId  String
+  table       Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableId     String
+  isExclusive Boolean  @default(true) // TRUE = removed from shared pool, only available to this slot
+  createdAt   DateTime @default(now())
 
   @@unique([timeSlotId, tableId])
   @@index([tableId])

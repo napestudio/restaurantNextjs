@@ -220,6 +220,8 @@ export async function createReservation(data: {
           ? "Reservation confirmed with table assignment"
           : "Reservation created - pending table assignment",
       autoAssigned: finalStatus === ReservationStatus.CONFIRMED,
+      assignmentType: assignmentResult?.data?.assignmentType, // NEW
+      isSharedTableOnly: assignmentResult?.data?.isSharedTableOnly ?? false, // NEW
     };
   } catch (error) {
     console.error("Error creating reservation:", error);

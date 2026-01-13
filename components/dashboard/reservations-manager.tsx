@@ -317,6 +317,15 @@ export function ReservationsManager({
       setReservations((prev) =>
         prev.map((r) => (r.id === tempId ? result.data! : r))
       );
+
+      // NEW: Show warning if assigned to shared table only
+      if ((result as { isSharedTableOnly?: boolean }).isSharedTableOnly) {
+        setTimeout(() => {
+          alert(
+            "Note: This reservation was assigned to a shared table. The table may be shared with other guests."
+          );
+        }, 300);
+      }
     } else {
       // Rollback on failure
       setReservations(previousReservations);
