@@ -25,6 +25,7 @@
 # misc
 .DS_Store
 *.pem
+!certificates/qz-certificate.pem
 
 # debug
 npm-debug.log*
@@ -52,3 +53,6 @@ next-env.d.ts
 
 # Prisma generated client
 /app/generated
+
+# Claude Code temporary files
+tmpclaude-*
