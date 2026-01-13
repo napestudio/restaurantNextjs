@@ -7,12 +7,22 @@ import { join } from "path";
  *
  * Serves the public certificate for QZ Tray
  * Clients fetch this certificate to enable signed printing
+ *
+ * In production (Vercel), reads from QZ_CERTIFICATE environment variable
+ * In development, falls back to reading from certificates/qz-certificate.pem
  */
 export async function GET() {
   try {
-    // Read the public certificate from the certificates directory
-    const certificatePath = join(process.cwd(), "certificates", "qz-certificate.pem");
-    const certificate = readFileSync(certificatePath, "utf-8");
+    let certificate: string;
+
+    // Try environment variable first (for Vercel deployment)
+    if (process.env.QZ_CERTIFICATE) {
+      certificate = process.env.QZ_CERTIFICATE;
+    } else {
+      // Fallback to filesystem (for local development)
+      const certificatePath = join(process.cwd(), "certificates", "qz-certificate.pem");
+      certificate = readFileSync(certificatePath, "utf-8");
+    }
 
     // Return as plain text
     return new NextResponse(certificate, {
@@ -24,7 +34,7 @@ export async function GET() {
   } catch (error) {
     console.error("[QZ Certificate] Error reading certificate:", error);
     return NextResponse.json(
-      { error: "Certificate not found" },
+      { error: "Certificate not found. Please configure QZ_CERTIFICATE environment variable." },
       { status: 500 }
     );
   }
