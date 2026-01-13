@@ -1,3 +1,5 @@
+"use client";
+
 export default function QzTraySetupPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -104,7 +106,7 @@ export default function QzTraySetupPage() {
           <li>Abre QZ Tray desde la bandeja del sistema</li>
           <li>Ve a <strong>Settings (Configuración)</strong> → <strong>Site Manager (Administrador de Sitios)</strong></li>
           <li>Haz clic en <strong>Add Site (Agregar Sitio)</strong></li>
-          <li>Copia y pega esta URL: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all">{typeof window !== &quot;undefined&quot; ? window.location.origin : &quot;https://tu-sitio.vercel.app&quot;}</code></li>
+          <li>Copia y pega esta URL: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all">{typeof window !== "undefined" ? window.location.origin : "https://tu-sitio.vercel.app"}</code></li>
           <li>Marca la opción <strong>&quot;Trust this site&quot; (Confiar en este sitio)</strong></li>
           <li>Haz clic en <strong>Add (Agregar)</strong></li>
         </ol>
