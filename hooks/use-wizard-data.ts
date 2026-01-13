@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 export function useWizardData(branchId: string) {
   const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSharedTableOnly, setIsSharedTableOnly] = useState(false); // NEW
 
   // Fetch all time slots on mount - memoized
   const fetchAllTimeSlots = useCallback(async () => {
@@ -80,6 +81,7 @@ export function useWizardData(branchId: string) {
 
         if (result.success) {
           setIsSuccess(true);
+          setIsSharedTableOnly((result as { isSharedTableOnly?: boolean }).isSharedTableOnly || false); // NEW
           return { success: true };
         }
 
@@ -103,11 +105,13 @@ export function useWizardData(branchId: string) {
   // Reset success state - memoized
   const resetSuccess = useCallback(() => {
     setIsSuccess(false);
+    setIsSharedTableOnly(false); // NEW
   }, []);
 
   return {
     isPending,
     isSuccess,
+    isSharedTableOnly, // NEW
     fetchAllTimeSlots,
     fetchAvailableSlots,
     submitReservation,

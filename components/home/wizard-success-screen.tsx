@@ -11,12 +11,14 @@ import {
 interface WizardSuccessScreenProps {
   wizardData: WizardData;
   selectedSlotDetails: SelectedSlotDetails | null;
+  isSharedTableOnly?: boolean; // NEW
   onReset: () => void;
 }
 
 export const WizardSuccessScreen = memo(function WizardSuccessScreen({
   wizardData,
   selectedSlotDetails,
+  isSharedTableOnly = false, // NEW
   onReset,
 }: WizardSuccessScreenProps) {
   const isPaidReservation = selectedSlotDetails && selectedSlotDetails.pricePerPerson > 0;
@@ -77,6 +79,13 @@ export const WizardSuccessScreen = memo(function WizardSuccessScreen({
               El restaurante se pondrá en contacto contigo para coordinar el pago
               de <strong>${selectedSlotDetails.pricePerPerson * wizardData.guests}</strong>
               ({wizardData.guests} persona{wizardData.guests > 1 ? 's' : ''} × ${selectedSlotDetails.pricePerPerson}).
+            </p>
+          </div>
+        )}
+        {isSharedTableOnly && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+            <p className="text-sm text-blue-900">
+              <strong>Nota:</strong> Tu mesa puede ser compartida con otra reserva durante este turno.
             </p>
           </div>
         )}

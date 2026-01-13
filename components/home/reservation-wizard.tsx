@@ -41,6 +41,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
   const {
     isPending,
     isSuccess,
+    isSharedTableOnly, // NEW
     fetchAllTimeSlots,
     fetchAvailableSlots,
     submitReservation,
@@ -116,6 +117,7 @@ export function ReservationWizard({ branchId }: ReservationWizardProps) {
       <WizardSuccessScreen
         wizardData={wizardData}
         selectedSlotDetails={selectedSlotDetails}
+        isSharedTableOnly={isSharedTableOnly}
         onReset={handleReset}
       />
     );

@@ -59,6 +59,138 @@ async function batchGetRemainingCapacity(
 }
 
 /**
+ * Get all table IDs that are exclusively assigned to overlapping time slots
+ * These tables are removed from the shared pool and not available to other slots
+ */
+async function getExclusiveTableIdsForOverlappingSlots(
+  branchId: string,
+  date: Date,
+  excludeTimeSlotId: string
+): Promise<Set<string>> {
+  const dayOfWeek = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ][date.getDay()];
+
+  // Find all active time slots for this branch on this day (excluding current slot)
+  const overlappingSlots = await prisma.timeSlot.findMany({
+    where: {
+      branchId,
+      isActive: true,
+      id: { not: excludeTimeSlotId },
+      daysOfWeek: { has: dayOfWeek },
+    },
+    include: {
+      tables: {
+        where: { isExclusive: true },
+        select: { tableId: true },
+      },
+    },
+  });
+
+  // Collect all table IDs that are exclusively assigned
+  const exclusiveTableIds = new Set<string>();
+  overlappingSlots.forEach((slot) => {
+    slot.tables.forEach((tt) => {
+      exclusiveTableIds.add(tt.tableId);
+    });
+  });
+
+  return exclusiveTableIds;
+}
+
+/**
+ * Calculate remaining capacity with first-come-first-serve across overlapping time slots
+ * This ensures tables in the shared pool are assigned fairly based on creation time
+ */
+async function batchGetRemainingCapacityWithFCFS(
+  tables: Pick<Table, "id" | "capacity" | "isShared">[],
+  date: Date,
+  currentTimeSlotId: string
+): Promise<Map<string, number>> {
+  const tableIds = tables.map((t) => t.id);
+
+  // Get current time slot's time range
+  const currentSlot = await prisma.timeSlot.findUnique({
+    where: { id: currentTimeSlotId },
+    select: { startTime: true, endTime: true, branchId: true },
+  });
+
+  if (!currentSlot) return new Map();
+
+  const dayOfWeek = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ][date.getDay()];
+
+  // Find ALL time slots that overlap with current slot's time range
+  const overlappingSlots = await prisma.timeSlot.findMany({
+    where: {
+      branchId: currentSlot.branchId,
+      isActive: true,
+      daysOfWeek: { has: dayOfWeek },
+      AND: [
+        { startTime: { lt: currentSlot.endTime } },
+        { endTime: { gt: currentSlot.startTime } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  const overlappingSlotIds = overlappingSlots.map((s) => s.id);
+
+  // Get reservations from ALL overlapping slots for these tables
+  const reservations = await prisma.reservationTable.findMany({
+    where: {
+      tableId: { in: tableIds },
+      reservation: {
+        date,
+        timeSlotId: { in: overlappingSlotIds },
+        status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+      },
+    },
+    include: {
+      reservation: {
+        select: { people: true },
+      },
+    },
+  });
+
+  // Calculate occupied seats per table (from all overlapping slots)
+  const reservationsByTable = new Map<string, number>();
+  for (const rt of reservations) {
+    const current = reservationsByTable.get(rt.tableId) || 0;
+    reservationsByTable.set(rt.tableId, current + rt.reservation.people);
+  }
+
+  // Calculate remaining capacity
+  const capacityMap = new Map<string, number>();
+  for (const table of tables) {
+    const occupiedSeats = reservationsByTable.get(table.id) || 0;
+
+    if (!table.isShared) {
+      // Regular table: all-or-nothing
+      capacityMap.set(table.id, occupiedSeats > 0 ? 0 : table.capacity);
+    } else {
+      // Shared table: remaining capacity
+      capacityMap.set(table.id, Math.max(0, table.capacity - occupiedSeats));
+    }
+  }
+
+  return capacityMap;
+}
+
+/**
  * Get all tables for a branch
  */
 export async function getTables(branchId: string) {
@@ -335,9 +467,34 @@ export async function isTableAvailable(
 }
 
 /**
+ * Get total capacity of all active tables in a branch
+ * Used for customer limit validation in time slot configuration
+ */
+export async function getBranchCapacity(branchId: string): Promise<{
+  success: boolean;
+  data?: number;
+  error?: string;
+}> {
+  try {
+    const tables = await prisma.table.findMany({
+      where: { branchId, isActive: true },
+      select: { capacity: true },
+    });
+
+    const totalCapacity = tables.reduce((sum, t) => sum + t.capacity, 0);
+
+    return { success: true, data: totalCapacity };
+  } catch (error) {
+    console.error("Error calculating branch capacity:", error);
+    return { success: false, error: "Failed to calculate branch capacity" };
+  }
+}
+
+/**
  * Find available tables for a given date, time slot, and party size
- * Handles both shared and regular tables with capacity-based logic
- * Returns tables that can accommodate the party (single table or combination)
+ * NEW: Uses smart assignment algorithm with exclusive tables and shared pool
+ * Priority: Size match → Exclusive → Shared pool → Combined
+ * Returns tables that can accommodate the party with assignment metadata
  */
 export async function findAvailableTables(
   branchId: string,
@@ -346,18 +503,27 @@ export async function findAvailableTables(
   partySize: number
 ): Promise<{
   success: boolean;
-  data?: { tableIds: string[]; totalCapacity: number };
+  data?: {
+    tableIds: string[];
+    totalCapacity: number;
+    assignmentType:
+      | "size_match"
+      | "exclusive"
+      | "shared_pool"
+      | "combined"
+      | "shared_table";
+    isSharedTableOnly: boolean;
+  };
   error?: string;
 }> {
   try {
-    // First, check if the time slot has specific tables assigned
+    // 1. Get time slot with exclusive table assignments
     const timeSlot = await prisma.timeSlot.findUnique({
       where: { id: timeSlotId },
       include: {
         tables: {
-          include: {
-            table: true,
-          },
+          where: { isExclusive: true }, // Only fetch exclusive assignments
+          include: { table: true },
         },
       },
     });
@@ -369,106 +535,172 @@ export async function findAvailableTables(
       };
     }
 
-    // Determine which tables to use based on TimeSlot configuration
-    let allTables;
+    // 2. Determine table pools
+    const exclusiveTables = timeSlot.tables
+      .map((tst) => tst.table)
+      .filter((table) => table.isActive);
 
-    if (timeSlot.tables.length > 0) {
-      // Use only the tables explicitly assigned to this time slot
-      allTables = timeSlot.tables
-        .map((tst) => tst.table)
-        .filter((table) => table.isActive);
+    // Get ALL branch tables for shared pool
+    const allBranchTables = await prisma.table.findMany({
+      where: { branchId, isActive: true },
+      orderBy: [{ isShared: "desc" }, { capacity: "asc" }, { number: "asc" }],
+    });
 
-      if (allTables.length === 0) {
-        return {
-          success: false,
-          error: "No active tables available for this time slot",
-        };
-      }
-    } else {
-      // Fall back to all active tables in the branch if no specific tables are assigned
-      allTables = await prisma.table.findMany({
-        where: {
-          branchId,
-          isActive: true,
-        },
-        orderBy: [{ isShared: "desc" }, { capacity: "asc" }, { number: "asc" }],
-      });
-
-      if (allTables.length === 0) {
-        return {
-          success: false,
-          error: "No active tables found for this branch",
-        };
-      }
-    }
-
-    // Calculate remaining capacity for all tables in a single batch query
-    const capacityMap = await batchGetRemainingCapacity(allTables, date, timeSlotId);
-
-    // Map tables with their remaining capacity
-    const tablesWithCapacity = allTables.map((table) => ({
-      ...table,
-      remainingCapacity: capacityMap.get(table.id) ?? 0,
-    }));
-
-    // Filter to only tables with available capacity AND not manually occupied/reserved/cleaning
-    const availableTables = tablesWithCapacity.filter(
-      (table) =>
-        table.remainingCapacity > 0 &&
-        // Respect manual status: only allow EMPTY or null (unset) status
-        (!table.status || table.status === "EMPTY")
+    // Shared pool = all branch tables MINUS exclusive tables for overlapping slots
+    const exclusiveTableIds = await getExclusiveTableIdsForOverlappingSlots(
+      branchId,
+      date,
+      timeSlotId
     );
 
-    if (availableTables.length === 0) {
-      return {
-        success: false,
-        error: "No tables available for this date and time",
-      };
-    }
-
-    // Strategy 1: Try to find a single shared table with enough remaining capacity
-    const sharedTable = availableTables.find(
-      (table) => table.isShared && table.remainingCapacity >= partySize
+    const sharedPoolTables = allBranchTables.filter(
+      (table) => !exclusiveTableIds.has(table.id)
     );
 
-    if (sharedTable) {
-      return {
-        success: true,
-        data: {
-          tableIds: [sharedTable.id],
-          totalCapacity: sharedTable.capacity,
-        },
-      };
-    }
-
-    // Strategy 2: Try to find a single regular table that fits
-    const singleRegularTable = availableTables.find(
-      (table) => !table.isShared && table.remainingCapacity >= partySize
+    // 3. Calculate remaining capacity for all relevant tables
+    const exclusiveCapacityMap = await batchGetRemainingCapacity(
+      exclusiveTables,
+      date,
+      timeSlotId
     );
 
-    if (singleRegularTable) {
-      return {
-        success: true,
-        data: {
-          tableIds: [singleRegularTable.id],
-          totalCapacity: singleRegularTable.capacity,
-        },
-      };
-    }
+    const sharedPoolCapacityMap = await batchGetRemainingCapacityWithFCFS(
+      sharedPoolTables,
+      date,
+      timeSlotId
+    );
 
-    // Strategy 3: Combine multiple REGULAR tables (don't combine shared tables)
-    const regularTables = availableTables.filter((t) => !t.isShared);
-
-    if (regularTables.length > 0) {
-      // Sort by capacity to optimize combinations
-      const sortedTables = [...regularTables].sort(
-        (a, b) => b.capacity - a.capacity
+    // Map tables with remaining capacity
+    const exclusiveWithCapacity = exclusiveTables
+      .map((t) => ({
+        ...t,
+        remainingCapacity: exclusiveCapacityMap.get(t.id) ?? 0,
+      }))
+      .filter(
+        (t) => t.remainingCapacity > 0 && (!t.status || t.status === "EMPTY")
       );
 
-      // Try to find the smallest combination that fits
+    const sharedPoolWithCapacity = sharedPoolTables
+      .map((t) => ({
+        ...t,
+        remainingCapacity: sharedPoolCapacityMap.get(t.id) ?? 0,
+      }))
+      .filter(
+        (t) => t.remainingCapacity > 0 && (!t.status || t.status === "EMPTY")
+      );
+
+    // 4. STRATEGY 1: Size Match - Try to find exact match from ANY pool
+    const allAvailableTables = [
+      ...exclusiveWithCapacity,
+      ...sharedPoolWithCapacity,
+    ];
+    const sizeMatchTable = allAvailableTables.find(
+      (t) => t.remainingCapacity === partySize
+    );
+
+    if (sizeMatchTable) {
+      return {
+        success: true,
+        data: {
+          tableIds: [sizeMatchTable.id],
+          totalCapacity: sizeMatchTable.capacity,
+          assignmentType: "size_match",
+          isSharedTableOnly: sizeMatchTable.isShared,
+        },
+      };
+    }
+
+    // 5. STRATEGY 2: Exclusive Tables - Prefer exclusive tables for this slot
+    if (exclusiveWithCapacity.length > 0) {
+      // Try single exclusive table
+      const singleExclusive = exclusiveWithCapacity.find(
+        (t) => t.remainingCapacity >= partySize
+      );
+
+      if (singleExclusive) {
+        return {
+          success: true,
+          data: {
+            tableIds: [singleExclusive.id],
+            totalCapacity: singleExclusive.capacity,
+            assignmentType: "exclusive",
+            isSharedTableOnly: false,
+          },
+        };
+      }
+
+      // Try combining exclusive tables (regular only)
+      const exclusiveRegular = exclusiveWithCapacity.filter((t) => !t.isShared);
+      if (exclusiveRegular.length > 0) {
+        const combination = findTableCombination(
+          exclusiveRegular.map((t) => ({
+            id: t.id,
+            capacity: t.remainingCapacity,
+          })),
+          partySize,
+          3
+        );
+
+        if (combination) {
+          return {
+            success: true,
+            data: {
+              tableIds: combination.map((t) => t.id),
+              totalCapacity: combination.reduce((sum, t) => sum + t.capacity, 0),
+              assignmentType: "exclusive",
+              isSharedTableOnly: false,
+            },
+          };
+        }
+      }
+    }
+
+    // 6. STRATEGY 3: Shared Pool - Single shared table (with warning)
+    const sharedPoolShared = sharedPoolWithCapacity.find(
+      (t) => t.isShared && t.remainingCapacity >= partySize
+    );
+
+    if (sharedPoolShared) {
+      return {
+        success: true,
+        data: {
+          tableIds: [sharedPoolShared.id],
+          totalCapacity: sharedPoolShared.capacity,
+          assignmentType: "shared_table",
+          isSharedTableOnly: true, // WARNING TRIGGER
+        },
+      };
+    }
+
+    // Single regular table from shared pool
+    const sharedPoolRegular = sharedPoolWithCapacity.find(
+      (t) => !t.isShared && t.remainingCapacity >= partySize
+    );
+
+    if (sharedPoolRegular) {
+      return {
+        success: true,
+        data: {
+          tableIds: [sharedPoolRegular.id],
+          totalCapacity: sharedPoolRegular.capacity,
+          assignmentType: "shared_pool",
+          isSharedTableOnly: false,
+        },
+      };
+    }
+
+    // 7. STRATEGY 4: Combine Shared Pool Tables (regular only)
+    const sharedPoolRegularTables = sharedPoolWithCapacity.filter(
+      (t) => !t.isShared
+    );
+    if (sharedPoolRegularTables.length > 0) {
       const combination = findTableCombination(
-        sortedTables.map((t) => ({ id: t.id, capacity: t.capacity })),
-        partySize
+        sharedPoolRegularTables.map((t) => ({
+          id: t.id,
+          capacity: t.remainingCapacity,
+        })),
+        partySize,
+        3
       );
 
       if (combination) {
@@ -477,6 +709,8 @@ export async function findAvailableTables(
           data: {
             tableIds: combination.map((t) => t.id),
             totalCapacity: combination.reduce((sum, t) => sum + t.capacity, 0),
+            assignmentType: "combined",
+            isSharedTableOnly: false,
           },
         };
       }
@@ -484,7 +718,7 @@ export async function findAvailableTables(
 
     return {
       success: false,
-      error: `No single table or combination can accommodate ${partySize} guests`,
+      error: `No tables available to accommodate ${partySize} guests`,
     };
   } catch (error) {
     console.error("Error finding available tables:", error);
