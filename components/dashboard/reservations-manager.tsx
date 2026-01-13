@@ -322,7 +322,7 @@ export function ReservationsManager({
       if ((result as { isSharedTableOnly?: boolean }).isSharedTableOnly) {
         setTimeout(() => {
           alert(
-            "Note: This reservation was assigned to a shared table. The table may be shared with other guests."
+            "Nota: Esta reserva fue asignada a una mesa compartida. La mesa puede ser compartida con otros clientes."
           );
         }, 300);
       }

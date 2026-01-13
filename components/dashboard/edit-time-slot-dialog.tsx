@@ -252,14 +252,14 @@ export function EditTimeSlotDialog({
     // Warn if removing limit with exclusive tables
     if (limit === null && editSlot.tableIds.length > 0) {
       const confirmed = confirm(
-        "Removing the customer limit will return these tables to the shared pool. Continue?"
+        "Eliminar el límite de clientes devolverá estas mesas al grupo compartido. ¿Continuar?"
       );
       if (!confirmed) return;
     }
 
     if (limit !== null && limit > branchCapacity) {
       setCustomerLimitError(
-        `Customer limit (${limit}) exceeds branch capacity (${branchCapacity})`
+        `El límite de clientes (${limit}) excede la capacidad total (${branchCapacity})`
       );
     } else {
       setCustomerLimitError("");
@@ -303,14 +303,14 @@ export function EditTimeSlotDialog({
       if (editSlot.customerLimit && editSlot.customerLimit > 0) {
         if (editSlot.tableIds.length === 0) {
           alert(
-            "You must select at least one exclusive table when setting a customer limit."
+            "Debes seleccionar al menos una mesa exclusiva al establecer un límite de clientes."
           );
           return;
         }
 
         if (selectedTablesCapacity < editSlot.customerLimit) {
           const confirmed = confirm(
-            `Selected tables (${selectedTablesCapacity} seats) don't meet the customer limit (${editSlot.customerLimit}). Continue anyway?`
+            `Las mesas seleccionadas (${selectedTablesCapacity} asientos) no cumplen el límite de clientes (${editSlot.customerLimit}). ¿Continuar de todas formas?`
           );
           if (!confirmed) return;
         }
@@ -500,33 +500,33 @@ export function EditTimeSlotDialog({
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-gray-600" />
               <Label htmlFor="customerLimit" className="font-semibold">
-                Customer Limit (Optional)
+                Límite de Clientes (Opcional)
               </Label>
             </div>
 
             <p className="text-sm text-gray-600">
-              Set a maximum number of customers for this time slot. You&apos;ll then
-              select exclusive tables to meet this capacity.
+              Establece un número máximo de clientes para este turno. Luego
+              seleccionarás mesas exclusivas para cumplir con esta capacidad.
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="customerLimit">Customer Limit</Label>
+                <Label htmlFor="customerLimit">Límite de Clientes</Label>
                 <Input
                   id="customerLimit"
                   type="number"
                   min="0"
                   value={editSlot.customerLimit || ""}
                   onChange={(e) => handleCustomerLimitChange(e.target.value)}
-                  placeholder="Leave empty for unlimited"
+                  placeholder="Dejar vacío para ilimitado"
                 />
               </div>
 
               <div>
-                <Label>Branch Capacity</Label>
+                <Label>Capacidad Total</Label>
                 <div className="h-10 px-3 flex items-center bg-white border rounded-md">
                   <span className="text-sm font-medium text-gray-700">
-                    {branchCapacity} seats
+                    {branchCapacity} asientos
                   </span>
                 </div>
               </div>
@@ -543,13 +543,13 @@ export function EditTimeSlotDialog({
               <Alert className="border-blue-500 bg-blue-50">
                 <AlertCircle className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800">
-                  {selectedTablesCapacity} / {editSlot.customerLimit} seats
-                  selected.
+                  {selectedTablesCapacity} / {editSlot.customerLimit} asientos
+                  seleccionados.
                   {selectedTablesCapacity < editSlot.customerLimit && (
                     <span className="block mt-1 font-semibold">
-                      Select{" "}
-                      {editSlot.customerLimit - selectedTablesCapacity} more
-                      seats to meet the limit.
+                      Selecciona{" "}
+                      {editSlot.customerLimit - selectedTablesCapacity} asientos más
+                      para cumplir el límite.
                     </span>
                   )}
                 </AlertDescription>
@@ -579,13 +579,13 @@ export function EditTimeSlotDialog({
                   <div>
                     <Label>
                       {editSlot.customerLimit && editSlot.customerLimit > 0
-                        ? "Select Exclusive Tables (Required)"
-                        : "Select Exclusive Tables (Optional)"}
+                        ? "Seleccionar Mesas Exclusivas (Requerido)"
+                        : "Seleccionar Mesas Exclusivas (Opcional)"}
                     </Label>
                     <p className="text-xs text-gray-500 mt-1">
                       {editSlot.customerLimit && editSlot.customerLimit > 0
-                        ? "These tables will ONLY be available to this time slot"
-                        : "By default, all tables are shared. Select tables to make them exclusive to this slot."}
+                        ? "Estas mesas SOLO estarán disponibles para este turno"
+                        : "Por defecto, todas las mesas son compartidas. Selecciona mesas para hacerlas exclusivas de este turno."}
                     </p>
                   </div>
                   <div className="flex gap-2">
