@@ -106,12 +106,12 @@ export function usePrint(): UsePrintReturn {
         return { success: true, successCount: 0, failCount: 0 };
       }
 
-      // Check if QZ Tray is available
+      // Check if QZ Tray context is available
       if (!qz) {
-        console.error("[usePrint] QZ Tray not available");
+        console.error("[usePrint] QZ Tray context not available - component may not be wrapped in QzTrayProvider. Check if branch has printers configured.");
         setPrintStatus({
           status: "error",
-          message: "QZ Tray no está disponible. Por favor, actualiza la página.",
+          message: "QZ Tray no está disponible. Asegúrate de que esté instalado y ejecutándose, y recarga la página.",
         });
         return { success: false, successCount: 0, failCount: jobs.length };
       }

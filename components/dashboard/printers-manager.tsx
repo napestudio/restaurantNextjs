@@ -95,6 +95,9 @@ export function PrintersManager({
   const [isDeletingStation, setIsDeletingStation] = useState(false);
 
   const handlePrinterCreated = (newPrinter: Printer) => {
+    // Check if this is the first printer being created
+    const isFirstPrinter = printers.length === 0;
+
     // Find the station if one was assigned
     const station = newPrinter.stationId
       ? stations.find((s) => s.id === newPrinter.stationId)
@@ -110,6 +113,16 @@ export function PrintersManager({
 
     setPrinters((prev) => [printerWithStation, ...prev]);
     setCreatePrinterOpen(false);
+
+    // If this was the first printer, auto-reload to activate QZ Tray
+    if (isFirstPrinter) {
+      toast({
+        title: "Impresora creada",
+        description: "Recargando página para activar QZ Tray...",
+        duration: 2000,
+      });
+      setTimeout(() => window.location.reload(), 2000);
+    }
   };
 
   const handleStationCreated = (newStation: Station) => {
