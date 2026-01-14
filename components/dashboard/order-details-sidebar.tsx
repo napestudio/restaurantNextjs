@@ -41,6 +41,7 @@ import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { CloseOrderDialog } from "./close-order-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type Order = {
   id: string;
@@ -136,17 +137,10 @@ export function OrderDetailsSidebar({
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
-  const [hasPrinters, setHasPrinters] = useState<boolean | null>(null);
 
   // QZ Tray printing
-  const { printControlTicket, isPrinting, checkHasControlTicketPrinters } = usePrint();
-
-  // Check if branch has printers configured
-  React.useEffect(() => {
-    if (branchId) {
-      checkHasControlTicketPrinters(branchId).then(setHasPrinters);
-    }
-  }, [branchId, checkHasControlTicketPrinters]);
+  const { printControlTicket, isPrinting } = usePrint();
+  const { toast } = useToast();
 
   if (!order) return null;
 
@@ -262,7 +256,7 @@ export function OrderDetailsSidebar({
     const tableName = order.table?.number?.toString() || "—";
 
     // Print via QZ Tray - optimistic updates handled by usePrint hook
-    await printControlTicket({
+    const success = await printControlTicket({
       orderId: order.id,
       orderCode: order.publicCode,
       tableName,
@@ -280,6 +274,14 @@ export function OrderDetailsSidebar({
       orderType: order.type,
       customerName: order.client?.name || order.customerName || undefined,
     });
+
+    if (!success) {
+      toast({
+        variant: "destructive",
+        title: "Error de impresión",
+        description: "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+      });
+    }
   };
 
   const handleCloseOrderSuccess = () => {
@@ -652,18 +654,15 @@ export function OrderDetailsSidebar({
               Finalizar Venta
             </Button>
           )}
-          {/* Only show print button if branch has printers configured */}
-          {hasPrinters && (
-            <Button
-              onClick={handlePrintControlTicket}
-              disabled={isPrinting || order.items.length === 0}
-              variant="outline"
-              className="w-full"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              {isPrinting ? "Imprimiendo..." : "Imprimir Ticket de Control"}
-            </Button>
-          )}
+          <Button
+            onClick={handlePrintControlTicket}
+            disabled={isPrinting || order.items.length === 0}
+            variant="outline"
+            className="w-full"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrinting ? "Imprimiendo..." : "Imprimir Ticket de Control"}
+          </Button>
         </div>
       </div>
 
