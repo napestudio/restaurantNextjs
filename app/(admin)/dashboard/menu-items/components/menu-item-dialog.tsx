@@ -75,14 +75,13 @@ type MenuItemDialogProps = {
   restaurantId: string;
   branchId: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (savedItem?: MenuItemWithRelations, isNewItem?: boolean) => void;
 };
 
 type FormData = {
   name: string;
   description: string;
   imageUrl: string;
-  sku: string;
   unitType: UnitType;
   weightUnit: WeightUnit | "";
   volumeUnit: VolumeUnit | "";
@@ -125,7 +124,6 @@ export function MenuItemDialog({
     name: item?.name ?? "",
     description: item?.description ?? "",
     imageUrl: item?.imageUrl ?? "",
-    sku: item?.sku ?? "",
     unitType: item?.unitType ?? "UNIT",
     weightUnit: item?.weightUnit ?? "",
     volumeUnit: item?.volumeUnit ?? "",
@@ -232,6 +230,8 @@ export function MenuItemDialog({
     try {
       // 1. Crear o actualizar el producto
       let productId = item?.id;
+      let savedProduct: MenuItemWithRelations | null = null;
+      const isNewItem = !item;
 
       if (item) {
         // Actualizar producto existente
@@ -240,7 +240,6 @@ export function MenuItemDialog({
           name: formData.name,
           description: formData.description || undefined,
           imageUrl: formData.imageUrl || undefined,
-          sku: formData.sku || undefined,
           unitType: formData.unitType,
           weightUnit: formData.weightUnit || undefined,
           volumeUnit: formData.volumeUnit || undefined,
@@ -252,16 +251,19 @@ export function MenuItemDialog({
           isActive: formData.isActive,
         });
 
-        if (!result.success) {
+        if (!result.success || !result.data) {
           throw new Error(result.error);
         }
+
+        productId = result.data.id;
+        // Branches will be added after setting product on branch
+        savedProduct = { ...result.data, branches: [] };
       } else {
         // Crear nuevo producto
         const result = await createMenuItem({
           name: formData.name,
           description: formData.description || undefined,
           imageUrl: formData.imageUrl || undefined,
-          sku: formData.sku || undefined,
           unitType: formData.unitType,
           weightUnit: formData.weightUnit || undefined,
           volumeUnit: formData.volumeUnit || undefined,
@@ -279,6 +281,8 @@ export function MenuItemDialog({
         }
 
         productId = result.data.id;
+        // Branches will be added after setting product on branch
+        savedProduct = { ...result.data, branches: [] };
       }
 
       // 2. Configurar el producto en la sucursal con precios
@@ -317,16 +321,32 @@ export function MenuItemDialog({
           prices,
         });
 
-        if (!branchResult.success) {
+        if (!branchResult.success || !branchResult.data) {
           throw new Error(branchResult.error);
+        }
+
+        // Update savedProduct with branch data
+        if (savedProduct) {
+          savedProduct = {
+            ...savedProduct,
+            branches: [branchResult.data]
+          };
         }
       }
 
-      onSuccess();
+      // Call onSuccess with the saved product data for optimistic updates
+      onSuccess(savedProduct || undefined, isNewItem);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Error al guardar el producto"
-      );
+      const errorMessage = err instanceof Error ? err.message : "Error al guardar el producto";
+
+      // Check for unique constraint errors
+      if (errorMessage.includes("Unique constraint failed") && errorMessage.includes("name")) {
+        setError("Ya existe un producto con este nombre en tu restaurante. Por favor, usa un nombre diferente.");
+      } else if (errorMessage.includes("Unique constraint failed") && errorMessage.includes("sku")) {
+        setError("El código SKU ya está en uso. Por favor, usa un código diferente.");
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -419,40 +439,24 @@ export function MenuItemDialog({
                   />
                 </div>
 
-                {/* SKU y Categoría */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      SKU
-                    </label>
-                    <input
-                      type="text"
-                      name="sku"
-                      value={formData.sku}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Código único"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Categoría
-                    </label>
-                    <select
-                      name="categoryId"
-                      value={formData.categoryId}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Sin categoría</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Categoría */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categoría
+                  </label>
+                  <select
+                    name="categoryId"
+                    value={formData.categoryId}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Sin categoría</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Tipo de Unidad */}

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
+import { auth } from "@/lib/auth";
 
 export type CreateMenuItemInput = {
   name: string;
@@ -84,9 +85,30 @@ export async function createMenuItem(input: CreateMenuItemInput) {
     return { success: true, data: serializedProduct };
   } catch (error) {
     console.error("Error creating menu item:", error);
+
+    // Handle unique constraint errors with user-friendly messages
+    if (error instanceof Error) {
+      if (error.message.includes("Unique constraint") && error.message.includes("restaurantId") && error.message.includes("name")) {
+        return {
+          success: false,
+          error: "Ya existe un producto con este nombre en tu restaurante"
+        };
+      }
+      if (error.message.includes("Unique constraint") && error.message.includes("sku")) {
+        return {
+          success: false,
+          error: "El código SKU ya está en uso"
+        };
+      }
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al crear el producto"
+      error: "Error al crear el producto"
     };
   }
 }
@@ -128,9 +150,30 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
     return { success: true, data: serializedProduct };
   } catch (error) {
     console.error("Error updating menu item:", error);
+
+    // Handle unique constraint errors with user-friendly messages
+    if (error instanceof Error) {
+      if (error.message.includes("Unique constraint") && error.message.includes("restaurantId") && error.message.includes("name")) {
+        return {
+          success: false,
+          error: "Ya existe un producto con este nombre en tu restaurante"
+        };
+      }
+      if (error.message.includes("Unique constraint") && error.message.includes("sku")) {
+        return {
+          success: false,
+          error: "El código SKU ya está en uso"
+        };
+      }
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al actualizar el producto"
+      error: "Error al actualizar el producto"
     };
   }
 }
@@ -304,17 +347,33 @@ export async function setProductOnBranch(input: SetProductBranchInput) {
       });
     }
 
+    // Fetch the complete productOnBranch with prices
+    const completeProductOnBranch = await prisma.productOnBranch.findUnique({
+      where: { id: productOnBranch.id },
+      include: {
+        prices: true,
+      },
+    });
+
+    if (!completeProductOnBranch) {
+      throw new Error("Error al obtener los datos del producto");
+    }
+
     // Serialize Decimal and Date fields
     const serializedProductOnBranch = {
-      ...productOnBranch,
-      stock: Number(productOnBranch.stock),
-      minStock: productOnBranch.minStock ? Number(productOnBranch.minStock) : null,
-      maxStock: productOnBranch.maxStock ? Number(productOnBranch.maxStock) : null,
-      lastRestocked: productOnBranch.lastRestocked
-        ? productOnBranch.lastRestocked.toISOString()
+      ...completeProductOnBranch,
+      stock: Number(completeProductOnBranch.stock),
+      minStock: completeProductOnBranch.minStock ? Number(completeProductOnBranch.minStock) : null,
+      maxStock: completeProductOnBranch.maxStock ? Number(completeProductOnBranch.maxStock) : null,
+      lastRestocked: completeProductOnBranch.lastRestocked
+        ? completeProductOnBranch.lastRestocked.toISOString()
         : null,
-      createdAt: productOnBranch.createdAt.toISOString(),
-      updatedAt: productOnBranch.updatedAt.toISOString(),
+      createdAt: completeProductOnBranch.createdAt.toISOString(),
+      updatedAt: completeProductOnBranch.updatedAt.toISOString(),
+      prices: completeProductOnBranch.prices.map((price) => ({
+        ...price,
+        price: Number(price.price),
+      })),
     };
 
     revalidatePath("/dashboard/menu-items");
