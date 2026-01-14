@@ -3,6 +3,7 @@
 import { getNavItems } from "@/lib/dashboard-nav";
 import DashBoardNavItems from "./dashboard-nav-items";
 import UserDropdown from "./user-dropdown";
+import { QzTrayStatusCompact } from "./qz-tray-status";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
@@ -33,8 +34,9 @@ export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
           {/* Center: Desktop Nav Items */}
           <DashBoardNavItems navItems={navItems} />
 
-          {/* Right: User Dropdown & Mobile Menu Button */}
+          {/* Right: QZ Tray Status, User Dropdown & Mobile Menu Button */}
           <div className="flex items-center gap-2">
+            <QzTrayStatusCompact />
             <UserDropdown userName={userName} hasAdminRole={hasAdminRole} />
 
             {/* Mobile menu button */}

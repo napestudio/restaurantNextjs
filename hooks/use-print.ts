@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useQzTrayContext } from "@/contexts/qz-tray-context";
+import { useQzTrayOptional } from "@/contexts/qz-tray-context";
 import {
   prepareTestPrint,
   prepareOrderItemsPrint,
@@ -85,7 +85,7 @@ export interface UsePrintReturn {
  * 5. Show final status
  */
 export function usePrint(): UsePrintReturn {
-  const qz = useQzTrayContext();
+  const qz = useQzTrayOptional();
   const [printStatus, setPrintStatus] = useState<PrintStatus>({ status: "idle" });
 
   const resetStatus = useCallback(() => {
@@ -104,6 +104,16 @@ export function usePrint(): UsePrintReturn {
 
       if (jobs.length === 0) {
         return { success: true, successCount: 0, failCount: 0 };
+      }
+
+      // Check if QZ Tray is available
+      if (!qz) {
+        console.error("[usePrint] QZ Tray not available");
+        setPrintStatus({
+          status: "error",
+          message: "QZ Tray no está disponible. Por favor, actualiza la página.",
+        });
+        return { success: false, successCount: 0, failCount: jobs.length };
       }
 
       // Optimistic update - show printing

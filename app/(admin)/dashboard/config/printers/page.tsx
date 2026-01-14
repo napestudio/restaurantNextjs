@@ -1,10 +1,10 @@
+import { getCurrentUserBranchId } from "@/lib/user-branch";
 import { getPrintersByBranch } from "@/actions/Printer";
 import { getStationsByBranch } from "@/actions/Station";
 import { PrintersManager } from "@/components/dashboard/printers-manager";
-import { BRANCH_ID } from "@/lib/constants";
 
 export default async function PrintersPage() {
-  const branchId = BRANCH_ID || "";
+  const branchId = (await getCurrentUserBranchId()) || "";
 
   const [printersResult, stationsResult] = await Promise.all([
     getPrintersByBranch(branchId),
