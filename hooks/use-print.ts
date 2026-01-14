@@ -100,18 +100,18 @@ export function usePrint(): UsePrintReturn {
       jobs: PrintJobData[],
       printJobIds: string[]
     ): Promise<{ success: boolean; successCount: number; failCount: number }> => {
-      console.log("[usePrint] executePrintJobs called with", jobs.length, "jobs");
+      console.debug("[usePrint] executePrintJobs called with", jobs.length, "jobs");
 
       if (jobs.length === 0) {
         return { success: true, successCount: 0, failCount: 0 };
       }
 
-      // Check if QZ Tray is available
+      // Check if QZ Tray context is available
       if (!qz) {
-        console.error("[usePrint] QZ Tray not available");
+        console.debug("[usePrint] QZ Tray context not available - printing disabled for this session");
         setPrintStatus({
           status: "error",
-          message: "QZ Tray no está disponible. Por favor, actualiza la página.",
+          message: "QZ Tray no está disponible. Asegúrate de que esté instalado y ejecutándose, y recarga la página.",
         });
         return { success: false, successCount: 0, failCount: jobs.length };
       }
@@ -140,15 +140,20 @@ export function usePrint(): UsePrintReturn {
               usbPath: job.target.usbPath,
             };
 
-        console.log("[usePrint] Sending to printer:", target);
+        console.debug("[usePrint] Sending to printer:", target);
         const result = await qz.print(target, job.escPosData);
-        console.log("[usePrint] Print result for job", i, ":", result);
+        console.debug("[usePrint] Print result for job", i, ":", result);
 
         if (result.success) {
           successCount++;
         } else {
           failCount++;
-          console.error("[usePrint] Print failed:", result.error);
+          // Use warn for expected failures (network issues), error for unexpected
+          if (result.error?.includes("timeout") || result.error?.includes("Connection") || result.error?.includes("conectar")) {
+            console.warn("[usePrint] Printer unreachable:", result.error);
+          } else {
+            console.error("[usePrint] Print failed:", result.error);
+          }
         }
 
         results.push({
@@ -171,16 +176,16 @@ export function usePrint(): UsePrintReturn {
    */
   const printTest = useCallback(
     async (printerId: string): Promise<boolean> => {
-      console.log("[usePrint] Starting test print for printer:", printerId);
+      console.debug("[usePrint] Starting test print for printer:", printerId);
       setPrintStatus({ status: "preparing", message: "Preparando impresión de prueba..." });
 
       try {
-        console.log("[usePrint] Calling prepareTestPrint...");
+        console.debug("[usePrint] Calling prepareTestPrint...");
         const result = await prepareTestPrint(printerId);
-        console.log("[usePrint] prepareTestPrint result:", result);
+        console.debug("[usePrint] prepareTestPrint result:", result);
 
         if (!result.success || !result.jobs || result.jobs.length === 0) {
-          console.error("[usePrint] Prepare failed:", result.error);
+          console.warn("[usePrint] Prepare failed:", result.error);
           setPrintStatus({
             status: "error",
             message: result.error || "Error al preparar la impresión",
@@ -188,9 +193,9 @@ export function usePrint(): UsePrintReturn {
           return false;
         }
 
-        console.log("[usePrint] Executing print jobs:", result.jobs.length, "jobs");
+        console.debug("[usePrint] Executing print jobs:", result.jobs.length, "jobs");
         const printResult = await executePrintJobs(result.jobs, result.printJobIds || []);
-        console.log("[usePrint] Print result:", printResult);
+        console.debug("[usePrint] Print result:", printResult);
 
         if (printResult.success) {
           setPrintStatus({ status: "success", message: "Impresión de prueba enviada" });
@@ -206,7 +211,7 @@ export function usePrint(): UsePrintReturn {
 
         return printResult.success;
       } catch (error) {
-        console.error("[usePrint] Exception during print:", error);
+        console.warn("[usePrint] Exception during print:", error);
         const message = error instanceof Error ? error.message : "Error desconocido";
         setPrintStatus({ status: "error", message });
         return false;
@@ -239,7 +244,7 @@ export function usePrint(): UsePrintReturn {
         const result = await prepareOrderItemsPrint(orderInfo, items);
 
         if (!result.success) {
-          console.error("Error preparing order items print:", result.error);
+          console.warn("[usePrint] Error preparing order items print:", result.error);
           return false;
         }
 
@@ -255,7 +260,7 @@ export function usePrint(): UsePrintReturn {
 
         return printResult.success;
       } catch (error) {
-        console.error("Error printing order items:", error);
+        console.warn("[usePrint] Error printing order items:", error);
         return false;
       }
     },

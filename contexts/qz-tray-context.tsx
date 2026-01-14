@@ -125,7 +125,7 @@ export function QzTrayProvider({
       };
 
       script.onerror = () => {
-        console.error("Failed to load QZ Tray script");
+        console.debug("[QZ Tray] Failed to load QZ Tray script");
         resolve(false);
       };
 
@@ -166,7 +166,7 @@ export function QzTrayProvider({
           setPrinters(printerList);
         }
       } catch (err) {
-        console.warn("Failed to list printers:", err);
+        console.debug("[QZ Tray] Failed to list printers:", err);
       }
     }
 
@@ -195,7 +195,7 @@ export function QzTrayProvider({
         setPrinters(printerList);
       }
     } catch (err) {
-      console.warn("Failed to refresh printers:", err);
+      console.debug("[QZ Tray] Failed to refresh printers:", err);
     }
   }, []);
 
@@ -313,9 +313,7 @@ export function QzTrayProvider({
       // Stop trying after max attempts to avoid infinite retries
       // (useful for clients without QZ Tray installed)
       if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-        console.log(
-          `QZ Tray: Stopped reconnecting after ${maxReconnectAttempts} failed attempts`
-        );
+        console.debug("[QZ Tray] QZ Tray not available - printing disabled for this session");
         return;
       }
 

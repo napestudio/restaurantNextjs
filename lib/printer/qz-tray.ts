@@ -449,12 +449,12 @@ export async function printToNetwork(
   port: number,
   escPosData: string
 ): Promise<QzPrintResult> {
-  console.log("[QZ] printToNetwork called:", { ipAddress, port, dataLength: escPosData.length });
+  console.debug("[QZ] printToNetwork called:", { ipAddress, port, dataLength: escPosData.length });
 
   const qz = getQz();
 
   if (!qz) {
-    console.error("[QZ] QZ Tray not loaded");
+    console.debug("[QZ] QZ Tray not loaded");
     return {
       success: false,
       error: "QZ Tray no está cargado. Recarga la página.",
@@ -462,7 +462,7 @@ export async function printToNetwork(
   }
 
   if (!qz.websocket.isActive()) {
-    console.error("[QZ] QZ Tray websocket not active");
+    console.debug("[QZ] QZ Tray websocket not active");
     return {
       success: false,
       error: "QZ Tray no está conectado. Asegúrate de que QZ Tray esté ejecutándose.",
@@ -470,30 +470,31 @@ export async function printToNetwork(
   }
 
   try {
-    console.log("[QZ] Using Socket API for direct TCP connection to:", ipAddress, port);
+    console.debug("[QZ] Using Socket API for direct TCP connection to:", ipAddress, port);
 
     // Decode base64 to raw binary string for socket transmission
     const rawData = atob(escPosData);
-    console.log("[QZ] Decoded data length:", rawData.length);
+    console.debug("[QZ] Decoded data length:", rawData.length);
 
     // Use QZ Tray Socket API for direct TCP connection
     // This is more reliable for raw socket printing than qz.print with host/port config
-    console.log("[QZ] Opening socket connection...");
+    console.debug("[QZ] Opening socket connection...");
     await qz.socket.open(ipAddress, port);
-    console.log("[QZ] Socket opened, sending data...");
+    console.debug("[QZ] Socket opened, sending data...");
 
     await qz.socket.sendData(ipAddress, port, rawData);
-    console.log("[QZ] Data sent, closing socket...");
+    console.debug("[QZ] Data sent, closing socket...");
 
     await qz.socket.close(ipAddress, port);
-    console.log("[QZ] Socket closed, print successful");
+    console.debug("[QZ] Socket closed, print successful");
 
     return {
       success: true,
       printerId: `${ipAddress}:${port}`,
     };
   } catch (err) {
-    console.error("[QZ] Print error:", err);
+    // Use warn for expected network errors (printer offline, unreachable)
+    console.warn("[QZ] Print failed (printer may be offline):", err);
     const errorMessage = err instanceof Error ? err.message : String(err);
 
     // Try to close socket in case of error
