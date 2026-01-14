@@ -28,6 +28,7 @@ import { OrderTabs } from "./order-tabs";
 import { PreOrderItemsList, type PreOrderItem } from "./pre-order-items-list";
 import { ProductPicker } from "./product-picker";
 import { WaiterPicker } from "./waiter-picker";
+import { useToast } from "@/hooks/use-toast";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -87,8 +88,8 @@ export function TableOrderSidebar({
   const { products } = useProducts();
 
   // QZ Tray printing
-  const { printOrderItems, printControlTicket, isPrinting, checkHasControlTicketPrinters } = usePrint();
-  const [hasPrinters, setHasPrinters] = useState<boolean | null>(null);
+  const { printOrderItems, printControlTicket, isPrinting } = usePrint();
+  const { toast } = useToast();
 
   // Use SWR for order data fetching with auto-refresh
   const {
@@ -116,13 +117,6 @@ export function TableOrderSidebar({
 
   // Combined loading state
   const isLoading = isLoadingOrders || isLoadingAction;
-
-  // Check if branch has printers configured
-  useEffect(() => {
-    if (branchId) {
-      checkHasControlTicketPrinters(branchId).then(setHasPrinters);
-    }
-  }, [branchId, checkHasControlTicketPrinters]);
 
   // Reset state when table changes
   useEffect(() => {
@@ -362,12 +356,6 @@ export function TableOrderSidebar({
   const handlePrintCheck = async () => {
     if (!order) return;
 
-    // Check if branch has printers configured
-    if (!hasPrinters) {
-      alert("No hay impresoras configuradas para esta sucursal. Por favor, configura una impresora en Configuración → Impresoras.");
-      return;
-    }
-
     const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
@@ -399,8 +387,11 @@ export function TableOrderSidebar({
     });
 
     if (!success) {
-      // Error is already shown by the hook via printStatus
-      // Could also show a toast here if needed
+      toast({
+        variant: "destructive",
+        title: "Error de impresión",
+        description: "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+      });
     }
   };
 
@@ -660,41 +651,38 @@ export function TableOrderSidebar({
 
             {/* Action Buttons - Fixed at bottom */}
             <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
-              {/* Only show print button if branch has printers configured */}
-              {hasPrinters && (
-                <Button
-                  onClick={handlePrintCheck}
-                  variant="outline"
-                  disabled={isPrinting}
+              <Button
+                onClick={handlePrintCheck}
+                variant="outline"
+                disabled={isPrinting}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="128"
+                  height="128"
+                  viewBox="0 0 48 48"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="128"
-                    height="128"
-                    viewBox="0 0 48 48"
-                  >
-                    <g fill="none" stroke="currentColor" strokeWidth="4">
-                      <path
-                        strokeLinecap="round"
-                        d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
-                      />
-                      <rect width="36" height="22" x="6" y="20" rx="2" />
-                      <path
-                        fill="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M20 34h15v8H20z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 26h3"
-                      />
-                    </g>
-                  </svg>
-                  {/* Imprimir Cuenta */}
-                </Button>
-              )}
+                  <g fill="none" stroke="currentColor" strokeWidth="4">
+                    <path
+                      strokeLinecap="round"
+                      d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
+                    />
+                    <rect width="36" height="22" x="6" y="20" rx="2" />
+                    <path
+                      fill="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M20 34h15v8H20z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 26h3"
+                    />
+                  </g>
+                </svg>
+                {/* Imprimir Cuenta */}
+              </Button>
 
               <Button
                 onClick={handleOpenMoveDialog}
