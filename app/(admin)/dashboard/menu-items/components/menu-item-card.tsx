@@ -1,7 +1,12 @@
 "use client";
 
-import { Edit, AlertTriangle } from "lucide-react";
-import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
+import { Edit, AlertTriangle, Trash2 } from "lucide-react";
+import type {
+  UnitType,
+  WeightUnit,
+  VolumeUnit,
+  PriceType,
+} from "@/app/generated/prisma";
 import { getUnitLabel } from "../lib/units";
 
 // Serialized types for client components
@@ -57,9 +62,15 @@ type MenuItemCardProps = {
   item: MenuItemWithRelations;
   branchId: string;
   onEdit: (item: MenuItemWithRelations) => void;
+  onDelete: (item: MenuItemWithRelations) => void;
 };
 
-export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
+export function MenuItemCard({
+  item,
+  branchId,
+  onEdit,
+  onDelete,
+}: MenuItemCardProps) {
   // Obtener datos de la sucursal actual
   const branchData = item.branches.find((b) => b.branchId === branchId);
   const stock = branchData ? branchData.stock : 0;
@@ -100,18 +111,13 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            {item.category && (
+          {item.category && (
+            <div className="flex items-center gap-3 text-sm text-gray-600">
               <span className="inline-flex items-center">
                 {item.category.name}
               </span>
-            )}
-            {item.sku && (
-              <span className="text-gray-500">
-                SKU: {item.sku}
-              </span>
-            )}
-          </div>
+            </div>
+          )}
 
           {item.description && (
             <p className="text-sm text-gray-600 mt-1 line-clamp-1">
@@ -121,28 +127,29 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
         </div>
 
         {/* Stock */}
-        <div className="text-right min-w-[100px]">
+        <div className="text-right min-w-25">
           <div className="text-xs text-gray-500 mb-0.5">Stock</div>
           {isAlwaysAvailable ? (
-            <div className="font-semibold text-sm text-green-600">
-              N/A
-            </div>
+            <div className="font-semibold text-sm text-green-600">N/A</div>
           ) : (
-            <div className={`font-semibold text-sm ${
-              isOutOfStock
-                ? "text-red-600"
-                : hasLowStock
-                ? "text-yellow-600"
-                : "text-gray-900"
-            }`}>
-              {stock} {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
+            <div
+              className={`font-semibold text-sm ${
+                isOutOfStock
+                  ? "text-red-600"
+                  : hasLowStock
+                  ? "text-yellow-600"
+                  : "text-gray-900"
+              }`}
+            >
+              {stock}{" "}
+              {getUnitLabel(item.unitType, item.weightUnit, item.volumeUnit)}
             </div>
           )}
         </div>
 
         {/* Precio */}
         {dineInPrice && (
-          <div className="text-right min-w-[100px]">
+          <div className="text-right min-w-25">
             <div className="text-xs text-gray-500 mb-0.5">Precio</div>
             <div className="font-semibold text-sm text-green-600">
               ${dineInPrice.price.toFixed(2)}
@@ -157,6 +164,15 @@ export function MenuItemCard({ item, branchId, onEdit }: MenuItemCardProps) {
           title="Editar producto"
         >
           <Edit className="w-5 h-5" />
+        </button>
+
+        {/* Botón eliminar */}
+        <button
+          onClick={() => onDelete(item)}
+          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          title="Eliminar producto"
+        >
+          <Trash2 className="w-5 h-5" />
         </button>
       </div>
     </div>

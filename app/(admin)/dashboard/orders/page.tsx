@@ -60,7 +60,7 @@ export default async function OrdersPage({
         number: "asc",
       },
     }),
-    getAvailableProductsForOrder(branchId),
+    getAvailableProductsForOrder(branchId, orderType ?? OrderType.DINE_IN),
   ]);
 
   const rawOrders =
@@ -90,7 +90,11 @@ export default async function OrdersPage({
           <h1 className="text-3xl font-bold text-gray-900">Ordenes</h1>
         </div>
 
-        <ProductsProvider branchId={branchId} initialProducts={products}>
+        <ProductsProvider
+          branchId={branchId}
+          orderType={orderType ?? OrderType.DINE_IN}
+          initialProducts={products}
+        >
           <OrdersClient
             branchId={branchId}
             initialOrders={orders}

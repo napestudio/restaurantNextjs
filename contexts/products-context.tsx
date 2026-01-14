@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { getAvailableProductsForOrder } from "@/actions/Order";
+import { OrderType } from "@/app/generated/prisma";
 
 type Product = {
   id: string;
@@ -23,11 +24,12 @@ const ProductsContext = createContext<ProductsContextType | undefined>(undefined
 
 interface ProductsProviderProps {
   branchId: string;
+  orderType: OrderType;
   children: ReactNode;
   initialProducts?: Product[];
 }
 
-export function ProductsProvider({ branchId, children, initialProducts }: ProductsProviderProps) {
+export function ProductsProvider({ branchId, orderType, children, initialProducts }: ProductsProviderProps) {
   // Use initial products if provided, avoiding double fetch
   const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
   const [isLoading, setIsLoading] = useState(!initialProducts);
@@ -39,7 +41,7 @@ export function ProductsProvider({ branchId, children, initialProducts }: Produc
     try {
       setIsLoading(true);
       setError(null);
-      const availableProducts = await getAvailableProductsForOrder(branchId);
+      const availableProducts = await getAvailableProductsForOrder(branchId, orderType);
       setProducts(availableProducts);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading products");
@@ -47,7 +49,7 @@ export function ProductsProvider({ branchId, children, initialProducts }: Produc
     } finally {
       setIsLoading(false);
     }
-  }, [branchId]);
+  }, [branchId, orderType]);
 
   // Fetch products on mount if no initial products were provided
   useEffect(() => {

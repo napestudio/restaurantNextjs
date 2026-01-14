@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { Plus, Search, Filter, FolderPlus } from "lucide-react";
-import { getMenuItems, getCategories } from "@/actions/menuItems";
+import {
+  getMenuItems,
+  getCategories,
+  deleteMenuItem,
+} from "@/actions/menuItems";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemDialog } from "./menu-item-dialog";
 import { CategoryDialog } from "./category-dialog";
@@ -13,6 +17,16 @@ import type {
   PriceType,
 } from "@/app/generated/prisma";
 import LoadingToast from "@/components/dashboard/loading-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Serialized types for client components (Decimal -> number, Date -> string)
 type SerializedProductPrice = {
@@ -63,6 +77,11 @@ type MenuItemWithRelations = {
   branches: SerializedProductOnBranch[];
 };
 
+type OptimisticAction =
+  | { type: "delete"; id: string }
+  | { type: "create"; tempId: string; item: MenuItemWithRelations }
+  | { type: "update"; id: string; item: MenuItemWithRelations };
+
 type MenuItemsClientProps = {
   initialMenuItems: MenuItemWithRelations[];
   categories: SerializedCategory[];
@@ -76,6 +95,23 @@ export function MenuItemsClient({
   restaurantId,
   branchId,
 }: MenuItemsClientProps) {
+  const [optimisticMenuItems, setOptimisticMenuItems] = useOptimistic(
+    initialMenuItems,
+    (state: MenuItemWithRelations[], action: OptimisticAction) => {
+      switch (action.type) {
+        case "create":
+          return [...state, action.item];
+        case "update":
+          return state.map((item) =>
+            item.id === action.id ? action.item : item
+          );
+        case "delete":
+          return state.filter((item) => item.id !== action.id);
+        default:
+          return state;
+      }
+    }
+  );
   const [menuItems, setMenuItems] = useState(initialMenuItems);
   const [categories, setCategories] = useState(initialCategories);
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,10 +121,12 @@ export function MenuItemsClient({
   const [editingItem, setEditingItem] = useState<MenuItemWithRelations | null>(
     null
   );
+  const [deletingItem, setDeletingItem] =
+    useState<MenuItemWithRelations | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Filtrar items
-  const filteredItems = menuItems.filter((item) => {
+  const filteredItems = optimisticMenuItems.filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -110,14 +148,79 @@ export function MenuItemsClient({
     setShowDialog(true);
   };
 
+  const handleDelete = (item: MenuItemWithRelations) => {
+    setDeletingItem(item);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingItem) return;
+
+    startTransition(async () => {
+      // Optimistic update - item disappears immediately
+      setOptimisticMenuItems({ type: "delete", id: deletingItem.id });
+
+      const result = await deleteMenuItem(deletingItem.id);
+
+      if (result.success) {
+        // Update actual state
+        setMenuItems((prevItems) =>
+          prevItems.filter((i) => i.id !== deletingItem.id)
+        );
+        setDeletingItem(null);
+        // Refetch for consistency
+        handleSuccess();
+      } else {
+        // Auto-rollback on error - show error in AlertDialog
+        setDeletingItem(null);
+        // TODO: Show error toast instead of alert
+        alert(result.error || "Error al eliminar el producto");
+      }
+    });
+  };
+
   const handleCloseDialog = () => {
     setShowDialog(false);
     setEditingItem(null);
   };
 
-  const handleSuccess = () => {
-    // Refetch data using restaurantId for better performance and UX
+  const handleSuccess = (
+    savedItem?: MenuItemWithRelations,
+    isNewItem?: boolean
+  ) => {
+    // Close dialog immediately
+    setShowDialog(false);
+    setEditingItem(null);
+
+    // Wrap optimistic updates in startTransition
     startTransition(async () => {
+      // Optimistic update if we have the saved item
+      if (savedItem) {
+        if (isNewItem) {
+          // Add new item optimistically
+          setOptimisticMenuItems({
+            type: "create",
+            tempId: savedItem.id,
+            item: savedItem,
+          });
+          // Update actual state
+          setMenuItems((prevItems) => [...prevItems, savedItem]);
+        } else {
+          // Update existing item optimistically
+          setOptimisticMenuItems({
+            type: "update",
+            id: savedItem.id,
+            item: savedItem,
+          });
+          // Update actual state
+          setMenuItems((prevItems) =>
+            prevItems.map((item) =>
+              item.id === savedItem.id ? savedItem : item
+            )
+          );
+        }
+      }
+
+      // Refetch data in background for consistency
       const [menuItemsResult, categoriesResult] = await Promise.all([
         getMenuItems(restaurantId),
         getCategories(restaurantId),
@@ -179,7 +282,7 @@ export function MenuItemsClient({
 
           <button
             onClick={handleAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
             <span className="hidden sm:inline">Nuevo Producto</span>
@@ -233,6 +336,7 @@ export function MenuItemsClient({
                 item={item}
                 branchId={branchId}
                 onEdit={handleEdit}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -260,6 +364,32 @@ export function MenuItemsClient({
           onSuccess={handleSuccess}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!deletingItem}
+        onOpenChange={() => setDeletingItem(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de eliminar &quot;{deletingItem?.name}&quot;? Esta
+              acción marcará el producto como inactivo y no se mostrará en el
+              menú.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
