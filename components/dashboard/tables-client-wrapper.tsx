@@ -13,6 +13,7 @@ import { useTableForm } from "@/hooks/use-table-form";
 import { getTablesWithStatus, getTableWithStatus } from "@/actions/Table";
 import type { TableWithReservations } from "@/types/tables-client";
 import { ProductsProvider } from "@/contexts/products-context";
+import { OrderType } from "@/app/generated/prisma";
 
 // Re-export for backward compatibility
 export type { TableWithReservations };
@@ -128,7 +129,7 @@ export function TablesClientWrapper({
   }, [submitTable, closeAddTable, refreshSectors]);
 
   return (
-    <ProductsProvider branchId={branchId}>
+    <ProductsProvider branchId={branchId} orderType={OrderType.DINE_IN}>
       <TablesTabs>
         {/* Only render FloorPlanHandler after sectors are loaded to prevent flicker */}
         {sectorsLoaded ? (

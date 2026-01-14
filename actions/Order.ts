@@ -995,7 +995,10 @@ export async function tableHasActiveOrders(tableId: string) {
 }
 
 // Get products available for ordering (branch-specific with prices)
-export async function getAvailableProductsForOrder(branchId: string) {
+export async function getAvailableProductsForOrder(
+  branchId: string,
+  orderType: OrderType = OrderType.DINE_IN
+) {
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -1018,11 +1021,7 @@ export async function getAvailableProductsForOrder(branchId: string) {
             branchId,
           },
           include: {
-            prices: {
-              where: {
-                type: "DINE_IN",
-              },
-            },
+            prices: true,  // Fetch all price types for fallback logic
           },
         },
       },
@@ -1039,14 +1038,26 @@ export async function getAvailableProductsForOrder(branchId: string) {
     });
 
     // Transform to include price directly and convert Decimal to number
-    const productsWithPrice = products.map((product) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      categoryId: product.categoryId,
-      category: product.category,
-      price: Number(product.branches[0]?.prices[0]?.price ?? 0),
-    }));
+    const productsWithPrice = products.map((product) => {
+      const branchPrices = product.branches[0]?.prices || [];
+
+      // Try to find price matching orderType
+      let priceObj = branchPrices.find((p) => p.type === orderType);
+
+      // Fallback to DINE_IN if orderType price not found
+      if (!priceObj && orderType !== "DINE_IN") {
+        priceObj = branchPrices.find((p) => p.type === "DINE_IN");
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        categoryId: product.categoryId,
+        category: product.category,
+        price: Number(priceObj?.price ?? 0),
+      };
+    });
 
     return productsWithPrice;
   } catch (error) {
@@ -1803,14 +1814,6 @@ export async function closeTableWithPayment(data: {
   try {
     const { orderId, payments, sessionId, userId, isPartialClose } = data;
 
-    // Validate payments array
-    if (!payments || payments.length === 0) {
-      return {
-        success: false,
-        error: "At least one payment method is required",
-      };
-    }
-
     const result = await prisma.$transaction(async (tx) => {
       // Get the order with items and table
       const order = await tx.order.findUnique({
@@ -1859,8 +1862,13 @@ export async function closeTableWithPayment(data: {
         subtotal * (Number(order.discountPercentage) / 100);
       const total = subtotal - discountAmount;
 
+      // Validate payments array - allow empty if total is $0
+      if ((!payments || payments.length === 0) && total > 0.01) {
+        throw new Error("At least one payment method is required");
+      }
+
       // Validate payment amounts match total
-      const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
+      const totalPayment = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
 
       // Allow small rounding differences (0.01)
       if (Math.abs(totalPayment - total) > 0.01) {
@@ -1872,27 +1880,29 @@ export async function closeTableWithPayment(data: {
       }
 
       // Create cash movements for each payment
-      for (const payment of payments) {
-        await tx.cashMovement.create({
-          data: {
-            sessionId,
-            type: "SALE",
-            paymentMethod: payment.method,
-            amount: payment.amount,
-            description: `Table ${order.table?.number || "N/A"} - Order ${
-              order.publicCode
-            }`,
-            orderId: order.id,
-            createdBy: userId,
-          },
-        });
+      if (payments && payments.length > 0) {
+        for (const payment of payments) {
+          await tx.cashMovement.create({
+            data: {
+              sessionId,
+              type: "SALE",
+              paymentMethod: payment.method,
+              amount: payment.amount,
+              description: `Table ${order.table?.number || "N/A"} - Order ${
+                order.publicCode
+              }`,
+              orderId: order.id,
+              createdBy: userId,
+            },
+          });
+        }
       }
 
       // Determine primary payment method for the order
-      // Use the method with the highest amount
-      const primaryPayment = payments.reduce((max, p) =>
-        p.amount > max.amount ? p : max
-      );
+      // Use the method with the highest amount, or default to CASH if no payments
+      const primaryPayment = payments && payments.length > 0
+        ? payments.reduce((max, p) => p.amount > max.amount ? p : max)
+        : { method: "CASH" as const, amount: 0 };
 
       // Map extended payment method to Order's PaymentMethod enum
       let orderPaymentMethod: PaymentMethod;

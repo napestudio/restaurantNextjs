@@ -262,7 +262,8 @@ export function CloseOrderDialog({
         amount: parseFloat(p.amount),
       }));
 
-    if (validPayments.length === 0) {
+    // Allow closing with no payments if total is $0
+    if (validPayments.length === 0 && total > 0.01) {
       setError("Ingresa al menos un monto de pago");
       return;
     }
