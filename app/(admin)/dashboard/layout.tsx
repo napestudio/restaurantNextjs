@@ -4,6 +4,8 @@ import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
 import { isUserAdmin } from "@/lib/permissions";
 import { QzTrayProviderWrapper } from "@/components/providers/qz-tray-provider-wrapper";
+import { getCurrentUserBranchId } from "@/lib/user-branch";
+import { hasBranchPrinters } from "@/actions/PrinterQz";
 
 export const metadata: Metadata = {
   title: "Kiku Sushi - Panel de Administración",
@@ -39,15 +41,32 @@ export default async function DashboardLayout({
   // Pre-fetch admin status to pass to nav (avoids redundant auth calls)
   const hasAdminRole = await isUserAdmin(session.user.id);
 
+  // Get user's branch and check if they have printers
+  const branchId = await getCurrentUserBranchId();
+  const shouldLoadQzTray = branchId ? await hasBranchPrinters(branchId) : false;
+
+  if (shouldLoadQzTray) {
+    return (
+      <QzTrayProviderWrapper>
+        <div className="min-h-screen bg-gray-50 w-full">
+          <DashboardNav
+            userName={session.user.name || session.user.email || ""}
+            hasAdminRole={hasAdminRole}
+          />
+          <main className="mx-auto">{children}</main>
+        </div>
+      </QzTrayProviderWrapper>
+    );
+  }
+
+  // No printers - render without QZ Tray
   return (
-    <QzTrayProviderWrapper>
-      <div className="min-h-screen bg-gray-50 w-full">
-        <DashboardNav
-          userName={session.user.name || session.user.email || ""}
-          hasAdminRole={hasAdminRole}
-        />
-        <main className="mx-auto">{children}</main>
-      </div>
-    </QzTrayProviderWrapper>
+    <div className="min-h-screen bg-gray-50 w-full">
+      <DashboardNav
+        userName={session.user.name || session.user.email || ""}
+        hasAdminRole={hasAdminRole}
+      />
+      <main className="mx-auto">{children}</main>
+    </div>
   );
 }
