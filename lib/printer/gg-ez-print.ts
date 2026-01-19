@@ -63,6 +63,13 @@ export class GgEzPrintClient {
   }
 
   /**
+   * Check if WebSocket is currently connected (synchronous check)
+   */
+  public get isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  /**
    * Connect to gg-ez-print WebSocket server
    */
   public connect(): void {

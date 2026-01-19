@@ -115,16 +115,22 @@ export function CreatePrinterDialog({
       }
 
       // Try to connect if not connected
-      if (!ggEzPrint.isConnected) {
+      if (!ggEzPrint.client.isConnected) {
         console.log(
           "[CreatePrinterDialog] Not connected, attempting to connect...",
         );
         ggEzPrint.connect();
 
-        // Wait a bit for connection to establish
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Wait for connection with polling (max 3 seconds)
+        const maxAttempts = 15; // 15 attempts * 200ms = 3 seconds
+        let attempts = 0;
 
-        if (!ggEzPrint.isConnected) {
+        while (!ggEzPrint.client.isConnected && attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          attempts++;
+        }
+
+        if (!ggEzPrint.client.isConnected) {
           setError(
             "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose en localhost:8080?",
           );
@@ -136,12 +142,12 @@ export function CreatePrinterDialog({
       console.log("[CreatePrinterDialog] Connected, refreshing printers...");
 
       // Refresh printer list from gg-ez-print
-      await ggEzPrint.refreshPrinters();
+      const discoveredPrinters = await ggEzPrint.refreshPrinters();
 
-      console.log("[CreatePrinterDialog] Found printers:", ggEzPrint.printers);
-      setDiscoveredPrinters(ggEzPrint.printers);
+      console.log("[CreatePrinterDialog] Found printers:", discoveredPrinters);
+      setDiscoveredPrinters(discoveredPrinters);
 
-      if (ggEzPrint.printers.length === 0) {
+      if (discoveredPrinters.length === 0) {
         setError(
           "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema.",
         );
