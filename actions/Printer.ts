@@ -406,9 +406,7 @@ export async function testPrinter(id: string) {
         name: printer.name,
         model: printer.model,
         connectionType: printer.connectionType,
-        ...(printer.connectionType === "NETWORK"
-          ? { ip: printer.ipAddress, port: printer.port }
-          : { usbPath: printer.usbPath, baudRate: printer.baudRate }),
+        systemName: printer.systemName,
       },
       branch: printer.branch.name,
       station: printer.station?.name || "Sin estación",
@@ -426,16 +424,10 @@ export async function testPrinter(id: string) {
     });
 
     // Build printer config based on connection type
-    // Note: This uses direct TCP and only works for network printers
-    // For full support (USB + network), use the new QZ Tray flow via PrinterQz.ts
+    // Note: This uses gg-ez-print for both USB and network printers
     const printerConfig = {
       connectionType: printer.connectionType,
-      // Network config
-      ipAddress: printer.ipAddress || undefined,
-      port: printer.port,
-      // USB config
-      usbPath: printer.usbPath || undefined,
-      baudRate: printer.baudRate,
+      systemName: printer.systemName,
       // Paper config
       paperWidth: printer.paperWidth,
       charactersPerLine: printer.charactersPerLine,
@@ -619,15 +611,10 @@ export async function autoPrintOrderItems(
 
     for (const printer of printers) {
       // Build printer config based on connection type
-      // Note: This uses direct TCP and only works for network printers
+      // Note: This uses gg-ez-print for both USB and network printers
       const printerConfig = {
         connectionType: printer.connectionType,
-        // Network config
-        ipAddress: printer.ipAddress || undefined,
-        port: printer.port,
-        // USB config
-        usbPath: printer.usbPath || undefined,
-        baudRate: printer.baudRate,
+        systemName: printer.systemName,
         // Paper config
         paperWidth: printer.paperWidth,
         charactersPerLine: printer.charactersPerLine,
@@ -651,8 +638,8 @@ export async function autoPrintOrderItems(
           stationItems = [];
         }
       } else {
-        alert(
-          `[autoPrintOrderItems] Printer has no station, will print all items`
+        console.log(
+          `[autoPrintOrderItems] Printer ${printer.name} has no station, will print all items`
         );
       }
 
@@ -771,15 +758,10 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
 
     for (const printer of printers) {
       // Build printer config based on connection type
-      // Note: This uses direct TCP and only works for network printers
+      // Note: This uses gg-ez-print for both USB and network printers
       const printerConfig = {
         connectionType: printer.connectionType,
-        // Network config
-        ipAddress: printer.ipAddress || undefined,
-        port: printer.port,
-        // USB config
-        usbPath: printer.usbPath || undefined,
-        baudRate: printer.baudRate,
+        systemName: printer.systemName,
         // Paper config
         paperWidth: printer.paperWidth,
         charactersPerLine: printer.charactersPerLine,
