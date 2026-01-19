@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
 import { isUserAdmin } from "@/lib/permissions";
-import { QzTrayProviderWrapper } from "@/components/providers/qz-tray-provider-wrapper";
+import { GgEzPrintProvider } from "@/contexts/gg-ez-print-context";
 import { getCurrentUserBranchId } from "@/lib/user-branch";
 import { hasBranchPrinters } from "@/actions/PrinterQz";
 
@@ -43,11 +43,11 @@ export default async function DashboardLayout({
 
   // Get user's branch and check if they have printers
   const branchId = await getCurrentUserBranchId();
-  const shouldLoadQzTray = branchId ? await hasBranchPrinters(branchId) : false;
+  const shouldLoadGgEzPrint = branchId ? await hasBranchPrinters(branchId) : false;
 
-  if (shouldLoadQzTray) {
+  if (shouldLoadGgEzPrint) {
     return (
-      <QzTrayProviderWrapper>
+      <GgEzPrintProvider>
         <div className="min-h-screen bg-gray-50 w-full">
           <DashboardNav
             userName={session.user.name || session.user.email || ""}
@@ -55,11 +55,11 @@ export default async function DashboardLayout({
           />
           <main className="mx-auto">{children}</main>
         </div>
-      </QzTrayProviderWrapper>
+      </GgEzPrintProvider>
     );
   }
 
-  // No printers - render without QZ Tray
+  // No printers - render without gg-ez-print
   return (
     <div className="min-h-screen bg-gray-50 w-full">
       <DashboardNav

@@ -16,10 +16,8 @@ import {
 
 export interface PrinterTarget {
   type: "network" | "usb";
-  ipAddress?: string;
-  port?: number;
-  printerName?: string;
-  usbPath?: string;
+  systemName: string; // Windows printer name (USB) or IP address (Network)
+  printerName?: string; // Display name
   copies?: number;
 }
 
@@ -44,10 +42,7 @@ export interface PreparedPrintResult {
 
 function buildPrinterConfig(printer: {
   connectionType: string;
-  ipAddress: string | null;
-  port: number;
-  usbPath: string | null;
-  baudRate: number;
+  systemName: string;
   paperWidth: number;
   charactersPerLine: number;
   ticketHeader?: string | null;
@@ -59,10 +54,7 @@ function buildPrinterConfig(printer: {
 }): PrinterConfig {
   return {
     connectionType: printer.connectionType as "NETWORK" | "USB",
-    ipAddress: printer.ipAddress || undefined,
-    port: printer.port,
-    usbPath: printer.usbPath || undefined,
-    baudRate: printer.baudRate,
+    systemName: printer.systemName,
     paperWidth: printer.paperWidth,
     charactersPerLine: printer.charactersPerLine,
     ticketHeader: printer.ticketHeader,
@@ -76,24 +68,14 @@ function buildPrinterConfig(printer: {
 
 function buildPrinterTarget(printer: {
   connectionType: string;
-  ipAddress: string | null;
-  port: number;
-  usbPath: string | null;
+  systemName: string;
   name: string;
   printCopies: number;
 }): PrinterTarget {
-  if (printer.connectionType === "USB") {
-    return {
-      type: "usb",
-      printerName: printer.name,
-      usbPath: printer.usbPath || undefined,
-      copies: printer.printCopies,
-    };
-  }
   return {
-    type: "network",
-    ipAddress: printer.ipAddress || undefined,
-    port: printer.port,
+    type: printer.connectionType === "USB" ? "usb" : "network",
+    systemName: printer.systemName,
+    printerName: printer.name,
     copies: printer.printCopies,
   };
 }

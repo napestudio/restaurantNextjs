@@ -14,14 +14,10 @@ import { printTestPage } from "@/lib/printer/escpos";
 const printerInputSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   description: z.string().optional(),
+  // System identifier used by gg-ez-print (Windows printer name or IP address)
+  systemName: z.string().min(1, "El identificador del sistema es requerido"),
   // Connection type
   connectionType: z.enum(["NETWORK", "USB"]).default("NETWORK"),
-  // Network configuration (required for NETWORK type)
-  ipAddress: z.string().optional().nullable(),
-  port: z.number().min(1).max(65535).default(9100),
-  // USB/Serial configuration (required for USB type)
-  usbPath: z.string().optional().nullable(),
-  baudRate: z.number().min(1200).max(115200).default(9600),
   // Other fields
   model: z.string().optional(),
   branchId: z.string().min(1, "La sucursal es requerida"),
@@ -41,18 +37,6 @@ const printerInputSchema = z.object({
   // Control ticket formatting (0=small, 1=normal, 2=big)
   controlTicketFontSize: z.number().min(0).max(2).default(1),
   controlTicketSpacing: z.number().min(0).max(2).default(1),
-}).refine((data) => {
-  // Validate that network printers have IP address
-  if (data.connectionType === "NETWORK" && !data.ipAddress) {
-    return false;
-  }
-  // Validate that USB printers have usbPath
-  if (data.connectionType === "USB" && !data.usbPath) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Se requiere dirección IP para impresoras de red o puerto USB para impresoras USB",
 });
 
 const printerSchema = printerInputSchema.transform((data) => ({
@@ -85,12 +69,10 @@ export async function createPrinter(data: z.input<typeof printerSchema>) {
       data: {
         name: validatedData.name,
         description: validatedData.description,
+        // System identifier for gg-ez-print
+        systemName: validatedData.systemName,
         // Connection configuration
         connectionType: validatedData.connectionType as PrinterConnectionType,
-        ipAddress: validatedData.ipAddress,
-        port: validatedData.port,
-        usbPath: validatedData.usbPath,
-        baudRate: validatedData.baudRate,
         // Other fields
         model: validatedData.model,
         branchId: validatedData.branchId,
@@ -237,14 +219,12 @@ export async function updatePrinter(
         ...(data.description !== undefined && {
           description: data.description,
         }),
+        // System identifier for gg-ez-print
+        ...(data.systemName !== undefined && { systemName: data.systemName }),
         // Connection configuration
         ...(data.connectionType !== undefined && {
           connectionType: data.connectionType as PrinterConnectionType,
         }),
-        ...(data.ipAddress !== undefined && { ipAddress: data.ipAddress }),
-        ...(data.port !== undefined && { port: data.port }),
-        ...(data.usbPath !== undefined && { usbPath: data.usbPath }),
-        ...(data.baudRate !== undefined && { baudRate: data.baudRate }),
         // Other fields
         ...(data.model !== undefined && { model: data.model }),
         ...(data.stationId !== undefined && { stationId: data.stationId }),
@@ -892,10 +872,10 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
  * Use the useQzTrayContext().printers to get available printers.
  */
 export async function discoverUsbPrinters() {
-  // This function is deprecated - printer discovery is now done client-side via QZ Tray
+  // This function is deprecated - printer discovery is now done client-side via gg-ez-print WebSocket
   return {
     success: false,
-    error: "La detección de impresoras ahora se realiza desde el navegador con QZ Tray",
+    error: "La detección de impresoras ahora se realiza desde el navegador con gg-ez-print",
     printers: [],
   };
 }

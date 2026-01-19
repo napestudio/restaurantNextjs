@@ -11,13 +11,8 @@ export interface PrinterConfig {
   // Connection type
   connectionType?: "NETWORK" | "USB"; // Default: NETWORK
 
-  // Network configuration (for NETWORK type)
-  ipAddress?: string;
-  port?: number;
-
-  // USB/Serial configuration (for USB type)
-  usbPath?: string; // COM port path (e.g., "COM3")
-  baudRate?: number; // Serial baud rate (default: 9600)
+  // System identifier for gg-ez-print (Windows printer name or IP address)
+  systemName: string;
 
   // Paper configuration
   paperWidth: number; // 58 or 80 mm
