@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useQzTrayOptional } from "@/contexts/qz-tray-context";
+import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
 import {
   prepareTestPrint,
   prepareOrderItemsPrint,
@@ -10,7 +10,7 @@ import {
   hasBranchControlTicketPrinters,
   type PrintJobData,
 } from "@/actions/PrinterQz";
-import type { PrinterTarget } from "@/lib/printer/qz-tray";
+import type { PrintRequest } from "@/lib/printer/gg-ez-print";
 
 // ============================================================================
 // TYPES
@@ -80,12 +80,12 @@ export interface UsePrintReturn {
  * Flow:
  * 1. Call server action to prepare print jobs (get ESC/POS data)
  * 2. Optimistically show "printing" status
- * 3. Send to QZ Tray
+ * 3. Send to gg-ez-print
  * 4. Update server with results
  * 5. Show final status
  */
 export function usePrint(): UsePrintReturn {
-  const qz = useQzTrayOptional();
+  const ggEzPrint = useGgEzPrintOptional();
   const [printStatus, setPrintStatus] = useState<PrintStatus>({ status: "idle" });
 
   const resetStatus = useCallback(() => {
@@ -93,7 +93,7 @@ export function usePrint(): UsePrintReturn {
   }, []);
 
   /**
-   * Execute print jobs via QZ Tray
+   * Execute print jobs via gg-ez-print
    */
   const executePrintJobs = useCallback(
     async (
@@ -106,12 +106,22 @@ export function usePrint(): UsePrintReturn {
         return { success: true, successCount: 0, failCount: 0 };
       }
 
-      // Check if QZ Tray context is available
-      if (!qz) {
-        console.debug("[usePrint] QZ Tray context not available - printing disabled for this session");
+      // Check if gg-ez-print context is available
+      if (!ggEzPrint) {
+        console.debug("[usePrint] gg-ez-print context not available - printing disabled for this session");
         setPrintStatus({
           status: "error",
-          message: "QZ Tray no está disponible. Asegúrate de que esté instalado y ejecutándose, y recarga la página.",
+          message: "gg-ez-print no está disponible. Asegúrate de que esté instalado y ejecutándose, y recarga la página.",
+        });
+        return { success: false, successCount: 0, failCount: jobs.length };
+      }
+
+      // Check if connected
+      if (!ggEzPrint.isConnected) {
+        console.debug("[usePrint] gg-ez-print not connected");
+        setPrintStatus({
+          status: "error",
+          message: "No conectado a gg-ez-print. Verifica que el servicio esté ejecutándose.",
         });
         return { success: false, successCount: 0, failCount: jobs.length };
       }
@@ -128,39 +138,42 @@ export function usePrint(): UsePrintReturn {
         const job = jobs[i];
         const printJobId = printJobIds[Math.floor(i / (job.copies || 1))] || printJobIds[0];
 
-        const target: PrinterTarget = job.target.type === "network"
-          ? {
-              type: "network",
-              ipAddress: job.target.ipAddress,
-              port: job.target.port,
-            }
-          : {
-              type: "usb",
-              printerName: job.target.printerName,
-              usbPath: job.target.usbPath,
-            };
+        // Build PrintRequest for gg-ez-print
+        const printRequest: PrintRequest = {
+          printer_name: job.target.systemName,
+          type: job.target.type === "network" ? "Network" : "USB",
+          content: job.escPosData,
+          font_size: 1, // Default font size
+          paper_width: 80, // Default paper width (could be passed from job if needed)
+        };
 
-        console.debug("[usePrint] Sending to printer:", target);
-        const result = await qz.print(target, job.escPosData);
-        console.debug("[usePrint] Print result for job", i, ":", result);
+        console.debug("[usePrint] Sending to gg-ez-print:", printRequest.printer_name, printRequest.type);
 
-        if (result.success) {
+        try {
+          await ggEzPrint.print(printRequest);
+          console.debug("[usePrint] Print success for job", i);
           successCount++;
-        } else {
+          results.push({
+            printJobId,
+            success: true,
+          });
+        } catch (error) {
           failCount++;
-          // Use warn for expected failures (network issues), error for unexpected
-          if (result.error?.includes("timeout") || result.error?.includes("Connection") || result.error?.includes("conectar")) {
-            console.warn("[usePrint] Printer unreachable:", result.error);
-          } else {
-            console.error("[usePrint] Print failed:", result.error);
-          }
-        }
+          const errorMessage = error instanceof Error ? error.message : "Error desconocido";
 
-        results.push({
-          printJobId,
-          success: result.success,
-          error: result.error,
-        });
+          // Use warn for expected failures (network issues), error for unexpected
+          if (errorMessage.includes("timeout") || errorMessage.includes("Connection") || errorMessage.includes("conectar")) {
+            console.warn("[usePrint] Printer unreachable:", errorMessage);
+          } else {
+            console.error("[usePrint] Print failed:", errorMessage);
+          }
+
+          results.push({
+            printJobId,
+            success: false,
+            error: errorMessage,
+          });
+        }
       }
 
       // Update server with results (fire and forget - don't block UI)
@@ -168,7 +181,7 @@ export function usePrint(): UsePrintReturn {
 
       return { success: failCount === 0, successCount, failCount };
     },
-    [qz]
+    [ggEzPrint]
   );
 
   /**

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx shadcn@latest add:*)",
       "Read(//c/dev/RestaurantesNextjs/restaurantNextJs/app/(admin)/dashboard/tables/**)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx prisma db execute:*)"
     ],
     "deny": [],
     "ask": []

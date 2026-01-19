@@ -776,19 +776,14 @@ model StationCategory {
 // Physical thermal printers
 model Printer {
   id          String        @id @default(cuid())
-  name        String // "Kitchen Printer 1", "Bar Printer"
+  name        String // User-friendly name: "Kitchen Printer 1", "Bar Printer"
   description String?
+
+  // System identifier used by gg-ez-print
+  systemName  String @default("NEEDS_RECONFIGURATION") // Windows printer name (USB) or IP address (Network)
 
   // Connection configuration
   connectionType PrinterConnectionType @default(NETWORK)
-
-  // Network configuration (for NETWORK type)
-  ipAddress String? // IP address for network printers
-  port      Int     @default(9100) // Default ESC/POS port
-
-  // USB/Serial configuration (for USB type)
-  usbPath  String? // COM port path (e.g., "COM3", "COM4")
-  baudRate Int     @default(9600) // Serial baud rate
 
   // Printer details
   model    String? // "Epson TM-T88VI", "Star TSP143III", etc.
