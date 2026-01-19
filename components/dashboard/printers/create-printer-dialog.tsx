@@ -108,34 +108,50 @@ export function CreatePrinterDialog({
       // Use gg-ez-print for printer discovery (client-side)
       if (!ggEzPrint) {
         setError(
-          "gg-ez-print no está disponible. Asegúrate de que el servicio esté ejecutándose."
+          "gg-ez-print no está disponible. Asegúrate de que el servicio esté ejecutándose.",
         );
+        setIsDiscovering(false);
         return;
       }
 
-      // Check connection
+      // Try to connect if not connected
       if (!ggEzPrint.isConnected) {
-        setError(
-          "No conectado a gg-ez-print. ¿Está el servicio ejecutándose en localhost:8080?"
+        console.log(
+          "[CreatePrinterDialog] Not connected, attempting to connect...",
         );
-        return;
+        ggEzPrint.connect();
+
+        // Wait a bit for connection to establish
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        if (!ggEzPrint.isConnected) {
+          setError(
+            "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose en localhost:8080?",
+          );
+          setIsDiscovering(false);
+          return;
+        }
       }
+
+      console.log("[CreatePrinterDialog] Connected, refreshing printers...");
 
       // Refresh printer list from gg-ez-print
       await ggEzPrint.refreshPrinters();
 
+      console.log("[CreatePrinterDialog] Found printers:", ggEzPrint.printers);
       setDiscoveredPrinters(ggEzPrint.printers);
 
       if (ggEzPrint.printers.length === 0) {
         setError(
-          "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema."
+          "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema.",
         );
       }
     } catch (err) {
+      console.error("[CreatePrinterDialog] Error discovering printers:", err);
       setError(
         err instanceof Error
           ? err.message
-          : "Error al buscar impresoras con gg-ez-print"
+          : "Error al buscar impresoras con gg-ez-print",
       );
     } finally {
       setIsDiscovering(false);
@@ -247,7 +263,7 @@ export function CreatePrinterDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Connection Type Selection */}
+          {/* Connection Type Selection - MOVED TO TOP */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm">Tipo de Conexión</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -303,6 +319,76 @@ export function CreatePrinterDialog({
             </div>
           </div>
 
+          {/* Printer Selection/IP - MOVED TO TOP, RIGHT AFTER CONNECTION TYPE */}
+          <div className="space-y-4">
+            {connectionType === "NETWORK" ? (
+              <div className="space-y-2">
+                <Label htmlFor="systemName">Dirección IP *</Label>
+                <Input
+                  id="systemName"
+                  value={systemName}
+                  onChange={(e) => setSystemName(e.target.value)}
+                  placeholder="192.168.1.100"
+                  disabled={isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Dirección IP de la impresora de red (puerto 9100)
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="systemName">Impresora del Sistema *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDiscoverPrinters}
+                    disabled={isPending || isDiscovering}
+                  >
+                    {isDiscovering ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Buscar Impresoras
+                  </Button>
+                </div>
+
+                {discoveredPrinters.length > 0 ? (
+                  <Select
+                    value={systemName}
+                    onValueChange={setSystemName}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger className="w-full" id="systemName">
+                      <SelectValue placeholder="Selecciona una impresora" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                      {discoveredPrinters.map((printer) => (
+                        <SelectItem key={printer.name} value={printer.name}>
+                          {printer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="systemName"
+                    value={systemName}
+                    onChange={(e) => setSystemName(e.target.value)}
+                    placeholder="Nombre de la impresora Windows"
+                    disabled={isPending}
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Nombre exacto de la impresora como aparece en Windows
+                  (sensible a mayúsculas)
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-sm">Información Básica</h3>
@@ -325,6 +411,17 @@ export function CreatePrinterDialog({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descripción opcional..."
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="model">Modelo</Label>
+              <Input
+                id="model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="Epson TM-T88VI"
                 disabled={isPending}
               />
             </div>
@@ -353,96 +450,6 @@ export function CreatePrinterDialog({
               <p className="text-xs text-muted-foreground">
                 Asigna la impresora a una estación de trabajo
               </p>
-            </div>
-          </div>
-
-          {/* Connection Configuration */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-medium text-sm">
-              {connectionType === "NETWORK"
-                ? "Configuración de Red"
-                : "Configuración USB"}
-            </h3>
-
-            {connectionType === "NETWORK" ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="systemName">Dirección IP *</Label>
-                  <Input
-                    id="systemName"
-                    value={systemName}
-                    onChange={(e) => setSystemName(e.target.value)}
-                    placeholder="192.168.1.100"
-                    disabled={isPending}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Dirección IP de la impresora de red (puerto 9100)
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="systemName">Impresora del Sistema *</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDiscoverPrinters}
-                      disabled={isPending || isDiscovering}
-                    >
-                      {isDiscovering ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Buscar Impresoras
-                    </Button>
-                  </div>
-
-                  {discoveredPrinters.length > 0 ? (
-                    <Select
-                      value={systemName}
-                      onValueChange={setSystemName}
-                      disabled={isPending}
-                    >
-                      <SelectTrigger id="systemName">
-                        <SelectValue placeholder="Selecciona una impresora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {discoveredPrinters.map((printer) => (
-                          <SelectItem key={printer.name} value={printer.name}>
-                            {printer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      id="systemName"
-                      value={systemName}
-                      onChange={(e) => setSystemName(e.target.value)}
-                      placeholder="Nombre de la impresora Windows"
-                      disabled={isPending}
-                    />
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Nombre exacto de la impresora como aparece en Windows (sensible a mayúsculas)
-                  </p>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="model">Modelo</Label>
-              <Input
-                id="model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="Epson TM-T88VI"
-                disabled={isPending}
-              />
             </div>
           </div>
 

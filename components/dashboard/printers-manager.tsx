@@ -7,23 +7,20 @@ import {
   Plus,
   Search,
   Printer as PrinterIcon,
-  Wifi,
-  WifiOff,
-  AlertCircle,
   Settings,
-  Power,
-  PowerOff,
   Trash2,
   HelpCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import type { Printer, PrinterStatus, Station } from "@/app/generated/prisma";
+import type { Printer, Station } from "@/app/generated/prisma";
 import { CreatePrinterDialog } from "./printers/create-printer-dialog";
 import { PrinterDetailsSidebar } from "./printers/printer-details-sidebar";
 import { CreateStationDialog } from "./printers/create-station-dialog";
 import { StationDetailsSidebar } from "./printers/station-details-sidebar";
+import { PrintersTable } from "./printers/printers-table";
+import { GgEzPrintConnectionStatus } from "./printers/gg-ez-print-connection-status";
 import { deleteStation } from "@/actions/Station";
 import {
   AlertDialog,
@@ -54,21 +51,6 @@ interface PrintersManagerProps {
   initialPrinters: PrinterWithStation[];
   initialStations: StationWithCounts[];
 }
-
-const PRINTER_STATUS_LABELS: Record<PrinterStatus, string> = {
-  ONLINE: "En línea",
-  OFFLINE: "Fuera de línea",
-  ERROR: "Error",
-};
-
-const PRINTER_STATUS_COLORS: Record<
-  PrinterStatus,
-  { badge: string; icon: string }
-> = {
-  ONLINE: { badge: "bg-green-100 text-green-800", icon: "text-green-600" },
-  OFFLINE: { badge: "bg-gray-100 text-gray-800", icon: "text-gray-600" },
-  ERROR: { badge: "bg-red-100 text-red-800", icon: "text-red-600" },
-};
 
 export function PrintersManager({
   branchId,
@@ -114,11 +96,11 @@ export function PrintersManager({
     setPrinters((prev) => [printerWithStation, ...prev]);
     setCreatePrinterOpen(false);
 
-    // If this was the first printer, auto-reload to activate QZ Tray
+    // If this was the first printer, auto-reload to activate gg-ez-print
     if (isFirstPrinter) {
       toast({
         title: "Impresora creada",
-        description: "Recargando página para activar QZ Tray...",
+        description: "Recargando página para activar gg-ez-print...",
         duration: 2000,
       });
       setTimeout(() => window.location.reload(), 2000);
@@ -136,13 +118,13 @@ export function PrintersManager({
 
   const handlePrinterUpdated = (updatedPrinter: PrinterWithStation) => {
     setPrinters((prev) =>
-      prev.map((p) => (p.id === updatedPrinter.id ? updatedPrinter : p))
+      prev.map((p) => (p.id === updatedPrinter.id ? updatedPrinter : p)),
     );
   };
 
   const handleStationUpdated = (updatedStation: StationWithCounts) => {
     setStations((prev) =>
-      prev.map((s) => (s.id === updatedStation.id ? updatedStation : s))
+      prev.map((s) => (s.id === updatedStation.id ? updatedStation : s)),
     );
   };
 
@@ -212,26 +194,13 @@ export function PrintersManager({
       const query = searchQuery.toLowerCase();
       return (
         printer.name.toLowerCase().includes(query) ||
-        printer.ipAddress?.toLowerCase().includes(query) ||
-        printer.usbPath?.toLowerCase().includes(query) ||
+        printer.systemName?.toLowerCase().includes(query) ||
         printer.model?.toLowerCase().includes(query) ||
         printer.station?.name.toLowerCase().includes(query)
       );
     }
     return true;
   });
-
-  const StatusIcon = ({ status }: { status: PrinterStatus }) => {
-    const iconClass = `h-5 w-5 ${PRINTER_STATUS_COLORS[status].icon}`;
-    switch (status) {
-      case "ONLINE":
-        return <Wifi className={iconClass} />;
-      case "OFFLINE":
-        return <WifiOff className={iconClass} />;
-      case "ERROR":
-        return <AlertCircle className={iconClass} />;
-    }
-  };
 
   return (
     <div className="p-6">
@@ -252,6 +221,11 @@ export function PrintersManager({
         </div>
 
         <TabsContent value="printers" className="space-y-4">
+          {/* Connection Status */}
+          <div className="flex items-center justify-between">
+            <GgEzPrintConnectionStatus />
+          </div>
+
           {/* Printers Header */}
           <div className="flex items-center justify-between">
             <div className="relative flex-1 max-w-md">
@@ -264,15 +238,13 @@ export function PrintersManager({
               />
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  window.open("/dashboard/ayuda/qz-tray", "_blank")
-                }
+              <Link
+                href="/dashboard/ayuda/qz-tray"
+                className="flex items-center gap-2"
               >
                 <HelpCircle className="h-4 w-4 " />
                 Guía de instalación
-              </Button>
+              </Link>
               <Button
                 onClick={() => setCreatePrinterOpen(true)}
                 className="bg-red-500 hover:bg-red-600"
@@ -304,103 +276,10 @@ export function PrintersManager({
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-lg border overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                      Nombre
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                      Conexión
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                      Estado
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                      Estación
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                      Auto-impresión
-                    </th>
-                    <th className="text-center py-3 px-4 text-sm font-medium text-gray-600">
-                      Activa
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredPrinters.map((printer) => (
-                    <tr
-                      key={printer.id}
-                      onClick={() => handlePrinterClick(printer)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <PrinterIcon className="h-4 w-4 text-gray-700" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{printer.name}</p>
-                            {printer.model && (
-                              <p className="text-xs text-muted-foreground">
-                                {printer.model}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-mono text-sm">
-                          {printer.connectionType === "USB"
-                            ? printer.usbPath
-                            : `${printer.ipAddress}:${printer.port}`}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <StatusIcon status={printer.status} />
-                          <Badge
-                            className={cn(
-                              "text-xs",
-                              PRINTER_STATUS_COLORS[printer.status].badge
-                            )}
-                          >
-                            {PRINTER_STATUS_LABELS[printer.status]}
-                          </Badge>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {printer.station ? (
-                          <Badge
-                            style={{ backgroundColor: printer.station.color }}
-                            className="text-white"
-                          >
-                            {printer.station.name}
-                          </Badge>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-sm">
-                          {printer.autoPrint ? "Sí" : "No"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {printer.isActive ? (
-                          <Power className="h-4 w-4 text-green-600 mx-auto" />
-                        ) : (
-                          <PowerOff className="h-4 w-4 text-gray-400 mx-auto" />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PrintersTable
+              printers={filteredPrinters}
+              onPrinterClick={handlePrinterClick}
+            />
           )}
         </TabsContent>
 

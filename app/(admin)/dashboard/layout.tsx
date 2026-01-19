@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
 import { isUserAdmin } from "@/lib/permissions";
-import { GgEzPrintProvider } from "@/contexts/gg-ez-print-context";
+import { ConditionalGgEzPrintProvider } from "@/components/providers/conditional-gg-ez-print-provider";
 import { getCurrentUserBranchId } from "@/lib/user-branch";
 import { hasBranchPrinters } from "@/actions/PrinterQz";
 
@@ -41,32 +41,19 @@ export default async function DashboardLayout({
   // Pre-fetch admin status to pass to nav (avoids redundant auth calls)
   const hasAdminRole = await isUserAdmin(session.user.id);
 
-  // Get user's branch and check if they have printers
+  // Check if branch has printers (for conditional loading of gg-ez-print)
   const branchId = await getCurrentUserBranchId();
-  const shouldLoadGgEzPrint = branchId ? await hasBranchPrinters(branchId) : false;
+  const hasPrinters = branchId ? await hasBranchPrinters(branchId) : false;
 
-  if (shouldLoadGgEzPrint) {
-    return (
-      <GgEzPrintProvider>
-        <div className="min-h-screen bg-gray-50 w-full">
-          <DashboardNav
-            userName={session.user.name || session.user.email || ""}
-            hasAdminRole={hasAdminRole}
-          />
-          <main className="mx-auto">{children}</main>
-        </div>
-      </GgEzPrintProvider>
-    );
-  }
-
-  // No printers - render without gg-ez-print
   return (
-    <div className="min-h-screen bg-gray-50 w-full">
-      <DashboardNav
-        userName={session.user.name || session.user.email || ""}
-        hasAdminRole={hasAdminRole}
-      />
-      <main className="mx-auto">{children}</main>
-    </div>
+    <ConditionalGgEzPrintProvider hasPrinters={hasPrinters}>
+      <div className="min-h-screen bg-gray-50 w-full">
+        <DashboardNav
+          userName={session.user.name || session.user.email || ""}
+          hasAdminRole={hasAdminRole}
+        />
+        <main className="mx-auto">{children}</main>
+      </div>
+    </ConditionalGgEzPrintProvider>
   );
 }

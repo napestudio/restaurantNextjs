@@ -58,7 +58,7 @@ export class GgEzPrintClient {
   private connectionHandlers: ((connection: GgEzPrintConnection) => void)[] = [];
 
   constructor() {
-    // Start connection on instantiation
+    // Connect once on instantiation (no auto-reconnect)
     this.connect();
   }
 
@@ -92,7 +92,7 @@ export class GgEzPrintClient {
       };
 
       this.ws.onerror = (error) => {
-        console.error("gg-ez-print WebSocket error:", error);
+        console.warn("gg-ez-print WebSocket error:", error);
         this.notifyConnectionChange({
           isConnected: false,
           error: "Error de conexión con gg-ez-print",
@@ -106,16 +106,16 @@ export class GgEzPrintClient {
           error: null,
           reconnectAttempts: this.reconnectAttempts,
         });
-        this.attemptReconnect();
+        // No auto-reconnect - user must manually reconnect
       };
     } catch (error) {
-      console.error("Failed to create gg-ez-print WebSocket:", error);
+      console.warn("Failed to create gg-ez-print WebSocket:", error);
       this.notifyConnectionChange({
         isConnected: false,
         error: "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose?",
         reconnectAttempts: this.reconnectAttempts,
       });
-      this.attemptReconnect();
+      // No auto-reconnect - user must manually reconnect
     }
   }
 

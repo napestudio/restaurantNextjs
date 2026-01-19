@@ -22,7 +22,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Pencil, Wifi, Usb, RefreshCw, Loader2 } from "lucide-react";
-import { updatePrinter, discoverUsbPrinters } from "@/actions/Printer";
+import { updatePrinter } from "@/actions/Printer";
+import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
 import type {
   Station,
   Printer,
@@ -32,9 +33,7 @@ import type {
 
 interface DiscoveredPrinter {
   name: string;
-  path: string;
   type: string;
-  manufacturer?: string;
 }
 
 type PrinterWithStation = Printer & {
@@ -57,6 +56,9 @@ export function EditPrinterDialog({
   stations,
   onUpdated,
 }: EditPrinterDialogProps) {
+  // gg-ez-print context for printer discovery
+  const ggEzPrint = useGgEzPrintOptional();
+
   // Connection type
   const [connectionType, setConnectionType] =
     useState<PrinterConnectionType>("NETWORK");
@@ -67,13 +69,10 @@ export function EditPrinterDialog({
   const [model, setModel] = useState("");
   const [stationId, setStationId] = useState<string | undefined>(undefined);
 
-  // Network configuration
-  const [ipAddress, setIpAddress] = useState("");
-  const [port, setPort] = useState("9100");
+  // System identifier (replaces ipAddress/usbPath)
+  const [systemName, setSystemName] = useState("");
 
-  // USB configuration
-  const [usbPath, setUsbPath] = useState("");
-  const [baudRate, setBaudRate] = useState("9600");
+  // Printer discovery
   const [discoveredPrinters, setDiscoveredPrinters] = useState<
     DiscoveredPrinter[]
   >([]);
@@ -105,12 +104,8 @@ export function EditPrinterDialog({
       setConnectionType(printer.connectionType);
       setName(printer.name);
       setDescription(printer.description || "");
-      // Network config
-      setIpAddress(printer.ipAddress || "");
-      setPort(printer.port.toString());
-      // USB config
-      setUsbPath(printer.usbPath || "");
-      setBaudRate(printer.baudRate.toString());
+      // System identifier
+      setSystemName(printer.systemName);
       // Other fields
       setModel(printer.model || "");
       setStationId(printer.stationId || undefined);
@@ -143,22 +138,54 @@ export function EditPrinterDialog({
     setError(null);
 
     try {
-      const result = await discoverUsbPrinters();
-      if (result.success) {
-        setDiscoveredPrinters(result.printers);
-        if (result.printers.length === 0) {
-          setError(
-            "No se encontraron impresoras USB. Asegúrate de que el servicio de impresión esté activo."
-          );
-        }
-      } else {
+      // Use gg-ez-print for printer discovery (client-side)
+      if (!ggEzPrint) {
         setError(
-          result.error ||
-            "Error al buscar impresoras. Verifica que el servicio de impresión esté activo."
+          "gg-ez-print no está disponible. Asegúrate de que el servicio esté ejecutándose.",
+        );
+        setIsDiscovering(false);
+        return;
+      }
+
+      // Try to connect if not connected
+      if (!ggEzPrint.isConnected) {
+        console.log(
+          "[EditPrinterDialog] Not connected, attempting to connect...",
+        );
+        ggEzPrint.connect();
+
+        // Wait a bit for connection to establish
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        if (!ggEzPrint.isConnected) {
+          setError(
+            "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose en localhost:8080?",
+          );
+          setIsDiscovering(false);
+          return;
+        }
+      }
+
+      console.log("[EditPrinterDialog] Connected, refreshing printers...");
+
+      // Refresh printer list from gg-ez-print
+      await ggEzPrint.refreshPrinters();
+
+      console.log("[EditPrinterDialog] Found printers:", ggEzPrint.printers);
+      setDiscoveredPrinters(ggEzPrint.printers);
+
+      if (ggEzPrint.printers.length === 0) {
+        setError(
+          "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema.",
         );
       }
-    } catch {
-      setError("Error al conectar con el servicio de impresión");
+    } catch (err) {
+      console.error("[EditPrinterDialog] Error discovering printers:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al buscar impresoras con gg-ez-print",
+      );
     } finally {
       setIsDiscovering(false);
     }
@@ -170,26 +197,15 @@ export function EditPrinterDialog({
       return;
     }
 
-    // Validate based on connection type
-    if (connectionType === "NETWORK") {
-      if (!ipAddress.trim()) {
-        setError("La dirección IP es requerida");
-        return;
-      }
-      if (!validateIP(ipAddress)) {
-        setError("Dirección IP inválida");
-        return;
-      }
-      const portNum = parseInt(port);
-      if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-        setError("Puerto inválido (1-65535)");
-        return;
-      }
-    } else {
-      if (!usbPath.trim()) {
-        setError("El puerto USB es requerido");
-        return;
-      }
+    if (!systemName.trim()) {
+      setError("El identificador del sistema es requerido");
+      return;
+    }
+
+    // Validate IP format for network printers
+    if (connectionType === "NETWORK" && !validateIP(systemName)) {
+      setError("Dirección IP inválida");
+      return;
     }
 
     const copies = parseInt(printCopies);
@@ -211,13 +227,8 @@ export function EditPrinterDialog({
       const result = await updatePrinter(printer.id, {
         name: name.trim(),
         description: description.trim() || undefined,
+        systemName: systemName.trim(),
         connectionType,
-        // Network config
-        ipAddress: connectionType === "NETWORK" ? ipAddress.trim() : null,
-        port: connectionType === "NETWORK" ? parseInt(port) : 9100,
-        // USB config
-        usbPath: connectionType === "USB" ? usbPath.trim() : null,
-        baudRate: connectionType === "USB" ? parseInt(baudRate) : 9600,
         // Other fields
         model: model.trim() || undefined,
         stationId: stationId === "none" ? null : stationId,
@@ -247,9 +258,7 @@ export function EditPrinterDialog({
     }
   };
 
-  const isFormValid =
-    name.trim() &&
-    (connectionType === "NETWORK" ? ipAddress.trim() : usbPath.trim());
+  const isFormValid = name.trim() && systemName.trim();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -265,7 +274,7 @@ export function EditPrinterDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Connection Type Selection */}
+          {/* Connection Type Selection - MOVED TO TOP */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm">Tipo de Conexión</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -321,6 +330,84 @@ export function EditPrinterDialog({
             </div>
           </div>
 
+          {/* Printer Selection/IP - MOVED TO TOP, RIGHT AFTER CONNECTION TYPE */}
+          <div className="space-y-4">
+            {systemName === "NEEDS_RECONFIGURATION" && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                ⚠️ Esta impresora necesita ser reconfigurada con gg-ez-print
+              </div>
+            )}
+
+            {connectionType === "NETWORK" ? (
+              <div className="space-y-2">
+                <Label htmlFor="edit-systemName">Dirección IP *</Label>
+                <Input
+                  id="edit-systemName"
+                  value={systemName}
+                  onChange={(e) => setSystemName(e.target.value)}
+                  placeholder="192.168.1.100"
+                  disabled={isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Dirección IP de la impresora de red (puerto 9100)
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-systemName">
+                    Impresora del Sistema *
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDiscoverPrinters}
+                    disabled={isPending || isDiscovering}
+                  >
+                    {isDiscovering ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Buscar Impresoras
+                  </Button>
+                </div>
+
+                {discoveredPrinters.length > 0 ? (
+                  <Select
+                    value={systemName}
+                    onValueChange={setSystemName}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger className="w-full" id="edit-systemName">
+                      <SelectValue placeholder="Selecciona una impresora" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                      {discoveredPrinters.map((printer) => (
+                        <SelectItem key={printer.name} value={printer.name}>
+                          {printer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="edit-systemName"
+                    value={systemName}
+                    onChange={(e) => setSystemName(e.target.value)}
+                    placeholder="Nombre de la impresora Windows"
+                    disabled={isPending}
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Nombre exacto de la impresora como aparece en Windows
+                  (sensible a mayúsculas)
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-sm">Información Básica</h3>
@@ -343,6 +430,17 @@ export function EditPrinterDialog({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descripción opcional..."
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-model">Modelo</Label>
+              <Input
+                id="edit-model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="Epson TM-T88VI"
                 disabled={isPending}
               />
             </div>
@@ -372,133 +470,6 @@ export function EditPrinterDialog({
                 Asigna la impresora a una estación de trabajo. Sin estación =
                 impresora de control.
               </p>
-            </div>
-          </div>
-
-          {/* Connection Configuration */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-medium text-sm">
-              {connectionType === "NETWORK"
-                ? "Configuración de Red"
-                : "Configuración USB"}
-            </h3>
-
-            {connectionType === "NETWORK" ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-ipAddress">Dirección IP *</Label>
-                    <Input
-                      id="edit-ipAddress"
-                      value={ipAddress}
-                      onChange={(e) => setIpAddress(e.target.value)}
-                      placeholder="192.168.1.100"
-                      disabled={isPending}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-port">Puerto</Label>
-                    <Input
-                      id="edit-port"
-                      type="number"
-                      value={port}
-                      onChange={(e) => setPort(e.target.value)}
-                      placeholder="9100"
-                      disabled={isPending}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Por defecto: 9100
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="edit-usbPath">Puerto USB *</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDiscoverPrinters}
-                      disabled={isPending || isDiscovering}
-                    >
-                      {isDiscovering ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Buscar Impresoras
-                    </Button>
-                  </div>
-
-                  {discoveredPrinters.length > 0 ? (
-                    <Select
-                      value={usbPath}
-                      onValueChange={setUsbPath}
-                      disabled={isPending}
-                    >
-                      <SelectTrigger id="edit-usbPath">
-                        <SelectValue placeholder="Selecciona una impresora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {discoveredPrinters.map((printer) => (
-                          <SelectItem key={printer.path} value={printer.path}>
-                            {printer.name} ({printer.path})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      id="edit-usbPath"
-                      value={usbPath}
-                      onChange={(e) => setUsbPath(e.target.value)}
-                      placeholder="COM3"
-                      disabled={isPending}
-                    />
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Ej: COM3, COM4 (Windows) o /dev/ttyUSB0 (Linux)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-baudRate">Baud Rate</Label>
-                  <Select
-                    value={baudRate}
-                    onValueChange={setBaudRate}
-                    disabled={isPending}
-                  >
-                    <SelectTrigger id="edit-baudRate">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="9600">9600</SelectItem>
-                      <SelectItem value="19200">19200</SelectItem>
-                      <SelectItem value="38400">38400</SelectItem>
-                      <SelectItem value="57600">57600</SelectItem>
-                      <SelectItem value="115200">115200</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Velocidad de comunicación (por defecto: 9600)
-                  </p>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-model">Modelo</Label>
-              <Input
-                id="edit-model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="Epson TM-T88VI"
-                disabled={isPending}
-              />
             </div>
           </div>
 
