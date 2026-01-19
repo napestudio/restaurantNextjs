@@ -1,36 +1,45 @@
 "use client";
 
-export default function QzTraySetupPage() {
+export default function GgEzPrintSetupPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Guía de Configuración de QZ Tray</h1>
+        <h1 className="text-3xl font-bold mb-2">Guía de Configuración de gg-ez-print</h1>
         <p className="text-gray-600">
           Configura la impresión automática para tu sistema POS
         </p>
       </div>
 
-      {/* What is QZ Tray */}
+      {/* What is gg-ez-print */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-3">¿Qué es QZ Tray?</h2>
+        <h2 className="text-xl font-semibold mb-3">¿Qué es gg-ez-print?</h2>
+        <p className="text-gray-700 mb-3">
+          gg-ez-print es un servicio local que permite a tu navegador imprimir directamente a impresoras térmicas (USB y de red) sin diálogos de confirmación.
+        </p>
         <p className="text-gray-700">
-          QZ Tray es una aplicación de escritorio gratuita que permite a tu navegador imprimir directamente a impresoras locales y de red sin diálogos de confirmación.
+          Es una solución ligera y fácil de usar que se ejecuta en segundo plano y se comunica con tu navegador a través de WebSocket.
         </p>
       </div>
 
-      {/* Step 1: Install QZ Tray */}
+      {/* Step 1: Install gg-ez-print */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">1</span>
-          Instalar QZ Tray
+          Instalar gg-ez-print
         </h2>
         <ol className="list-decimal list-inside space-y-2 mb-4">
-          <li>Descarga QZ Tray desde: <a href="https://qz.io/download/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://qz.io/download/</a></li>
-          <li>Instala la aplicación en tu computadora</li>
-          <li>Inicia QZ Tray (aparecerá en la bandeja del sistema)</li>
+          <li>Descarga gg-ez-print desde: <a href="https://github.com/RenzoCostarelli/gg-ez-print/releases" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub Releases</a></li>
+          <li>Descarga el archivo apropiado para tu sistema operativo:
+            <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-sm">
+              <li><strong>Windows:</strong> <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">gg-ez-print-windows.exe</code></li>
+              <li><strong>Linux:</strong> <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">gg-ez-print-linux</code></li>
+              <li><strong>macOS:</strong> <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">gg-ez-print-macos</code></li>
+            </ul>
+          </li>
+          <li>Ejecuta el archivo descargado (el servicio se iniciará automáticamente en el puerto 8080)</li>
         </ol>
         <a
-          href="https://qz.io/download/"
+          href="https://github.com/RenzoCostarelli/gg-ez-print/releases"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
@@ -38,119 +47,75 @@ export default function QzTraySetupPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Descargar QZ Tray
+          Descargar gg-ez-print
         </a>
       </div>
 
-      {/* Step 2: Install Certificate */}
+      {/* Step 2: Verify Service */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-2 flex items-center gap-3">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">2</span>
-          Instalar el Certificado
+          Verificar que el Servicio Está Ejecutándose
         </h2>
         <p className="text-gray-600 mb-4">
-          Este paso único habilita la impresión automática sin diálogos de confirmación repetidos.
+          Asegúrate de que gg-ez-print esté ejecutándose en tu computadora.
         </p>
-
-        {/* Method 1 */}
-        <div className="mb-6 pb-6 border-b">
-          <h3 className="font-semibold mb-3 flex items-center gap-2 text-green-700">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Método 1: Descarga Automática (Recomendado)
-          </h3>
-          <ol className="list-decimal list-inside space-y-2 ml-7 text-sm mb-4">
-            <li>Haz clic en el botón de abajo para descargar el certificado</li>
-            <li>Guarda el archivo en tu computadora</li>
-            <li>Abre QZ Tray desde la bandeja del sistema</li>
-            <li>Ve a <strong>Settings (Configuración)</strong> → <strong>Certificates (Certificados)</strong> → <strong>Add Certificate (Agregar Certificado)</strong></li>
-            <li>Selecciona el archivo descargado</li>
-            <li>Haz clic en <strong>Add (Agregar)</strong></li>
-          </ol>
-          <a
-            href="/api/qz/certificate"
-            download="qz-certificate.pem"
-            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Descargar Certificado
-          </a>
-        </div>
-
-        {/* Method 2 */}
-        <div>
-          <h3 className="font-semibold mb-3">Método 2: Desde QZ Tray</h3>
-          <ol className="list-decimal list-inside space-y-2 ml-7 text-sm">
-            <li>Abre QZ Tray desde la bandeja del sistema</li>
-            <li>Haz clic en <strong>Settings</strong> → <strong>Certificates</strong> → <strong>Add Certificate</strong></li>
-            <li>En el cuadro de texto, pega esta URL: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">/api/qz/certificate</code></li>
-            <li>Haz clic en <strong>Fetch</strong> para descargar el certificado</li>
-            <li>Haz clic en <strong>Add</strong> para instalarlo</li>
-          </ol>
-        </div>
+        <ol className="list-decimal list-inside space-y-2">
+          <li>Busca el ícono de gg-ez-print en la bandeja del sistema (Windows) o barra de menús (macOS)</li>
+          <li>O verifica que el proceso esté ejecutándose:
+            <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-sm">
+              <li><strong>Windows:</strong> Abre el Administrador de Tareas y busca &quot;gg-ez-print&quot;</li>
+              <li><strong>Linux/macOS:</strong> Ejecuta <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">ps aux | grep gg-ez-print</code></li>
+            </ul>
+          </li>
+          <li>El servicio debe estar escuchando en <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">ws://localhost:8080/ws</code></li>
+        </ol>
       </div>
 
-      {/* Step 3: Allow Site Access */}
+      {/* Step 3: Configure Printers */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-3">
           <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">3</span>
-          Permitir Acceso al Sitio Web
+          Configurar Impresoras en el Sistema
         </h2>
         <p className="text-gray-600 mb-4">
-          QZ Tray debe autorizar este sitio web para conectarse y usar las impresoras.
+          Una vez que gg-ez-print esté ejecutándose, actualiza esta página y configura tus impresoras.
         </p>
-        <ol className="list-decimal list-inside space-y-2 mb-4">
-          <li>Abre QZ Tray desde la bandeja del sistema</li>
-          <li>Ve a <strong>Settings (Configuración)</strong> → <strong>Site Manager (Administrador de Sitios)</strong></li>
-          <li>Haz clic en <strong>Add Site (Agregar Sitio)</strong></li>
-          <li>Copia y pega esta URL: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all">{typeof window !== "undefined" ? window.location.origin : "https://tu-sitio.vercel.app"}</code></li>
-          <li>Marca la opción <strong>&quot;Trust this site&quot; (Confiar en este sitio)</strong></li>
-          <li>Haz clic en <strong>Add (Agregar)</strong></li>
-        </ol>
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-          <p className="text-sm text-yellow-800">
-            <strong>Importante:</strong> Sin este paso, las impresoras USB no aparecerán en la lista y la impresión no funcionará.
-          </p>
-        </div>
-      </div>
-
-      {/* Step 4: Verify */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-3">
-          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">4</span>
-          Verificar Instalación
-        </h2>
         <ol className="list-decimal list-inside space-y-2">
           <li>Actualiza esta página en tu navegador (F5)</li>
           <li>Ve a <strong>Dashboard</strong> → <strong>Configuración</strong> → <strong>Impresoras</strong></li>
-          <li>Agrega tu impresora (de red o USB)</li>
-          <li>Haz clic en <strong>Prueba de Impresión</strong></li>
-          <li>La impresión debe ejecutarse <strong>sin ningún diálogo de confirmación</strong></li>
+          <li>Haz clic en <strong>Agregar Impresora</strong></li>
+          <li>Selecciona el tipo de impresora:
+            <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-sm">
+              <li><strong>Impresora de Red:</strong> Ingresa la dirección IP de la impresora (ejemplo: 192.168.1.100)</li>
+              <li><strong>Impresora USB:</strong> Haz clic en &quot;Buscar Impresoras&quot; para detectar impresoras USB conectadas</li>
+            </ul>
+          </li>
+          <li>Completa la configuración y haz clic en <strong>Guardar</strong></li>
+          <li>Prueba la impresión haciendo clic en <strong>Prueba de Impresión</strong></li>
         </ol>
       </div>
 
-      {/* Printer Setup */}
+      {/* Printer Setup Details */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
           </svg>
-          Configuración de Impresoras
+          Tipos de Impresoras
         </h2>
 
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold mb-2">Impresoras de Red</h3>
+            <h3 className="font-semibold mb-2">Impresoras de Red (Network)</h3>
             <p className="text-sm text-gray-600 mb-2">
               Para impresoras conectadas a la red (más común en restaurantes):
             </p>
             <ul className="list-disc list-inside space-y-1 text-sm ml-4">
-              <li>Obtén la dirección IP de tu administrador de red</li>
-              <li>Usa el puerto <strong>9100</strong> (puerto estándar para impresión raw)</li>
-              <li>Ejemplo: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">192.168.1.100:9100</code></li>
+              <li>Solo necesitas la <strong>dirección IP</strong> de la impresora</li>
+              <li>El puerto 9100 es utilizado automáticamente por gg-ez-print</li>
+              <li>Ejemplo: <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">192.168.1.100</code></li>
+              <li>Puedes obtener la IP de tu administrador de red o imprimiendo la configuración de red desde la impresora</li>
             </ul>
           </div>
 
@@ -160,8 +125,10 @@ export default function QzTraySetupPage() {
               Para impresoras conectadas directamente por USB:
             </p>
             <ul className="list-disc list-inside space-y-1 text-sm ml-4">
-              <li>La impresora aparecerá automáticamente en la lista</li>
-              <li>Selecciónala del menú desplegable al agregar una impresora</li>
+              <li>La impresora debe estar instalada en Windows/macOS/Linux</li>
+              <li>Usa el botón <strong>&quot;Buscar Impresoras&quot;</strong> para detectar automáticamente las impresoras disponibles</li>
+              <li>Selecciona la impresora del menú desplegable</li>
+              <li>El nombre de la impresora debe coincidir <strong>exactamente</strong> con el nombre en el sistema operativo (sensible a mayúsculas)</li>
             </ul>
           </div>
         </div>
@@ -178,64 +145,90 @@ export default function QzTraySetupPage() {
 
         <div className="space-y-6">
           <div>
-            <h3 className="font-semibold mb-2">Error: &quot;Failed to sign request&quot;</h3>
-            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> El certificado no está instalado correctamente.</p>
+            <h3 className="font-semibold mb-2">Error: &quot;No conectado a gg-ez-print&quot;</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> El servicio gg-ez-print no está ejecutándose o no es accesible.</p>
             <p className="text-sm mb-1"><strong>Solución:</strong></p>
             <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
-              <li>Elimina el certificado antiguo de QZ Tray Settings → Certificates</li>
-              <li>Reinstala siguiendo el Paso 2</li>
-              <li>Reinicia QZ Tray</li>
-              <li>Actualiza tu navegador</li>
+              <li>Verifica que gg-ez-print esté ejecutándose (busca en la bandeja del sistema o Administrador de Tareas)</li>
+              <li>Si no está ejecutándose, inicia el archivo ejecutable de gg-ez-print</li>
+              <li>Verifica que el servicio esté escuchando en el puerto 8080 (no debe haber otro servicio usando ese puerto)</li>
+              <li>Actualiza tu navegador (F5)</li>
             </ol>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Error: &quot;QZ Tray no está conectado&quot;</h3>
-            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> La aplicación QZ Tray no está ejecutándose o el sitio no está autorizado.</p>
+            <h3 className="font-semibold mb-2">Error: &quot;Timeout esperando lista de impresoras&quot;</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> gg-ez-print no responde a la solicitud de listado.</p>
             <p className="text-sm mb-1"><strong>Solución:</strong></p>
             <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
-              <li>Revisa la bandeja del sistema para el ícono de QZ Tray</li>
-              <li>Si no está ejecutándose, inicia QZ Tray desde tu carpeta de Aplicaciones</li>
-              <li>Verifica que el sitio web esté autorizado en QZ Tray Settings → Site Manager (ver Paso 3)</li>
-              <li>Actualiza tu navegador</li>
+              <li>Reinicia el servicio gg-ez-print</li>
+              <li>Verifica que no haya errores en la consola de gg-ez-print</li>
+              <li>Asegúrate de que tu firewall no esté bloqueando la conexión al puerto 8080</li>
+              <li>Intenta acceder manualmente a <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">ws://localhost:8080/ws</code> desde las herramientas de desarrollo del navegador</li>
             </ol>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">No Aparecen Impresoras USB</h3>
-            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> El sitio web no está autorizado en QZ Tray.</p>
+            <h3 className="font-semibold mb-2">No Aparecen Impresoras USB al Buscar</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> Las impresoras no están instaladas en el sistema operativo o gg-ez-print no puede detectarlas.</p>
             <p className="text-sm mb-1"><strong>Solución:</strong></p>
             <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
-              <li>Abre QZ Tray desde la bandeja del sistema</li>
-              <li>Ve a Settings → Site Manager</li>
-              <li>Verifica que la URL de este sitio esté en la lista de sitios autorizados</li>
-              <li>Si no está, agrégala siguiendo el Paso 3</li>
-              <li>Actualiza tu navegador (F5) y vuelve a intentar</li>
+              <li>Verifica que la impresora esté instalada correctamente en Windows/macOS/Linux</li>
+              <li>Abre las configuraciones de impresoras del sistema operativo y confirma que la impresora aparece</li>
+              <li>Asegúrate de que la impresora esté encendida y conectada por USB</li>
+              <li>Reinicia gg-ez-print e intenta buscar nuevamente</li>
+              <li>Si usas Linux, verifica que tu usuario tenga permisos para acceder a las impresoras</li>
             </ol>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Impresora No Encontrada</h3>
-            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> La impresora de red no es accesible o IP/puerto incorrectos.</p>
+            <h3 className="font-semibold mb-2">Error al Imprimir en Impresora de Red</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> La impresora de red no es accesible o la dirección IP es incorrecta.</p>
             <p className="text-sm mb-1"><strong>Solución:</strong></p>
             <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
               <li>Verifica que la dirección IP de la impresora sea correcta</li>
-              <li>Haz ping a la impresora: Abre Símbolo del sistema y escribe <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">ping 192.168.1.100</code> (usa la IP de tu impresora)</li>
-              <li>Asegúrate de que el puerto 9100 esté abierto y la impresora esté en la red</li>
-              <li>Intenta conectarte desde otro dispositivo para verificar la conectividad de red</li>
+              <li>Haz ping a la impresora: Abre Símbolo del sistema/Terminal y escribe <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">ping 192.168.1.100</code> (usa la IP de tu impresora)</li>
+              <li>Asegúrate de que la impresora esté en la misma red que tu computadora</li>
+              <li>Verifica que el puerto 9100 esté abierto en el firewall</li>
+              <li>Intenta imprimir desde otra aplicación para verificar que la impresora funcione</li>
+            </ol>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Error al Imprimir en Impresora USB</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> El nombre de la impresora no coincide exactamente con el nombre del sistema.</p>
+            <p className="text-sm mb-1"><strong>Solución:</strong></p>
+            <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
+              <li>Verifica que el nombre de la impresora en la configuración coincida <strong>exactamente</strong> con el nombre en el sistema operativo (incluyendo mayúsculas/minúsculas)</li>
+              <li>Usa el botón &quot;Buscar Impresoras&quot; para obtener el nombre exacto</li>
+              <li>Si acabas de instalar la impresora, reinicia gg-ez-print</li>
+              <li>Verifica que la impresora no esté en uso por otra aplicación</li>
+            </ol>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Esta impresora necesita ser reconfigurada con gg-ez-print</h3>
+            <p className="text-sm text-gray-600 mb-2"><strong>Causa:</strong> La impresora fue creada antes de la migración a gg-ez-print y necesita actualización.</p>
+            <p className="text-sm mb-1"><strong>Solución:</strong></p>
+            <ol className="list-decimal list-inside space-y-1 text-sm ml-4">
+              <li>Abre la configuración de la impresora haciendo clic en &quot;Editar&quot;</li>
+              <li>Haz clic en &quot;Buscar Impresoras&quot; para detectar impresoras disponibles</li>
+              <li>Selecciona la impresora correcta del menú desplegable</li>
+              <li>Haz clic en &quot;Guardar&quot; para actualizar la configuración</li>
             </ol>
           </div>
         </div>
       </div>
 
-      {/* Security Notes */}
+      {/* Technical Details */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-        <p className="text-sm font-semibold mb-2">Notas de Seguridad:</p>
+        <p className="text-sm font-semibold mb-2">Detalles Técnicos:</p>
         <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 ml-2">
-          <li>El certificado es auto-firmado y único para este sistema POS</li>
-          <li>Todas las solicitudes de impresión se firman en el servidor usando una clave privada</li>
-          <li>El certificado habilita impresión segura y automática sin diálogos repetidos</li>
-          <li>QZ Tray se comunica con tu navegador vía websocket local (ws://localhost:8182)</li>
+          <li>gg-ez-print se comunica con el navegador a través de WebSocket en <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">ws://localhost:8080/ws</code></li>
+          <li>Las impresoras de red usan el protocolo raw TCP en el puerto 9100</li>
+          <li>Las impresoras USB utilizan los drivers del sistema operativo</li>
+          <li>El servicio debe estar ejecutándose en la misma computadora que el navegador</li>
+          <li>Los datos de impresión se envían usando el formato ESC/POS codificado en base64</li>
         </ul>
       </div>
 
@@ -243,12 +236,12 @@ export default function QzTraySetupPage() {
       <div className="text-center text-sm text-gray-600">
         <p className="mb-2">Para ayuda adicional:</p>
         <p>
-          <a href="https://qz.io/docs/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            Documentación de QZ Tray
+          <a href="https://github.com/RenzoCostarelli/gg-ez-print" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            Documentación de gg-ez-print
           </a>
           {" · "}
-          <a href="https://github.com/qzind/tray/issues" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            Soporte de QZ Tray
+          <a href="https://github.com/RenzoCostarelli/gg-ez-print/issues" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            Reportar un Problema
           </a>
         </p>
       </div>

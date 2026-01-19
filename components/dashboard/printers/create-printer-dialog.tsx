@@ -29,7 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { createPrinter } from "@/actions/Printer";
-import { useQzTrayOptional } from "@/contexts/qz-tray-context";
+import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
 import type {
   Station,
   Printer,
@@ -39,9 +39,7 @@ import type {
 
 interface DiscoveredPrinter {
   name: string;
-  path: string;
   type: string;
-  manufacturer?: string;
 }
 
 interface CreatePrinterDialogProps {
@@ -59,8 +57,8 @@ export function CreatePrinterDialog({
   stations,
   onCreated,
 }: CreatePrinterDialogProps) {
-  // QZ Tray context for printer discovery
-  const qz = useQzTrayOptional();
+  // gg-ez-print context for printer discovery
+  const ggEzPrint = useGgEzPrintOptional();
 
   // Connection type
   const [connectionType, setConnectionType] =
@@ -72,13 +70,10 @@ export function CreatePrinterDialog({
   const [model, setModel] = useState("");
   const [stationId, setStationId] = useState<string | undefined>(undefined);
 
-  // Network configuration
-  const [ipAddress, setIpAddress] = useState("");
-  const [port, setPort] = useState("9100");
+  // System identifier (replaces ipAddress/usbPath)
+  const [systemName, setSystemName] = useState("");
 
-  // USB configuration
-  const [usbPath, setUsbPath] = useState("");
-  const [baudRate, setBaudRate] = useState("9600");
+  // Printer discovery
   const [discoveredPrinters, setDiscoveredPrinters] = useState<
     DiscoveredPrinter[]
   >([]);
@@ -110,46 +105,54 @@ export function CreatePrinterDialog({
     setError(null);
 
     try {
-      // Use QZ Tray for printer discovery (client-side)
-      if (!qz) {
+      // Use gg-ez-print for printer discovery (client-side)
+      if (!ggEzPrint) {
         setError(
-          "QZ Tray no está disponible. Asegúrate de que esté instalado y ejecutándose."
+          "gg-ez-print no está disponible. Asegúrate de que el servicio esté ejecutándose.",
         );
+        setIsDiscovering(false);
         return;
       }
 
-      // Connect to QZ Tray if not connected
-      if (!qz.isConnected) {
-        const connectResult = await qz.connect();
-        if (connectResult.state !== "connected") {
+      // Try to connect if not connected
+      if (!ggEzPrint.isConnected) {
+        console.log(
+          "[CreatePrinterDialog] Not connected, attempting to connect...",
+        );
+        ggEzPrint.connect();
+
+        // Wait a bit for connection to establish
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        if (!ggEzPrint.isConnected) {
           setError(
-            connectResult.error ||
-              "No se pudo conectar a QZ Tray. ¿Está ejecutándose?"
+            "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose en localhost:8080?",
           );
+          setIsDiscovering(false);
           return;
         }
       }
 
-      // Refresh printer list from QZ Tray
-      await qz.refreshPrinters();
+      console.log("[CreatePrinterDialog] Connected, refreshing printers...");
 
-      // Convert QZ Tray printer format to our format
-      const qzPrinters = qz.printers.map((p) => ({
-        name: p.name,
-        path: p.name, // Use printer name as path for USB/local printers
-        type: p.connection || "USB",
-        manufacturer: p.driver,
-      }));
+      // Refresh printer list from gg-ez-print
+      await ggEzPrint.refreshPrinters();
 
-      setDiscoveredPrinters(qzPrinters);
+      console.log("[CreatePrinterDialog] Found printers:", ggEzPrint.printers);
+      setDiscoveredPrinters(ggEzPrint.printers);
 
-      if (qzPrinters.length === 0) {
+      if (ggEzPrint.printers.length === 0) {
         setError(
-          "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema."
+          "No se encontraron impresoras. Asegúrate de que las impresoras estén instaladas en el sistema.",
         );
       }
-    } catch {
-      setError("Error al buscar impresoras con QZ Tray");
+    } catch (err) {
+      console.error("[CreatePrinterDialog] Error discovering printers:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al buscar impresoras con gg-ez-print",
+      );
     } finally {
       setIsDiscovering(false);
     }
@@ -161,26 +164,15 @@ export function CreatePrinterDialog({
       return;
     }
 
-    // Validate based on connection type
-    if (connectionType === "NETWORK") {
-      if (!ipAddress.trim()) {
-        setError("La dirección IP es requerida");
-        return;
-      }
-      if (!validateIP(ipAddress)) {
-        setError("Dirección IP inválida");
-        return;
-      }
-      const portNum = parseInt(port);
-      if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-        setError("Puerto inválido (1-65535)");
-        return;
-      }
-    } else {
-      if (!usbPath.trim()) {
-        setError("El puerto USB es requerido");
-        return;
-      }
+    if (!systemName.trim()) {
+      setError("El identificador del sistema es requerido");
+      return;
+    }
+
+    // Validate IP format for network printers
+    if (connectionType === "NETWORK" && !validateIP(systemName)) {
+      setError("Dirección IP inválida");
+      return;
     }
 
     const copies = parseInt(printCopies);
@@ -202,13 +194,8 @@ export function CreatePrinterDialog({
       const result = await createPrinter({
         name: name.trim(),
         description: description.trim() || undefined,
+        systemName: systemName.trim(),
         connectionType,
-        // Network config
-        ipAddress: connectionType === "NETWORK" ? ipAddress.trim() : null,
-        port: connectionType === "NETWORK" ? parseInt(port) : 9100,
-        // USB config
-        usbPath: connectionType === "USB" ? usbPath.trim() : null,
-        baudRate: connectionType === "USB" ? parseInt(baudRate) : 9600,
         // Other fields
         model: model.trim() || undefined,
         branchId,
@@ -239,10 +226,7 @@ export function CreatePrinterDialog({
     setConnectionType("NETWORK");
     setName("");
     setDescription("");
-    setIpAddress("");
-    setPort("9100");
-    setUsbPath("");
-    setBaudRate("9600");
+    setSystemName("");
     setDiscoveredPrinters([]);
     setModel("");
     setStationId(undefined);
@@ -263,9 +247,7 @@ export function CreatePrinterDialog({
     onOpenChange(open);
   };
 
-  const isFormValid =
-    name.trim() &&
-    (connectionType === "NETWORK" ? ipAddress.trim() : usbPath.trim());
+  const isFormValid = name.trim() && systemName.trim();
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -281,7 +263,7 @@ export function CreatePrinterDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Connection Type Selection */}
+          {/* Connection Type Selection - MOVED TO TOP */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm">Tipo de Conexión</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -337,6 +319,76 @@ export function CreatePrinterDialog({
             </div>
           </div>
 
+          {/* Printer Selection/IP - MOVED TO TOP, RIGHT AFTER CONNECTION TYPE */}
+          <div className="space-y-4">
+            {connectionType === "NETWORK" ? (
+              <div className="space-y-2">
+                <Label htmlFor="systemName">Dirección IP *</Label>
+                <Input
+                  id="systemName"
+                  value={systemName}
+                  onChange={(e) => setSystemName(e.target.value)}
+                  placeholder="192.168.1.100"
+                  disabled={isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Dirección IP de la impresora de red (puerto 9100)
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="systemName">Impresora del Sistema *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDiscoverPrinters}
+                    disabled={isPending || isDiscovering}
+                  >
+                    {isDiscovering ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Buscar Impresoras
+                  </Button>
+                </div>
+
+                {discoveredPrinters.length > 0 ? (
+                  <Select
+                    value={systemName}
+                    onValueChange={setSystemName}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger className="w-full" id="systemName">
+                      <SelectValue placeholder="Selecciona una impresora" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                      {discoveredPrinters.map((printer) => (
+                        <SelectItem key={printer.name} value={printer.name}>
+                          {printer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="systemName"
+                    value={systemName}
+                    onChange={(e) => setSystemName(e.target.value)}
+                    placeholder="Nombre de la impresora Windows"
+                    disabled={isPending}
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Nombre exacto de la impresora como aparece en Windows
+                  (sensible a mayúsculas)
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-sm">Información Básica</h3>
@@ -359,6 +411,17 @@ export function CreatePrinterDialog({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descripción opcional..."
+                disabled={isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="model">Modelo</Label>
+              <Input
+                id="model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="Epson TM-T88VI"
                 disabled={isPending}
               />
             </div>
@@ -387,133 +450,6 @@ export function CreatePrinterDialog({
               <p className="text-xs text-muted-foreground">
                 Asigna la impresora a una estación de trabajo
               </p>
-            </div>
-          </div>
-
-          {/* Connection Configuration */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-medium text-sm">
-              {connectionType === "NETWORK"
-                ? "Configuración de Red"
-                : "Configuración USB"}
-            </h3>
-
-            {connectionType === "NETWORK" ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ipAddress">Dirección IP *</Label>
-                    <Input
-                      id="ipAddress"
-                      value={ipAddress}
-                      onChange={(e) => setIpAddress(e.target.value)}
-                      placeholder="192.168.1.100"
-                      disabled={isPending}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="port">Puerto</Label>
-                    <Input
-                      id="port"
-                      type="number"
-                      value={port}
-                      onChange={(e) => setPort(e.target.value)}
-                      placeholder="9100"
-                      disabled={isPending}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Por defecto: 9100
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="usbPath">Puerto USB *</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDiscoverPrinters}
-                      disabled={isPending || isDiscovering}
-                    >
-                      {isDiscovering ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Buscar Impresoras
-                    </Button>
-                  </div>
-
-                  {discoveredPrinters.length > 0 ? (
-                    <Select
-                      value={usbPath}
-                      onValueChange={setUsbPath}
-                      disabled={isPending}
-                    >
-                      <SelectTrigger id="usbPath">
-                        <SelectValue placeholder="Selecciona una impresora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {discoveredPrinters.map((printer) => (
-                          <SelectItem key={printer.path} value={printer.path}>
-                            {printer.name} ({printer.path})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      id="usbPath"
-                      value={usbPath}
-                      onChange={(e) => setUsbPath(e.target.value)}
-                      placeholder="COM3"
-                      disabled={isPending}
-                    />
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Ej: COM3, COM4 (Windows) o /dev/ttyUSB0 (Linux)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="baudRate">Baud Rate</Label>
-                  <Select
-                    value={baudRate}
-                    onValueChange={setBaudRate}
-                    disabled={isPending}
-                  >
-                    <SelectTrigger id="baudRate">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="9600">9600</SelectItem>
-                      <SelectItem value="19200">19200</SelectItem>
-                      <SelectItem value="38400">38400</SelectItem>
-                      <SelectItem value="57600">57600</SelectItem>
-                      <SelectItem value="115200">115200</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Velocidad de comunicación (por defecto: 9600)
-                  </p>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="model">Modelo</Label>
-              <Input
-                id="model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="Epson TM-T88VI"
-                disabled={isPending}
-              />
             </div>
           </div>
 

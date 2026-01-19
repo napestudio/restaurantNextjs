@@ -11,13 +11,8 @@ export interface PrinterConfig {
   // Connection type
   connectionType?: "NETWORK" | "USB"; // Default: NETWORK
 
-  // Network configuration (for NETWORK type)
-  ipAddress?: string;
-  port?: number;
-
-  // USB/Serial configuration (for USB type)
-  usbPath?: string; // COM port path (e.g., "COM3")
-  baudRate?: number; // Serial baud rate (default: 9600)
+  // System identifier for gg-ez-print (Windows printer name or IP address)
+  systemName: string;
 
   // Paper configuration
   paperWidth: number; // 58 or 80 mm
@@ -365,8 +360,8 @@ async function sendToPrinterDirect(
 
 /**
  * Send data to printer via direct TCP connection
- * @deprecated Use QZ Tray for production. This is kept for backwards compatibility
- * and local development with network printers only.
+ * @deprecated Use gg-ez-print for all printing. This is kept for backwards compatibility
+ * and may not work with the new schema.
  */
 async function sendToPrinter(
   config: PrinterConfig,
@@ -378,15 +373,16 @@ async function sendToPrinter(
   if (connectionType === "USB") {
     return {
       success: false,
-      error: "USB printing requires QZ Tray. Use the new printing flow.",
+      error: "USB printing requires gg-ez-print. Use the new printing flow.",
     };
   }
 
-  if (!config.ipAddress) {
-    return { success: false, error: "IP address not configured" };
+  // For network printers, systemName is the IP address
+  if (!config.systemName) {
+    return { success: false, error: "Printer system name not configured" };
   }
 
-  return sendToPrinterDirect(config.ipAddress, config.port || 9100, data);
+  return sendToPrinterDirect(config.systemName, 9100, data);
 }
 
 /**
@@ -422,15 +418,8 @@ export async function printTestPage(
   content += "Informacion de Impresora\n";
   content += Commands.BOLD_OFF;
   const connectionType = config.connectionType || "NETWORK";
-  if (connectionType === "USB") {
-    content += formatTwoColumns("Tipo:", "USB/Serial", width) + "\n";
-    content += formatTwoColumns("Puerto:", config.usbPath || "N/A", width) + "\n";
-    content += formatTwoColumns("Baud Rate:", (config.baudRate || 9600).toString(), width) + "\n";
-  } else {
-    content += formatTwoColumns("Tipo:", "Red (TCP/IP)", width) + "\n";
-    content += formatTwoColumns("IP:", config.ipAddress || "N/A", width) + "\n";
-    content += formatTwoColumns("Puerto:", (config.port || 9100).toString(), width) + "\n";
-  }
+  content += formatTwoColumns("Tipo:", connectionType === "USB" ? "USB" : "Red (TCP/IP)", width) + "\n";
+  content += formatTwoColumns("Sistema:", config.systemName, width) + "\n";
   content += formatTwoColumns("Ancho:", `${config.paperWidth}mm`, width) + "\n";
   content +=
     formatTwoColumns(
@@ -832,16 +821,9 @@ export function generateTestPageData(config: PrinterConfig): string {
   content += Commands.BOLD_ON;
   content += "Informacion de Impresora\n";
   content += Commands.BOLD_OFF;
-  const connectionType = config.connectionType || "NETWORK";
-  if (connectionType === "USB") {
-    content += formatTwoColumns("Tipo:", "USB/Serial", width) + "\n";
-    content += formatTwoColumns("Puerto:", config.usbPath || "N/A", width) + "\n";
-    content += formatTwoColumns("Baud Rate:", (config.baudRate || 9600).toString(), width) + "\n";
-  } else {
-    content += formatTwoColumns("Tipo:", "Red (TCP/IP)", width) + "\n";
-    content += formatTwoColumns("IP:", config.ipAddress || "N/A", width) + "\n";
-    content += formatTwoColumns("Puerto:", (config.port || 9100).toString(), width) + "\n";
-  }
+  const connectionTypeGen = config.connectionType || "NETWORK";
+  content += formatTwoColumns("Tipo:", connectionTypeGen === "USB" ? "USB" : "Red (TCP/IP)", width) + "\n";
+  content += formatTwoColumns("Sistema:", config.systemName, width) + "\n";
   content += formatTwoColumns("Ancho:", `${config.paperWidth}mm`, width) + "\n";
   content += formatTwoColumns("Caracteres:", config.charactersPerLine.toString(), width) + "\n";
 
@@ -1131,7 +1113,7 @@ export function generateFullOrderData(config: PrinterConfig, order: FullOrderDat
 
 /**
  * Test printer connectivity via direct TCP connection
- * @deprecated Use QZ Tray for printing instead. This only works for network printers.
+ * @deprecated Use gg-ez-print for printing instead. This only works for network printers.
  */
 export async function testConnection(
   config: PrinterConfig
@@ -1142,12 +1124,12 @@ export async function testConnection(
   if (connectionType === "USB") {
     return {
       success: false,
-      error: "USB printer testing requires QZ Tray. Use the new printing flow.",
+      error: "USB printer testing requires gg-ez-print. Use the new printing flow.",
     };
   }
 
-  if (!config.ipAddress) {
-    return { success: false, error: "IP address not configured" };
+  if (!config.systemName) {
+    return { success: false, error: "Printer system name not configured" };
   }
 
   return new Promise((resolve) => {
@@ -1187,6 +1169,6 @@ export async function testConnection(
       });
     });
 
-    socket.connect(config.port || 9100, config.ipAddress!);
+    socket.connect(9100, config.systemName);
   });
 }

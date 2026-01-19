@@ -320,20 +320,28 @@ export function PrinterDetailsSidebar({
             </div>
           </div>
 
-          {/* Network Configuration */}
+          {/* Connection Configuration */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-700 border-b pb-2">
-              Configuración de Red
+              Configuración de Conexión
             </h3>
 
             <div className="space-y-2">
-              <Label>Dirección IP</Label>
-              <p className="text-sm font-mono">{printer.ipAddress}</p>
+              <Label>Tipo de Conexión</Label>
+              <p className="text-sm">
+                {printer.connectionType === "NETWORK" ? "Red (Ethernet)" : "USB"}
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Puerto</Label>
-              <p className="text-sm font-mono">{printer.port}</p>
+              <Label>
+                {printer.connectionType === "NETWORK"
+                  ? "Dirección IP"
+                  : "Nombre de Impresora"}
+              </Label>
+              <p className="text-sm font-mono">
+                {printer.systemName || "No configurado"}
+              </p>
             </div>
           </div>
 
