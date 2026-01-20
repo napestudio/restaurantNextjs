@@ -85,7 +85,7 @@ function buildPrinterTarget(printer: {
 // ============================================================================
 
 /**
- * Prepare a test print job - returns ESC/POS data for client to send via QZ Tray
+ * Prepare a test print job - returns ESC/POS data for client to send via gg-ez-print
  */
 export async function prepareTestPrint(printerId: string): Promise<PreparedPrintResult> {
   try {
@@ -414,7 +414,7 @@ export async function prepareControlTicketPrint(
 // ============================================================================
 
 /**
- * Update print job status after client sends to printer via QZ Tray
+ * Update print job status after client sends to printer via gg-ez-print
  */
 export async function updatePrintJobStatus(
   printJobId: string,

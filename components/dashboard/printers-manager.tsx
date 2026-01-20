@@ -239,7 +239,7 @@ export function PrintersManager({
             </div>
             <div className="flex gap-4 items-center">
               <Link
-                href="/dashboard/ayuda/qz-tray"
+                href="/dashboard/ayuda/gg-ez-print"
                 className="flex items-center gap-2"
               >
                 <HelpCircle className="h-4 w-4 " />

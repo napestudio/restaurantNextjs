@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import { isUserAdmin } from "@/lib/permissions";
 import { ConditionalGgEzPrintProvider } from "@/components/providers/conditional-gg-ez-print-provider";
 import { getCurrentUserBranchId } from "@/lib/user-branch";
-import { hasBranchPrinters } from "@/actions/PrinterQz";
+import { hasBranchPrinters } from "@/actions/PrinterActions";
 
 export const metadata: Metadata = {
   title: "Kiku Sushi - Panel de Administración",
