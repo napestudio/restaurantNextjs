@@ -96,6 +96,7 @@ export function TableOrderSidebar({
     orders: allOrders,
     order: singleOrder,
     isLoading: isLoadingOrders,
+    isValidating,
     refresh,
     mutate,
   } = useOrdersData({
@@ -117,6 +118,9 @@ export function TableOrderSidebar({
 
   // Combined loading state
   const isLoading = isLoadingOrders || isLoadingAction;
+
+  // Show loading indicator when fetching order data
+  const showLoadingIndicator = (isLoadingOrders || isValidating) && !order;
 
   // Reset state when table changes
   useEffect(() => {
@@ -532,8 +536,12 @@ export function TableOrderSidebar({
           />
         )}
 
-        {/* Party Size - Only show when no active order */}
-        {!order && (
+        {/* Party Size - Show loading or form when no active order */}
+        {showLoadingIndicator ? (
+          <div className="space-y-2 mb-4 flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-neutral-400" />
+          </div>
+        ) : !order ? (
           <div className="space-y-2 mb-4">
             <Label htmlFor="party-size">
               Personas <span className="text-red-500">*</span>
@@ -548,10 +556,10 @@ export function TableOrderSidebar({
               disabled={isLoading}
             />
           </div>
-        )}
+        ) : null}
 
-        {/* Client Picker - Only show when no active order */}
-        {!order && (
+        {/* Client Picker - Show loading or form when no active order */}
+        {showLoadingIndicator ? null : !order ? (
           <div className="mb-4">
             <ClientPicker
               branchId={branchId}
@@ -561,10 +569,10 @@ export function TableOrderSidebar({
               disabled={isLoading}
             />
           </div>
-        )}
+        ) : null}
 
-        {/* Waiter Picker - Only show when no active order */}
-        {!order && (
+        {/* Waiter Picker - Show loading or form when no active order */}
+        {showLoadingIndicator ? null : !order ? (
           <div className="mb-4">
             <WaiterPicker
               branchId={branchId}
@@ -573,7 +581,7 @@ export function TableOrderSidebar({
               disabled={isLoading}
             />
           </div>
-        )}
+        ) : null}
 
         {/* Open Table Button */}
         {!order && partySize && parseInt(partySize) > 0 && (

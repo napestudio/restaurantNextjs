@@ -147,7 +147,7 @@ export function OrderDetailsSidebar({
   const TypeIcon = typeIcons[order.type];
   const subtotal = order.items.reduce(
     (sum, item) => sum + item.quantity * item.price,
-    0
+    0,
   );
   const discount = (subtotal * order.discountPercentage) / 100;
   const total = subtotal - discount;
@@ -188,16 +188,13 @@ export function OrderDetailsSidebar({
   const handleSaveChanges = async () => {
     if (!order) return;
 
+    setIsSaving(true);
+
     // Store previous values for potential error message
     const clientId = selectedClient?.id || null;
     const currentClientId = order.client?.id || null;
     const waiterId = selectedWaiterId || null;
     const currentWaiterId = order.assignedTo?.id || null;
-
-    // Optimistic update - close edit mode immediately
-    setIsEditing(false);
-    setSelectedClient(null);
-    setSelectedWaiterId(null);
 
     try {
       // Update client if changed
@@ -216,22 +213,27 @@ export function OrderDetailsSidebar({
         }
       }
 
+      // Close edit mode after successful save
+      setIsEditing(false);
+      setSelectedClient(null);
+      setSelectedWaiterId(null);
+
       // Refresh to get updated data
       onOrderUpdated?.();
     } catch (error) {
       console.error("Error updating order:", error);
       // Refresh to restore correct state
       onOrderUpdated?.();
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     if (!order) return;
 
-    // Store previous status for rollback message
-    const previousStatus = order.status;
+    setIsUpdatingStatus(true);
 
-    // Perform server update (UI will update on refresh)
     try {
       const result = await updateOrderStatus(order.id, newStatus);
       if (result.success) {
@@ -245,6 +247,8 @@ export function OrderDetailsSidebar({
       console.error("Error updating status:", error);
       // Refresh to restore correct state
       onOrderUpdated?.();
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -279,7 +283,8 @@ export function OrderDetailsSidebar({
       toast({
         variant: "destructive",
         title: "Error de impresión",
-        description: "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+        description:
+          "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
       });
     }
   };
@@ -302,7 +307,7 @@ export function OrderDetailsSidebar({
       <div
         className={cn(
           "fixed inset-0 h-full bg-black/50 z-40 transition-opacity",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
@@ -311,7 +316,7 @@ export function OrderDetailsSidebar({
       <div
         className={cn(
           "fixed top-0 right-0 h-full w-full sm:w-125 bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
