@@ -49,7 +49,7 @@ export default function FloorPlanHandler({
   editModeOnly = false,
 }: FloorPlanPageProps) {
   // UI State
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(editModeOnly);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ x: number; y: number }>({
@@ -59,7 +59,7 @@ export default function FloorPlanHandler({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
-    const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<
     string | null
   >(null);
@@ -192,7 +192,7 @@ export default function FloorPlanHandler({
       setSelectedTable,
       setDraggedTable,
       setDragOffset,
-    ]
+    ],
   );
 
   // Track if a drag occurred to distinguish click from drag
@@ -206,7 +206,7 @@ export default function FloorPlanHandler({
         setTableEditSidebarOpen(true);
       }
     },
-    [editModeOnly]
+    [editModeOnly],
   );
 
   // Handle mouse move and mouse up for dragging
@@ -361,7 +361,7 @@ export default function FloorPlanHandler({
       await saveFloorPlanChanges(
         setIsSaving,
         setHasUnsavedChanges,
-        () => {} // Don't exit edit mode on autosave
+        () => {}, // Don't exit edit mode on autosave
       );
 
       // Show saved indicator
@@ -418,7 +418,7 @@ export default function FloorPlanHandler({
         await onRefreshTables();
       }
     },
-    [onRefreshSingleTable, onRefreshTables]
+    [onRefreshSingleTable, onRefreshTables],
   );
 
   const handleCloseSidebar = useCallback(() => {
@@ -456,7 +456,7 @@ export default function FloorPlanHandler({
 
       setAddDialogOpen(true);
     },
-    [dbTables, selectedSector]
+    [dbTables, selectedSector],
   );
 
   // Get additional table info for properties panel - memoized
