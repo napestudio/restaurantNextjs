@@ -138,6 +138,19 @@ export function usePrint(): UsePrintReturn {
         const job = jobs[i];
         const printJobId = printJobIds[Math.floor(i / (job.copies || 1))] || printJobIds[0];
 
+        // Check if printer needs reconfiguration
+        if (job.target.systemName === "NEEDS_RECONFIGURATION") {
+          failCount++;
+          const errorMessage = `La impresora "${job.target.name}" requiere configuración. Por favor configura el nombre del sistema o dirección IP.`;
+          console.warn("[usePrint] Printer needs reconfiguration:", job.target.name);
+          results.push({
+            printJobId,
+            success: false,
+            error: errorMessage,
+          });
+          continue;
+        }
+
         // Build PrintRequest for gg-ez-print
         const printRequest: PrintRequest = {
           printer_name: job.target.systemName,
@@ -161,8 +174,14 @@ export function usePrint(): UsePrintReturn {
           failCount++;
           const errorMessage = error instanceof Error ? error.message : "Error desconocido";
 
-          // Use warn for expected failures (network issues), error for unexpected
-          if (errorMessage.includes("timeout") || errorMessage.includes("Connection") || errorMessage.includes("conectar")) {
+          // Use warn for expected failures (network issues, DNS lookup), error for unexpected
+          if (
+            errorMessage.includes("timeout") ||
+            errorMessage.includes("Connection") ||
+            errorMessage.includes("conectar") ||
+            errorMessage.includes("no such host") ||
+            errorMessage.includes("NEEDS_RECONFIGURATION")
+          ) {
             console.warn("[usePrint] Printer unreachable:", errorMessage);
           } else {
             console.error("[usePrint] Print failed:", errorMessage);

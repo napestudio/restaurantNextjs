@@ -26,8 +26,11 @@ interface GgEzPrintContextValue {
   // Actions
   connect: () => void;
   disconnect: () => void;
-  refreshPrinters: () => Promise<void>;
+  refreshPrinters: () => Promise<DiscoveredPrinter[]>;
   print: (request: PrintRequest) => Promise<void>;
+
+  // Direct client access for real-time state checks
+  client: GgEzPrintClient;
 }
 
 // ============================================================================
@@ -91,6 +94,7 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
     try {
       const discoveredPrinters = await client.listPrinters();
       setPrinters(discoveredPrinters);
+      return discoveredPrinters;
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -98,6 +102,7 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
           : "Error al obtener lista de impresoras";
       setDiscoveryError(errorMessage);
       console.error("Failed to discover printers:", error);
+      throw error;
     } finally {
       setIsDiscovering(false);
     }
@@ -133,6 +138,9 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
     disconnect,
     refreshPrinters,
     print,
+
+    // Client instance
+    client,
   };
 
   return (
