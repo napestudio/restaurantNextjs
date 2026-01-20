@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Settings, Plus, X, Receipt, CreditCard, Percent } from "lucide-react";
+import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
 import {
   closeTableWithPayment,
   updateDiscount,
-  type PaymentMethodExtended,
   type PaymentEntry,
+  type PaymentMethodExtended,
 } from "@/actions/Order";
-import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PAYMENT_METHODS } from "@/types/cash-register";
+import { CreditCard, Percent, Plus, Receipt, Settings, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
   id: string;
@@ -84,18 +83,17 @@ export function CloseTableDialog({
     { id: "1", method: "CASH", amount: "" },
   ]);
   const [isPartialClose, setIsPartialClose] = useState(false);
-  const [isPending, setIsPending] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
-    []
+    [],
   );
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [currentDiscount, setCurrentDiscount] = useState(
-    order.discountPercentage
+    order.discountPercentage,
   );
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -115,7 +113,7 @@ export function CloseTableDialog({
   const subtotal = useMemo(() => {
     return order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0
+      0,
     );
   }, [order.items]);
 
@@ -163,7 +161,7 @@ export function CloseTableDialog({
         // Check if the table's sector has an assigned cash register with an open session
         if (tableSectorId) {
           const sectorRegister = result.data.find(
-            (r) => r.sectors?.some((s) => s.id === tableSectorId) && r.session
+            (r) => r.sectors?.some((s) => s.id === tableSectorId) && r.session,
           );
           if (sectorRegister) {
             setSelectedRegisterId(sectorRegister.id);
@@ -210,12 +208,12 @@ export function CloseTableDialog({
   const updatePaymentLine = (
     id: string,
     field: "method" | "amount",
-    value: string
+    value: string,
   ) => {
     setPayments(
       payments.map((p) =>
-        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p
-      )
+        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p,
+      ),
     );
   };
 
@@ -257,7 +255,7 @@ export function CloseTableDialog({
   const handleClose = async () => {
     // Validate cash register selection
     const selectedRegister = cashRegisters.find(
-      (r) => r.id === selectedRegisterId
+      (r) => r.id === selectedRegisterId,
     );
     if (!selectedRegister?.session) {
       setError("Selecciona una caja registradora con sesión abierta");
@@ -282,17 +280,15 @@ export function CloseTableDialog({
     if (paymentTotal < total - 0.01) {
       setError(
         `El monto pagado (${formatCurrency(
-          paymentTotal
-        )}) es menor al total (${formatCurrency(total)})`
+          paymentTotal,
+        )}) es menor al total (${formatCurrency(total)})`,
       );
       return;
     }
 
-    // Close dialog immediately for snappy feel
-    resetForm();
-    onOpenChange(false);
+    // Start loading state
+    setIsLoadingAction(true);
 
-    // Perform server action and then update UI
     try {
       // TODO: Get actual user ID from session
       const userId = "system";
@@ -306,13 +302,21 @@ export function CloseTableDialog({
       });
 
       if (result.success) {
-        // Update table state after server confirms
+        // Close dialog AFTER successful operation
+        resetForm();
+        onOpenChange(false);
         onSuccess(tableId);
       } else {
-        console.error("Failed to close table:", result.error);
+        // Show error to user - dialog stays open
+        setError(result.error || "Error al cerrar la mesa");
       }
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al cerrar la mesa";
+      setError(errorMessage);
       console.error("Error closing table:", err);
+    } finally {
+      // Always clear loading state
+      setIsLoadingAction(false);
     }
   };
 
@@ -438,7 +442,7 @@ export function CloseTableDialog({
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={handleDiscountEdit}
-                                disabled={isPending || isLoadingAction}
+                                disabled={isLoadingAction || isLoadingAction}
                               >
                                 <Percent className="h-3 w-3" />
                               </Button>
@@ -489,7 +493,7 @@ export function CloseTableDialog({
                         variant="outline"
                         size="sm"
                         onClick={handleDiscountEdit}
-                        disabled={isPending || isLoadingAction}
+                        disabled={isLoadingAction || isLoadingAction}
                         className="w-full"
                       >
                         <Percent className="h-4 w-4 mr-2" />
@@ -516,7 +520,7 @@ export function CloseTableDialog({
                     variant="outline"
                     size="sm"
                     onClick={addPaymentLine}
-                    disabled={isPending}
+                    disabled={isLoadingAction}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Dividir pago
@@ -546,10 +550,10 @@ export function CloseTableDialog({
                               updatePaymentLine(
                                 payment.id,
                                 "method",
-                                e.target.value as PaymentMethodExtended
+                                e.target.value as PaymentMethodExtended,
                               )
                             }
-                            disabled={isPending}
+                            disabled={isLoadingAction}
                             className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {PAYMENT_METHODS.map((method) => (
@@ -571,12 +575,12 @@ export function CloseTableDialog({
                                 updatePaymentLine(
                                   payment.id,
                                   "amount",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="0.00"
                               className="pl-7"
-                              disabled={isPending}
+                              disabled={isLoadingAction}
                             />
                           </div>
                           {payments.length > 1 && (
@@ -585,7 +589,7 @@ export function CloseTableDialog({
                               size="icon"
                               className="h-9 w-9 text-muted-foreground hover:text-red-500 shrink-0"
                               onClick={() => removePaymentLine(payment.id)}
-                              disabled={isPending}
+                              disabled={isLoadingAction}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -617,7 +621,7 @@ export function CloseTableDialog({
                       onCheckedChange={(checked) =>
                         setIsPartialClose(checked as boolean)
                       }
-                      disabled={isPending}
+                      disabled={isLoadingAction}
                     />
                     <Label
                       htmlFor="partial-close"
@@ -644,7 +648,7 @@ export function CloseTableDialog({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={isPending}
+            disabled={isLoadingAction}
           >
             Cancelar
           </Button>
@@ -652,9 +656,9 @@ export function CloseTableDialog({
             <Button
               onClick={handleClose}
               className="bg-red-500 hover:bg-red-600"
-              disabled={isPending || !selectedRegisterId}
+              disabled={isLoadingAction || !selectedRegisterId}
             >
-              {isPending ? "Cerrando..." : `Cerrar Mesa ${tableNumber}`}
+              {isLoadingAction ? "Cerrando..." : `Cerrar Mesa ${tableNumber}`}
             </Button>
           )}
         </div>

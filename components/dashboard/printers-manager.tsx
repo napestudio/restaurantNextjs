@@ -237,7 +237,7 @@ export function PrintersManager({
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-4 items-center">
               <Link
                 href="/dashboard/ayuda/qz-tray"
                 className="flex items-center gap-2"

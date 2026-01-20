@@ -88,7 +88,6 @@ export function CloseOrderDialog({
   const [payments, setPayments] = useState<PaymentLine[]>([
     { id: "1", method: "CASH", amount: "" },
   ]);
-  const [isPending, setIsPending] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
@@ -278,11 +277,9 @@ export function CloseOrderDialog({
       return;
     }
 
-    // Optimistic update - close dialog immediately
-    resetForm();
-    onOpenChange(false);
+    // Start loading state
+    setIsLoadingAction(true);
 
-    // Perform server action
     try {
       // TODO: Get actual user ID from session
       const userId = "system";
@@ -296,14 +293,21 @@ export function CloseOrderDialog({
       });
 
       if (result.success) {
+        // Close dialog AFTER successful operation
+        resetForm();
+        onOpenChange(false);
         onSuccess();
       } else {
-        // On failure, we'd need to reopen the dialog and show error
-        // For now, just log the error since the order might be in inconsistent state
-        console.error("Failed to close order:", result.error);
+        // Show error to user - dialog stays open
+        setError(result.error || "Error al cerrar la orden");
       }
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al cerrar la orden";
+      setError(errorMessage);
       console.error("Error closing order:", err);
+    } finally {
+      // Always clear loading state
+      setIsLoadingAction(false);
     }
   };
 
@@ -435,7 +439,7 @@ export function CloseOrderDialog({
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={handleDiscountEdit}
-                                disabled={isPending || isLoadingAction}
+                                disabled={isLoadingAction || isLoadingAction}
                               >
                                 <Percent className="h-3 w-3" />
                               </Button>
@@ -486,7 +490,7 @@ export function CloseOrderDialog({
                         variant="outline"
                         size="sm"
                         onClick={handleDiscountEdit}
-                        disabled={isPending || isLoadingAction}
+                        disabled={isLoadingAction || isLoadingAction}
                         className="w-full"
                       >
                         <Percent className="h-4 w-4 mr-2" />
@@ -513,7 +517,7 @@ export function CloseOrderDialog({
                     variant="outline"
                     size="sm"
                     onClick={addPaymentLine}
-                    disabled={isPending}
+                    disabled={isLoadingAction}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Dividir pago
@@ -546,7 +550,7 @@ export function CloseOrderDialog({
                                 e.target.value as PaymentMethodExtended
                               )
                             }
-                            disabled={isPending}
+                            disabled={isLoadingAction}
                             className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {PAYMENT_METHODS.map((method) => (
@@ -573,7 +577,7 @@ export function CloseOrderDialog({
                               }
                               placeholder="0.00"
                               className="pl-7"
-                              disabled={isPending}
+                              disabled={isLoadingAction}
                             />
                           </div>
                           {payments.length > 1 && (
@@ -582,7 +586,7 @@ export function CloseOrderDialog({
                               size="icon"
                               className="h-9 w-9 text-muted-foreground hover:text-red-500 shrink-0"
                               onClick={() => removePaymentLine(payment.id)}
-                              disabled={isPending}
+                              disabled={isLoadingAction}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -623,7 +627,7 @@ export function CloseOrderDialog({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={isPending}
+            disabled={isLoadingAction}
           >
             Cancelar
           </Button>
@@ -631,9 +635,9 @@ export function CloseOrderDialog({
             <Button
               onClick={handleClose}
               className="bg-green-600 hover:bg-green-700"
-              disabled={isPending || !selectedRegisterId}
+              disabled={isLoadingAction || !selectedRegisterId}
             >
-              {isPending ? "Procesando..." : "Finalizar Venta"}
+              {isLoadingAction ? "Procesando..." : "Finalizar Venta"}
             </Button>
           )}
         </div>

@@ -103,14 +103,12 @@ export function EditOrderDialog({
   }, [open, currentPartySize, currentClient, currentWaiterId]);
 
   const handleSave = async () => {
+    setIsLoading(true);
+
     // Store values before closing
     const newPartySize = parseInt(partySize);
     const newClientId = selectedClient?.id || null;
     const newWaiterId = selectedWaiterId;
-
-    // Optimistic update - close dialog immediately
-    onOpenChange(false);
-    onSuccess();
 
     try {
       // Update party size if changed
@@ -140,8 +138,14 @@ export function EditOrderDialog({
           console.error("Failed to update waiter:", result.error);
         }
       }
+
+      // Close dialog after successful save
+      onOpenChange(false);
+      onSuccess();
     } catch (error) {
       console.error("Error updating order:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

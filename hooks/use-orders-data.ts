@@ -96,7 +96,7 @@ export function useOrdersData({
   };
 
   // Use SWR with configuration
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
     cacheKey,
     fetcher,
     {
@@ -120,6 +120,7 @@ export function useOrdersData({
     orders: isShared ? (data as OrderWithItems[] | undefined) ?? [] : null,
     order: !isShared ? (data as OrderWithItems | null | undefined) ?? null : null,
     isLoading,
+    isValidating,
     error: error?.message ?? null,
     // Manual refresh function - returns promise for proper awaiting
     refresh: () => mutate(),
