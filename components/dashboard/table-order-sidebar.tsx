@@ -303,7 +303,7 @@ export function TableOrderSidebar({
     if (!order || !tableId) return;
 
     // If order has no items, delete it directly and free the table
-    if (order.items.length === 0) {
+    if (!order.items || order.items.length === 0) {
       if (
         !confirm("¿Cerrar mesa sin productos? La orden vacía será eliminada.")
       ) {
@@ -355,7 +355,7 @@ export function TableOrderSidebar({
   };
 
   const handlePrintCheck = async () => {
-    if (!order) return;
+    if (!order || !order.items) return;
 
     const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -641,7 +641,7 @@ export function TableOrderSidebar({
             )}
 
             {/* Committed Order Items (read-only, can only remove) - SCROLLABLE */}
-            {order.items.length > 0 && (
+            {order.items?.length > 0 && (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <CommittedOrderItemsList
                   items={
@@ -764,7 +764,7 @@ export function TableOrderSidebar({
                 className="bg-red-500"
                 disabled={isLoading}
               >
-                {order.items.length === 0 ? "Eliminar Orden" : "Cerrar Mesa"}
+                {!order.items || order.items.length === 0 ? "Eliminar Orden" : "Cerrar Mesa"}
               </Button>
             </div>
           </div>
@@ -791,14 +791,14 @@ export function TableOrderSidebar({
             publicCode: order.publicCode,
             partySize: order.partySize,
             discountPercentage: Number(order.discountPercentage),
-            items: order.items.map((item) => ({
+            items: order.items?.map((item) => ({
               id: item.id,
               itemName: item.product?.name,
               quantity: item.quantity,
               price: item.price,
               originalPrice: item.originalPrice,
               product: item.product,
-            })),
+            })) || [],
           }}
           tableNumber={tableNumber}
           branchId={branchId}
