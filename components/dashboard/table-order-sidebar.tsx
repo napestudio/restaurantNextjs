@@ -164,7 +164,7 @@ export function TableOrderSidebar({
       branchId,
       parseInt(partySize),
       selectedClient?.id || null,
-      selectedWaiterId || null
+      selectedWaiterId || null,
     );
 
     if (result.success && result.data) {
@@ -216,7 +216,7 @@ export function TableOrderSidebar({
 
   const handleUpdatePreOrderItem = (index: number, item: PreOrderItem) => {
     setPreOrderItems((prev) =>
-      prev.map((existingItem, i) => (i === index ? item : existingItem))
+      prev.map((existingItem, i) => (i === index ? item : existingItem)),
     );
   };
 
@@ -267,7 +267,7 @@ export function TableOrderSidebar({
         quantity: item.quantity,
         notes: item.notes,
         categoryId: item.categoryId,
-      }))
+      })),
     );
 
     // Clear pre-order items after successful confirmation
@@ -284,9 +284,6 @@ export function TableOrderSidebar({
 
   const handleRemoveItem = async (itemId: string) => {
     if (!tableId || !order) return;
-
-    // Store previous items for rollback (we need to trigger a refresh to restore)
-    const previousItems = order.items;
 
     // Optimistic update - the SWR cache will be updated on next refresh
     // For now we just proceed without loading state
@@ -362,7 +359,7 @@ export function TableOrderSidebar({
 
     const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0
+      0,
     );
 
     const waiterName =
@@ -394,7 +391,8 @@ export function TableOrderSidebar({
       toast({
         variant: "destructive",
         title: "Error de impresión",
-        description: "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+        description:
+          "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
       });
     }
   };
@@ -554,6 +552,7 @@ export function TableOrderSidebar({
               onChange={(e) => setPartySize(e.target.value)}
               placeholder="Ej: 4"
               disabled={isLoading}
+              autoFocus
             />
           </div>
         ) : null}
@@ -602,9 +601,13 @@ export function TableOrderSidebar({
               <ProductPicker
                 products={products}
                 onSelectProduct={handleSelectProduct}
+                onSubmitPreOrder={
+                  preOrderItems.length > 0 ? handleConfirmPreOrder : undefined
+                }
                 label="ADICIONAR"
                 placeholder="Buscar producto..."
                 disabled={isLoading}
+                autoFocus
               />
             </div>
 
