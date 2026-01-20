@@ -141,8 +141,8 @@ export function usePrint(): UsePrintReturn {
         // Check if printer needs reconfiguration
         if (job.target.systemName === "NEEDS_RECONFIGURATION") {
           failCount++;
-          const errorMessage = `La impresora "${job.target.name}" requiere configuración. Por favor configura el nombre del sistema o dirección IP.`;
-          console.warn("[usePrint] Printer needs reconfiguration:", job.target.name);
+          const errorMessage = `La impresora "${job.printerName}" requiere configuración. Por favor configura el nombre del sistema o dirección IP.`;
+          console.warn("[usePrint] Printer needs reconfiguration:", job.printerName);
           results.push({
             printJobId,
             success: false,
