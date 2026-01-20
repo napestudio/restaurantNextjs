@@ -88,7 +88,6 @@ export function CloseOrderDialog({
   const [payments, setPayments] = useState<PaymentLine[]>([
     { id: "1", method: "CASH", amount: "" },
   ]);
-  const [isPending, setIsPending] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(

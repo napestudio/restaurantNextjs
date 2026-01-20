@@ -84,7 +84,6 @@ export function CloseTableDialog({
     { id: "1", method: "CASH", amount: "" },
   ]);
   const [isPartialClose, setIsPartialClose] = useState(false);
-  const [isPending, setIsPending] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(

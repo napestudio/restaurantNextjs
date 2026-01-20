@@ -138,7 +138,7 @@ export function OrderDetailsSidebar({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
 
-  // QZ Tray printing
+  // GG EZ Print printing
   const { printControlTicket, isPrinting } = usePrint();
   const { toast } = useToast();
 
