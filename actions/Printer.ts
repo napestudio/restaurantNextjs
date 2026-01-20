@@ -538,7 +538,7 @@ interface ControlTicketInfo {
  * Only prints to printers with STATION_ITEMS or BOTH print mode
  */
 /**
- * @deprecated Use prepareOrderItemsPrint from PrinterQz.ts instead for QZ Tray printing
+ * @deprecated Use prepareOrderItemsPrint from PrinterActions.ts instead for gg-ez-print printing
  */
 export async function autoPrintOrderItems(
   orderInfo: OrderInfoForPrint,
@@ -721,7 +721,7 @@ async function updatePrinterStatusFromResult(
 /**
  * Print control ticket (full order with prices) - triggered manually by user
  * This prints to printers with FULL_ORDER or BOTH print mode
- * @deprecated Use prepareControlTicketPrint from PrinterQz.ts instead for QZ Tray printing
+ * @deprecated Use prepareControlTicketPrint from PrinterActions.ts instead for gg-ez-print printing
  */
 export async function printControlTicket(ticketInfo: ControlTicketInfo) {
   try {
@@ -850,8 +850,8 @@ export async function printControlTicket(ticketInfo: ControlTicketInfo) {
 
 /**
  * Discover USB/Serial printers
- * @deprecated Printer discovery now happens client-side via QZ Tray.
- * Use the useQzTrayContext().printers to get available printers.
+ * @deprecated Printer discovery now happens client-side via gg-ez-print.
+ * Use the gg-ez-print context to get available printers.
  */
 export async function discoverUsbPrinters() {
   // This function is deprecated - printer discovery is now done client-side via gg-ez-print WebSocket

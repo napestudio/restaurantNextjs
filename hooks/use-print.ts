@@ -9,7 +9,7 @@ import {
   updatePrintJobStatuses,
   hasBranchControlTicketPrinters,
   type PrintJobData,
-} from "@/actions/PrinterQz";
+} from "@/actions/PrinterActions";
 import type { PrintRequest } from "@/lib/printer/gg-ez-print";
 
 // ============================================================================
