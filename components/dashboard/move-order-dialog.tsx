@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowRight, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 type AvailableTable = {
@@ -54,7 +54,7 @@ export function MoveOrderDialog({
   };
 
   const selectedTable = availableTables.find(
-    (table) => table.id === selectedTableId
+    (table) => table.id === selectedTableId,
   );
 
   return (
@@ -96,7 +96,7 @@ export function MoveOrderDialog({
               </div>
             ) : (
               <ScrollArea className="h-75 rounded-md border">
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-2 grid grid-cols-1 md:grid-cols-3 gap-2">
                   {availableTables.map((table) => (
                     <button
                       key={table.id}
@@ -108,9 +108,9 @@ export function MoveOrderDialog({
                           : "border-border hover:border-primary/50 hover:bg-accent"
                       } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 justify-between md:justify-center">
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center flex-col justify-center gap-2">
                             <span className="font-semibold text-lg">
                               Mesa {table.number}
                             </span>
@@ -124,10 +124,6 @@ export function MoveOrderDialog({
                                 Compartida
                               </span>
                             )}
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                            <Users className="h-3 w-3" />
-                            <span>Capacidad: {table.capacity}</span>
                           </div>
                         </div>
                         {selectedTableId === table.id && (
