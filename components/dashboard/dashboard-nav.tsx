@@ -1,15 +1,13 @@
 "use client";
 
 import { getNavItems } from "@/lib/dashboard-nav";
-import DashBoardNavItems from "./dashboard-nav-items";
-import UserDropdown from "./user-dropdown";
-import { GgEzPrintConnectionStatusCompact } from "./printers/gg-ez-print-connection-status-compact";
+import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-
+import { useState } from "react";
+import DashBoardNavItems from "./dashboard-nav-items";
+import UserDropdown from "./user-dropdown";
 interface DashboardNavProps {
   userName: string;
   hasAdminRole: boolean;
@@ -26,9 +24,7 @@ export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
         <div className="flex items-center justify-between py-2">
           {/* Left: Logo/Title */}
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900">
-              Administración
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900">Administración</h1>
           </div>
 
           {/* Center: Desktop Nav Items */}
@@ -36,7 +32,6 @@ export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
 
           {/* Right: gg-ez-print Status, User Dropdown & Mobile Menu Button */}
           <div className="flex items-center gap-2">
-            <GgEzPrintConnectionStatusCompact />
             <UserDropdown userName={userName} hasAdminRole={hasAdminRole} />
 
             {/* Mobile menu button */}
@@ -69,7 +64,7 @@ export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
                       "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                       isActive
                         ? "font-bold text-white bg-red-500"
-                        : "text-neutral-800 hover:bg-gray-100 hover:text-red-500"
+                        : "text-neutral-800 hover:bg-gray-100 hover:text-red-500",
                     )}
                   >
                     {item.label}
