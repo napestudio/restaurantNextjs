@@ -425,6 +425,11 @@ export default function FloorPlanHandler({
     setSelectedTableForOrder(null);
   }, []);
 
+  const handleTableChange = useCallback((newTableId: string) => {
+    setSelectedTableForOrder(newTableId);
+    setSelectedTable(newTableId);
+  }, [setSelectedTable]);
+
   // Edit sidebar handlers (for editModeOnly)
   const handleCloseEditSidebar = useCallback(() => {
     setTableEditSidebarOpen(false);
@@ -542,6 +547,7 @@ export default function FloorPlanHandler({
                 tableSectorId={selectedTableForOrderData?.sectorId ?? null}
                 branchId={branchId}
                 onClose={handleCloseSidebar}
+                onTableChange={handleTableChange}
                 onOrderUpdated={handleOrderUpdated}
               />
             ) : (

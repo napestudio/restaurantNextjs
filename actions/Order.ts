@@ -1082,6 +1082,12 @@ export async function getAvailableTablesForMove(branchId: string) {
         OR: [
           { status: "EMPTY" },
           { status: null }, // Tables with no manual status override
+          {
+            AND: [
+              { isShared: true },
+              { status: "OCCUPIED" }
+            ]
+          }, // Include occupied shared tables
         ],
       },
       include: {
@@ -1121,8 +1127,9 @@ export async function getAvailableTablesForMove(branchId: string) {
     // Filter out tables that have active orders or are currently reserved
     const now = new Date();
     const availableTables = tables.filter((table) => {
-      // Table must not have active orders
-      if (table.orders.length > 0) {
+      // Non-shared tables must not have active orders
+      // Shared tables can have multiple active orders
+      if (!table.isShared && table.orders.length > 0) {
         return false;
       }
 

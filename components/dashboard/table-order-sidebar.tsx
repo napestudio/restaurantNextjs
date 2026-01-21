@@ -37,6 +37,7 @@ interface TableOrderSidebarProps {
   tableSectorId?: string | null;
   branchId: string;
   onClose: () => void;
+  onTableChange?: (tableId: string) => void;
   onOrderUpdated: (tableId: string) => void;
 }
 
@@ -56,6 +57,7 @@ export function TableOrderSidebar({
   tableSectorId,
   branchId,
   onClose,
+  onTableChange,
   onOrderUpdated,
 }: TableOrderSidebarProps) {
   const [partySize, setPartySize] = useState("");
@@ -408,21 +410,30 @@ export function TableOrderSidebar({
   const handleMoveOrder = async (targetTableId: string) => {
     if (!order || !tableId) return;
 
-    // Optimistic update - close dialog and sidebar immediately
+    // Close dialog immediately
     setShowMoveDialog(false);
-    onClose();
 
-    // Update both tables optimistically
-    onOrderUpdated(tableId);
-    onOrderUpdated(targetTableId);
-
-    // Perform server action
+    // Execute server action FIRST
     const result = await moveOrderToTable(order.id, targetTableId);
 
-    if (!result.success) {
-      // On failure, the tables will be in wrong state until next refresh
-      // Log error - user will see correct state on refresh
+    // THEN refresh tables AFTER database is updated
+    if (result.success) {
+      onOrderUpdated(tableId); // Refresh source table
+      onOrderUpdated(targetTableId); // Refresh target table
+
+      // Switch to destination table instead of closing
+      if (onTableChange) {
+        onTableChange(targetTableId);
+      } else {
+        onClose(); // Fallback to closing if callback not provided
+      }
+    } else {
       console.error("Failed to move order:", result.error);
+      toast({
+        title: "Error al mover la orden",
+        description: result.error || "Intenta nuevamente",
+        variant: "destructive",
+      });
     }
   };
 

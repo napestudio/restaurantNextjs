@@ -45,7 +45,7 @@ export function ProductPicker({
     return products.filter(
       (product) =>
         product.name.toLowerCase().includes(query) ||
-        product.category?.name.toLowerCase().includes(query)
+        product.category?.name.toLowerCase().includes(query),
     );
   }, [products, searchQuery]);
 
@@ -93,7 +93,7 @@ export function ProductPicker({
         }
         if (filteredProducts.length > 0) {
           setHighlightedIndex((prev) =>
-            prev < filteredProducts.length - 1 ? prev + 1 : 0
+            prev < filteredProducts.length - 1 ? prev + 1 : 0,
           );
         }
         break;
@@ -105,14 +105,18 @@ export function ProductPicker({
         }
         if (filteredProducts.length > 0) {
           setHighlightedIndex((prev) =>
-            prev > 0 ? prev - 1 : filteredProducts.length - 1
+            prev > 0 ? prev - 1 : filteredProducts.length - 1,
           );
         }
         break;
 
       case "Enter":
         e.preventDefault();
-        if (showSuggestions && highlightedIndex >= 0 && filteredProducts[highlightedIndex]) {
+        if (
+          showSuggestions &&
+          highlightedIndex >= 0 &&
+          filteredProducts[highlightedIndex]
+        ) {
           // Add highlighted item to pre-order
           handleSelectProduct(filteredProducts[highlightedIndex]);
         } else if (!searchQuery && onSubmitPreOrder) {
@@ -169,7 +173,9 @@ export function ProductPicker({
               filteredProducts.map((product, index) => (
                 <button
                   key={product.id}
-                  ref={(el) => (itemRefs.current[index] = el)}
+                  ref={(el) => {
+                    itemRefs.current[index] = el;
+                  }}
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault(); // Prevent blur
@@ -178,7 +184,7 @@ export function ProductPicker({
                   onMouseEnter={() => setHighlightedIndex(index)}
                   className={cn(
                     "w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors",
-                    highlightedIndex === index && "bg-blue-100 border-blue-300"
+                    highlightedIndex === index && "bg-blue-100 border-blue-300",
                   )}
                 >
                   <div className="flex justify-between items-start gap-2">
