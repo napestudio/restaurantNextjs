@@ -1,8 +1,12 @@
 import { getRestaurant } from "@/actions/Restaurant";
 import RestaurantConfigForm from "@/components/dashboard/restaurant-config-form";
 import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function RestaurantConfigPage() {
+  await requireRole(UserRole.ADMIN);
+
   const restaurantId = process.env.RESTAURANT_ID || "";
 
   if (!restaurantId) {

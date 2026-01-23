@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { Metadata } from "next";
-import { isUserAdmin } from "@/lib/permissions";
+import { getUserRole } from "@/lib/permissions/roles";
+import { getNavItems } from "@/lib/dashboard-nav";
 import { ConditionalGgEzPrintProvider } from "@/components/providers/conditional-gg-ez-print-provider";
 import { getCurrentUserBranchId } from "@/lib/user-branch";
 import { hasBranchPrinters } from "@/actions/PrinterActions";
@@ -38,8 +39,11 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Pre-fetch admin status to pass to nav (avoids redundant auth calls)
-  const hasAdminRole = await isUserAdmin(session.user.id);
+  // Get user's role to pass to nav
+  const userRole = await getUserRole(session.user.id);
+
+  // Get filtered nav items on server
+  const navItems = getNavItems(userRole);
 
   // Check if branch has printers (for conditional loading of gg-ez-print)
   const branchId = await getCurrentUserBranchId();
@@ -50,7 +54,8 @@ export default async function DashboardLayout({
       <div className="min-h-screen bg-gray-50 w-full">
         <DashboardNav
           userName={session.user.name || session.user.email || ""}
-          hasAdminRole={hasAdminRole}
+          userRole={userRole}
+          navItems={navItems}
         />
         <main className="mx-auto">{children}</main>
       </div>

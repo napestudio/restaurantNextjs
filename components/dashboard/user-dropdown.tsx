@@ -10,17 +10,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { UserRole } from "@/app/generated/prisma";
+import { isAdminOrHigher } from "@/lib/permissions/role-utils";
 
 interface UserDropdownProps {
   userName: string;
-  hasAdminRole: boolean;
+  userRole: UserRole | null;
 }
 
 export default function UserDropdown({
   userName,
-  hasAdminRole,
+  userRole,
 }: UserDropdownProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const hasAdminRole = isAdminOrHigher(userRole);
 
   const handleLogout = async () => {
     setIsLoading(true);

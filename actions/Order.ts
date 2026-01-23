@@ -5,9 +5,11 @@ import {
   OrderStatus,
   OrderType,
   PaymentMethod,
+  UserRole,
   type Product,
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
+import { authorizeAction } from "@/lib/permissions/middleware";
 
 // ============================================================================
 // Helper Functions (internal, not exported)
@@ -668,6 +670,9 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
 // Update order item price
 export async function updateOrderItemPrice(itemId: string, price: number) {
   try {
+    // Authorization check - only MANAGER and above can modify order prices
+    await authorizeAction(UserRole.MANAGER, "Solo gerentes y superiores pueden modificar precios");
+
     const item = await prisma.orderItem.update({
       where: { id: itemId },
       data: { price },
@@ -1509,6 +1514,9 @@ export async function updateDiscount(
   discountPercentage: number
 ) {
   try {
+    // Authorization check - only MANAGER and above can apply discounts
+    await authorizeAction(UserRole.MANAGER, "Solo gerentes y superiores pueden aplicar descuentos");
+
     // Validate discount percentage (0-100)
     if (discountPercentage < 0 || discountPercentage > 100) {
       return {

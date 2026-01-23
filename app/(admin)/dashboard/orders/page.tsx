@@ -2,7 +2,8 @@ import { getOrders, getAvailableProductsForOrder } from "@/actions/Order";
 import { OrdersClient } from "./orders-client";
 import prisma from "@/lib/prisma";
 import { ProductsProvider } from "@/contexts/products-context";
-import { OrderType } from "@/app/generated/prisma";
+import { OrderType, UserRole } from "@/app/generated/prisma";
+import { requireRole } from "@/lib/permissions/middleware";
 
 type SearchParams = Promise<{
   type?: string;
@@ -15,6 +16,8 @@ export default async function OrdersPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireRole(UserRole.WAITER);
+
   const params = await searchParams;
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";

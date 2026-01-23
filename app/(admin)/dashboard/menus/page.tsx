@@ -1,7 +1,11 @@
 import { getMenus } from "@/actions/menus";
 import { MenusClient } from "./components/menus-client";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function MenusPage() {
+  await requireRole(UserRole.ADMIN);
+
   // TODO: Get restaurantId from user session/context
   const restaurantId = process.env.RESTAURANT_ID || "";
 

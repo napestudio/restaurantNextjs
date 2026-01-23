@@ -2,8 +2,12 @@ import { getCashRegistersByBranch } from "@/actions/CashRegister";
 import { BRANCH_ID } from "@/lib/constants";
 import { CashRegistersClient } from "./cash-registers-client";
 import prisma from "@/lib/prisma";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function CashRegistersPage() {
+  await requireRole(UserRole.MANAGER);
+
   const branchId = BRANCH_ID || "";
 
   // Fetch cash registers with their current session status

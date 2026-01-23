@@ -1,7 +1,11 @@
 import { TimeSlotsManager } from "@/components/dashboard/time-slots-manager";
 import { getTimeSlots } from "@/actions/TimeSlot";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function TimeSlotsPage() {
+  await requireRole(UserRole.ADMIN);
+
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || ""; // Replace with actual branchId from auth
 
