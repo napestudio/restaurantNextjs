@@ -1,12 +1,12 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import { Metadata } from "next";
-import { getUserRole } from "@/lib/permissions/roles";
-import { getNavItems } from "@/lib/dashboard-nav";
-import { ConditionalGgEzPrintProvider } from "@/components/providers/conditional-gg-ez-print-provider";
-import { getCurrentUserBranchId } from "@/lib/user-branch";
 import { hasBranchPrinters } from "@/actions/PrinterActions";
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { ConditionalGgEzPrintProvider } from "@/components/providers/conditional-gg-ez-print-provider";
+import { auth } from "@/lib/auth";
+import { getNavItems } from "@/lib/dashboard-nav";
+import { getUserRole } from "@/lib/permissions/roles";
+import { getCurrentUserBranchId } from "@/lib/user-branch";
+import { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Kiku Sushi - Panel de Administración",
