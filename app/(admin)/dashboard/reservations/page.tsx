@@ -1,8 +1,12 @@
 import { getFilteredReservations } from "@/actions/Reservation";
 import { getTimeSlots } from "@/actions/TimeSlot";
 import { ReservationsManager } from "@/components/dashboard/reservations-manager";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function ReservationsPage() {
+  await requireRole(UserRole.WAITER);
+
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";
 
@@ -23,13 +27,14 @@ export default async function ReservationsPage() {
       ? reservationsResult.data.reservations
       : [];
 
-  const pagination = reservationsResult.success && reservationsResult.data
-    ? {
-        nextCursor: reservationsResult.data.nextCursor,
-        hasMore: reservationsResult.data.hasMore,
-        totalCount: reservationsResult.data.totalCount,
-      }
-    : { nextCursor: null, hasMore: false, totalCount: 0 };
+  const pagination =
+    reservationsResult.success && reservationsResult.data
+      ? {
+          nextCursor: reservationsResult.data.nextCursor,
+          hasMore: reservationsResult.data.hasMore,
+          totalCount: reservationsResult.data.totalCount,
+        }
+      : { nextCursor: null, hasMore: false, totalCount: 0 };
 
   return (
     <div className="min-h-screen bg-gray-50">

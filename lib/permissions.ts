@@ -11,7 +11,7 @@ export const isUserAdmin = unstable_cache(
     const adminAccess = await prisma.userOnBranch.findFirst({
       where: {
         userId,
-        role: UserRole.ADMIN || UserRole.MANAGER,
+        role: { in: [UserRole.ADMIN, UserRole.MANAGER] },
       },
     });
 
@@ -35,7 +35,7 @@ export async function isUserAdminInBranch(
     where: {
       userId,
       branchId,
-      role: UserRole.ADMIN || UserRole.MANAGER,
+      role: { in: [UserRole.ADMIN, UserRole.MANAGER] },
     },
   });
 

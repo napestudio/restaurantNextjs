@@ -12,27 +12,13 @@ import { isUserAdmin } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import type { UserWithBranches } from "@/types/user";
+import { UserRole } from "@/app/generated/prisma";
+import { authorizeAction } from "@/lib/permissions/middleware";
 
 export async function createUser(data: UserRegistrationInput) {
   try {
-    // Check authentication and admin status
-    const session = await auth();
-
-    if (!session?.user) {
-      return {
-        success: false,
-        error: "You must be logged in to perform this action",
-      };
-    }
-
-    // Check if user has admin role in any branch
-    const hasAdminAccess = await isUserAdmin(session.user.id);
-    if (!hasAdminAccess) {
-      return {
-        success: false,
-        error: "You do not have permission to create users",
-      };
-    }
+    // Authorization check - only SUPERADMIN can create users
+    await authorizeAction(UserRole.SUPERADMIN);
 
     // Validate input
     const validation = userRegistrationSchema.safeParse(data);
@@ -252,22 +238,8 @@ export async function updateUser(
   message?: string;
 }> {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return {
-        success: false,
-        error: "Debes iniciar sesión para realizar esta acción",
-      };
-    }
-
-    const hasAdminAccess = await isUserAdmin(session.user.id);
-    if (!hasAdminAccess) {
-      return {
-        success: false,
-        error: "No tienes permisos para editar usuarios",
-      };
-    }
+    // Authorization check - only SUPERADMIN can update users
+    await authorizeAction(UserRole.SUPERADMIN);
 
     const validation = userUpdateSchema.safeParse(data);
 
@@ -409,25 +381,11 @@ export async function deleteUser(userId: string): Promise<{
   message?: string;
 }> {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return {
-        success: false,
-        error: "Debes iniciar sesión para realizar esta acción",
-      };
-    }
-
-    const hasAdminAccess = await isUserAdmin(session.user.id);
-    if (!hasAdminAccess) {
-      return {
-        success: false,
-        error: "No tienes permisos para eliminar usuarios",
-      };
-    }
+    // Authorization check - only SUPERADMIN can delete users
+    const { userId: sessionUserId } = await authorizeAction(UserRole.SUPERADMIN);
 
     // Prevent self-deletion
-    if (session.user.id === userId) {
+    if (sessionUserId === userId) {
       return {
         success: false,
         error: "No puedes eliminar tu propio usuario",

@@ -1,7 +1,11 @@
 import { getBranchStockSummary, getLowStockAlerts } from "@/actions/stock";
 import { StockManagementClient } from "./components/stock-management-client";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function StockPage() {
+  await requireRole(UserRole.MANAGER);
+
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";
 

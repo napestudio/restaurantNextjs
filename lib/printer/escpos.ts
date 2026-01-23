@@ -277,12 +277,13 @@ export function prepareEscPosData(data: string): Buffer {
 }
 
 /**
- * Prepare ESC/POS data and return as base64 string for QZ Tray
+ * Prepare ESC/POS data and return as binary string for gg-ez-print
  * This is the primary method for client-side printing
+ * Uses latin1 encoding to preserve raw byte values (0-255) in a string
  */
 export function prepareEscPosBase64(data: string): string {
   const buffer = prepareEscPosData(data);
-  return buffer.toString("base64");
+  return buffer.toString("latin1");
 }
 
 /**
@@ -809,6 +810,17 @@ export function generateTestPageData(config: PrinterConfig): string {
 
   let content = Commands.INIT;
 
+  // Custom header if configured
+  if (config.ticketHeader) {
+    content += Commands.ALIGN_CENTER;
+    content += getSizeCommand(config.ticketHeaderSize ?? 2);
+    content += Commands.BOLD_ON;
+    content += `${config.ticketHeader}\n`;
+    content += Commands.BOLD_OFF;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
+
   content += Commands.ALIGN_CENTER;
   content += Commands.DOUBLE_SIZE_ON;
   content += "PRUEBA DE IMPRESION\n";
@@ -886,6 +898,15 @@ export function generateTestPageData(config: PrinterConfig): string {
 
   content += Commands.ALIGN_LEFT;
   content += separator(width, "=") + "\n";
+
+  // Custom footer if configured
+  if (config.ticketFooter) {
+    content += Commands.ALIGN_CENTER;
+    content += getSizeCommand(config.ticketFooterSize ?? 1);
+    content += `${config.ticketFooter}\n`;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
 
   content += Commands.FEED_LINES(3);
   content += Commands.CUT_PARTIAL;

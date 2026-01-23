@@ -1,8 +1,12 @@
 import { getTablesWithStatus } from "@/actions/Table";
 import { TablesClientWrapper } from "@/components/dashboard/tables-client-wrapper";
 import { BRANCH_ID } from "@/lib/constants";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function ConfigTables() {
+  await requireRole(UserRole.ADMIN);
+
   const branchId = BRANCH_ID || "";
   const tablesResult = await getTablesWithStatus(branchId);
   const tables =

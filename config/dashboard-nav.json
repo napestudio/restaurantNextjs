@@ -1,44 +1,44 @@
 {
   "items": [
     {
+      "label": "Ordenes",
+      "href": "/dashboard/orders",
+      "minimumRole": "WAITER"
+    },
+    {
       "label": "Mesas",
       "href": "/dashboard/tables",
-      "adminOnly": true
+      "minimumRole": "WAITER"
     },
     {
       "label": "Reservas",
       "href": "/dashboard/reservations",
-      "adminOnly": true
-    },
-    {
-      "label": "Ordenes",
-      "href": "/dashboard/orders",
-      "adminOnly": true
+      "minimumRole": "WAITER"
     },
     {
       "label": "Arqueos",
       "href": "/dashboard/cash-registers",
-      "adminOnly": true
+      "minimumRole": "MANAGER"
     },
     {
-      "label": "Menú",
+      "label": "Cartas",
       "href": "/dashboard/menus",
-      "adminOnly": true
+      "minimumRole": "ADMIN"
     },
     {
       "label": "Productos",
       "href": "/dashboard/menu-items",
-      "adminOnly": true
+      "minimumRole": "ADMIN"
     },
     {
       "label": "Stock",
       "href": "/dashboard/stock",
-      "adminOnly": true
+      "minimumRole": "MANAGER"
     },
     {
       "label": "Configuración",
       "href": "/dashboard/config/restaurant",
-      "adminOnly": true
+      "minimumRole": "ADMIN"
     }
   ]
 }

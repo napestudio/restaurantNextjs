@@ -1,8 +1,12 @@
 import { getTablesWithStatus } from "@/actions/Table";
 import { TablesClientWrapper } from "@/components/dashboard/tables-client-wrapper";
 import { BRANCH_ID } from "@/lib/constants";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function TablesPage() {
+  await requireRole(UserRole.WAITER);
+
   // TODO: Get branchId from user session/context
   const branchId = BRANCH_ID || "";
 

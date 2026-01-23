@@ -2,8 +2,12 @@ import { getCashRegistersByBranch } from "@/actions/CashRegister";
 import { getSectorsByBranch } from "@/actions/Sector";
 import { CashRegistersManager } from "@/components/dashboard/cash-registers/cash-registers-manager";
 import { BRANCH_ID } from "@/lib/constants";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function CashRegistersConfigPage() {
+  await requireRole(UserRole.ADMIN);
+
   const branchId = BRANCH_ID || "";
 
   const [cashRegistersResult, sectorsResult] = await Promise.all([

@@ -1,6 +1,5 @@
 "use client";
 
-import { getNavItems } from "@/lib/dashboard-nav";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
@@ -8,13 +7,21 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import DashBoardNavItems from "./dashboard-nav-items";
 import UserDropdown from "./user-dropdown";
-interface DashboardNavProps {
-  userName: string;
-  hasAdminRole: boolean;
+import { UserRole } from "@/app/generated/prisma";
+
+interface NavItem {
+  label: string;
+  href: string;
+  minimumRole?: string;
 }
 
-export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
-  const navItems = getNavItems(hasAdminRole);
+interface DashboardNavProps {
+  userName: string;
+  userRole: UserRole | null;
+  navItems: NavItem[];
+}
+
+export function DashboardNav({ userName, userRole, navItems }: DashboardNavProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const currentPath = usePathname();
 
@@ -32,7 +39,7 @@ export function DashboardNav({ userName, hasAdminRole }: DashboardNavProps) {
 
           {/* Right: gg-ez-print Status, User Dropdown & Mobile Menu Button */}
           <div className="flex items-center gap-2">
-            <UserDropdown userName={userName} hasAdminRole={hasAdminRole} />
+            <UserDropdown userName={userName} userRole={userRole} />
 
             {/* Mobile menu button */}
             <button
