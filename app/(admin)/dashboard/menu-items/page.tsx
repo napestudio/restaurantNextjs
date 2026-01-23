@@ -1,7 +1,11 @@
 import { getMenuItems, getCategories } from "@/actions/menuItems";
 import { MenuItemsClient } from "./components/menu-items-client";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function MenuItemsPage() {
+  await requireRole(UserRole.ADMIN);
+
   // TODO: Get restaurantId and branchId from user session/context
   const restaurantId = process.env.RESTAURANT_ID || "";
   const branchId = process.env.BRANCH_ID || "";

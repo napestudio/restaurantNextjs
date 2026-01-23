@@ -2,8 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
+import { UnitType, WeightUnit, VolumeUnit, PriceType, UserRole } from "@/app/generated/prisma";
 import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/permissions/middleware";
 
 export type CreateMenuItemInput = {
   name: string;
@@ -290,6 +291,9 @@ export async function getMenuItem(id: string) {
  */
 export async function setProductOnBranch(input: SetProductBranchInput) {
   try {
+    // Authorization check - only ADMIN and above can set product prices
+    await authorizeAction(UserRole.ADMIN);
+
     // Buscar o crear ProductOnBranch
     const existingProductOnBranch = await prisma.productOnBranch.findUnique({
       where: {

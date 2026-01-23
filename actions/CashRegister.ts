@@ -3,8 +3,9 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z, ZodError } from "zod";
-import { Prisma } from "@/app/generated/prisma";
+import { Prisma, UserRole } from "@/app/generated/prisma";
 import { serializeForClient } from "@/lib/serialize";
+import { authorizeAction } from "@/lib/permissions/middleware";
 
 // =============================================================================
 // SCHEMAS
@@ -402,6 +403,9 @@ export async function openCashRegisterSession(
   data: z.infer<typeof openSessionSchema>
 ) {
   try {
+    // Authorization check - only MANAGER and above can open cash register sessions
+    await authorizeAction(UserRole.MANAGER);
+
     const validatedData = openSessionSchema.parse(data);
 
     // Use transaction to ensure atomicity
@@ -476,6 +480,9 @@ export async function closeCashRegisterSession(
   data: z.infer<typeof closeSessionSchema>
 ) {
   try {
+    // Authorization check - only MANAGER and above can close cash register sessions
+    await authorizeAction(UserRole.MANAGER);
+
     const validatedData = closeSessionSchema.parse(data);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -642,6 +649,9 @@ export async function addManualMovement(
   data: z.infer<typeof addMovementSchema>
 ) {
   try {
+    // Authorization check - only MANAGER and above can add manual cash movements
+    await authorizeAction(UserRole.MANAGER);
+
     const validatedData = addMovementSchema.parse(data);
 
     const result = await prisma.$transaction(async (tx) => {

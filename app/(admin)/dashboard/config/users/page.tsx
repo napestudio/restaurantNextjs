@@ -1,24 +1,16 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { isUserAdmin } from "@/lib/permissions";
 import { getUsers } from "@/actions/users";
 import { UsersClient } from "./users-client";
 import prisma from "@/lib/prisma";
+import { requireRole } from "@/lib/permissions/middleware";
+import { UserRole } from "@/app/generated/prisma";
+import { redirect } from "next/navigation";
 
 export default async function UsersPage() {
-  const session = await auth();
-  if (!session?.user) {
-    return null;
-  }
-  const hasAdminRole = await isUserAdmin(session.user.id);
-
-  if (!hasAdminRole) {
-    redirect("/dashboard");
-  }
+  const { userId } = await requireRole(UserRole.SUPERADMIN);
 
   // Get the user's branch
   const userOnBranch = await prisma.userOnBranch.findFirst({
-    where: { userId: session.user.id },
+    where: { userId },
     select: { branchId: true },
   });
 
@@ -32,7 +24,7 @@ export default async function UsersPage() {
     <div className="px-4 sm:px-6 lg:px-8 py-16">
       <UsersClient
         initialUsers={usersResult.data || []}
-        currentUserId={session.user.id}
+        currentUserId={userId}
         branchId={userOnBranch.branchId}
       />
     </div>
