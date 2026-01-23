@@ -908,8 +908,8 @@ export function generateTestPageData(config: PrinterConfig): string {
     content += Commands.FEED_LINE;
   }
 
-  content += Commands.FEED_LINES(3);
-  content += Commands.CUT_PARTIAL;
+  // Note: Feed and cut commands are handled by gg-ez-print automatically
+  // No need to add them here to avoid double cutting
 
   return prepareEscPosBase64(content);
 }
@@ -978,8 +978,7 @@ export function generateOrderData(config: PrinterConfig, order: OrderData): stri
     content += separator(width) + "\n";
   }
 
-  content += Commands.FEED_LINES(3);
-  content += Commands.CUT_PARTIAL;
+  // Note: Feed and cut commands are handled by gg-ez-print automatically
 
   return prepareEscPosBase64(content);
 }
@@ -1126,8 +1125,7 @@ export function generateFullOrderData(config: PrinterConfig, order: FullOrderDat
     content += Commands.FEED_LINE;
   }
 
-  content += Commands.FEED_LINES(3);
-  content += Commands.CUT_PARTIAL;
+  // Note: Feed and cut commands are handled by gg-ez-print automatically
 
   return prepareEscPosBase64(content);
 }
