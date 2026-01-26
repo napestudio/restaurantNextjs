@@ -87,7 +87,9 @@ function buildPrinterTarget(printer: {
 /**
  * Prepare a test print job - returns ESC/POS data for client to send via gg-ez-print
  */
-export async function prepareTestPrint(printerId: string): Promise<PreparedPrintResult> {
+export async function prepareTestPrint(
+  printerId: string,
+): Promise<PreparedPrintResult> {
   try {
     const printer = await prisma.printer.findUnique({
       where: { id: printerId },
@@ -112,7 +114,10 @@ export async function prepareTestPrint(printerId: string): Promise<PreparedPrint
       data: {
         printerId: printer.id,
         orderId: null,
-        content: JSON.stringify({ type: "TEST", timestamp: new Date().toISOString() }),
+        content: JSON.stringify({
+          type: "TEST",
+          timestamp: new Date().toISOString(),
+        }),
         jobType: "TEST",
         status: PrintJobStatus.PENDING,
       },
@@ -135,7 +140,10 @@ export async function prepareTestPrint(printerId: string): Promise<PreparedPrint
     };
   } catch (error) {
     console.error("Error preparing test print:", error);
-    return { success: false, error: "Error al preparar la impresión de prueba" };
+    return {
+      success: false,
+      error: "Error al preparar la impresión de prueba",
+    };
   }
 }
 
@@ -164,7 +172,7 @@ interface OrderInfoForPrint {
  */
 export async function prepareOrderItemsPrint(
   orderInfo: OrderInfoForPrint,
-  items: OrderItemForPrint[]
+  items: OrderItemForPrint[],
 ): Promise<PreparedPrintResult> {
   try {
     // Get all active auto-print printers for this branch
@@ -205,12 +213,15 @@ export async function prepareOrderItemsPrint(
           })
         : [];
 
-    const productCategoryMap = new Map(products.map((p) => [p.id, p.categoryId]));
+    const productCategoryMap = new Map(
+      products.map((p) => [p.id, p.categoryId]),
+    );
 
     // Enrich items with category IDs
     const enrichedItems = items.map((item) => ({
       ...item,
-      categoryId: item.categoryId || productCategoryMap.get(item.productId) || null,
+      categoryId:
+        item.categoryId || productCategoryMap.get(item.productId) || null,
     }));
 
     const jobs: PrintJobData[] = [];
@@ -222,12 +233,13 @@ export async function prepareOrderItemsPrint(
 
       if (printer.station) {
         const stationCategoryIds = new Set(
-          printer.station.stationCategories.map((sc) => sc.categoryId)
+          printer.station.stationCategories.map((sc) => sc.categoryId),
         );
 
         if (stationCategoryIds.size > 0) {
           stationItems = enrichedItems.filter(
-            (item) => item.categoryId && stationCategoryIds.has(item.categoryId)
+            (item) =>
+              item.categoryId && stationCategoryIds.has(item.categoryId),
           );
         } else {
           // Station has no categories - skip
@@ -287,7 +299,10 @@ export async function prepareOrderItemsPrint(
     };
   } catch (error) {
     console.error("Error preparing order items print:", error);
-    return { success: false, error: "Error al preparar la impresión de comanda" };
+    return {
+      success: false,
+      error: "Error al preparar la impresión de comanda",
+    };
   }
 }
 
@@ -319,7 +334,7 @@ interface ControlTicketInfo {
  * Prepare print jobs for control ticket (full order with prices)
  */
 export async function prepareControlTicketPrint(
-  ticketInfo: ControlTicketInfo
+  ticketInfo: ControlTicketInfo,
 ): Promise<PreparedPrintResult> {
   try {
     // Get printers configured for control tickets
@@ -419,7 +434,7 @@ export async function prepareControlTicketPrint(
 export async function updatePrintJobStatus(
   printJobId: string,
   success: boolean,
-  error?: string
+  error?: string,
 ): Promise<{ success: boolean }> {
   try {
     const printJob = await prisma.printJob.update({
@@ -453,7 +468,7 @@ export async function updatePrintJobStatus(
  * Batch update multiple print job statuses
  */
 export async function updatePrintJobStatuses(
-  results: Array<{ printJobId: string; success: boolean; error?: string }>
+  results: Array<{ printJobId: string; success: boolean; error?: string }>,
 ): Promise<{ success: boolean }> {
   try {
     await Promise.all(
@@ -461,7 +476,9 @@ export async function updatePrintJobStatuses(
         await prisma.printJob.update({
           where: { id: result.printJobId },
           data: {
-            status: result.success ? PrintJobStatus.SENT : PrintJobStatus.FAILED,
+            status: result.success
+              ? PrintJobStatus.SENT
+              : PrintJobStatus.FAILED,
             error: result.error || null,
             sentAt: result.success ? new Date() : null,
             attempts: { increment: 1 },
@@ -477,11 +494,13 @@ export async function updatePrintJobStatuses(
           await prisma.printer.update({
             where: { id: printJob.printerId },
             data: {
-              status: result.success ? PrinterStatus.ONLINE : PrinterStatus.ERROR,
+              status: result.success
+                ? PrinterStatus.ONLINE
+                : PrinterStatus.ERROR,
             },
           });
         }
-      })
+      }),
     );
 
     revalidatePath("/dashboard/config/printers");
@@ -519,7 +538,9 @@ export async function hasBranchPrinters(branchId: string): Promise<boolean> {
 /**
  * Check if a branch has control ticket printers (FULL_ORDER or BOTH mode)
  */
-export async function hasBranchControlTicketPrinters(branchId: string): Promise<boolean> {
+export async function hasBranchControlTicketPrinters(
+  branchId: string,
+): Promise<boolean> {
   try {
     const count = await prisma.printer.count({
       where: {
@@ -532,5 +553,125 @@ export async function hasBranchControlTicketPrinters(branchId: string): Promise<
   } catch (error) {
     console.error("Error checking branch control ticket printers:", error);
     return false;
+  }
+}
+
+// ============================================================================
+// PREPARE AFIP INVOICE PRINT (TEST PAGE)
+// ============================================================================
+
+/**
+ * AFIP Invoice print parameters (for test page)
+ */
+export interface AfipInvoicePrintParams {
+  // Invoice header
+  invoiceType: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+
+  // Issuer
+  businessName?: string;
+  cuit: string;
+
+  // Customer
+  customerDoc: string;
+
+  // Items
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    vatRate: number;
+    total: number;
+  }>;
+
+  // Totals
+  subtotal: number;
+  vatBreakdown: Array<{
+    rate: number;
+    base: number;
+    amount: number;
+  }>;
+  totalVat: number;
+  total: number;
+
+  // AFIP authorization
+  cae: string;
+  caeExpiration: string;
+
+  // QR code URL
+  // qrUrl: string;
+
+  // Printer config
+  printerIp: string;
+  charactersPerLine?: number;
+}
+
+/**
+ * Prepare AFIP invoice print job for test page
+ * Returns ESC/POS data for client to send via gg-ez-print
+ *
+ * NOTE: This is a simplified version for the test page that doesn't use
+ * the database printer configuration or print job tracking.
+ */
+export async function prepareAfipInvoicePrint(
+  params: AfipInvoicePrintParams,
+): Promise<PreparedPrintResult> {
+  try {
+    const { generateAfipInvoiceData } = await import("@/lib/printer/escpos");
+
+    // Prepare invoice data
+    const invoiceData = {
+      invoiceType: params.invoiceType,
+      invoiceNumber: params.invoiceNumber,
+      invoiceDate: params.invoiceDate,
+      businessName: params.businessName,
+      cuit: params.cuit,
+      customerDoc: params.customerDoc,
+      items: params.items,
+      subtotal: params.subtotal,
+      vatBreakdown: params.vatBreakdown,
+      totalVat: params.totalVat,
+      total: params.total,
+      cae: params.cae,
+      caeExpiration: params.caeExpiration,
+      qrUrl: "", // params.qrUrl - Lo mandamos vacio porque no hace falta
+    };
+
+    // Generate ESC/POS data
+    const escPosData = generateAfipInvoiceData(invoiceData, {
+      charactersPerLine: params.charactersPerLine || 48,
+    });
+
+    // Build print target for network printer
+    const target: PrinterTarget = {
+      type: "network",
+      systemName: params.printerIp,
+      printerName: `Network Printer (${params.printerIp})`,
+      copies: 1,
+    };
+
+    return {
+      success: true,
+      jobs: [
+        {
+          printerId: "test-arca-printer", // Not a real printer ID
+          printerName: target.printerName || params.printerIp,
+          target,
+          escPosData,
+          copies: 1,
+        },
+      ],
+      printJobIds: [], // No database tracking for test page
+    };
+  } catch (error) {
+    console.error("Error preparing AFIP invoice print:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al preparar la impresión de factura AFIP",
+    };
   }
 }

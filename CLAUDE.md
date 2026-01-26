@@ -65,6 +65,7 @@ The Prisma schema is organized into logical sections:
 ### Key Architectural Patterns
 
 **Multi-Branch System**: The app supports multiple restaurants with multiple branches. Most entities relate to a specific `Branch`:
+
 - Products have different prices/stock per branch via `ProductOnBranch`
 - Users have branch-specific roles via `UserOnBranch`
 - Orders, reservations, and tables are branch-specific
@@ -78,11 +79,13 @@ The Prisma schema is organized into logical sections:
 ## Database Setup
 
 The project uses PostgreSQL via Docker. Connection defaults:
+
 - Host: localhost:5432
 - Database: restaurant
 - User/Password: postgres/postgres
 
 Set `DATABASE_URL` in `.env`:
+
 ```
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/restaurant"
 ```
@@ -94,7 +97,9 @@ TypeScript is configured with `@/*` mapping to the root directory. Use `@/lib/pr
 ## Development Guidelines
 
 **Separation of Concerns**: When creating new hooks, server actions, routes, or utilities:
+
 - Place implementations in their corresponding folders (`actions/`, `lib/`, API routes in `app/api/`, etc.)
 - **NEVER** add usage examples in the main `app/` codebase
 - Create usage examples in `/demo` or `/showcase` folders to demonstrate how to use the new features
 - This keeps the main application clean and separates reusable code from example implementations
+- Use :any to type

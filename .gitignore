@@ -26,6 +26,11 @@
 .DS_Store
 *.pem
 !certificates/qz-certificate.pem
+*.key
+*.crt
+
+# AFIP/ARCA credentials (DO NOT COMMIT!)
+/credentials
 
 # debug
 npm-debug.log*

@@ -79,28 +79,50 @@ const Commands = {
   BARCODE_HEIGHT: (n: number) => `${GS}h${String.fromCharCode(n)}`,
   BARCODE_WIDTH: (n: number) => `${GS}w${String.fromCharCode(n)}`,
 
-  // QR Code
+  // QR Code (ESC/POS Model 2)
   QR_CODE: (data: string) => {
-    const qrData = `${GS}(k${String.fromCharCode(
-      3,
-      0,
-      49,
-      67,
-      3
-    )}${GS}(k${String.fromCharCode(
-      3,
-      0,
-      49,
-      69,
-      48
-    )}${GS}(k${String.fromCharCode(
-      data.length + 3,
-      0,
-      49,
-      80,
-      48
-    )}${data}${GS}(k${String.fromCharCode(3, 0, 49, 81, 48)}`;
-    return qrData;
+    // GS ( k - QR Code command for ESC/POS printers
+    const pL = (data.length + 3) % 256;  // Length low byte
+    const pH = Math.floor((data.length + 3) / 256); // Length high byte
+
+    // Store QR code data (function 180, '1', 'P', '0')
+    const storeData = `${GS}(k${String.fromCharCode(
+      pL,
+      pH,
+      49,   // '1' - QR Code model
+      80,   // 'P' - Store data
+      48    // '0' - Store to symbol storage area
+    )}${data}`;
+
+    // Print QR code (function 181, '1', 'Q', '0')
+    const printCmd = `${GS}(k${String.fromCharCode(
+      3,    // pL (fixed for print command)
+      0,    // pH
+      49,   // '1' - QR Code model
+      81,   // 'Q' - Print symbol data
+      48    // '0' - Print from symbol storage area
+    )}`;
+
+    // Set QR module size (function 167, '1', 'C', size)
+    const setSize = `${GS}(k${String.fromCharCode(
+      3,    // pL
+      0,    // pH
+      49,   // '1'
+      67,   // 'C' - Set module size
+      5     // Size (1-16, 5 is medium)
+    )}`;
+
+    // Set error correction level (function 169, '1', 'E', level)
+    const setErrorCorrection = `${GS}(k${String.fromCharCode(
+      3,    // pL
+      0,    // pH
+      49,   // '1'
+      69,   // 'E' - Set error correction
+      48    // '0' - Level L (7% recovery)
+    )}`;
+
+    // Full command sequence
+    return setSize + setErrorCorrection + storeData + printCmd;
   },
 };
 
@@ -1190,4 +1212,221 @@ export async function testConnection(
 
     socket.connect(9100, config.systemName);
   });
+}
+
+// ============================================================================
+// AFIP INVOICE PRINTING (for test-arca page)
+// ============================================================================
+
+/**
+ * AFIP Invoice Data for Thermal Printing
+ */
+export interface AfipInvoiceData {
+  // Invoice header
+  invoiceType: string;       // e.g., "FACTURA B"
+  invoiceNumber: string;     // e.g., "00001-00000123"
+  invoiceDate: string;       // e.g., "25/01/2026"
+
+  // Issuer information
+  businessName?: string;     // Optional business name
+  cuit: string;              // Issuer CUIT formatted (e.g., "20-12345678-9")
+
+  // Customer information
+  customerDoc: string;       // e.g., "Consumidor Final" or "DNI: 12345678"
+
+  // Line items
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    vatRate: number;
+    total: number;
+  }>;
+
+  // Totals
+  subtotal: number;
+  vatBreakdown: Array<{
+    rate: number;
+    base: number;
+    amount: number;
+  }>;
+  totalVat: number;
+  total: number;
+
+  // AFIP authorization
+  cae: string;               // CAE code (14 digits)
+  caeExpiration: string;     // CAE expiration date (e.g., "31/01/2026")
+
+  // QR code URL
+  qrUrl: string;             // AFIP verification URL
+}
+
+/**
+ * Generate AFIP invoice ESC/POS data for thermal printing
+ * Formats electronic invoice according to AFIP requirements with QR code
+ */
+export function generateAfipInvoiceData(
+  invoice: AfipInvoiceData,
+  config?: { charactersPerLine?: number }
+): string {
+  const width = config?.charactersPerLine || 48; // 80mm printer standard
+
+  let content = Commands.INIT;
+
+  // ========== HEADER ==========
+  content += Commands.ALIGN_CENTER;
+
+  // Business name if provided
+  if (invoice.businessName) {
+    content += Commands.DOUBLE_HEIGHT_ON;
+    content += Commands.BOLD_ON;
+    content += `${invoice.businessName}\n`;
+    content += Commands.BOLD_OFF;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
+
+  // Invoice type (large)
+  content += Commands.DOUBLE_SIZE_ON;
+  content += Commands.BOLD_ON;
+  content += `${invoice.invoiceType}\n`;
+  content += Commands.BOLD_OFF;
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  // Invoice number
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += `N° ${invoice.invoiceNumber}\n`;
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width, "=") + "\n";
+
+  // ========== INVOICE DETAILS ==========
+  content += formatTwoColumns("Fecha:", invoice.invoiceDate, width) + "\n";
+  content += formatTwoColumns("CUIT:", invoice.cuit, width) + "\n";
+  content += formatTwoColumns("Cliente:", invoice.customerDoc, width) + "\n";
+
+  content += separator(width, "=") + "\n";
+
+  // ========== LINE ITEMS ==========
+  content += Commands.BOLD_ON;
+  content += "DETALLE\n";
+  content += Commands.BOLD_OFF;
+  content += separator(width) + "\n";
+
+  // Column headers
+  const headerLine = formatLine("Cant Descripcion", width - 10, "left") +
+                     formatLine("Total", 10, "right");
+  content += headerLine + "\n";
+  content += separator(width) + "\n";
+
+  // Items
+  for (const item of invoice.items) {
+    const itemLine = `${item.quantity}x ${item.description}`;
+    const priceStr = `$${item.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+
+    // If item name is too long, wrap to next line
+    const maxDescLength = width - priceStr.length - 1;
+    if (itemLine.length > maxDescLength) {
+      content += itemLine.substring(0, maxDescLength) + "\n";
+      content += formatTwoColumns("", priceStr, width) + "\n";
+    } else {
+      content += formatTwoColumns(itemLine, priceStr, width) + "\n";
+    }
+
+    // Show unit price and VAT rate on separate line
+    const detailLine = `  $${item.unitPrice.toFixed(2)} c/u (IVA ${item.vatRate}%)`;
+    content += detailLine + "\n";
+  }
+
+  content += separator(width) + "\n";
+
+  // ========== TOTALS ==========
+  content += formatTwoColumns(
+    "Subtotal:",
+    `$${invoice.subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+    width
+  ) + "\n";
+
+  // VAT breakdown
+  for (const vat of invoice.vatBreakdown) {
+    content += formatTwoColumns(
+      `IVA ${vat.rate}%:`,
+      `$${vat.amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+      width
+    ) + "\n";
+  }
+
+  content += separator(width) + "\n";
+
+  // Total (bold and large)
+  content += Commands.BOLD_ON;
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += formatTwoColumns(
+    "TOTAL:",
+    `$${invoice.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+    width
+  ) + "\n";
+  content += Commands.NORMAL_SIZE;
+  content += Commands.BOLD_OFF;
+
+  content += separator(width, "=") + "\n";
+
+  // ========== AFIP AUTHORIZATION ==========
+  content += Commands.BOLD_ON;
+  content += "AUTORIZACION AFIP\n";
+  content += Commands.BOLD_OFF;
+
+  content += formatTwoColumns("CAE:", invoice.cae, width) + "\n";
+  content += formatTwoColumns("Vto. CAE:", invoice.caeExpiration, width) + "\n";
+
+  content += separator(width) + "\n";
+
+  // ========== QR CODE ==========
+  content += Commands.ALIGN_CENTER;
+  content += "Codigo QR AFIP\n";
+  content += "Escanear para verificar\n";
+  content += Commands.FEED_LINE;
+
+  // Try to print QR code using ESC/POS command (Model 2)
+  // This works with most ESC/POS compatible printers
+  try {
+    content += Commands.QR_CODE(invoice.qrUrl);
+    content += Commands.FEED_LINE;
+  } catch (e) {
+    console.warn("QR code generation failed, falling back to URL text");
+  }
+
+  // Also print URL as text (fallback/verification)
+  content += Commands.ALIGN_LEFT;
+  content += Commands.NORMAL_SIZE;
+  // Split URL into lines to fit on 48-char receipt
+  const urlPrefix = "URL: ";
+  const url = invoice.qrUrl;
+  if (url.length + urlPrefix.length > width) {
+    content += urlPrefix + "\n";
+    // Print URL in chunks
+    for (let i = 0; i < url.length; i += width) {
+      content += url.substring(i, i + width) + "\n";
+    }
+  } else {
+    content += urlPrefix + url + "\n";
+  }
+  content += Commands.FEED_LINE;
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width, "=") + "\n";
+
+  // ========== FOOTER ==========
+  content += Commands.ALIGN_CENTER;
+  content += Commands.NORMAL_SIZE;
+  content += "Documento no valido como factura\n";
+  content += "COMPROBANTE DE PRUEBA\n";
+  content += Commands.FEED_LINE;
+
+  // Note: Feed and cut commands are handled by gg-ez-print automatically
+
+  return prepareEscPosBase64(content);
 }
