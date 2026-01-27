@@ -597,7 +597,8 @@ model Client {
 
   // Additional info
   birthDate DateTime?
-  taxId     String? // CUIT/DNI
+  taxId     String? // CUIT/DNI number
+  taxIdType Int?    // 80=CUIT, 96=DNI, null=not specified
   notes     String?
 
   // Address
@@ -693,16 +694,53 @@ model Invoice {
   order   Order  @relation(fields: [orderId], references: [id])
   orderId String
 
-  // Invoice details
-  name        String // Customer/Business name
-  cuit        String? // Tax ID (CUIT/CUIL in Argentina)
-  description String? // Additional notes or description
-  customItem  String? // Optional custom item not in the order
+  // Customer information
+  customerName      String // Business or person name
+  customerDocType   Int    // 80=CUIT, 86=CUIL, 96=DNI, 99=Consumidor Final
+  customerDocNumber String // Document number ("0" for Consumidor Final)
 
+  // AFIP invoice details
+  invoiceType   Int      // 1=Factura A, 6=Factura B, 11=Factura C
+  ptoVta        Int      // Sales point from ARCA_PTO_VTA
+  invoiceNumber Int      // Sequential number from AFIP
+  invoiceDate   DateTime // Invoice emission date
+
+  // Amounts (denormalized for queries)
+  subtotal    Decimal @db.Decimal(12, 2) // Net taxable amount
+  vatAmount   Decimal @db.Decimal(12, 2) // Total VAT
+  totalAmount Decimal @db.Decimal(12, 2) // Final total
+
+  // VAT breakdown stored as JSON
+  vatBreakdown Json? // [{rate: 21, base: 1000, amount: 210}]
+
+  // AFIP authorization
+  cae          String? // CAE authorization (14 digits)
+  caeFchVto    String? // CAE expiration (YYYYMMDD)
+  afipResponse Json?   // Full AFIP response for audit
+
+  // Status
+  status InvoiceStatus @default(PENDING)
+
+  // QR code
+  qrUrl String? // AFIP verification URL
+
+  // Audit
   createdAt DateTime @default(now())
+  createdBy String? // User ID
+  updatedAt DateTime @updatedAt
   updatedBy String?
 
   @@index([orderId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([ptoVta, invoiceType, invoiceNumber])
+}
+
+enum InvoiceStatus {
+  PENDING   // Created but not sent to AFIP
+  EMITTED   // Authorized by AFIP (has CAE)
+  CANCELLED // Cancelled (requires credit note)
+  FAILED    // AFIP rejected
 }
 
 //

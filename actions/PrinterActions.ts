@@ -600,7 +600,7 @@ export interface AfipInvoicePrintParams {
   caeExpiration: string;
 
   // QR code URL
-  // qrUrl: string;
+  qrUrl?: string;
 
   // Printer config
   printerIp: string;
@@ -635,7 +635,7 @@ export async function prepareAfipInvoicePrint(
       total: params.total,
       cae: params.cae,
       caeExpiration: params.caeExpiration,
-      qrUrl: "", // params.qrUrl - Lo mandamos vacio porque no hace falta
+      qrUrl: params.qrUrl || "",
     };
 
     // Generate ESC/POS data
@@ -672,6 +672,144 @@ export async function prepareAfipInvoicePrint(
         error instanceof Error
           ? error.message
           : "Error al preparar la impresión de factura AFIP",
+    };
+  }
+}
+
+/**
+ * Prepare invoice print job for a saved invoice
+ * Uses branch's printer configuration
+ */
+export async function prepareInvoicePrint(
+  invoiceId: string
+): Promise<PreparedPrintResult> {
+  try {
+    // Get invoice with order details
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: { name: true },
+                },
+              },
+            },
+            table: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return { success: false, error: "Factura no encontrada" };
+    }
+
+    if (!invoice.order) {
+      return { success: false, error: "Orden no encontrada para esta factura" };
+    }
+
+    // Get the branch ID from the order
+    const branchId = process.env.BRANCH_ID || "";
+
+    // Get first online network printer from the branch (for invoices we typically use one printer)
+    const printer = await prisma.printer.findFirst({
+      where: {
+        branchId,
+        status: PrinterStatus.ONLINE,
+        connectionType: "NETWORK", // Preferably network for invoice printers
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (!printer) {
+      return {
+        success: false,
+        error: "No hay impresoras activas configuradas para este local",
+      };
+    }
+
+    const { generateAfipInvoiceData } = await import("@/lib/printer/escpos");
+
+    // Get business name from environment or default
+    const businessName = process.env.BUSINESS_NAME || "Kiku Sushi";
+    const businessCuit = process.env.ARCA_CUIT || "";
+
+    // Prepare invoice items
+    const items = invoice.order.items.map((item) => ({
+      description: item.itemName || item.product?.name || "Producto",
+      quantity: item.quantity,
+      unitPrice: Number(item.price),
+      vatRate: 21, // Default VAT rate
+      total: Number(item.price) * item.quantity,
+    }));
+
+    // Parse VAT breakdown
+    let vatBreakdown: Array<{ rate: number; base: number; amount: number }> = [];
+    if (invoice.vatBreakdown && typeof invoice.vatBreakdown === "object") {
+      if (Array.isArray(invoice.vatBreakdown)) {
+        vatBreakdown = invoice.vatBreakdown as Array<{
+          rate: number;
+          base: number;
+          amount: number;
+        }>;
+      }
+    }
+
+    // Prepare invoice data
+    const invoiceData = {
+      invoiceType: `Factura ${invoice.invoiceType === 1 ? "A" : invoice.invoiceType === 6 ? "B" : "C"}`,
+      invoiceNumber: `${invoice.ptoVta.toString().padStart(4, "0")}-${invoice.invoiceNumber.toString().padStart(8, "0")}`,
+      invoiceDate: new Date(invoice.invoiceDate).toLocaleDateString("es-AR"),
+      businessName,
+      cuit: businessCuit,
+      customerDoc: `${invoice.customerDocType === 80 ? "CUIT" : invoice.customerDocType === 96 ? "DNI" : "Doc"}: ${invoice.customerDocNumber}`,
+      items,
+      subtotal: Number(invoice.subtotal),
+      vatBreakdown,
+      totalVat: Number(invoice.vatAmount),
+      total: Number(invoice.totalAmount),
+      cae: invoice.cae || "",
+      caeExpiration: invoice.caeFchVto || "",
+      qrUrl: invoice.qrUrl || "",
+    };
+
+    // Generate ESC/POS data
+    const escPosData = generateAfipInvoiceData(invoiceData, {
+      charactersPerLine: printer.charactersPerLine,
+    });
+
+    // Build print target
+    const target: PrinterTarget = {
+      type: printer.connectionType === "NETWORK" ? "network" : "usb",
+      systemName: printer.systemName,
+      printerName: printer.name,
+      copies: 1,
+    };
+
+    return {
+      success: true,
+      jobs: [
+        {
+          printerId: printer.id,
+          printerName: printer.name,
+          target,
+          escPosData,
+          copies: 1,
+        },
+      ],
+      printJobIds: [], // Optional: could create print job records for tracking
+    };
+  } catch (error) {
+    console.error("Error preparing invoice print:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al preparar la impresión de la factura",
     };
   }
 }

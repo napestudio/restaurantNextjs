@@ -1396,27 +1396,10 @@ export function generateAfipInvoiceData(
     content += Commands.QR_CODE(invoice.qrUrl);
     content += Commands.FEED_LINE;
   } catch (e) {
-    console.warn("QR code generation failed, falling back to URL text");
+    console.warn("QR code generation failed");
   }
 
-  // Also print URL as text (fallback/verification)
-  content += Commands.ALIGN_LEFT;
-  content += Commands.NORMAL_SIZE;
-  // Split URL into lines to fit on 48-char receipt
-  const urlPrefix = "URL: ";
-  const url = invoice.qrUrl;
-  if (url.length + urlPrefix.length > width) {
-    content += urlPrefix + "\n";
-    // Print URL in chunks
-    for (let i = 0; i < url.length; i += width) {
-      content += url.substring(i, i + width) + "\n";
-    }
-  } else {
-    content += urlPrefix + url + "\n";
-  }
-  content += Commands.FEED_LINE;
-
-  content += Commands.ALIGN_LEFT;
+  content += Commands.ALIGN_CENTER;
   content += separator(width, "=") + "\n";
 
   // ========== FOOTER ==========

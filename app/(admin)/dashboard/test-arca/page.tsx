@@ -18,7 +18,11 @@ import {
   getDocumentType,
   type ArcaCreateVoucherResponse,
 } from "@/lib/types/arca";
-import { generateAfipQrData, generateAfipQrUrl, isValidCae } from "@/lib/arca-qr";
+import {
+  generateAfipQrData,
+  generateAfipQrUrl,
+  isValidCae,
+} from "@/lib/arca-qr";
 import { useGgEzPrint } from "@/contexts/gg-ez-print-context";
 import { prepareAfipInvoicePrint } from "@/actions/PrinterActions";
 
@@ -33,12 +37,14 @@ type AfipObservation = {
   Msg: string;
 };
 
-type InvoiceResponse = (ArcaCreateVoucherResponse & {
-  Errors?: AfipError[];
-  Observations?: AfipObservation[];
-}) | {
-  error: string;
-};
+type InvoiceResponse =
+  | (ArcaCreateVoucherResponse & {
+      Errors?: AfipError[];
+      Observations?: AfipObservation[];
+    })
+  | {
+      error: string;
+    };
 
 type QrInvoiceData = {
   cuit: number;
@@ -59,7 +65,9 @@ export default function ArcaTestPage() {
 
   // QR code state
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
-  const [qrInvoiceData, setQrInvoiceData] = useState<QrInvoiceData | null>(null);
+  const [qrInvoiceData, setQrInvoiceData] = useState<QrInvoiceData | null>(
+    null,
+  );
 
   // Print state
   const [isPrinting, setIsPrinting] = useState(false);
@@ -118,7 +126,8 @@ export default function ArcaTestPage() {
   // Calculate totals from line items
   const calculateTotalsFromItems = () => {
     let totalNet = 0;
-    const vatBreakdown: { [key: number]: { base: number; amount: number } } = {};
+    const vatBreakdown: { [key: number]: { base: number; amount: number } } =
+      {};
 
     items.forEach((item) => {
       const itemTotal = item.quantity * item.unitPrice;
@@ -136,7 +145,7 @@ export default function ArcaTestPage() {
 
     const totalVat = Object.values(vatBreakdown).reduce(
       (sum, vat) => sum + vat.amount,
-      0
+      0,
     );
     const total = totalNet + totalVat;
 
@@ -151,10 +160,10 @@ export default function ArcaTestPage() {
   // Get VAT rate ID for AFIP
   const getVatRateId = (rate: number): number => {
     const rateMap: { [key: number]: number } = {
-      0: 3,     // 0%
-      10.5: 4,  // 10.5%
-      21: 5,    // 21%
-      27: 6,    // 27%
+      0: 3, // 0%
+      10.5: 4, // 10.5%
+      21: 5, // 21%
+      27: 6, // 27%
     };
     return rateMap[rate] || 5; // Default to 21%
   };
@@ -164,7 +173,9 @@ export default function ArcaTestPage() {
   // ==========================================================================
 
   const addItem = () => {
-    const newId = (Math.max(...items.map((i) => parseInt(i.id))) + 1).toString();
+    const newId = (
+      Math.max(...items.map((i) => parseInt(i.id))) + 1
+    ).toString();
     setItems([
       ...items,
       {
@@ -183,11 +194,15 @@ export default function ArcaTestPage() {
     }
   };
 
-  const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
+  const updateItem = (
+    id: string,
+    field: keyof LineItem,
+    value: string | number,
+  ) => {
     setItems(
       items.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
     );
   };
 
@@ -197,7 +212,7 @@ export default function ArcaTestPage() {
 
   // Generate QR code when CAE is received
   useEffect(() => {
-    if (response && !('error' in response) && response.cae && qrInvoiceData) {
+    if (response && !("error" in response) && response.cae && qrInvoiceData) {
       generateQrCode();
     } else {
       setQrCodeDataUrl(null);
@@ -205,7 +220,7 @@ export default function ArcaTestPage() {
   }, [response, qrInvoiceData]);
 
   const generateQrCode = async () => {
-    if (!response || !qrInvoiceData || 'error' in response) {
+    if (!response || !qrInvoiceData || "error" in response) {
       return;
     }
 
@@ -268,11 +283,16 @@ export default function ArcaTestPage() {
   const handleGetLastInvoice = async () => {
     setIsLoading(true);
 
-    const result = await getLastInvoiceNumber(formData.PtoVta, formData.CbteTipo);
+    const result = await getLastInvoiceNumber(
+      formData.PtoVta,
+      formData.CbteTipo,
+    );
 
     if (result.success) {
       console.log("Last invoice number:", result.data);
-      setConnectionStatus(`✅ Último número de factura: ${result.data.cbteNro || 0}`);
+      setConnectionStatus(
+        `✅ Último número de factura: ${result.data.cbteNro || 0}`,
+      );
     } else {
       setConnectionStatus(`❌ Error: ${result.error}`);
     }
@@ -287,7 +307,9 @@ export default function ArcaTestPage() {
 
     if (result.success) {
       console.log("Sales points:", result.data);
-      setConnectionStatus(`✅ Puntos de venta obtenidos: ${JSON.stringify(result.data)}`);
+      setConnectionStatus(
+        `✅ Puntos de venta obtenidos: ${JSON.stringify(result.data)}`,
+      );
     } else {
       setConnectionStatus(`❌ Error: ${result.error}`);
     }
@@ -302,7 +324,9 @@ export default function ArcaTestPage() {
 
     if (result.success) {
       console.log("Invoice types:", result.data);
-      setConnectionStatus(`✅ Tipos de factura obtenidos: ${JSON.stringify(result.data)}`);
+      setConnectionStatus(
+        `✅ Tipos de factura obtenidos: ${JSON.stringify(result.data)}`,
+      );
     } else {
       setConnectionStatus(`❌ Error: ${result.error}`);
     }
@@ -318,8 +342,13 @@ export default function ArcaTestPage() {
     const totals = calculateTotalsFromItems();
 
     // Get last invoice number first
-    const lastInvoice = await getLastInvoiceNumber(formData.PtoVta, formData.CbteTipo);
-    const nextNumber = lastInvoice.success ? (lastInvoice.data.cbteNro || 0) + 1 : 1;
+    const lastInvoice = await getLastInvoiceNumber(
+      formData.PtoVta,
+      formData.CbteTipo,
+    );
+    const nextNumber = lastInvoice.success
+      ? (lastInvoice.data.cbteNro || 0) + 1
+      : 1;
 
     // Get current date in AFIP format (YYYYMMDD as string)
     const currentDate = formatArcaDate(new Date());
@@ -346,9 +375,9 @@ export default function ArcaTestPage() {
       ImpTotal: totals.total,
       ImpNeto: totals.net,
       ImpIVA: totals.vat,
-      ImpTotConc: 0,  // Required: Not taxed amount
-      ImpOpEx: 0,     // Required: Exempt amount
-      ImpTrib: 0,     // Required: Other taxes
+      ImpTotConc: 0, // Required: Not taxed amount
+      ImpOpEx: 0, // Required: Exempt amount
+      ImpTrib: 0, // Required: Other taxes
       // Currency
       MonId: formData.MonId,
       MonCotiz: 1,
@@ -390,7 +419,13 @@ export default function ArcaTestPage() {
    * Handle printing the invoice to thermal printer
    */
   const handlePrintInvoice = async () => {
-    if (!response || 'error' in response || !response.cae || !qrInvoiceData || items.length === 0) {
+    if (
+      !response ||
+      "error" in response ||
+      !response.cae ||
+      !qrInvoiceData ||
+      items.length === 0
+    ) {
       setPrintError("No hay factura para imprimir. Emita una factura primero.");
       return;
     }
@@ -401,11 +436,12 @@ export default function ArcaTestPage() {
     try {
       // Format invoice type name
       const invoiceTypeObj = getInvoiceType(qrInvoiceData.tipoCmp);
-      const invoiceTypeName = invoiceTypeObj?.name || `Tipo ${qrInvoiceData.tipoCmp}`;
+      const invoiceTypeName =
+        invoiceTypeObj?.name || `Tipo ${qrInvoiceData.tipoCmp}`;
 
       // Format invoice number (PtoVta-Number)
       const invoiceNumber = `${String(qrInvoiceData.ptoVta).padStart(5, "0")}-${String(
-        qrInvoiceData.nroCmp
+        qrInvoiceData.nroCmp,
       ).padStart(8, "0")}`;
 
       // Format invoice date (YYYYMMDD -> DD/MM/YYYY)
@@ -418,9 +454,10 @@ export default function ArcaTestPage() {
 
       // Format customer document
       const docTypeObj = getDocumentType(qrInvoiceData.tipoDocRec);
-      const customerDoc = qrInvoiceData.nroDocRec === 0
-        ? "Consumidor Final"
-        : `${docTypeObj?.name || "Doc"}: ${qrInvoiceData.nroDocRec}`;
+      const customerDoc =
+        qrInvoiceData.nroDocRec === 0
+          ? "Consumidor Final"
+          : `${docTypeObj?.name || "Doc"}: ${qrInvoiceData.nroDocRec}`;
 
       // Format CAE expiration (YYYYMMDD -> DD/MM/YYYY)
       const caeExp = response.caeFchVto;
@@ -439,11 +476,13 @@ export default function ArcaTestPage() {
       }));
 
       // Prepare VAT breakdown
-      const vatBreakdown = Object.entries(totals.breakdown).map(([rate, data]: [string, { base: number; amount: number }]) => ({
-        rate: Number(rate),
-        base: data.base,
-        amount: data.amount,
-      }));
+      const vatBreakdown = Object.entries(totals.breakdown).map(
+        ([rate, data]: [string, { base: number; amount: number }]) => ({
+          rate: Number(rate),
+          base: data.base,
+          amount: data.amount,
+        }),
+      );
 
       // Generate AFIP QR URL
       const qrData = generateAfipQrData({
@@ -490,7 +529,9 @@ export default function ArcaTestPage() {
       const job = result.jobs[0];
       const printRequest = {
         printer_name: job.target.systemName,
-        type: (job.target.type === "usb" ? "USB" : "Network") as "USB" | "Network",
+        type: (job.target.type === "usb" ? "USB" : "Network") as
+          | "USB"
+          | "Network",
         content: job.escPosData,
         font_size: 1,
         paper_width: 80,
@@ -500,7 +541,11 @@ export default function ArcaTestPage() {
       console.log("[Print] Factura enviada a impresora exitosamente");
     } catch (error) {
       console.error("[Print] Error:", error);
-      setPrintError(error instanceof Error ? error.message : "Error desconocido al imprimir");
+      setPrintError(
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al imprimir",
+      );
     } finally {
       setIsPrinting(false);
     }
@@ -519,8 +564,8 @@ export default function ArcaTestPage() {
             Prueba de Integración ARCA/AFIP
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Test de emisión de facturas electrónicas para el sistema de facturación
-            del restaurante
+            Test de emisión de facturas electrónicas para el sistema de
+            facturación del restaurante
           </p>
         </div>
 
@@ -725,7 +770,11 @@ export default function ArcaTestPage() {
                         min="1"
                         value={item.quantity}
                         onChange={(e) =>
-                          updateItem(item.id, "quantity", Number(e.target.value))
+                          updateItem(
+                            item.id,
+                            "quantity",
+                            Number(e.target.value),
+                          )
                         }
                       />
                     </div>
@@ -740,7 +789,11 @@ export default function ArcaTestPage() {
                         min="0"
                         value={item.unitPrice}
                         onChange={(e) =>
-                          updateItem(item.id, "unitPrice", Number(e.target.value))
+                          updateItem(
+                            item.id,
+                            "unitPrice",
+                            Number(e.target.value),
+                          )
                         }
                       />
                     </div>
@@ -768,7 +821,9 @@ export default function ArcaTestPage() {
                         onClick={() => removeItem(item.id)}
                         disabled={items.length === 1}
                         className={`text-red-500 hover:text-red-700 ${
-                          items.length === 1 ? "opacity-30 cursor-not-allowed" : ""
+                          items.length === 1
+                            ? "opacity-30 cursor-not-allowed"
+                            : ""
                         }`}
                         title="Eliminar item"
                       >
@@ -785,8 +840,9 @@ export default function ArcaTestPage() {
               </div>
 
               <p className="mt-2 text-xs text-gray-500">
-                ⚠️ Nota: Los items se usan solo para calcular totales. AFIP WSFEV1 no
-                soporta envío de detalles itemizados (requiere WSMTXCA).
+                ⚠️ Nota: Los items se usan solo para calcular totales. AFIP
+                WSFEV1 no soporta envío de detalles itemizados (requiere
+                WSMTXCA).
               </p>
             </div>
 
@@ -836,10 +892,11 @@ export default function ArcaTestPage() {
                       >
                         <span>IVA {rate}%:</span>
                         <span>
-                          Base ${data.base.toFixed(2)} → IVA ${data.amount.toFixed(2)}
+                          Base ${data.base.toFixed(2)} → IVA $
+                          {data.amount.toFixed(2)}
                         </span>
                       </div>
-                    )
+                    ),
                   )}
                 </div>
               </div>
@@ -878,7 +935,7 @@ export default function ArcaTestPage() {
             </pre>
 
             {/* Success Message */}
-            {!('error' in response) && response.cae && (
+            {!("error" in response) && response.cae && (
               <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-500 rounded">
                 <p className="font-bold text-green-800 text-lg flex items-center gap-2">
                   ✅ Factura Autorizada Exitosamente
@@ -911,7 +968,8 @@ export default function ArcaTestPage() {
                         />
                       </div>
                       <p className="text-xs text-green-700 text-center max-w-xs">
-                        Escanear para verificar la autenticidad de la factura en el sitio de AFIP
+                        Escanear para verificar la autenticidad de la factura en
+                        el sitio de AFIP
                       </p>
 
                       {/* Print Button */}
@@ -927,15 +985,14 @@ export default function ArcaTestPage() {
                               Imprimiendo...
                             </>
                           ) : (
-                            <>
-                              🖨️ Imprimir en 192.168.100.20
-                            </>
+                            <>🖨️ Imprimir en 192.168.100.20</>
                           )}
                         </button>
 
                         {!printerConnected && (
                           <p className="text-xs text-amber-600 mt-2 text-center">
-                            ⚠️ gg-ez-print no conectado. Inicie el servicio primero.
+                            ⚠️ gg-ez-print no conectado. Inicie el servicio
+                            primero.
                           </p>
                         )}
 
@@ -952,7 +1009,7 @@ export default function ArcaTestPage() {
             )}
 
             {/* Error Message */}
-            {'error' in response && (
+            {"error" in response && (
               <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
                 <p className="font-bold text-red-800 text-lg flex items-center gap-2">
                   ❌ Error en la Operación
@@ -962,32 +1019,40 @@ export default function ArcaTestPage() {
             )}
 
             {/* AFIP Errors */}
-            {!('error' in response) && response.Errors && response.Errors.length > 0 && (
-              <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
-                <p className="font-bold text-red-800 mb-2">Errores de AFIP:</p>
-                <ul className="space-y-1 text-sm text-red-900">
-                  {response.Errors.map((error, index) => (
-                    <li key={index}>
-                      • [{error.Code}] {error.Msg}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {!("error" in response) &&
+              response.Errors &&
+              response.Errors.length > 0 && (
+                <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                  <p className="font-bold text-red-800 mb-2">
+                    Errores de AFIP:
+                  </p>
+                  <ul className="space-y-1 text-sm text-red-900">
+                    {response.Errors.map((error, index) => (
+                      <li key={index}>
+                        • [{error.Code}] {error.Msg}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
             {/* AFIP Observations */}
-            {!('error' in response) && response.Observations && response.Observations.length > 0 && (
-              <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
-                <p className="font-bold text-yellow-800 mb-2">Observaciones:</p>
-                <ul className="space-y-1 text-sm text-yellow-900">
-                  {response.Observations.map((obs, index) => (
-                    <li key={index}>
-                      • [{obs.Code}] {obs.Msg}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {!("error" in response) &&
+              response.Observations &&
+              response.Observations.length > 0 && (
+                <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                  <p className="font-bold text-yellow-800 mb-2">
+                    Observaciones:
+                  </p>
+                  <ul className="space-y-1 text-sm text-yellow-900">
+                    {response.Observations.map((obs, index) => (
+                      <li key={index}>
+                        • [{obs.Code}] {obs.Msg}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
           </section>
         )}
 
@@ -1006,28 +1071,27 @@ export default function ArcaTestPage() {
             </p>
             <ul className="mt-3 space-y-1 ml-4 list-disc">
               <li>
-                Factura B (código 6): Para consumidores finales y monotributistas
+                Factura B (código 6): Para consumidores finales y
+                monotributistas
               </li>
               <li>Tipo Doc 99 + Doc Nro 0: Consumidor final sin identificar</li>
               <li>El CAE tiene validez de 10 días hábiles desde su emisión</li>
+              <li>Punto de venta debe estar habilitado previamente en AFIP</li>
               <li>
-                Punto de venta debe estar habilitado previamente en AFIP
+                <strong>⚠️ Limitación del SDK:</strong> El SDK de Arca usa el
+                servicio WSFEV1 de AFIP que solo envía totales agregados. Los
+                items se usan para calcular los totales, pero no se envían al
+                servidor de AFIP. Para facturación con detalle itemizado se
+                requiere WSMTXCA (no soportado actualmente).
               </li>
               <li>
-                <strong>⚠️ Limitación del SDK:</strong> El SDK de Arca usa el servicio
-                WSFEV1 de AFIP que solo envía totales agregados. Los items se usan
-                para calcular los totales, pero no se envían al servidor de AFIP.
-                Para facturación con detalle itemizado se requiere WSMTXCA (no
-                soportado actualmente).
+                <strong>Código QR AFIP:</strong> Se genera automáticamente tras
+                la emisión exitosa. Permite verificar la factura en el sitio de
+                AFIP (obligatorio según RG 4892/2020).
               </li>
               <li>
-                <strong>Código QR AFIP:</strong> Se genera automáticamente tras la emisión
-                exitosa. Permite verificar la factura en el sitio de AFIP (obligatorio según
-                RG 4892/2020).
-              </li>
-              <li>
-                Para producción, actualizar variables de entorno con credenciales
-                reales
+                Para producción, actualizar variables de entorno con
+                credenciales reales
               </li>
             </ul>
           </div>

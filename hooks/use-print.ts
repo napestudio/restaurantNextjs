@@ -6,6 +6,7 @@ import {
   prepareTestPrint,
   prepareOrderItemsPrint,
   prepareControlTicketPrint,
+  prepareInvoicePrint,
   updatePrintJobStatuses,
   hasBranchControlTicketPrinters,
   type PrintJobData,
@@ -62,6 +63,7 @@ export interface UsePrintReturn {
     orderType?: string;
     customerName?: string;
   }) => Promise<boolean>;
+  printInvoice: (invoiceId: string) => Promise<boolean>;
 
   // Utility
   checkHasControlTicketPrinters: (branchId: string) => Promise<boolean>;
@@ -379,12 +381,61 @@ export function usePrint(): UsePrintReturn {
     []
   );
 
+  /**
+   * Print invoice (AFIP electronic invoice)
+   */
+  const printInvoice = useCallback(
+    async (invoiceId: string): Promise<boolean> => {
+      console.debug("[usePrint] Starting invoice print for:", invoiceId);
+      setPrintStatus({ status: "preparing", message: "Preparando impresión de factura..." });
+
+      try {
+        const result = await prepareInvoicePrint(invoiceId);
+        console.debug("[usePrint] prepareInvoicePrint result:", result);
+
+        if (!result.success || !result.jobs || result.jobs.length === 0) {
+          console.warn("[usePrint] Prepare failed:", result.error);
+          setPrintStatus({
+            status: "error",
+            message: result.error || "Error al preparar la impresión",
+          });
+          return false;
+        }
+
+        console.debug("[usePrint] Executing invoice print jobs:", result.jobs.length, "jobs");
+        const printResult = await executePrintJobs(result.jobs, result.printJobIds || []);
+        console.debug("[usePrint] Print result:", printResult);
+
+        if (printResult.success) {
+          setPrintStatus({ status: "success", message: "Factura enviada a impresora" });
+        } else {
+          setPrintStatus({
+            status: "error",
+            message: `Error al imprimir (${printResult.failCount} fallido(s))`,
+          });
+        }
+
+        // Auto-reset after 3 seconds
+        setTimeout(resetStatus, 3000);
+
+        return printResult.success;
+      } catch (error) {
+        console.warn("[usePrint] Exception during invoice print:", error);
+        const message = error instanceof Error ? error.message : "Error desconocido";
+        setPrintStatus({ status: "error", message });
+        return false;
+      }
+    },
+    [executePrintJobs, resetStatus]
+  );
+
   return {
     printStatus,
     isPrinting: printStatus.status === "preparing" || printStatus.status === "printing",
     printTest,
     printOrderItems,
     printControlTicket,
+    printInvoice,
     checkHasControlTicketPrinters,
     resetStatus,
   };

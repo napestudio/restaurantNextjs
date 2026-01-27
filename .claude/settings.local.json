@@ -6,7 +6,9 @@
       "Bash(find:*)",
       "Bash(npx prisma db execute:*)",
       "Bash(npm run build:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma db push:*)"
     ],
     "deny": [],
     "ask": []

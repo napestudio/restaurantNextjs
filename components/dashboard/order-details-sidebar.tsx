@@ -41,6 +41,7 @@ import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { CloseOrderDialog } from "./close-order-dialog";
+import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 type Order = {
@@ -137,6 +138,7 @@ export function OrderDetailsSidebar({
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
 
   // GG EZ Print printing
   const { printControlTicket, isPrinting } = usePrint();
@@ -659,6 +661,16 @@ export function OrderDetailsSidebar({
               Finalizar Venta
             </Button>
           )}
+          {order.status === OrderStatus.COMPLETED && (
+            <Button
+              onClick={() => setIsInvoiceDialogOpen(true)}
+              variant="default"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Generar Factura
+            </Button>
+          )}
           <Button
             onClick={handlePrintControlTicket}
             disabled={isPrinting || order.items.length === 0}
@@ -678,6 +690,21 @@ export function OrderDetailsSidebar({
         order={order}
         branchId={branchId}
         onSuccess={handleCloseOrderSuccess}
+      />
+
+      {/* Generate Invoice Dialog */}
+      <GenerateInvoiceDialog
+        open={isInvoiceDialogOpen}
+        onOpenChange={setIsInvoiceDialogOpen}
+        orderId={order.id}
+        orderTotal={total}
+        onSuccess={() => {
+          toast({
+            title: "Factura generada",
+            description: "La factura se generó correctamente",
+          });
+          onOrderUpdated?.();
+        }}
       />
     </>
   );
