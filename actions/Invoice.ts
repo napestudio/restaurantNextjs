@@ -1,0 +1,1125 @@
+"use server";
+
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { UserRole, InvoiceStatus } from "@/app/generated/prisma";
+import type { Prisma } from "@/app/generated/prisma";
+import { authorizeAction } from "@/lib/permissions/middleware";
+import { emitTestInvoice, getLastInvoiceNumber } from "./Arca";
+import { generateAfipQrData, generateAfipQrUrl } from "@/lib/arca-qr";
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+type ActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+interface CustomerInvoiceData {
+  name: string;
+  docType: number; // 80=CUIT, 96=DNI, 99=Consumidor Final
+  docNumber: string; // "0" for Consumidor Final
+}
+
+interface VatBreakdownItem {
+  rate: number;
+  base: number;
+  amount: number;
+}
+
+interface CalculatedTotals {
+  subtotal: number;
+  vatBreakdown: VatBreakdownItem[];
+  totalVat: number;
+  total: number;
+}
+
+interface AfipError {
+  Code: string;
+  Msg: string;
+}
+
+interface AfipResponseData {
+  cae?: string;
+  caeFchVto?: string;
+  Errors?: AfipError[];
+  [key: string]: unknown;
+}
+
+// ============================================================================
+// VALIDATION
+// ============================================================================
+
+/**
+ * Validate customer document format
+ */
+function validateDocument(
+  docType: number,
+  docNumber: string,
+): { valid: boolean; error?: string } {
+  if (docType === 99) {
+    // Consumidor Final must be "0"
+    if (docNumber !== "0") {
+      return {
+        valid: false,
+        error: "Consumidor Final debe tener documento '0'",
+      };
+    }
+    return { valid: true };
+  }
+
+  if (docType === 96) {
+    // DNI: 7-8 digits
+    if (!/^\d{7,8}$/.test(docNumber)) {
+      return { valid: false, error: "DNI debe tener 7 u 8 dígitos" };
+    }
+    return { valid: true };
+  }
+
+  if (docType === 80 || docType === 86) {
+    // CUIT/CUIL: 11 digits
+    if (!/^\d{11}$/.test(docNumber)) {
+      return { valid: false, error: "CUIT/CUIL debe tener 11 dígitos" };
+    }
+    return { valid: true };
+  }
+
+  return { valid: false, error: "Tipo de documento inválido" };
+}
+
+/**
+ * Validate invoice type compatibility with document type
+ */
+function validateInvoiceTypeCompatibility(
+  invoiceType: number,
+  docType: number,
+): { valid: boolean; error?: string } {
+  // Factura A requires CUIT
+  if (invoiceType === 1 && docType !== 80) {
+    return { valid: false, error: "Factura A requiere CUIT (tipo 80)" };
+  }
+
+  // Factura B accepts all document types
+  if (invoiceType === 6) {
+    return { valid: true };
+  }
+
+  // Factura C accepts all document types
+  if (invoiceType === 11) {
+    return { valid: true };
+  }
+
+  return { valid: true };
+}
+
+// ============================================================================
+// VAT CALCULATION
+// ============================================================================
+
+/**
+ * Calculate VAT breakdown from order items
+ * Default: 21% VAT rate (most common in Argentina)
+ * Assumes prices are VAT-inclusive (Factura B style)
+ */
+function calculateVatBreakdown(
+  orderItems: Array<{ price: unknown; quantity: number }>,
+  discountPercentage: unknown,
+): CalculatedTotals {
+  const discount = Number(discountPercentage) || 0;
+
+  // Calculate total from items
+  let itemsTotal = 0;
+  for (const item of orderItems) {
+    const price = Number(item.price);
+    const quantity = item.quantity;
+    itemsTotal += price * quantity;
+  }
+
+  // Apply discount
+  const discountedTotal = itemsTotal * (1 - discount / 100);
+
+  // Extract VAT (21% inclusive)
+  // Formula: net = total / 1.21, vat = total - net
+  const netAmount = discountedTotal / 1.21;
+  const vatAmount = discountedTotal - netAmount;
+
+  const vatBreakdown: VatBreakdownItem[] = [
+    {
+      rate: 21,
+      base: Math.round(netAmount * 100) / 100,
+      amount: Math.round(vatAmount * 100) / 100,
+    },
+  ];
+
+  return {
+    subtotal: Math.round(netAmount * 100) / 100,
+    vatBreakdown,
+    totalVat: Math.round(vatAmount * 100) / 100,
+    total: Math.round(discountedTotal * 100) / 100,
+  };
+}
+
+// ============================================================================
+// ARCA PAYLOAD BUILDER
+// ============================================================================
+
+/**
+ * Build ARCA invoice payload from order data
+ */
+interface OrderWithItems {
+  id: string;
+  discountPercentage: unknown;
+  items: Array<{
+    price: unknown;
+    quantity: number;
+    itemName: string;
+  }>;
+}
+
+async function buildAfipInvoicePayload(
+  order: OrderWithItems,
+  invoiceType: number,
+  customerData: CustomerInvoiceData,
+  invoiceNumber: number,
+  ptoVta: number,
+  totals: CalculatedTotals,
+) {
+  // Format date as YYYYMMDD
+  const invoiceDate = new Date();
+  const dateStr = invoiceDate.toISOString().split("T")[0].replace(/-/g, "");
+
+  // Build payload
+  const payload = {
+    CantReg: 1,
+    PtoVta: ptoVta,
+    CbteTipo: invoiceType,
+    Concepto: 1, // 1=Productos (restaurant sales)
+    DocTipo: customerData.docType,
+    DocNro:
+      customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+    CbteDesde: invoiceNumber,
+    CbteHasta: invoiceNumber,
+    CbteFch: dateStr,
+    ImpTotal: totals.total,
+    ImpTotConc: 0, // Non-taxed amount
+    ImpNeto: totals.subtotal,
+    ImpOpEx: 0, // Exempt operations
+    ImpTrib: 0, // Other taxes
+    ImpIVA: totals.totalVat,
+    MonId: "PES",
+    MonCotiz: 1,
+    FchServDesde: undefined,
+    FchServHasta: undefined,
+    FchVtoPago: undefined,
+
+    // Customer condition: 5=Consumidor Final for Factura B
+    CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
+
+    // VAT breakdown
+    Iva: totals.vatBreakdown.map((vat) => ({
+      Id: 5, // 21% VAT
+      BaseImp: vat.base,
+      Importe: vat.amount,
+    })),
+  };
+
+  return payload;
+}
+
+// ============================================================================
+// MAIN FUNCTIONS
+// ============================================================================
+
+/**
+ * Generate ARCA invoice for an order
+ *
+ * Steps:
+ * 1. Validate order is COMPLETED
+ * 2. Check no existing EMITTED invoice
+ * 3. Get next invoice number from ARCA
+ * 4. Calculate VAT breakdown
+ * 5. Build ARCA payload
+ * 6. Call emitTestInvoice()
+ * 7. Store invoice with CAE
+ * 8. Generate QR URL
+ */
+export async function generateInvoiceForOrder(
+  orderId: string,
+  invoiceType: number,
+  customerData: CustomerInvoiceData,
+): Promise<ActionResult<unknown>> {
+  try {
+    // Authorization check - only MANAGER and above can generate invoices
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+
+    // Validate document
+    const docValidation = validateDocument(
+      customerData.docType,
+      customerData.docNumber,
+    );
+    if (!docValidation.valid) {
+      return { success: false, error: docValidation.error! };
+    }
+
+    // Validate invoice type compatibility
+    const typeValidation = validateInvoiceTypeCompatibility(
+      invoiceType,
+      customerData.docType,
+    );
+    if (!typeValidation.valid) {
+      return { success: false, error: typeValidation.error! };
+    }
+
+    // Get order with items
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: true,
+        invoices: true,
+        table: true,
+        branch: {
+          include: {
+            restaurant: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return { success: false, error: "Orden no encontrada" };
+    }
+
+    // Validate order status
+    if (order.status !== "COMPLETED") {
+      return {
+        success: false,
+        error: "La orden debe estar COMPLETADA para facturar",
+      };
+    }
+
+    // Check for existing emitted invoice
+    const existingInvoice = order.invoices.find(
+      (inv) => inv.status === "EMITTED",
+    );
+    if (existingInvoice) {
+      return { success: false, error: "La orden ya tiene una factura emitida" };
+    }
+
+    // Get fiscal configuration (DB → .env fallback)
+    const restaurantId = order.branch.restaurantId;
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    // Get sales point from DB config or fallback to environment
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    // Get CUIT from DB config or fallback to environment
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
+
+    // Get next invoice number from ARCA
+    const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
+    if (!lastInvoiceResult.success) {
+      return {
+        success: false,
+        error: "Error al obtener número de factura: " + lastInvoiceResult.error,
+      };
+    }
+
+    const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
+
+    // Calculate VAT breakdown
+    const totals = calculateVatBreakdown(order.items, order.discountPercentage);
+
+    // Build ARCA payload
+    const afipPayload = await buildAfipInvoicePayload(
+      order,
+      invoiceType,
+      customerData,
+      nextInvoiceNumber,
+      ptoVta,
+      totals,
+    );
+
+    // Emit invoice to ARCA
+    const afipResult = await emitTestInvoice(afipPayload);
+
+    if (!afipResult.success) {
+      // Save as FAILED status for retry later
+      const failedInvoice = await prisma.invoice.create({
+        data: {
+          orderId: order.id,
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: {
+            error: afipResult.error,
+          } as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA rechazó la factura: " + afipResult.error,
+      };
+    }
+
+    // Check for ARCA errors
+    const afipData = afipResult.data as AfipResponseData;
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(
+        ", ",
+      );
+
+      const failedInvoice = await prisma.invoice.create({
+        data: {
+          orderId: order.id,
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return { success: false, error: "Error ARCA: " + errorMsg };
+    }
+
+    // Success - extract CAE
+    const cae = afipData.cae;
+    const caeFchVto = afipData.caeFchVto;
+
+    if (!cae) {
+      return { success: false, error: "ARCA no devolvió CAE" };
+    }
+
+    // Generate QR URL
+    const qrData = generateAfipQrData({
+      cuit,
+      ptoVta,
+      tipoCmp: invoiceType,
+      nroCmp: nextInvoiceNumber,
+      fecha: afipPayload.CbteFch,
+      importe: totals.total,
+      moneda: "PES",
+      tipoDocRec: customerData.docType,
+      nroDocRec:
+        customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      cae,
+    });
+
+    const qrUrl = generateAfipQrUrl(qrData);
+
+    // Save invoice with CAE
+    const invoice = await prisma.invoice.create({
+      data: {
+        orderId: order.id,
+        customerName: customerData.name,
+        customerDocType: customerData.docType,
+        customerDocNumber: customerData.docNumber,
+        invoiceType,
+        ptoVta,
+        invoiceNumber: nextInvoiceNumber,
+        invoiceDate: new Date(),
+        subtotal: totals.subtotal,
+        vatAmount: totals.totalVat,
+        totalAmount: totals.total,
+        vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+        cae,
+        caeFchVto,
+        qrUrl,
+        status: "EMITTED",
+        afipResponse: afipData as unknown as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+
+    // Serialize Decimal fields for client components
+    const serializedInvoice = {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      vatAmount: Number(invoice.vatAmount),
+      totalAmount: Number(invoice.totalAmount),
+    };
+
+    return { success: true, data: serializedInvoice };
+  } catch (error) {
+    console.error("[generateInvoiceForOrder] Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al generar factura",
+    };
+  }
+}
+
+/**
+ * Get invoices for branch with filters
+ */
+export async function getInvoices(params: {
+  branchId: string;
+  page?: number;
+  pageSize?: number;
+  invoiceType?: number;
+  status?: InvoiceStatus;
+  dateFrom?: Date;
+  dateTo?: Date;
+  search?: string;
+}): Promise<ActionResult<{ invoices: unknown[]; pagination: PaginationInfo }>> {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: "No autorizado" };
+    }
+
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
+    // Build filters
+    type WhereFilter = {
+      order: { branchId: string };
+      invoiceType?: number;
+      status?: InvoiceStatus;
+      invoiceDate?: { gte?: Date; lte?: Date };
+      OR?: Array<
+        | { customerName?: { contains: string; mode: "insensitive" } }
+        | { cae?: { contains: string } }
+        | { invoiceNumber?: number }
+      >;
+    };
+
+    const where: WhereFilter = {
+      order: {
+        branchId: params.branchId,
+      },
+    };
+
+    if (params.invoiceType) {
+      where.invoiceType = params.invoiceType;
+    }
+
+    if (params.status) {
+      where.status = params.status;
+    }
+
+    if (params.dateFrom || params.dateTo) {
+      where.invoiceDate = {};
+      if (params.dateFrom) {
+        where.invoiceDate.gte = params.dateFrom;
+      }
+      if (params.dateTo) {
+        where.invoiceDate.lte = params.dateTo;
+      }
+    }
+
+    if (params.search) {
+      const searchNumber = parseInt(params.search);
+      where.OR = [
+        { customerName: { contains: params.search, mode: "insensitive" } },
+        { cae: { contains: params.search } },
+      ];
+
+      // If search is a valid number, also search by invoice number
+      if (!isNaN(searchNumber)) {
+        where.OR.push({ invoiceNumber: searchNumber });
+      }
+    }
+
+    // Get total count
+    const totalCount = await prisma.invoice.count({ where });
+
+    // Get invoices
+    const invoices = await prisma.invoice.findMany({
+      where,
+      include: {
+        order: {
+          select: {
+            id: true,
+            publicCode: true,
+          },
+        },
+      },
+      orderBy: {
+        invoiceDate: "desc",
+      },
+      skip,
+      take: pageSize,
+    });
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    // Serialize Decimal fields for client components
+    const serializedInvoices = invoices.map((invoice) => ({
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      vatAmount: Number(invoice.vatAmount),
+      totalAmount: Number(invoice.totalAmount),
+    }));
+
+    return {
+      success: true,
+      data: {
+        invoices: serializedInvoices,
+        pagination: {
+          page,
+          pageSize,
+          totalPages,
+          totalCount,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("[getInvoices] Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error al obtener facturas",
+    };
+  }
+}
+
+/**
+ * Get invoice by ID with order details
+ */
+export async function getInvoiceById(
+  invoiceId: string,
+): Promise<ActionResult<unknown>> {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: "No autorizado" };
+    }
+
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        order: {
+          include: {
+            items: true,
+            table: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return { success: false, error: "Factura no encontrada" };
+    }
+
+    // Serialize Decimal fields for client components
+    const serializedInvoice = {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      vatAmount: Number(invoice.vatAmount),
+      totalAmount: Number(invoice.totalAmount),
+      order: invoice.order
+        ? {
+            ...invoice.order,
+            discountPercentage: Number(invoice.order.discountPercentage),
+            items: invoice.order.items.map((item) => ({
+              ...item,
+              price: Number(item.price),
+              originalPrice: item.originalPrice
+                ? Number(item.originalPrice)
+                : null,
+            })),
+          }
+        : null,
+    };
+
+    return { success: true, data: serializedInvoice };
+  } catch (error) {
+    console.error("[getInvoiceById] Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error al obtener factura",
+    };
+  }
+}
+
+/**
+ * Generate PDF for an invoice
+ * Returns downloadable PDF buffer
+ */
+export async function generateInvoicePDF(
+  invoiceId: string,
+): Promise<ActionResult<{ pdf: Buffer; filename: string }>> {
+  try {
+    await authorizeAction(UserRole.WAITER);
+
+    // Get invoice with order details
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: { select: { name: true } },
+              },
+            },
+            table: true,
+            branch: {
+              include: { restaurant: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return { success: false, error: "Factura no encontrada" };
+    }
+
+    if (invoice.status !== InvoiceStatus.EMITTED) {
+      return {
+        success: false,
+        error: "Solo se pueden descargar facturas emitidas",
+      };
+    }
+
+    // Manual invoices don't have order data - PDF generation not supported yet
+    if (!invoice.order) {
+      return {
+        success: false,
+        error:
+          "La generación de PDF no está disponible para facturas manuales aún",
+      };
+    }
+
+    // Get fiscal configuration
+    const restaurantId = invoice.order.branch.restaurantId;
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    const businessName =
+      fiscalConfig?.isEnabled && fiscalConfig.businessName
+        ? fiscalConfig.businessName
+        : process.env.BUSINESS_NAME || "Restaurant";
+    const businessCuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? fiscalConfig.cuit
+        : process.env.ARCA_CUIT || "";
+
+    // Generate PDF using library
+    const { generateInvoicePDF: pdfGenerator } =
+      await import("@/lib/pdf/invoice-pdf");
+
+    const pdfBuffer = await pdfGenerator({
+      invoice: {
+        number: invoice.invoiceNumber,
+        type: invoice.invoiceType,
+        date: invoice.invoiceDate,
+        cae: invoice.cae || "",
+        caeFchVto: invoice.caeFchVto || "",
+        qrUrl: invoice.qrUrl || "",
+      },
+      business: {
+        name: businessName,
+        cuit: businessCuit,
+      },
+      customer: {
+        name: invoice.customerName,
+        docType: invoice.customerDocType,
+        docNumber: invoice.customerDocNumber,
+      },
+      items: invoice.order.items.map((item) => ({
+        description: item.itemName,
+        quantity: item.quantity,
+        unitPrice: Number(item.price),
+        total: Number(item.price) * item.quantity,
+      })),
+      totals: {
+        subtotal: Number(invoice.subtotal),
+        vatAmount: Number(invoice.vatAmount),
+        total: Number(invoice.totalAmount),
+      },
+      vatBreakdown: invoice.vatBreakdown as unknown,
+    });
+
+    const filename = `factura-${invoice.invoiceType}-${invoice.ptoVta}-${invoice.invoiceNumber}.pdf`;
+
+    return {
+      success: true,
+      data: { pdf: pdfBuffer, filename },
+    };
+  } catch (error) {
+    console.error("[generateInvoicePDF] Error:", error);
+    return {
+      success: false,
+      error: "Error al generar PDF de factura",
+    };
+  }
+}
+
+// ============================================================================
+// MANUAL INVOICE GENERATION
+// ============================================================================
+
+/**
+ * Manual invoice line item (VAT-inclusive pricing)
+ */
+export interface ManualInvoiceLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number; // VAT-inclusive
+  vatRate: number; // 0, 10.5, 21, 27
+}
+
+/**
+ * Calculate VAT breakdown from manual invoice line items
+ * Prices are VAT-inclusive - we extract the VAT component
+ */
+function calculateVatBreakdownFromItems(
+  items: ManualInvoiceLineItem[],
+): CalculatedTotals {
+  // Group by VAT rate
+  const vatGroups: Record<number, { base: number; amount: number }> = {};
+
+  for (const item of items) {
+    const lineTotal = item.quantity * item.unitPrice;
+
+    // Extract VAT (formula: net = total / (1 + rate/100))
+    const netAmount = lineTotal / (1 + item.vatRate / 100);
+    const vatAmount = lineTotal - netAmount;
+
+    if (!vatGroups[item.vatRate]) {
+      vatGroups[item.vatRate] = { base: 0, amount: 0 };
+    }
+
+    vatGroups[item.vatRate].base += netAmount;
+    vatGroups[item.vatRate].amount += vatAmount;
+  }
+
+  // Build breakdown array
+  const vatBreakdown: VatBreakdownItem[] = Object.entries(vatGroups).map(
+    ([rate, values]) => ({
+      rate: Number(rate),
+      base: Math.round(values.base * 100) / 100,
+      amount: Math.round(values.amount * 100) / 100,
+    }),
+  );
+
+  const subtotal = vatBreakdown.reduce((sum, v) => sum + v.base, 0);
+  const totalVat = vatBreakdown.reduce((sum, v) => sum + v.amount, 0);
+
+  return {
+    subtotal: Math.round(subtotal * 100) / 100,
+    vatBreakdown,
+    totalVat: Math.round(totalVat * 100) / 100,
+    total: Math.round((subtotal + totalVat) * 100) / 100,
+  };
+}
+
+/**
+ * Generate manual invoice (not linked to an order)
+ *
+ * Use cases:
+ * - Custom invoices for services
+ * - Manual adjustments
+ * - Invoices for items not in the product catalog
+ */
+export async function generateManualInvoice(params: {
+  branchId: string;
+  invoiceType: number;
+  customerData: CustomerInvoiceData;
+  items: ManualInvoiceLineItem[];
+  notes?: string;
+}): Promise<ActionResult<unknown>> {
+  try {
+    // Authorization check - only MANAGER and above can generate invoices
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+
+    const { branchId, invoiceType, customerData, items } = params;
+
+    // Validate inputs
+    if (!items || items.length === 0) {
+      return { success: false, error: "Debe agregar al menos un ítem" };
+    }
+
+    for (const item of items) {
+      if (item.quantity <= 0) {
+        return { success: false, error: "La cantidad debe ser mayor a 0" };
+      }
+      if (item.unitPrice <= 0) {
+        return { success: false, error: "El precio debe ser mayor a 0" };
+      }
+      if (![0, 10.5, 21, 27].includes(item.vatRate)) {
+        return { success: false, error: "Tasa de IVA inválida" };
+      }
+    }
+
+    // Validate document
+    const docValidation = validateDocument(
+      customerData.docType,
+      customerData.docNumber,
+    );
+    if (!docValidation.valid) {
+      return { success: false, error: docValidation.error! };
+    }
+
+    // Validate invoice type compatibility
+    const typeValidation = validateInvoiceTypeCompatibility(
+      invoiceType,
+      customerData.docType,
+    );
+    if (!typeValidation.valid) {
+      return { success: false, error: typeValidation.error! };
+    }
+
+    // Get branch with restaurant
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      include: {
+        restaurant: true,
+      },
+    });
+
+    if (!branch) {
+      return { success: false, error: "Sucursal no encontrada" };
+    }
+
+    // Get fiscal configuration
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId: branch.restaurantId },
+    });
+
+    // Get sales point from DB config or fallback to environment
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    // Get CUIT from DB config or fallback to environment
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
+
+    // Get next invoice number from ARCA
+    const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
+    if (!lastInvoiceResult.success) {
+      return {
+        success: false,
+        error: "Error al obtener número de factura: " + lastInvoiceResult.error,
+      };
+    }
+
+    const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
+
+    // Calculate VAT breakdown from items
+    const totals = calculateVatBreakdownFromItems(items);
+
+    // Format date as YYYYMMDD
+    const invoiceDate = new Date();
+    const dateStr = invoiceDate.toISOString().split("T")[0].replace(/-/g, "");
+
+    // Map VAT rates to ARCA IDs
+    const vatRateToId: Record<number, number> = {
+      0: 3, // 0% → ID 3
+      10.5: 4, // 10.5% → ID 4
+      21: 5, // 21% → ID 5
+      27: 6, // 27% → ID 6
+    };
+
+    // Build ARCA payload
+    const afipPayload = {
+      CantReg: 1,
+      PtoVta: ptoVta,
+      CbteTipo: invoiceType,
+      Concepto: 1, // 1=Products
+      DocTipo: customerData.docType,
+      DocNro:
+        customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      CbteDesde: nextInvoiceNumber,
+      CbteHasta: nextInvoiceNumber,
+      CbteFch: dateStr,
+      ImpTotal: totals.total,
+      ImpTotConc: 0, // Non-taxed amount
+      ImpNeto: totals.subtotal,
+      ImpOpEx: 0, // Exempt operations
+      ImpTrib: 0, // Other taxes
+      ImpIVA: totals.totalVat,
+      MonId: "PES",
+      MonCotiz: 1,
+      FchServDesde: undefined,
+      FchServHasta: undefined,
+      FchVtoPago: undefined,
+      CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
+      Iva: totals.vatBreakdown.map((vat) => ({
+        Id: vatRateToId[vat.rate] || 5,
+        BaseImp: vat.base,
+        Importe: vat.amount,
+      })),
+    };
+
+    // Emit invoice to ARCA
+    const afipResult = await emitTestInvoice(afipPayload);
+
+    if (!afipResult.success) {
+      // Save as FAILED status for retry later
+      await prisma.invoice.create({
+        data: {
+          orderId: null, // Manual invoice - no order
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: {
+            error: afipResult.error,
+          } as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA rechazó la factura: " + afipResult.error,
+      };
+    }
+
+    // Check for ARCA errors
+    const afipData = afipResult.data as AfipResponseData;
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(
+        ", ",
+      );
+
+      await prisma.invoice.create({
+        data: {
+          orderId: null,
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return { success: false, error: "Error ARCA: " + errorMsg };
+    }
+
+    // Success - extract CAE
+    const cae = afipData.cae;
+    const caeFchVto = afipData.caeFchVto;
+
+    if (!cae) {
+      return { success: false, error: "ARCA no devolvió CAE" };
+    }
+
+    // Generate QR URL
+    const qrData = generateAfipQrData({
+      cuit,
+      ptoVta,
+      tipoCmp: invoiceType,
+      nroCmp: nextInvoiceNumber,
+      fecha: afipPayload.CbteFch,
+      importe: totals.total,
+      moneda: "PES",
+      tipoDocRec: customerData.docType,
+      nroDocRec:
+        customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      cae,
+    });
+
+    const qrUrl = generateAfipQrUrl(qrData);
+
+    // Save invoice with CAE
+    const invoice = await prisma.invoice.create({
+      data: {
+        orderId: null, // KEY DIFFERENCE: Manual invoice has no order
+        customerName: customerData.name,
+        customerDocType: customerData.docType,
+        customerDocNumber: customerData.docNumber,
+        invoiceType,
+        ptoVta,
+        invoiceNumber: nextInvoiceNumber,
+        invoiceDate: new Date(),
+        subtotal: totals.subtotal,
+        vatAmount: totals.totalVat,
+        totalAmount: totals.total,
+        vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+        cae,
+        caeFchVto,
+        qrUrl,
+        status: "EMITTED",
+        afipResponse: afipData as unknown as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+
+    // Serialize Decimal fields for client components
+    const serializedInvoice = {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      vatAmount: Number(invoice.vatAmount),
+      totalAmount: Number(invoice.totalAmount),
+    };
+
+    return { success: true, data: serializedInvoice };
+  } catch (error) {
+    console.error("[generateManualInvoice] Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al generar factura",
+    };
+  }
+}

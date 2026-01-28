@@ -36,6 +36,11 @@
       "minimumRole": "MANAGER"
     },
     {
+      "label": "Facturas",
+      "href": "/dashboard/invoices",
+      "minimumRole": "MANAGER"
+    },
+    {
       "label": "Configuración",
       "href": "/dashboard/config/restaurant",
       "minimumRole": "ADMIN"

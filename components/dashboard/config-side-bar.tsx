@@ -6,16 +6,8 @@ import { X } from "lucide-react";
 
 const CONFIG_ITEMS = [
   {
-    label: "Restaurant",
-    href: "/dashboard/config/restaurant",
-  },
-  {
     label: "Turnos",
     href: "/dashboard/config/slots",
-  },
-  {
-    label: "Usuarios",
-    href: "/dashboard/config/users",
   },
   {
     label: "Clientes",
@@ -33,6 +25,18 @@ const CONFIG_ITEMS = [
     label: "Cajas",
     href: "/dashboard/config/cash-registers",
   },
+  {
+    label: "Facturación",
+    href: "/dashboard/config/fiscal",
+  },
+  {
+    label: "Usuarios",
+    href: "/dashboard/config/users",
+  },
+  {
+    label: "Restaurant",
+    href: "/dashboard/config/restaurant",
+  },
 ];
 
 interface ConfigSideBarProps {
@@ -40,7 +44,10 @@ interface ConfigSideBarProps {
   onClose?: () => void;
 }
 
-export default function ConfigSideBar({ isOpen = true, onClose }: ConfigSideBarProps) {
+export default function ConfigSideBar({
+  isOpen = true,
+  onClose,
+}: ConfigSideBarProps) {
   const currentPath = usePathname();
 
   return (
@@ -54,11 +61,13 @@ export default function ConfigSideBar({ isOpen = true, onClose }: ConfigSideBarP
       )}
 
       {/* Sidebar */}
-      <div className={cn(
-        "fixed lg:sticky left-0 top-0 lg:top-11 h-screen lg:h-[calc(100svh-44px)] bg-red-500 z-50 lg:z-0 transition-transform duration-300 ease-in-out",
-        "w-64 lg:w-64",
-        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      )}>
+      <div
+        className={cn(
+          "fixed lg:sticky left-0 top-0 lg:top-11 h-screen lg:h-[calc(100svh-44px)] bg-red-500 z-50 lg:z-0 transition-transform duration-300 ease-in-out",
+          "w-64 lg:w-64",
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        )}
+      >
         {/* Close button - mobile only */}
         <div className="lg:hidden flex justify-end p-4">
           <button
@@ -78,7 +87,9 @@ export default function ConfigSideBar({ isOpen = true, onClose }: ConfigSideBarP
               onClick={onClose}
               className={cn(
                 "block px-4 py-2 rounded text-xl hover:bg-white hover:text-red-500 text-white font-medium",
-                currentPath === item.href ? "bg-white text-red-500 font-bold" : ""
+                currentPath === item.href
+                  ? "bg-white text-red-500 font-bold"
+                  : "",
               )}
             >
               {item.label}
