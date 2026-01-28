@@ -2,8 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { UserRole } from "@/app/generated/prisma";
-import type { InvoiceStatus, Prisma } from "@/app/generated/prisma";
+import { UserRole, InvoiceStatus } from "@/app/generated/prisma";
+import type { Prisma } from "@/app/generated/prisma";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import { emitTestInvoice, getLastInvoiceNumber } from "./Arca";
 import { generateAfipQrData, generateAfipQrUrl } from "@/lib/arca-qr";
@@ -267,6 +267,11 @@ export async function generateInvoiceForOrder(
         items: true,
         invoices: true,
         table: true,
+        branch: {
+          include: {
+            restaurant: true,
+          },
+        },
       },
     });
 
@@ -285,8 +290,21 @@ export async function generateInvoiceForOrder(
       return { success: false, error: "La orden ya tiene una factura emitida" };
     }
 
-    // Get sales point from environment
-    const ptoVta = parseInt(process.env.ARCA_PTO_VTA || "1");
+    // Get fiscal configuration (DB → .env fallback)
+    const restaurantId = order.branch.restaurantId;
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    // Get sales point from DB config or fallback to environment
+    const ptoVta = (fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta)
+      ? fiscalConfig.defaultPtoVta
+      : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    // Get CUIT from DB config or fallback to environment
+    const cuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
+      ? parseInt(fiscalConfig.cuit)
+      : parseInt(process.env.ARCA_CUIT || "0");
 
     // Get next invoice number from AFIP
     const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
@@ -375,7 +393,7 @@ export async function generateInvoiceForOrder(
 
     // Generate QR URL
     const qrData = generateAfipQrData({
-      cuit: parseInt(process.env.ARCA_CUIT || "0"),
+      cuit,
       ptoVta,
       tipoCmp: invoiceType,
       nroCmp: nextInvoiceNumber,
@@ -603,6 +621,107 @@ export async function getInvoiceById(invoiceId: string): Promise<ActionResult<un
     return {
       success: false,
       error: error instanceof Error ? error.message : "Error al obtener factura",
+    };
+  }
+}
+
+/**
+ * Generate PDF for an invoice
+ * Returns downloadable PDF buffer
+ */
+export async function generateInvoicePDF(
+  invoiceId: string
+): Promise<ActionResult<{ pdf: Buffer; filename: string }>> {
+  try {
+    await authorizeAction(UserRole.WAITER);
+
+    // Get invoice with order details
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: { select: { name: true } },
+              },
+            },
+            table: true,
+            branch: {
+              include: { restaurant: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return { success: false, error: "Factura no encontrada" };
+    }
+
+    if (invoice.status !== InvoiceStatus.EMITTED) {
+      return { success: false, error: "Solo se pueden descargar facturas emitidas" };
+    }
+
+    // Get fiscal configuration
+    const restaurantId = invoice.order.branch.restaurantId;
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    const businessName = (fiscalConfig?.isEnabled && fiscalConfig.businessName)
+      ? fiscalConfig.businessName
+      : (process.env.BUSINESS_NAME || "Restaurant");
+    const businessCuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
+      ? fiscalConfig.cuit
+      : (process.env.ARCA_CUIT || "");
+
+    // Generate PDF using library
+    const { generateInvoicePDF: pdfGenerator } = await import("@/lib/pdf/invoice-pdf");
+
+    const pdfBuffer = await pdfGenerator({
+      invoice: {
+        number: invoice.invoiceNumber,
+        type: invoice.invoiceType,
+        date: invoice.invoiceDate,
+        cae: invoice.cae || "",
+        caeFchVto: invoice.caeFchVto || "",
+        qrUrl: invoice.qrUrl || "",
+      },
+      business: {
+        name: businessName,
+        cuit: businessCuit,
+      },
+      customer: {
+        name: invoice.customerName,
+        docType: invoice.customerDocType,
+        docNumber: invoice.customerDocNumber,
+      },
+      items: invoice.order.items.map((item) => ({
+        description: item.itemName,
+        quantity: item.quantity,
+        unitPrice: Number(item.price),
+        total: Number(item.price) * item.quantity,
+      })),
+      totals: {
+        subtotal: Number(invoice.subtotal),
+        vatAmount: Number(invoice.vatAmount),
+        total: Number(invoice.totalAmount),
+      },
+      vatBreakdown: invoice.vatBreakdown as unknown,
+    });
+
+    const filename = `factura-${invoice.invoiceType}-${invoice.ptoVta}-${invoice.invoiceNumber}.pdf`;
+
+    return {
+      success: true,
+      data: { pdf: pdfBuffer, filename },
+    };
+  } catch (error) {
+    console.error("[generateInvoicePDF] Error:", error);
+    return {
+      success: false,
+      error: "Error al generar PDF de factura",
     };
   }
 }

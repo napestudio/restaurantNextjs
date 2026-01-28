@@ -184,9 +184,10 @@ model Restaurant {
   /**
    * Los menús/categorías quedan aislados por restaurante
    */
-  categories Category[]
-  products   Product[]
-  menus      Menu[]
+  categories          Category[]
+  products            Product[]
+  menus               Menu[]
+  fiscalConfiguration FiscalConfiguration?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -741,6 +742,54 @@ enum InvoiceStatus {
   EMITTED   // Authorized by AFIP (has CAE)
   CANCELLED // Cancelled (requires credit note)
   FAILED    // AFIP rejected
+}
+
+//
+// FISCAL CONFIGURATION (AFIP)
+//
+
+model FiscalConfiguration {
+  id           String     @id @default(cuid())
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId String     @unique
+
+  // ========== FISCAL IDENTITY ==========
+  businessName      String    // Razón social
+  cuit              String    // 11-digit CUIT (tax ID)
+  address           String?   // Fiscal address
+  activityStartDate DateTime? // Inicio de actividad
+  grossIncome       String?   // Ingresos brutos (province registration)
+  taxStatus         String?   // e.g. "Responsable Inscripto", "Monotributo", "Exento"
+
+  // ========== AFIP CREDENTIALS ==========
+  environment          String    @default("test") // "test" or "production"
+  certificatePath      String?   // Path to .crt file (NOT contents)
+  privateKeyPath       String?   // Path to .key file (NOT contents)
+  certificateExpiresAt DateTime? // Track expiration for alerts
+
+  // ========== SALES POINTS ==========
+  defaultPtoVta   Int       @default(1) // Default Punto de Venta
+  availablePtoVta Json?     // Array of available sales points from AFIP, e.g. [1, 2, 3]
+  lastSyncedAt    DateTime? // When sales points were last synced with AFIP
+
+  // ========== INVOICE BEHAVIOR ==========
+  defaultInvoiceType Int     @default(6) // 1=Factura A, 6=Factura B, 11=Factura C
+  autoIssue          Boolean @default(false) // Auto-generate invoice on order complete
+
+  // ========== STATUS & HEALTH ==========
+  isEnabled       Boolean   @default(false) // Master switch
+  lastTestedAt    DateTime? // Last connection test timestamp
+  lastTestSuccess Boolean?  // Whether last test succeeded
+  lastTestError   String?   // Error message from last test
+
+  // ========== AUDIT TRAIL ==========
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  // User ID who created config
+  updatedBy String?  // User ID who last updated config
+
+  @@index([restaurantId])
+  @@index([cuit])
 }
 
 //

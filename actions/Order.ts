@@ -1432,6 +1432,16 @@ export async function getOrders(filters: OrderFilters) {
               username: true,
             },
           },
+          invoices: {
+            select: {
+              id: true,
+              status: true,
+              cae: true,
+              invoiceNumber: true,
+              invoiceDate: true,
+            },
+            orderBy: { invoiceDate: "desc" },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -1451,6 +1461,7 @@ export async function getOrders(filters: OrderFilters) {
         price: Number(item.price),
         originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
       })),
+      invoices: order.invoices || [],
     }));
 
     const totalPages = Math.ceil(totalCount / pageSize);

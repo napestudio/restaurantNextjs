@@ -698,6 +698,11 @@ export async function prepareInvoicePrint(
               },
             },
             table: true,
+            branch: {
+              include: {
+                restaurant: true,
+              },
+            },
           },
         },
       },
@@ -712,7 +717,7 @@ export async function prepareInvoicePrint(
     }
 
     // Get the branch ID from the order
-    const branchId = process.env.BRANCH_ID || "";
+    const branchId = invoice.order.branchId || process.env.BRANCH_ID || "";
 
     // Get first online network printer from the branch (for invoices we typically use one printer)
     const printer = await prisma.printer.findFirst({
@@ -733,9 +738,19 @@ export async function prepareInvoicePrint(
 
     const { generateAfipInvoiceData } = await import("@/lib/printer/escpos");
 
-    // Get business name from environment or default
-    const businessName = process.env.BUSINESS_NAME || "Kiku Sushi";
-    const businessCuit = process.env.ARCA_CUIT || "";
+    // Get fiscal configuration (DB → .env fallback)
+    const restaurantId = invoice.order.branch.restaurantId;
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    // Get business name and CUIT from DB config or fallback to environment
+    const businessName = (fiscalConfig?.isEnabled && fiscalConfig.businessName)
+      ? fiscalConfig.businessName
+      : (process.env.BUSINESS_NAME || "Kiku Sushi");
+    const businessCuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
+      ? fiscalConfig.cuit
+      : (process.env.ARCA_CUIT || "");
 
     // Prepare invoice items
     const items = invoice.order.items.map((item) => ({
