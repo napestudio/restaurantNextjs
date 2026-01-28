@@ -6,6 +6,7 @@ import { InvoiceStatus } from "@/app/generated/prisma";
 import { usePrint } from "@/hooks/use-print";
 import { useToast } from "@/hooks/use-toast";
 import { getInvoices } from "@/actions/Invoice";
+import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,6 +34,7 @@ import {
   XCircle,
   Clock,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,6 +88,7 @@ type Filters = {
 };
 
 interface InvoicesClientProps {
+  branchId: string;
   initialInvoices: Invoice[];
   initialPagination: PaginationInfo;
   initialFilters: Filters;
@@ -128,6 +131,7 @@ const STATUS_CONFIG = {
 };
 
 export function InvoicesClient({
+  branchId,
   initialInvoices,
   initialPagination,
   initialFilters,
@@ -135,21 +139,26 @@ export function InvoicesClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
-  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
-  const [isPending, startTransition] = useTransition();
+  const [pagination, setPagination] =
+    useState<PaginationInfo>(initialPagination);
+  const [, startTransition] = useTransition();
   const { printInvoice, isPrinting } = usePrint();
   const { toast } = useToast();
 
-  // Get branch ID from environment
-  const branchId = process.env.NEXT_PUBLIC_BRANCH_ID || "";
+  // Create invoice dialog state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Filter state
   const [searchInput, setSearchInput] = useState(initialFilters.search);
-  const [statusFilter, setStatusFilter] = useState<string>(initialFilters.status || "all");
-  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<string>(
-    initialFilters.invoiceType || "all"
+  const [statusFilter, setStatusFilter] = useState<string>(
+    initialFilters.status || "all",
   );
-  const [dateFromFilter, setDateFromFilter] = useState(initialFilters.dateFrom || "");
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState<string>(
+    initialFilters.invoiceType || "all",
+  );
+  const [dateFromFilter, setDateFromFilter] = useState(
+    initialFilters.dateFrom || "",
+  );
   const [dateToFilter, setDateToFilter] = useState(initialFilters.dateTo || "");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -172,9 +181,10 @@ export function InvoicesClient({
     dateTo?: string;
   }) => {
     const validStatuses = Object.values(InvoiceStatus);
-    const statusParam = filters.status && validStatuses.includes(filters.status as InvoiceStatus)
-      ? (filters.status as InvoiceStatus)
-      : undefined;
+    const statusParam =
+      filters.status && validStatuses.includes(filters.status as InvoiceStatus)
+        ? (filters.status as InvoiceStatus)
+        : undefined;
 
     const result = await getInvoices({
       branchId,
@@ -182,14 +192,18 @@ export function InvoicesClient({
       pageSize: 20,
       search: filters.search || undefined,
       status: statusParam,
-      invoiceType: filters.invoiceType ? parseInt(filters.invoiceType) : undefined,
+      invoiceType: filters.invoiceType
+        ? parseInt(filters.invoiceType)
+        : undefined,
       dateFrom: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
       dateTo: filters.dateTo ? new Date(filters.dateTo) : undefined,
     });
 
     if (result.success && result.data) {
       // Serialize Decimal fields
-      const serialized = (result.data.invoices as Array<Record<string, unknown>>).map((invoice) => ({
+      const serialized = (
+        result.data.invoices as Array<Record<string, unknown>>
+      ).map((invoice) => ({
         ...invoice,
         subtotal: Number(invoice.subtotal),
         vatAmount: Number(invoice.vatAmount),
@@ -294,6 +308,16 @@ export function InvoicesClient({
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Facturación</h1>
+
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Crear Factura
+        </Button>
+      </div>
+
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -349,10 +373,18 @@ export function InvoicesClient({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value={InvoiceStatus.EMITTED}>Emitidas</SelectItem>
-                    <SelectItem value={InvoiceStatus.PENDING}>Pendientes</SelectItem>
-                    <SelectItem value={InvoiceStatus.FAILED}>Fallidas</SelectItem>
-                    <SelectItem value={InvoiceStatus.CANCELLED}>Canceladas</SelectItem>
+                    <SelectItem value={InvoiceStatus.EMITTED}>
+                      Emitidas
+                    </SelectItem>
+                    <SelectItem value={InvoiceStatus.PENDING}>
+                      Pendientes
+                    </SelectItem>
+                    <SelectItem value={InvoiceStatus.FAILED}>
+                      Fallidas
+                    </SelectItem>
+                    <SelectItem value={InvoiceStatus.CANCELLED}>
+                      Canceladas
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -360,7 +392,10 @@ export function InvoicesClient({
               {/* Invoice Type Filter */}
               <div className="space-y-2">
                 <Label>Tipo de Factura</Label>
-                <Select value={invoiceTypeFilter} onValueChange={setInvoiceTypeFilter}>
+                <Select
+                  value={invoiceTypeFilter}
+                  onValueChange={setInvoiceTypeFilter}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Todos los tipos" />
                   </SelectTrigger>
@@ -432,14 +467,18 @@ export function InvoicesClient({
           invoices.map((invoice) => {
             const StatusIcon = STATUS_CONFIG[invoice.status].icon;
             return (
-              <Card key={invoice.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={invoice.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-3">
                       {/* Header */}
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold">
-                          {INVOICE_TYPE_LABELS[invoice.invoiceType]} N° {invoice.ptoVta.toString().padStart(4, "0")}-
+                          {INVOICE_TYPE_LABELS[invoice.invoiceType]} N°{" "}
+                          {invoice.ptoVta.toString().padStart(4, "0")}-
                           {invoice.invoiceNumber.toString().padStart(8, "0")}
                         </h3>
                         <Badge
@@ -457,16 +496,21 @@ export function InvoicesClient({
                           <p className="text-gray-600">Cliente</p>
                           <p className="font-medium">{invoice.customerName}</p>
                           <p className="text-gray-500">
-                            {DOC_TYPE_LABELS[invoice.customerDocType]}: {invoice.customerDocNumber}
+                            {DOC_TYPE_LABELS[invoice.customerDocType]}:{" "}
+                            {invoice.customerDocNumber}
                           </p>
                         </div>
                         <div>
                           <p className="text-gray-600">Fecha</p>
                           <p className="font-medium">
-                            {format(new Date(invoice.invoiceDate), "PPP", { locale: es })}
+                            {format(new Date(invoice.invoiceDate), "PPP", {
+                              locale: es,
+                            })}
                           </p>
                           {invoice.order && (
-                            <p className="text-gray-500">Orden: #{invoice.order.publicCode}</p>
+                            <p className="text-gray-500">
+                              Orden: #{invoice.order.publicCode}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -475,15 +519,21 @@ export function InvoicesClient({
                       <div className="flex items-center gap-6 text-sm border-t pt-3">
                         <div>
                           <p className="text-gray-600">Subtotal</p>
-                          <p className="font-medium">${invoice.subtotal.toFixed(2)}</p>
+                          <p className="font-medium">
+                            ${invoice.subtotal.toFixed(2)}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-600">IVA</p>
-                          <p className="font-medium">${invoice.vatAmount.toFixed(2)}</p>
+                          <p className="font-medium">
+                            ${invoice.vatAmount.toFixed(2)}
+                          </p>
                         </div>
                         <div>
                           <p className="text-gray-600">Total</p>
-                          <p className="font-bold text-lg">${invoice.totalAmount.toFixed(2)}</p>
+                          <p className="font-bold text-lg">
+                            ${invoice.totalAmount.toFixed(2)}
+                          </p>
                         </div>
                       </div>
 
@@ -494,7 +544,8 @@ export function InvoicesClient({
                           <p className="font-mono font-medium">{invoice.cae}</p>
                           {invoice.caeFchVto && (
                             <p className="text-gray-500 text-xs mt-1">
-                              Vto: {invoice.caeFchVto.slice(6, 8)}/{invoice.caeFchVto.slice(4, 6)}/
+                              Vto: {invoice.caeFchVto.slice(6, 8)}/
+                              {invoice.caeFchVto.slice(4, 6)}/
                               {invoice.caeFchVto.slice(0, 4)}
                             </p>
                           )}
@@ -506,7 +557,11 @@ export function InvoicesClient({
                     <div className="flex flex-col gap-2 ml-4">
                       {invoice.qrUrl && (
                         <Button variant="outline" size="sm" asChild>
-                          <a href={invoice.qrUrl} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={invoice.qrUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             Ver en AFIP
                           </a>
                         </Button>
@@ -536,14 +591,21 @@ export function InvoicesClient({
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  onClick={() =>
+                    currentPage > 1 && handlePageChange(currentPage - 1)
+                  }
                   className={
-                    currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
+                    currentPage === 1
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
                   }
                 />
               </PaginationItem>
 
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => {
+              {Array.from(
+                { length: pagination.totalPages },
+                (_, i) => i + 1,
+              ).map((page) => {
                 // Show first page, last page, current page, and pages around current
                 if (
                   page === 1 ||
@@ -561,7 +623,10 @@ export function InvoicesClient({
                       </PaginationLink>
                     </PaginationItem>
                   );
-                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
                   return (
                     <PaginationItem key={page}>
                       <PaginationEllipsis />
@@ -574,7 +639,8 @@ export function InvoicesClient({
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
-                    currentPage < pagination.totalPages && handlePageChange(currentPage + 1)
+                    currentPage < pagination.totalPages &&
+                    handlePageChange(currentPage + 1)
                   }
                   className={
                     currentPage === pagination.totalPages
@@ -587,6 +653,27 @@ export function InvoicesClient({
           </Pagination>
         </div>
       )}
+
+      {/* Create Invoice Dialog */}
+      <CreateInvoiceDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        branchId={branchId}
+        onSuccess={() => {
+          // Refresh invoice list after successful creation
+          startTransition(async () => {
+            await fetchInvoices({
+              page: currentPage,
+              search: searchInput || undefined,
+              status: statusFilter !== "all" ? statusFilter : undefined,
+              invoiceType:
+                invoiceTypeFilter !== "all" ? invoiceTypeFilter : undefined,
+              dateFrom: dateFromFilter || undefined,
+              dateTo: dateToFilter || undefined,
+            });
+          });
+        }}
+      />
     </div>
   );
 }

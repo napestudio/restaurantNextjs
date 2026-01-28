@@ -2,6 +2,7 @@ import { getInvoices } from "@/actions/Invoice";
 import { InvoicesClient } from "./invoices-client";
 import { UserRole, InvoiceStatus } from "@/app/generated/prisma";
 import { requireRole } from "@/lib/permissions/middleware";
+import { getCurrentUserBranchId } from "@/lib/user-branch";
 
 type SearchParams = Promise<{
   page?: string;
@@ -43,7 +44,7 @@ export default async function InvoicesPage({
   await requireRole(UserRole.MANAGER);
 
   const params = await searchParams;
-  const branchId = process.env.BRANCH_ID || "";
+  const branchId = (await getCurrentUserBranchId()) || "";
 
   // Parse search params
   const page = params.page ? Math.max(1, parseInt(params.page) || 1) : 1;
@@ -51,9 +52,10 @@ export default async function InvoicesPage({
 
   // Validate status parameter
   const validStatuses = Object.values(InvoiceStatus);
-  const statusParam = params.status && validStatuses.includes(params.status as InvoiceStatus)
-    ? (params.status as InvoiceStatus)
-    : undefined;
+  const statusParam =
+    params.status && validStatuses.includes(params.status as InvoiceStatus)
+      ? (params.status as InvoiceStatus)
+      : undefined;
 
   // Fetch invoices
   const invoicesResult = await getInvoices({
@@ -73,7 +75,8 @@ export default async function InvoicesPage({
       ? (invoicesResult.data.invoices as Invoice[])
       : [];
 
-  const pagination = (invoicesResult.success && invoicesResult.data?.pagination) || {
+  const pagination = (invoicesResult.success &&
+    invoicesResult.data?.pagination) || {
     page: 1,
     pageSize: 20,
     totalCount: 0,
@@ -83,14 +86,8 @@ export default async function InvoicesPage({
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="px-4 sm:px-6 lg:px-8 py-16">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Facturas Electrónicas</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Gestión de facturas AFIP emitidas para las órdenes
-          </p>
-        </div>
-
         <InvoicesClient
+          branchId={branchId}
           initialInvoices={invoices}
           initialPagination={pagination}
           initialFilters={{

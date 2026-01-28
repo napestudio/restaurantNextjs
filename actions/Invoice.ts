@@ -725,3 +725,317 @@ export async function generateInvoicePDF(
     };
   }
 }
+
+// ============================================================================
+// MANUAL INVOICE GENERATION
+// ============================================================================
+
+/**
+ * Manual invoice line item (VAT-inclusive pricing)
+ */
+export interface ManualInvoiceLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number; // VAT-inclusive
+  vatRate: number; // 0, 10.5, 21, 27
+}
+
+/**
+ * Calculate VAT breakdown from manual invoice line items
+ * Prices are VAT-inclusive - we extract the VAT component
+ */
+function calculateVatBreakdownFromItems(
+  items: ManualInvoiceLineItem[]
+): CalculatedTotals {
+  // Group by VAT rate
+  const vatGroups: Record<number, { base: number; amount: number }> = {};
+
+  for (const item of items) {
+    const lineTotal = item.quantity * item.unitPrice;
+
+    // Extract VAT (formula: net = total / (1 + rate/100))
+    const netAmount = lineTotal / (1 + item.vatRate / 100);
+    const vatAmount = lineTotal - netAmount;
+
+    if (!vatGroups[item.vatRate]) {
+      vatGroups[item.vatRate] = { base: 0, amount: 0 };
+    }
+
+    vatGroups[item.vatRate].base += netAmount;
+    vatGroups[item.vatRate].amount += vatAmount;
+  }
+
+  // Build breakdown array
+  const vatBreakdown: VatBreakdownItem[] = Object.entries(vatGroups).map(
+    ([rate, values]) => ({
+      rate: Number(rate),
+      base: Math.round(values.base * 100) / 100,
+      amount: Math.round(values.amount * 100) / 100,
+    })
+  );
+
+  const subtotal = vatBreakdown.reduce((sum, v) => sum + v.base, 0);
+  const totalVat = vatBreakdown.reduce((sum, v) => sum + v.amount, 0);
+
+  return {
+    subtotal: Math.round(subtotal * 100) / 100,
+    vatBreakdown,
+    totalVat: Math.round(totalVat * 100) / 100,
+    total: Math.round((subtotal + totalVat) * 100) / 100,
+  };
+}
+
+/**
+ * Generate manual invoice (not linked to an order)
+ *
+ * Use cases:
+ * - Custom invoices for services
+ * - Manual adjustments
+ * - Invoices for items not in the product catalog
+ */
+export async function generateManualInvoice(params: {
+  branchId: string;
+  invoiceType: number;
+  customerData: CustomerInvoiceData;
+  items: ManualInvoiceLineItem[];
+  notes?: string;
+}): Promise<ActionResult<unknown>> {
+  try {
+    // Authorization check - only MANAGER and above can generate invoices
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+
+    const { branchId, invoiceType, customerData, items } = params;
+
+    // Validate inputs
+    if (!items || items.length === 0) {
+      return { success: false, error: "Debe agregar al menos un ítem" };
+    }
+
+    for (const item of items) {
+      if (item.quantity <= 0) {
+        return { success: false, error: "La cantidad debe ser mayor a 0" };
+      }
+      if (item.unitPrice <= 0) {
+        return { success: false, error: "El precio debe ser mayor a 0" };
+      }
+      if (![0, 10.5, 21, 27].includes(item.vatRate)) {
+        return { success: false, error: "Tasa de IVA inválida" };
+      }
+    }
+
+    // Validate document
+    const docValidation = validateDocument(customerData.docType, customerData.docNumber);
+    if (!docValidation.valid) {
+      return { success: false, error: docValidation.error! };
+    }
+
+    // Validate invoice type compatibility
+    const typeValidation = validateInvoiceTypeCompatibility(invoiceType, customerData.docType);
+    if (!typeValidation.valid) {
+      return { success: false, error: typeValidation.error! };
+    }
+
+    // Get branch with restaurant
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      include: {
+        restaurant: true,
+      },
+    });
+
+    if (!branch) {
+      return { success: false, error: "Sucursal no encontrada" };
+    }
+
+    // Get fiscal configuration
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId: branch.restaurantId },
+    });
+
+    // Get sales point from DB config or fallback to environment
+    const ptoVta = (fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta)
+      ? fiscalConfig.defaultPtoVta
+      : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    // Get CUIT from DB config or fallback to environment
+    const cuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
+      ? parseInt(fiscalConfig.cuit)
+      : parseInt(process.env.ARCA_CUIT || "0");
+
+    // Get next invoice number from AFIP
+    const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
+    if (!lastInvoiceResult.success) {
+      return {
+        success: false,
+        error: "Error al obtener número de factura: " + lastInvoiceResult.error,
+      };
+    }
+
+    const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
+
+    // Calculate VAT breakdown from items
+    const totals = calculateVatBreakdownFromItems(items);
+
+    // Format date as YYYYMMDD
+    const invoiceDate = new Date();
+    const dateStr = invoiceDate.toISOString().split('T')[0].replace(/-/g, '');
+
+    // Map VAT rates to AFIP IDs
+    const vatRateToId: Record<number, number> = {
+      0: 3,      // 0% → ID 3
+      10.5: 4,   // 10.5% → ID 4
+      21: 5,     // 21% → ID 5
+      27: 6,     // 27% → ID 6
+    };
+
+    // Build AFIP payload
+    const afipPayload = {
+      CantReg: 1,
+      PtoVta: ptoVta,
+      CbteTipo: invoiceType,
+      Concepto: 1, // 1=Products
+      DocTipo: customerData.docType,
+      DocNro: customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      CbteDesde: nextInvoiceNumber,
+      CbteHasta: nextInvoiceNumber,
+      CbteFch: dateStr,
+      ImpTotal: totals.total,
+      ImpTotConc: 0, // Non-taxed amount
+      ImpNeto: totals.subtotal,
+      ImpOpEx: 0, // Exempt operations
+      ImpTrib: 0, // Other taxes
+      ImpIVA: totals.totalVat,
+      MonId: "PES",
+      MonCotiz: 1,
+      FchServDesde: undefined,
+      FchServHasta: undefined,
+      FchVtoPago: undefined,
+      CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
+      Iva: totals.vatBreakdown.map(vat => ({
+        Id: vatRateToId[vat.rate] || 5,
+        BaseImp: vat.base,
+        Importe: vat.amount,
+      })),
+    };
+
+    // Emit invoice to AFIP
+    const afipResult = await emitTestInvoice(afipPayload);
+
+    if (!afipResult.success) {
+      // Save as FAILED status for retry later
+      await prisma.invoice.create({
+        data: {
+          orderId: null, // Manual invoice - no order
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: { error: afipResult.error } as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return { success: false, error: "AFIP rechazó la factura: " + afipResult.error };
+    }
+
+    // Check for AFIP errors
+    const afipData = afipResult.data as AfipResponseData;
+    if ('Errors' in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(", ");
+
+      await prisma.invoice.create({
+        data: {
+          orderId: null,
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return { success: false, error: "Error AFIP: " + errorMsg };
+    }
+
+    // Success - extract CAE
+    const cae = afipData.cae;
+    const caeFchVto = afipData.caeFchVto;
+
+    if (!cae) {
+      return { success: false, error: "AFIP no devolvió CAE" };
+    }
+
+    // Generate QR URL
+    const qrData = generateAfipQrData({
+      cuit,
+      ptoVta,
+      tipoCmp: invoiceType,
+      nroCmp: nextInvoiceNumber,
+      fecha: afipPayload.CbteFch,
+      importe: totals.total,
+      moneda: "PES",
+      tipoDocRec: customerData.docType,
+      nroDocRec: customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      cae,
+    });
+
+    const qrUrl = generateAfipQrUrl(qrData);
+
+    // Save invoice with CAE
+    const invoice = await prisma.invoice.create({
+      data: {
+        orderId: null, // KEY DIFFERENCE: Manual invoice has no order
+        customerName: customerData.name,
+        customerDocType: customerData.docType,
+        customerDocNumber: customerData.docNumber,
+        invoiceType,
+        ptoVta,
+        invoiceNumber: nextInvoiceNumber,
+        invoiceDate: new Date(),
+        subtotal: totals.subtotal,
+        vatAmount: totals.totalVat,
+        totalAmount: totals.total,
+        vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+        cae,
+        caeFchVto,
+        qrUrl,
+        status: "EMITTED",
+        afipResponse: afipData as unknown as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+
+    // Serialize Decimal fields for client components
+    const serializedInvoice = {
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      vatAmount: Number(invoice.vatAmount),
+      totalAmount: Number(invoice.totalAmount),
+    };
+
+    return { success: true, data: serializedInvoice };
+  } catch (error) {
+    console.error("[generateManualInvoice] Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error desconocido al generar factura",
+    };
+  }
+}

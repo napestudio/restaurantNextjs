@@ -155,6 +155,13 @@ export type ArcaInvoiceType = {
  * - Factura A: For transactions between registered taxpayers (Responsable Inscripto)
  * - Factura B: For sales to final consumers and self-employed (Monotributista)
  * - Factura C: For VAT-exempt transactions
+ * - Notas de Crédito/Débito: Credit and debit notes for adjustments, refunds, or additional charges
+ *
+ * WSFEV1 Support for Credit/Debit Notes:
+ * - All credit and debit note types (2, 3, 7, 8, 12, 15) are fully supported
+ * - CbtesAsoc field is MANDATORY to link to the original invoice
+ * - Time limit: 15-21 days from original invoice date to issue adjustment vouchers
+ * - Partial credit notes are supported for discounts and adjustments
  */
 export const INVOICE_TYPES: ArcaInvoiceType[] = [
   {
@@ -173,16 +180,41 @@ export const INVOICE_TYPES: ArcaInvoiceType[] = [
     description: "IVA Exento"
   },
   {
+    code: 2,
+    name: "Nota de Débito A",
+    description: "Débito para Factura A"
+  },
+  {
     code: 3,
     name: "Nota de Crédito A",
     description: "Crédito para Factura A"
+  },
+  {
+    code: 7,
+    name: "Nota de Débito B",
+    description: "Débito para Factura B"
   },
   {
     code: 8,
     name: "Nota de Crédito B",
     description: "Crédito para Factura B"
   },
+  {
+    code: 12,
+    name: "Nota de Débito C",
+    description: "Débito para Factura C"
+  },
+  {
+    code: 15,
+    name: "Nota de Crédito C",
+    description: "Crédito para Factura C"
+  },
 ];
+
+/**
+ * Valid invoice type codes
+ */
+export type InvoiceTypeCode = 1 | 2 | 3 | 6 | 7 | 8 | 11 | 12 | 15;
 
 // ============================================================================
 // Document Type Definitions

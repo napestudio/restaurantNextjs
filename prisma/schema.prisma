@@ -691,9 +691,9 @@ model OrderItem {
 // FACTURAS
 //
 model Invoice {
-  id      String @id @default(cuid())
-  order   Order  @relation(fields: [orderId], references: [id])
-  orderId String
+  id      String  @id @default(cuid())
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
 
   // Customer information
   customerName      String // Business or person name

@@ -6,6 +6,7 @@ import {
   OrderType,
   PaymentMethod,
   UserRole,
+  InvoiceStatus,
   type Product,
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
@@ -1896,6 +1897,101 @@ export async function closeTableWithPayment(data: {
     return {
       success: false,
       error: "Error closing the table",
+    };
+  }
+}
+
+// ============================================================================
+// Invoice-related Order Queries
+// ============================================================================
+
+/**
+ * Order without invoice (for invoice creation)
+ */
+export type OrderWithoutInvoice = {
+  id: string;
+  publicCode: string;
+  customerName: string | null;
+  table: { name: string | null; number: number } | null;
+  type: OrderType;
+  total: number;
+};
+
+type ActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+/**
+ * Get completed orders without emitted invoices
+ * Used for invoice creation dialog
+ */
+export async function getOrdersWithoutInvoice(params: {
+  branchId: string;
+  search?: string;
+  limit?: number;
+}): Promise<ActionResult<OrderWithoutInvoice[]>> {
+  try {
+    const { branchId, search, limit = 20 } = params;
+
+    // Build where clause conditionally
+    const whereClause: {
+      branchId: string;
+      status: OrderStatus;
+      invoices: { none: { status: InvoiceStatus } };
+      OR?: Array<{ publicCode?: { contains: string; mode: 'insensitive' }; customerName?: { contains: string; mode: 'insensitive' } }>;
+    } = {
+      branchId,
+      status: OrderStatus.COMPLETED,
+      invoices: {
+        none: {
+          status: InvoiceStatus.EMITTED
+        }
+      }
+    };
+
+    // Only add OR clause if search is provided
+    if (search && search.trim()) {
+      whereClause.OR = [
+        { publicCode: { contains: search.trim(), mode: 'insensitive' } },
+        { customerName: { contains: search.trim(), mode: 'insensitive' } },
+      ];
+    }
+
+    const orders = await prisma.order.findMany({
+      where: whereClause,
+      include: {
+        items: {
+          select: { quantity: true, price: true }
+        },
+        table: {
+          select: { name: true, number: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit
+    });
+
+    // Calculate totals and serialize
+    const ordersWithTotal: OrderWithoutInvoice[] = orders.map(order => ({
+      id: order.id,
+      publicCode: order.publicCode,
+      customerName: order.customerName,
+      table: order.table,
+      type: order.type,
+      total: order.items.reduce((sum, item) =>
+        sum + (Number(item.price) * item.quantity), 0
+      )
+    }));
+
+    return {
+      success: true,
+      data: ordersWithTotal
+    };
+  } catch (error) {
+    console.error("Error getting orders without invoice:", error);
+    return {
+      success: false,
+      error: "Error al obtener pedidos sin factura"
     };
   }
 }

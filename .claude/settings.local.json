@@ -10,7 +10,9 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(npx prisma db push:*)",
       "Bash(ls:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:www.afip.gob.ar)",
+      "Bash(npx prisma migrate resolve:*)"
     ],
     "deny": [],
     "ask": []
