@@ -61,11 +61,17 @@ interface AfipResponseData {
 /**
  * Validate customer document format
  */
-function validateDocument(docType: number, docNumber: string): { valid: boolean; error?: string } {
+function validateDocument(
+  docType: number,
+  docNumber: string,
+): { valid: boolean; error?: string } {
   if (docType === 99) {
     // Consumidor Final must be "0"
     if (docNumber !== "0") {
-      return { valid: false, error: "Consumidor Final debe tener documento '0'" };
+      return {
+        valid: false,
+        error: "Consumidor Final debe tener documento '0'",
+      };
     }
     return { valid: true };
   }
@@ -92,7 +98,10 @@ function validateDocument(docType: number, docNumber: string): { valid: boolean;
 /**
  * Validate invoice type compatibility with document type
  */
-function validateInvoiceTypeCompatibility(invoiceType: number, docType: number): { valid: boolean; error?: string } {
+function validateInvoiceTypeCompatibility(
+  invoiceType: number,
+  docType: number,
+): { valid: boolean; error?: string } {
   // Factura A requires CUIT
   if (invoiceType === 1 && docType !== 80) {
     return { valid: false, error: "Factura A requiere CUIT (tipo 80)" };
@@ -122,7 +131,7 @@ function validateInvoiceTypeCompatibility(invoiceType: number, docType: number):
  */
 function calculateVatBreakdown(
   orderItems: Array<{ price: unknown; quantity: number }>,
-  discountPercentage: unknown
+  discountPercentage: unknown,
 ): CalculatedTotals {
   const discount = Number(discountPercentage) || 0;
 
@@ -142,11 +151,13 @@ function calculateVatBreakdown(
   const netAmount = discountedTotal / 1.21;
   const vatAmount = discountedTotal - netAmount;
 
-  const vatBreakdown: VatBreakdownItem[] = [{
-    rate: 21,
-    base: Math.round(netAmount * 100) / 100,
-    amount: Math.round(vatAmount * 100) / 100,
-  }];
+  const vatBreakdown: VatBreakdownItem[] = [
+    {
+      rate: 21,
+      base: Math.round(netAmount * 100) / 100,
+      amount: Math.round(vatAmount * 100) / 100,
+    },
+  ];
 
   return {
     subtotal: Math.round(netAmount * 100) / 100,
@@ -157,11 +168,11 @@ function calculateVatBreakdown(
 }
 
 // ============================================================================
-// AFIP PAYLOAD BUILDER
+// ARCA PAYLOAD BUILDER
 // ============================================================================
 
 /**
- * Build AFIP invoice payload from order data
+ * Build ARCA invoice payload from order data
  */
 interface OrderWithItems {
   id: string;
@@ -179,11 +190,11 @@ async function buildAfipInvoicePayload(
   customerData: CustomerInvoiceData,
   invoiceNumber: number,
   ptoVta: number,
-  totals: CalculatedTotals
+  totals: CalculatedTotals,
 ) {
   // Format date as YYYYMMDD
   const invoiceDate = new Date();
-  const dateStr = invoiceDate.toISOString().split('T')[0].replace(/-/g, '');
+  const dateStr = invoiceDate.toISOString().split("T")[0].replace(/-/g, "");
 
   // Build payload
   const payload = {
@@ -192,7 +203,8 @@ async function buildAfipInvoicePayload(
     CbteTipo: invoiceType,
     Concepto: 1, // 1=Productos (restaurant sales)
     DocTipo: customerData.docType,
-    DocNro: customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+    DocNro:
+      customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
     CbteDesde: invoiceNumber,
     CbteHasta: invoiceNumber,
     CbteFch: dateStr,
@@ -212,7 +224,7 @@ async function buildAfipInvoicePayload(
     CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
 
     // VAT breakdown
-    Iva: totals.vatBreakdown.map(vat => ({
+    Iva: totals.vatBreakdown.map((vat) => ({
       Id: 5, // 21% VAT
       BaseImp: vat.base,
       Importe: vat.amount,
@@ -227,14 +239,14 @@ async function buildAfipInvoicePayload(
 // ============================================================================
 
 /**
- * Generate AFIP invoice for an order
+ * Generate ARCA invoice for an order
  *
  * Steps:
  * 1. Validate order is COMPLETED
  * 2. Check no existing EMITTED invoice
- * 3. Get next invoice number from AFIP
+ * 3. Get next invoice number from ARCA
  * 4. Calculate VAT breakdown
- * 5. Build AFIP payload
+ * 5. Build ARCA payload
  * 6. Call emitTestInvoice()
  * 7. Store invoice with CAE
  * 8. Generate QR URL
@@ -242,20 +254,26 @@ async function buildAfipInvoicePayload(
 export async function generateInvoiceForOrder(
   orderId: string,
   invoiceType: number,
-  customerData: CustomerInvoiceData
+  customerData: CustomerInvoiceData,
 ): Promise<ActionResult<unknown>> {
   try {
     // Authorization check - only MANAGER and above can generate invoices
     const { userId } = await authorizeAction(UserRole.MANAGER);
 
     // Validate document
-    const docValidation = validateDocument(customerData.docType, customerData.docNumber);
+    const docValidation = validateDocument(
+      customerData.docType,
+      customerData.docNumber,
+    );
     if (!docValidation.valid) {
       return { success: false, error: docValidation.error! };
     }
 
     // Validate invoice type compatibility
-    const typeValidation = validateInvoiceTypeCompatibility(invoiceType, customerData.docType);
+    const typeValidation = validateInvoiceTypeCompatibility(
+      invoiceType,
+      customerData.docType,
+    );
     if (!typeValidation.valid) {
       return { success: false, error: typeValidation.error! };
     }
@@ -281,11 +299,16 @@ export async function generateInvoiceForOrder(
 
     // Validate order status
     if (order.status !== "COMPLETED") {
-      return { success: false, error: "La orden debe estar COMPLETADA para facturar" };
+      return {
+        success: false,
+        error: "La orden debe estar COMPLETADA para facturar",
+      };
     }
 
     // Check for existing emitted invoice
-    const existingInvoice = order.invoices.find(inv => inv.status === "EMITTED");
+    const existingInvoice = order.invoices.find(
+      (inv) => inv.status === "EMITTED",
+    );
     if (existingInvoice) {
       return { success: false, error: "La orden ya tiene una factura emitida" };
     }
@@ -297,19 +320,24 @@ export async function generateInvoiceForOrder(
     });
 
     // Get sales point from DB config or fallback to environment
-    const ptoVta = (fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta)
-      ? fiscalConfig.defaultPtoVta
-      : parseInt(process.env.ARCA_PTO_VTA || "1");
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
 
     // Get CUIT from DB config or fallback to environment
-    const cuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
-      ? parseInt(fiscalConfig.cuit)
-      : parseInt(process.env.ARCA_CUIT || "0");
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
 
-    // Get next invoice number from AFIP
+    // Get next invoice number from ARCA
     const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
     if (!lastInvoiceResult.success) {
-      return { success: false, error: "Error al obtener número de factura: " + lastInvoiceResult.error };
+      return {
+        success: false,
+        error: "Error al obtener número de factura: " + lastInvoiceResult.error,
+      };
     }
 
     const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
@@ -317,17 +345,17 @@ export async function generateInvoiceForOrder(
     // Calculate VAT breakdown
     const totals = calculateVatBreakdown(order.items, order.discountPercentage);
 
-    // Build AFIP payload
+    // Build ARCA payload
     const afipPayload = await buildAfipInvoicePayload(
       order,
       invoiceType,
       customerData,
       nextInvoiceNumber,
       ptoVta,
-      totals
+      totals,
     );
 
-    // Emit invoice to AFIP
+    // Emit invoice to ARCA
     const afipResult = await emitTestInvoice(afipPayload);
 
     if (!afipResult.success) {
@@ -347,18 +375,25 @@ export async function generateInvoiceForOrder(
           totalAmount: totals.total,
           vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
           status: "FAILED",
-          afipResponse: { error: afipResult.error } as unknown as Prisma.InputJsonValue,
+          afipResponse: {
+            error: afipResult.error,
+          } as unknown as Prisma.InputJsonValue,
           createdBy: userId,
         },
       });
 
-      return { success: false, error: "AFIP rechazó la factura: " + afipResult.error };
+      return {
+        success: false,
+        error: "ARCA rechazó la factura: " + afipResult.error,
+      };
     }
 
-    // Check for AFIP errors
+    // Check for ARCA errors
     const afipData = afipResult.data as AfipResponseData;
-    if ('Errors' in afipData && afipData.Errors && afipData.Errors.length > 0) {
-      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(", ");
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(
+        ", ",
+      );
 
       const failedInvoice = await prisma.invoice.create({
         data: {
@@ -380,7 +415,7 @@ export async function generateInvoiceForOrder(
         },
       });
 
-      return { success: false, error: "Error AFIP: " + errorMsg };
+      return { success: false, error: "Error ARCA: " + errorMsg };
     }
 
     // Success - extract CAE
@@ -388,7 +423,7 @@ export async function generateInvoiceForOrder(
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "AFIP no devolvió CAE" };
+      return { success: false, error: "ARCA no devolvió CAE" };
     }
 
     // Generate QR URL
@@ -401,7 +436,8 @@ export async function generateInvoiceForOrder(
       importe: totals.total,
       moneda: "PES",
       tipoDocRec: customerData.docType,
-      nroDocRec: customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      nroDocRec:
+        customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
       cae,
     });
 
@@ -444,7 +480,10 @@ export async function generateInvoiceForOrder(
     console.error("[generateInvoiceForOrder] Error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error desconocido al generar factura",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al generar factura",
     };
   }
 }
@@ -478,7 +517,11 @@ export async function getInvoices(params: {
       invoiceType?: number;
       status?: InvoiceStatus;
       invoiceDate?: { gte?: Date; lte?: Date };
-      OR?: Array<{ customerName?: { contains: string; mode: 'insensitive' } } | { cae?: { contains: string } } | { invoiceNumber?: number }>;
+      OR?: Array<
+        | { customerName?: { contains: string; mode: "insensitive" } }
+        | { cae?: { contains: string } }
+        | { invoiceNumber?: number }
+      >;
     };
 
     const where: WhereFilter = {
@@ -565,7 +608,8 @@ export async function getInvoices(params: {
     console.error("[getInvoices] Error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al obtener facturas",
+      error:
+        error instanceof Error ? error.message : "Error al obtener facturas",
     };
   }
 }
@@ -573,7 +617,9 @@ export async function getInvoices(params: {
 /**
  * Get invoice by ID with order details
  */
-export async function getInvoiceById(invoiceId: string): Promise<ActionResult<unknown>> {
+export async function getInvoiceById(
+  invoiceId: string,
+): Promise<ActionResult<unknown>> {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -609,7 +655,9 @@ export async function getInvoiceById(invoiceId: string): Promise<ActionResult<un
             items: invoice.order.items.map((item) => ({
               ...item,
               price: Number(item.price),
-              originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
+              originalPrice: item.originalPrice
+                ? Number(item.originalPrice)
+                : null,
             })),
           }
         : null,
@@ -620,7 +668,8 @@ export async function getInvoiceById(invoiceId: string): Promise<ActionResult<un
     console.error("[getInvoiceById] Error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al obtener factura",
+      error:
+        error instanceof Error ? error.message : "Error al obtener factura",
     };
   }
 }
@@ -630,7 +679,7 @@ export async function getInvoiceById(invoiceId: string): Promise<ActionResult<un
  * Returns downloadable PDF buffer
  */
 export async function generateInvoicePDF(
-  invoiceId: string
+  invoiceId: string,
 ): Promise<ActionResult<{ pdf: Buffer; filename: string }>> {
   try {
     await authorizeAction(UserRole.WAITER);
@@ -660,7 +709,19 @@ export async function generateInvoicePDF(
     }
 
     if (invoice.status !== InvoiceStatus.EMITTED) {
-      return { success: false, error: "Solo se pueden descargar facturas emitidas" };
+      return {
+        success: false,
+        error: "Solo se pueden descargar facturas emitidas",
+      };
+    }
+
+    // Manual invoices don't have order data - PDF generation not supported yet
+    if (!invoice.order) {
+      return {
+        success: false,
+        error:
+          "La generación de PDF no está disponible para facturas manuales aún",
+      };
     }
 
     // Get fiscal configuration
@@ -669,15 +730,18 @@ export async function generateInvoicePDF(
       where: { restaurantId },
     });
 
-    const businessName = (fiscalConfig?.isEnabled && fiscalConfig.businessName)
-      ? fiscalConfig.businessName
-      : (process.env.BUSINESS_NAME || "Restaurant");
-    const businessCuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
-      ? fiscalConfig.cuit
-      : (process.env.ARCA_CUIT || "");
+    const businessName =
+      fiscalConfig?.isEnabled && fiscalConfig.businessName
+        ? fiscalConfig.businessName
+        : process.env.BUSINESS_NAME || "Restaurant";
+    const businessCuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? fiscalConfig.cuit
+        : process.env.ARCA_CUIT || "";
 
     // Generate PDF using library
-    const { generateInvoicePDF: pdfGenerator } = await import("@/lib/pdf/invoice-pdf");
+    const { generateInvoicePDF: pdfGenerator } =
+      await import("@/lib/pdf/invoice-pdf");
 
     const pdfBuffer = await pdfGenerator({
       invoice: {
@@ -745,7 +809,7 @@ export interface ManualInvoiceLineItem {
  * Prices are VAT-inclusive - we extract the VAT component
  */
 function calculateVatBreakdownFromItems(
-  items: ManualInvoiceLineItem[]
+  items: ManualInvoiceLineItem[],
 ): CalculatedTotals {
   // Group by VAT rate
   const vatGroups: Record<number, { base: number; amount: number }> = {};
@@ -771,7 +835,7 @@ function calculateVatBreakdownFromItems(
       rate: Number(rate),
       base: Math.round(values.base * 100) / 100,
       amount: Math.round(values.amount * 100) / 100,
-    })
+    }),
   );
 
   const subtotal = vatBreakdown.reduce((sum, v) => sum + v.base, 0);
@@ -824,13 +888,19 @@ export async function generateManualInvoice(params: {
     }
 
     // Validate document
-    const docValidation = validateDocument(customerData.docType, customerData.docNumber);
+    const docValidation = validateDocument(
+      customerData.docType,
+      customerData.docNumber,
+    );
     if (!docValidation.valid) {
       return { success: false, error: docValidation.error! };
     }
 
     // Validate invoice type compatibility
-    const typeValidation = validateInvoiceTypeCompatibility(invoiceType, customerData.docType);
+    const typeValidation = validateInvoiceTypeCompatibility(
+      invoiceType,
+      customerData.docType,
+    );
     if (!typeValidation.valid) {
       return { success: false, error: typeValidation.error! };
     }
@@ -853,16 +923,18 @@ export async function generateManualInvoice(params: {
     });
 
     // Get sales point from DB config or fallback to environment
-    const ptoVta = (fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta)
-      ? fiscalConfig.defaultPtoVta
-      : parseInt(process.env.ARCA_PTO_VTA || "1");
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
 
     // Get CUIT from DB config or fallback to environment
-    const cuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
-      ? parseInt(fiscalConfig.cuit)
-      : parseInt(process.env.ARCA_CUIT || "0");
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
 
-    // Get next invoice number from AFIP
+    // Get next invoice number from ARCA
     const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
     if (!lastInvoiceResult.success) {
       return {
@@ -878,24 +950,25 @@ export async function generateManualInvoice(params: {
 
     // Format date as YYYYMMDD
     const invoiceDate = new Date();
-    const dateStr = invoiceDate.toISOString().split('T')[0].replace(/-/g, '');
+    const dateStr = invoiceDate.toISOString().split("T")[0].replace(/-/g, "");
 
-    // Map VAT rates to AFIP IDs
+    // Map VAT rates to ARCA IDs
     const vatRateToId: Record<number, number> = {
-      0: 3,      // 0% → ID 3
-      10.5: 4,   // 10.5% → ID 4
-      21: 5,     // 21% → ID 5
-      27: 6,     // 27% → ID 6
+      0: 3, // 0% → ID 3
+      10.5: 4, // 10.5% → ID 4
+      21: 5, // 21% → ID 5
+      27: 6, // 27% → ID 6
     };
 
-    // Build AFIP payload
+    // Build ARCA payload
     const afipPayload = {
       CantReg: 1,
       PtoVta: ptoVta,
       CbteTipo: invoiceType,
       Concepto: 1, // 1=Products
       DocTipo: customerData.docType,
-      DocNro: customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      DocNro:
+        customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
       CbteDesde: nextInvoiceNumber,
       CbteHasta: nextInvoiceNumber,
       CbteFch: dateStr,
@@ -911,14 +984,14 @@ export async function generateManualInvoice(params: {
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
-      Iva: totals.vatBreakdown.map(vat => ({
+      Iva: totals.vatBreakdown.map((vat) => ({
         Id: vatRateToId[vat.rate] || 5,
         BaseImp: vat.base,
         Importe: vat.amount,
       })),
     };
 
-    // Emit invoice to AFIP
+    // Emit invoice to ARCA
     const afipResult = await emitTestInvoice(afipPayload);
 
     if (!afipResult.success) {
@@ -938,18 +1011,25 @@ export async function generateManualInvoice(params: {
           totalAmount: totals.total,
           vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
           status: "FAILED",
-          afipResponse: { error: afipResult.error } as unknown as Prisma.InputJsonValue,
+          afipResponse: {
+            error: afipResult.error,
+          } as unknown as Prisma.InputJsonValue,
           createdBy: userId,
         },
       });
 
-      return { success: false, error: "AFIP rechazó la factura: " + afipResult.error };
+      return {
+        success: false,
+        error: "ARCA rechazó la factura: " + afipResult.error,
+      };
     }
 
-    // Check for AFIP errors
+    // Check for ARCA errors
     const afipData = afipResult.data as AfipResponseData;
-    if ('Errors' in afipData && afipData.Errors && afipData.Errors.length > 0) {
-      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(", ");
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(
+        ", ",
+      );
 
       await prisma.invoice.create({
         data: {
@@ -971,7 +1051,7 @@ export async function generateManualInvoice(params: {
         },
       });
 
-      return { success: false, error: "Error AFIP: " + errorMsg };
+      return { success: false, error: "Error ARCA: " + errorMsg };
     }
 
     // Success - extract CAE
@@ -979,7 +1059,7 @@ export async function generateManualInvoice(params: {
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "AFIP no devolvió CAE" };
+      return { success: false, error: "ARCA no devolvió CAE" };
     }
 
     // Generate QR URL
@@ -992,7 +1072,8 @@ export async function generateManualInvoice(params: {
       importe: totals.total,
       moneda: "PES",
       tipoDocRec: customerData.docType,
-      nroDocRec: customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
+      nroDocRec:
+        customerData.docNumber === "0" ? 0 : parseInt(customerData.docNumber),
       cae,
     });
 
@@ -1035,7 +1116,10 @@ export async function generateManualInvoice(params: {
     console.error("[generateManualInvoice] Error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error desconocido al generar factura",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error desconocido al generar factura",
     };
   }
 }

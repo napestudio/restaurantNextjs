@@ -31,7 +31,7 @@ interface GenerateInvoiceDialogProps {
   onSuccess?: () => void;
 }
 
-// Invoice types according to AFIP
+// Invoice types according to ARCA
 const INVOICE_TYPES = [
   {
     value: "1",
@@ -46,7 +46,7 @@ const INVOICE_TYPES = [
   { value: "11", label: "Factura C", description: "Para operaciones exentas" },
 ] as const;
 
-// Document types according to AFIP
+// Document types according to ARCA
 const DOCUMENT_TYPES = [
   { value: "80", label: "CUIT" },
   { value: "86", label: "CUIL" },
@@ -179,7 +179,7 @@ export function GenerateInvoiceDialog({
             Generar Factura Electrónica
           </DialogTitle>
           <DialogDescription>
-            Complete los datos para generar la factura AFIP para esta orden.
+            Complete los datos para generar la factura ARCA para esta orden.
             <br />
             <span className="font-semibold">
               Total: ${orderTotal.toFixed(2)}

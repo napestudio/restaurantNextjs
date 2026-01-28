@@ -22,7 +22,7 @@ import { authorizeAction } from "@/lib/permissions/middleware";
  */
 async function validateTableForOrder(
   tableId: string,
-  type: OrderType
+  type: OrderType,
 ): Promise<
   | { success: true; table: { isShared: boolean; isActive: boolean } }
   | { success: false; error: string }
@@ -61,7 +61,9 @@ async function validateTableForOrder(
  * Get client discount percentage
  * Returns 0 if client not found or no discount set
  */
-async function getClientDiscount(clientId: string | null | undefined): Promise<number> {
+async function getClientDiscount(
+  clientId: string | null | undefined,
+): Promise<number> {
   if (!clientId) return 0;
 
   const client = await prisma.client.findUnique({
@@ -393,11 +395,14 @@ export async function createTableOrder(
   branchId: string,
   partySize: number,
   clientId?: string | null,
-  assignedToId?: string | null
+  assignedToId?: string | null,
 ) {
   try {
     // Validate table for order
-    const tableValidation = await validateTableForOrder(tableId, OrderType.DINE_IN);
+    const tableValidation = await validateTableForOrder(
+      tableId,
+      OrderType.DINE_IN,
+    );
     if (!tableValidation.success) {
       return { success: false, error: tableValidation.error };
     }
@@ -672,7 +677,10 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
 export async function updateOrderItemPrice(itemId: string, price: number) {
   try {
     // Authorization check - only MANAGER and above can modify order prices
-    await authorizeAction(UserRole.MANAGER, "Solo gerentes y superiores pueden modificar precios");
+    await authorizeAction(
+      UserRole.MANAGER,
+      "Solo gerentes y superiores pueden modificar precios",
+    );
 
     const item = await prisma.orderItem.update({
       where: { id: itemId },
@@ -706,7 +714,7 @@ export async function updateOrderItemPrice(itemId: string, price: number) {
 // Update order item quantity
 export async function updateOrderItemQuantity(
   itemId: string,
-  quantity: number
+  quantity: number,
 ) {
   try {
     // Validate quantity is positive
@@ -749,7 +757,7 @@ export async function updateOrderItemQuantity(
 // Update order item notes
 export async function updateOrderItemNotes(
   itemId: string,
-  notes: string | null
+  notes: string | null,
 ) {
   try {
     const item = await prisma.orderItem.update({
@@ -926,7 +934,7 @@ export async function closeEmptyTable(orderId: string) {
       // Verify order has no items
       if (order._count.items > 0) {
         throw new Error(
-          "No se puede eliminar una orden con productos. Use el cierre de mesa normal."
+          "No se puede eliminar una orden con productos. Use el cierre de mesa normal.",
         );
       }
 
@@ -967,8 +975,7 @@ export async function closeEmptyTable(orderId: string) {
     console.error("Error closing empty table:", error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Error al cerrar la mesa",
+      error: error instanceof Error ? error.message : "Error al cerrar la mesa",
     };
   }
 }
@@ -1003,7 +1010,7 @@ export async function tableHasActiveOrders(tableId: string) {
 // Get products available for ordering (branch-specific with prices)
 export async function getAvailableProductsForOrder(
   branchId: string,
-  orderType: OrderType = OrderType.DINE_IN
+  orderType: OrderType = OrderType.DINE_IN,
 ) {
   try {
     const products = await prisma.product.findMany({
@@ -1027,7 +1034,7 @@ export async function getAvailableProductsForOrder(
             branchId,
           },
           include: {
-            prices: true,  // Fetch all price types for fallback logic
+            prices: true, // Fetch all price types for fallback logic
           },
         },
       },
@@ -1089,10 +1096,7 @@ export async function getAvailableTablesForMove(branchId: string) {
           { status: "EMPTY" },
           { status: null }, // Tables with no manual status override
           {
-            AND: [
-              { isShared: true },
-              { status: "OCCUPIED" }
-            ]
+            AND: [{ isShared: true }, { status: "OCCUPIED" }],
           }, // Include occupied shared tables
         ],
       },
@@ -1496,7 +1500,7 @@ export async function getOrders(filters: OrderFilters) {
 // Update payment method
 export async function updatePaymentMethod(
   orderId: string,
-  paymentMethod: PaymentMethod
+  paymentMethod: PaymentMethod,
 ) {
   try {
     const order = await prisma.order.update({
@@ -1523,11 +1527,14 @@ export async function updatePaymentMethod(
 // Update discount percentage
 export async function updateDiscount(
   orderId: string,
-  discountPercentage: number
+  discountPercentage: number,
 ) {
   try {
     // Authorization check - only MANAGER and above can apply discounts
-    await authorizeAction(UserRole.MANAGER, "Solo gerentes y superiores pueden aplicar descuentos");
+    await authorizeAction(
+      UserRole.MANAGER,
+      "Solo gerentes y superiores pueden aplicar descuentos",
+    );
 
     // Validate discount percentage (0-100)
     if (discountPercentage < 0 || discountPercentage > 100) {
@@ -1561,7 +1568,7 @@ export async function updateDiscount(
 // Assign staff to order
 export async function assignStaffToOrder(
   orderId: string,
-  userId: string | null
+  userId: string | null,
 ) {
   try {
     const order = await prisma.order.update({
@@ -1621,7 +1628,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
 // Assign client to order
 export async function assignClientToOrder(
   orderId: string,
-  clientId: string | null
+  clientId: string | null,
 ) {
   try {
     // Get client discount if clientId is provided
@@ -1684,9 +1691,9 @@ export async function setNeedsInvoice(orderId: string, needsInvoice: boolean) {
   }
 }
 
-// DEPRECATED: Old invoice functions have been replaced by AFIP-compliant invoice system
+// DEPRECATED: Old invoice functions have been replaced by ARCA-compliant invoice system
 // See actions/Invoice.ts for the new implementation:
-// - generateInvoiceForOrder() - Generates AFIP electronic invoices with CAE
+// - generateInvoiceForOrder() - Generates ARCA electronic invoices with CAE
 // - getInvoices() - Lists invoices with pagination and filters
 // - getInvoiceById() - Gets a single invoice with full details
 
@@ -1757,7 +1764,7 @@ export async function closeTableWithPayment(data: {
       // Calculate order total
       const subtotal = order.items.reduce(
         (sum, item) => sum + Number(item.price) * item.quantity,
-        0
+        0,
       );
       const discountAmount =
         subtotal * (Number(order.discountPercentage) / 100);
@@ -1775,8 +1782,8 @@ export async function closeTableWithPayment(data: {
       if (Math.abs(totalPayment - total) > 0.01) {
         throw new Error(
           `Total ($${totalPayment.toFixed(
-            2
-          )}) no coincide con el total de la mesa ($${total.toFixed(2)})`
+            2,
+          )}) no coincide con el total de la mesa ($${total.toFixed(2)})`,
         );
       }
 
@@ -1801,9 +1808,10 @@ export async function closeTableWithPayment(data: {
 
       // Determine primary payment method for the order
       // Use the method with the highest amount, or default to CASH if no payments
-      const primaryPayment = payments && payments.length > 0
-        ? payments.reduce((max, p) => p.amount > max.amount ? p : max)
-        : { method: "CASH" as const, amount: 0 };
+      const primaryPayment =
+        payments && payments.length > 0
+          ? payments.reduce((max, p) => (p.amount > max.amount ? p : max))
+          : { method: "CASH" as const, amount: 0 };
 
       // Map extended payment method to Order's PaymentMethod enum
       let orderPaymentMethod: PaymentMethod;
@@ -1938,22 +1946,25 @@ export async function getOrdersWithoutInvoice(params: {
       branchId: string;
       status: OrderStatus;
       invoices: { none: { status: InvoiceStatus } };
-      OR?: Array<{ publicCode?: { contains: string; mode: 'insensitive' }; customerName?: { contains: string; mode: 'insensitive' } }>;
+      OR?: Array<{
+        publicCode?: { contains: string; mode: "insensitive" };
+        customerName?: { contains: string; mode: "insensitive" };
+      }>;
     } = {
       branchId,
       status: OrderStatus.COMPLETED,
       invoices: {
         none: {
-          status: InvoiceStatus.EMITTED
-        }
-      }
+          status: InvoiceStatus.EMITTED,
+        },
+      },
     };
 
     // Only add OR clause if search is provided
     if (search && search.trim()) {
       whereClause.OR = [
-        { publicCode: { contains: search.trim(), mode: 'insensitive' } },
-        { customerName: { contains: search.trim(), mode: 'insensitive' } },
+        { publicCode: { contains: search.trim(), mode: "insensitive" } },
+        { customerName: { contains: search.trim(), mode: "insensitive" } },
       ];
     }
 
@@ -1961,37 +1972,38 @@ export async function getOrdersWithoutInvoice(params: {
       where: whereClause,
       include: {
         items: {
-          select: { quantity: true, price: true }
+          select: { quantity: true, price: true },
         },
         table: {
-          select: { name: true, number: true }
-        }
+          select: { name: true, number: true },
+        },
       },
-      orderBy: { createdAt: 'desc' },
-      take: limit
+      orderBy: { createdAt: "desc" },
+      take: limit,
     });
 
     // Calculate totals and serialize
-    const ordersWithTotal: OrderWithoutInvoice[] = orders.map(order => ({
+    const ordersWithTotal: OrderWithoutInvoice[] = orders.map((order) => ({
       id: order.id,
       publicCode: order.publicCode,
       customerName: order.customerName,
       table: order.table,
       type: order.type,
-      total: order.items.reduce((sum, item) =>
-        sum + (Number(item.price) * item.quantity), 0
-      )
+      total: order.items.reduce(
+        (sum, item) => sum + Number(item.price) * item.quantity,
+        0,
+      ),
     }));
 
     return {
       success: true,
-      data: ordersWithTotal
+      data: ordersWithTotal,
     };
   } catch (error) {
     console.error("Error getting orders without invoice:", error);
     return {
       success: false,
-      error: "Error al obtener pedidos sin factura"
+      error: "Error al obtener pedidos sin factura",
     };
   }
 }

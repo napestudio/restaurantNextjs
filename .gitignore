@@ -29,7 +29,7 @@
 *.key
 *.crt
 
-# AFIP/ARCA credentials (DO NOT COMMIT!)
+# ARCA/ARCA credentials (DO NOT COMMIT!)
 /credentials
 
 # debug

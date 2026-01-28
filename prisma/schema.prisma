@@ -700,10 +700,10 @@ model Invoice {
   customerDocType   Int    // 80=CUIT, 86=CUIL, 96=DNI, 99=Consumidor Final
   customerDocNumber String // Document number ("0" for Consumidor Final)
 
-  // AFIP invoice details
+  // ARCA invoice details
   invoiceType   Int      // 1=Factura A, 6=Factura B, 11=Factura C
   ptoVta        Int      // Sales point from ARCA_PTO_VTA
-  invoiceNumber Int      // Sequential number from AFIP
+  invoiceNumber Int      // Sequential number from ARCA
   invoiceDate   DateTime // Invoice emission date
 
   // Amounts (denormalized for queries)
@@ -714,16 +714,16 @@ model Invoice {
   // VAT breakdown stored as JSON
   vatBreakdown Json? // [{rate: 21, base: 1000, amount: 210}]
 
-  // AFIP authorization
+  // ARCA authorization
   cae          String? // CAE authorization (14 digits)
   caeFchVto    String? // CAE expiration (YYYYMMDD)
-  afipResponse Json?   // Full AFIP response for audit
+  afipResponse Json?   // Full ARCA response for audit
 
   // Status
   status InvoiceStatus @default(PENDING)
 
   // QR code
-  qrUrl String? // AFIP verification URL
+  qrUrl String? // ARCA verification URL
 
   // Audit
   createdAt DateTime @default(now())
@@ -738,14 +738,14 @@ model Invoice {
 }
 
 enum InvoiceStatus {
-  PENDING   // Created but not sent to AFIP
-  EMITTED   // Authorized by AFIP (has CAE)
+  PENDING   // Created but not sent to ARCA
+  EMITTED   // Authorized by ARCA (has CAE)
   CANCELLED // Cancelled (requires credit note)
-  FAILED    // AFIP rejected
+  FAILED    // ARCA rejected
 }
 
 //
-// FISCAL CONFIGURATION (AFIP)
+// FISCAL CONFIGURATION (ARCA)
 //
 
 model FiscalConfiguration {
@@ -761,7 +761,7 @@ model FiscalConfiguration {
   grossIncome       String?   // Ingresos brutos (province registration)
   taxStatus         String?   // e.g. "Responsable Inscripto", "Monotributo", "Exento"
 
-  // ========== AFIP CREDENTIALS ==========
+  // ========== ARCA CREDENTIALS ==========
   environment          String    @default("test") // "test" or "production"
   certificatePath      String?   // Path to .crt file (NOT contents)
   privateKeyPath       String?   // Path to .key file (NOT contents)
@@ -769,8 +769,8 @@ model FiscalConfiguration {
 
   // ========== SALES POINTS ==========
   defaultPtoVta   Int       @default(1) // Default Punto de Venta
-  availablePtoVta Json?     // Array of available sales points from AFIP, e.g. [1, 2, 3]
-  lastSyncedAt    DateTime? // When sales points were last synced with AFIP
+  availablePtoVta Json?     // Array of available sales points from ARCA, e.g. [1, 2, 3]
+  lastSyncedAt    DateTime? // When sales points were last synced with ARCA
 
   // ========== INVOICE BEHAVIOR ==========
   defaultInvoiceType Int     @default(6) // 1=Factura A, 6=Factura B, 11=Factura C

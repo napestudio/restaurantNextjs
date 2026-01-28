@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { FiscalConfigInput, FiscalConfigData, updateFiscalConfig, syncSalesPoints } from "@/actions/FiscalConfig";
+import {
+  FiscalConfigInput,
+  FiscalConfigData,
+  updateFiscalConfig,
+  syncSalesPoints,
+} from "@/actions/FiscalConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +36,7 @@ export function SalesPointsConfig({
   });
 
   const [availablePoints, setAvailablePoints] = useState<number[]>(
-    initialConfig?.availablePtoVta as unknown as number[] || []
+    (initialConfig?.availablePtoVta as unknown as number[]) || [],
   );
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,13 +69,14 @@ export function SalesPointsConfig({
 
     const result = await updateFiscalConfig(
       restaurantId,
-      formData as FiscalConfigInput
+      formData as FiscalConfigInput,
     );
 
     if (result.success) {
       toast({
         title: "Configuración guardada",
-        description: "El punto de venta predeterminado se actualizó correctamente",
+        description:
+          "El punto de venta predeterminado se actualizó correctamente",
       });
     } else {
       toast({
@@ -97,7 +103,10 @@ export function SalesPointsConfig({
           max="9999"
           value={formData.defaultPtoVta}
           onChange={(e) =>
-            setFormData({ ...formData, defaultPtoVta: parseInt(e.target.value) || 1 })
+            setFormData({
+              ...formData,
+              defaultPtoVta: parseInt(e.target.value) || 1,
+            })
           }
           required
         />
@@ -108,7 +117,7 @@ export function SalesPointsConfig({
 
       {/* Sync Button */}
       <div>
-        <Label>Puntos de venta disponibles en AFIP</Label>
+        <Label>Puntos de venta disponibles en ARCA</Label>
         <div className="mt-2">
           <Button
             type="button"
@@ -124,12 +133,12 @@ export function SalesPointsConfig({
             ) : (
               <>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Sincronizar con AFIP
+                Sincronizar con ARCA
               </>
             )}
           </Button>
           <p className="text-xs text-gray-500 mt-2">
-            Consulta los puntos de venta autorizados en tu cuenta AFIP
+            Consulta los puntos de venta autorizados en tu cuenta ARCA
           </p>
         </div>
       </div>
@@ -160,13 +169,13 @@ export function SalesPointsConfig({
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
         <p className="font-semibold">¿Qué es un punto de venta?</p>
         <p className="mt-2">
-          El punto de venta es un número asignado por AFIP que identifica el lugar físico
-          o virtual desde donde se emiten las facturas. Cada establecimiento puede tener
-          uno o más puntos de venta autorizados.
+          El punto de venta es un número asignado por ARCA que identifica el
+          lugar físico o virtual desde donde se emiten las facturas. Cada
+          establecimiento puede tener uno o más puntos de venta autorizados.
         </p>
         <p className="mt-2">
-          Debes autorizar tus puntos de venta en la web de AFIP antes de poder usarlos
-          para emitir facturas electrónicas.
+          Debes autorizar tus puntos de venta en la web de ARCA antes de poder
+          usarlos para emitir facturas electrónicas.
         </p>
       </div>
 

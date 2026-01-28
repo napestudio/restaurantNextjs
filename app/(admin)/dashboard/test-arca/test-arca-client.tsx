@@ -25,7 +25,10 @@ import {
 } from "@/lib/arca-qr";
 import { useGgEzPrint } from "@/contexts/gg-ez-print-context";
 import { prepareAfipInvoicePrint } from "@/actions/PrinterActions";
-import type { PrinterStatus, PrinterConnectionType } from "@/app/generated/prisma";
+import type {
+  PrinterStatus,
+  PrinterConnectionType,
+} from "@/app/generated/prisma";
 
 // Types for state
 type AfipError = {
@@ -91,17 +94,18 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
 
   // Printer selection state
   const [selectedPrinterId, setSelectedPrinterId] = useState<string>("");
-  const [selectedPrinter, setSelectedPrinter] = useState<PrinterForSelection | null>(null);
+  const [selectedPrinter, setSelectedPrinter] =
+    useState<PrinterForSelection | null>(null);
 
   // gg-ez-print context
   const { print: sendPrintJob, isConnected: printerConnected } = useGgEzPrint();
 
   // Restore last selected printer from localStorage
   useEffect(() => {
-    const savedPrinterId = localStorage.getItem('testArca_lastPrinterId');
-    if (savedPrinterId && printers.find(p => p.id === savedPrinterId)) {
+    const savedPrinterId = localStorage.getItem("testArca_lastPrinterId");
+    if (savedPrinterId && printers.find((p) => p.id === savedPrinterId)) {
       setSelectedPrinterId(savedPrinterId);
-      setSelectedPrinter(printers.find(p => p.id === savedPrinterId) || null);
+      setSelectedPrinter(printers.find((p) => p.id === savedPrinterId) || null);
     } else if (printers.length === 1) {
       // Auto-select if only one printer
       setSelectedPrinterId(printers[0].id);
@@ -190,7 +194,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
     };
   };
 
-  // Get VAT rate ID for AFIP
+  // Get VAT rate ID for ARCA
   const getVatRateId = (rate: number): number => {
     const rateMap: { [key: number]: number } = {
       0: 3, // 0%
@@ -270,11 +274,11 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
         cae: response.cae,
       });
 
-      // Generate AFIP URL
+      // Generate ARCA URL
       const afipUrl = generateAfipQrUrl(qrData);
 
-      console.log("[QR] Generated AFIP QR data:", qrData);
-      console.log("[QR] AFIP URL:", afipUrl);
+      console.log("[QR] Generated ARCA QR data:", qrData);
+      console.log("[QR] ARCA URL:", afipUrl);
 
       // Generate QR code image
       const qrImage = await QRCode.toDataURL(afipUrl, {
@@ -289,7 +293,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
       setQrCodeDataUrl(qrImage);
       console.log("[QR] QR code generated successfully");
     } catch (error) {
-      console.error("[QR] Error generating AFIP QR code:", error);
+      console.error("[QR] Error generating ARCA QR code:", error);
       setQrCodeDataUrl(null);
     }
   };
@@ -305,7 +309,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
     const result = await testArcaConnection();
 
     if (result.success) {
-      setConnectionStatus("✅ Conectado a ARCA/AFIP");
+      setConnectionStatus("✅ Conectado a ARCA/ARCA");
     } else {
       setConnectionStatus("❌ Error de conexión");
     }
@@ -383,7 +387,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
       ? (lastInvoice.data.cbteNro || 0) + 1
       : 1;
 
-    // Get current date in AFIP format (YYYYMMDD as string)
+    // Get current date in ARCA format (YYYYMMDD as string)
     const currentDate = formatArcaDate(new Date());
 
     // Build VAT breakdown array from items
@@ -421,7 +425,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
     };
 
     console.log("Emitting invoice with data:", invoiceData);
-    console.log("Line items (NOT sent to AFIP - SDK limitation):", items);
+    console.log("Line items (NOT sent to ARCA - SDK limitation):", items);
 
     const result = await emitTestInvoice(invoiceData);
     setResponse(result.success ? result.data : { error: result.error });
@@ -523,7 +527,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
         }),
       );
 
-      // Generate AFIP QR URL
+      // Generate ARCA QR URL
       const qrData = generateAfipQrData({
         ...qrInvoiceData,
         cae: response.cae,
@@ -600,7 +604,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
         {/* Header */}
         <div className="border-b pb-4">
           <h1 className="text-3xl font-bold text-gray-900">
-            Prueba de Integración ARCA/AFIP
+            Prueba de Integración ARCA/ARCA
           </h1>
           <p className="mt-2 text-sm text-gray-600">
             Test de emisión de facturas electrónicas para el sistema de
@@ -661,7 +665,9 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
 
           {printers.length === 0 ? (
             <div className="text-sm text-amber-600 bg-amber-50 p-4 rounded border border-amber-200">
-              <p className="font-semibold mb-2">⚠️ No hay impresoras configuradas</p>
+              <p className="font-semibold mb-2">
+                ⚠️ No hay impresoras configuradas
+              </p>
               <p>
                 Configure una impresora en{" "}
                 <a
@@ -676,7 +682,10 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
           ) : (
             <div className="space-y-3">
               <div className="space-y-2">
-                <label htmlFor="printer-select" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="printer-select"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Impresora
                 </label>
                 <select
@@ -685,9 +694,11 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
                   onChange={(e) => {
                     const id = e.target.value;
                     setSelectedPrinterId(id);
-                    setSelectedPrinter(printers.find(p => p.id === id) || null);
+                    setSelectedPrinter(
+                      printers.find((p) => p.id === id) || null,
+                    );
                     if (id) {
-                      localStorage.setItem('testArca_lastPrinterId', id);
+                      localStorage.setItem("testArca_lastPrinterId", id);
                     }
                   }}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -695,8 +706,16 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
                   <option value="">Seleccione una impresora...</option>
                   {printers.map((printer) => (
                     <option key={printer.id} value={printer.id}>
-                      {printer.name} ({printer.connectionType === 'NETWORK' ? printer.systemName : 'USB'})
-                      {printer.status === 'ONLINE' ? ' ✓' : printer.status === 'ERROR' ? ' ⚠' : ' ○'}
+                      {printer.name} (
+                      {printer.connectionType === "NETWORK"
+                        ? printer.systemName
+                        : "USB"}
+                      )
+                      {printer.status === "ONLINE"
+                        ? " ✓"
+                        : printer.status === "ERROR"
+                          ? " ⚠"
+                          : " ○"}
                     </option>
                   ))}
                 </select>
@@ -710,27 +729,35 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Tipo:</span>
-                    <span className="font-medium">{selectedPrinter.connectionType}</span>
+                    <span className="font-medium">
+                      {selectedPrinter.connectionType}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Dirección:</span>
-                    <span className="font-mono text-xs">{selectedPrinter.systemName}</span>
+                    <span className="font-mono text-xs">
+                      {selectedPrinter.systemName}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Estado:</span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                      selectedPrinter.status === 'ONLINE'
-                        ? 'bg-green-100 text-green-800'
-                        : selectedPrinter.status === 'ERROR'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                        selectedPrinter.status === "ONLINE"
+                          ? "bg-green-100 text-green-800"
+                          : selectedPrinter.status === "ERROR"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {selectedPrinter.status}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Caracteres por línea:</span>
-                    <span className="font-medium">{selectedPrinter.charactersPerLine}</span>
+                    <span className="font-medium">
+                      {selectedPrinter.charactersPerLine}
+                    </span>
                   </div>
                 </div>
               )}
@@ -967,7 +994,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
               </div>
 
               <p className="mt-2 text-xs text-gray-500">
-                ⚠️ Nota: Los items se usan solo para calcular totales. AFIP
+                ⚠️ Nota: Los items se usan solo para calcular totales. ARCA
                 WSFEV1 no soporta envío de detalles itemizados (requiere
                 WSMTXCA).
               </p>
@@ -1084,26 +1111,28 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
                 {qrCodeDataUrl && (
                   <div className="mt-4 pt-4 border-t border-green-200">
                     <p className="text-sm font-medium text-green-800 mb-2">
-                      Código QR AFIP (RG 4892/2020):
+                      Código QR ARCA (RG 4892/2020):
                     </p>
                     <div className="flex flex-col items-center gap-2">
                       <div className="bg-white p-3 rounded border border-green-300 shadow-sm">
                         <img
                           src={qrCodeDataUrl}
-                          alt="AFIP QR Code"
+                          alt="ARCA QR Code"
                           className="w-40 h-40"
                         />
                       </div>
                       <p className="text-xs text-green-700 text-center max-w-xs">
                         Escanear para verificar la autenticidad de la factura en
-                        el sitio de AFIP
+                        el sitio de ARCA
                       </p>
 
                       {/* Print Button */}
                       <div className="mt-3 w-full">
                         <button
                           onClick={handlePrintInvoice}
-                          disabled={isPrinting || !printerConnected || !selectedPrinter}
+                          disabled={
+                            isPrinting || !printerConnected || !selectedPrinter
+                          }
                           className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                           {isPrinting ? (
@@ -1149,13 +1178,13 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
               </div>
             )}
 
-            {/* AFIP Errors */}
+            {/* ARCA Errors */}
             {!("error" in response) &&
               response.Errors &&
               response.Errors.length > 0 && (
                 <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
                   <p className="font-bold text-red-800 mb-2">
-                    Errores de AFIP:
+                    Errores de ARCA:
                   </p>
                   <ul className="space-y-1 text-sm text-red-900">
                     {response.Errors.map((error, index) => (
@@ -1167,7 +1196,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
                 </div>
               )}
 
-            {/* AFIP Observations */}
+            {/* ARCA Observations */}
             {!("error" in response) &&
               response.Observations &&
               response.Observations.length > 0 && (
@@ -1194,7 +1223,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
           </h2>
           <div className="space-y-2 text-sm text-blue-800">
             <p>
-              <strong>Ambiente actual:</strong> Test (Homologación de AFIP)
+              <strong>Ambiente actual:</strong> Test (Homologación de ARCA)
             </p>
             <p>
               <strong>Importante:</strong> Los CAE generados en el ambiente de
@@ -1207,18 +1236,18 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
               </li>
               <li>Tipo Doc 99 + Doc Nro 0: Consumidor final sin identificar</li>
               <li>El CAE tiene validez de 10 días hábiles desde su emisión</li>
-              <li>Punto de venta debe estar habilitado previamente en AFIP</li>
+              <li>Punto de venta debe estar habilitado previamente en ARCA</li>
               <li>
                 <strong>⚠️ Limitación del SDK:</strong> El SDK de Arca usa el
-                servicio WSFEV1 de AFIP que solo envía totales agregados. Los
+                servicio WSFEV1 de ARCA que solo envía totales agregados. Los
                 items se usan para calcular los totales, pero no se envían al
-                servidor de AFIP. Para facturación con detalle itemizado se
+                servidor de ARCA. Para facturación con detalle itemizado se
                 requiere WSMTXCA (no soportado actualmente).
               </li>
               <li>
-                <strong>Código QR AFIP:</strong> Se genera automáticamente tras
+                <strong>Código QR ARCA:</strong> Se genera automáticamente tras
                 la emisión exitosa. Permite verificar la factura en el sitio de
-                AFIP (obligatorio según RG 4892/2020).
+                ARCA (obligatorio según RG 4892/2020).
               </li>
               <li>
                 Para producción, actualizar variables de entorno con

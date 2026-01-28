@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { FiscalConfigInput, FiscalConfigData, updateFiscalConfig } from "@/actions/FiscalConfig";
+import {
+  FiscalConfigInput,
+  FiscalConfigData,
+  updateFiscalConfig,
+} from "@/actions/FiscalConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +55,7 @@ export function FiscalDataForm({
 
     const result = await updateFiscalConfig(
       restaurantId,
-      formData as FiscalConfigInput
+      formData as FiscalConfigInput,
     );
 
     if (result.success) {
@@ -79,7 +83,7 @@ export function FiscalDataForm({
             Habilitar facturación electrónica
           </Label>
           <p className="text-sm text-gray-600 mt-1">
-            Activa la emisión de facturas electrónicas AFIP
+            Activa la emisión de facturas electrónicas ARCA
           </p>
         </div>
         <Switch
@@ -116,16 +120,17 @@ export function FiscalDataForm({
           id="cuit"
           value={formData.cuit}
           onChange={(e) =>
-            setFormData({ ...formData, cuit: e.target.value.replace(/\D/g, "") })
+            setFormData({
+              ...formData,
+              cuit: e.target.value.replace(/\D/g, ""),
+            })
           }
           placeholder="20123456789 (11 dígitos)"
           maxLength={11}
           pattern="\d{11}"
           required
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Solo números, sin guiones
-        </p>
+        <p className="text-xs text-gray-500 mt-1">Solo números, sin guiones</p>
       </div>
 
       {/* Address */}
@@ -155,7 +160,9 @@ export function FiscalDataForm({
           onChange={(e) =>
             setFormData({
               ...formData,
-              activityStartDate: e.target.value ? new Date(e.target.value) : undefined,
+              activityStartDate: e.target.value
+                ? new Date(e.target.value)
+                : undefined,
             })
           }
         />
@@ -180,7 +187,10 @@ export function FiscalDataForm({
         <Select
           value={formData.taxStatus || ""}
           onValueChange={(value) =>
-            setFormData({ ...formData, taxStatus: value as typeof formData.taxStatus })
+            setFormData({
+              ...formData,
+              taxStatus: value as typeof formData.taxStatus,
+            })
           }
         >
           <SelectTrigger id="taxStatus">
@@ -200,7 +210,9 @@ export function FiscalDataForm({
 
       {/* Default Invoice Type */}
       <div>
-        <Label htmlFor="defaultInvoiceType">Tipo de factura predeterminado</Label>
+        <Label htmlFor="defaultInvoiceType">
+          Tipo de factura predeterminado
+        </Label>
         <Select
           value={formData.defaultInvoiceType?.toString()}
           onValueChange={(value) =>

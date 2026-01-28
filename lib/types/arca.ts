@@ -1,7 +1,7 @@
 /**
- * ARCA/AFIP Type Definitions
+ * ARCA/ARCA Type Definitions
  *
- * Types and constants for working with Argentina's ARCA (formerly AFIP)
+ * Types and constants for working with Argentina's ARCA (formerly ARCA)
  * electronic invoicing system through the Arca SDK.
  */
 
@@ -18,41 +18,41 @@ export type ArcaInvoiceInput = {
   CantReg: number;
 
   // Document configuration
-  CbteTipo: number;      // Invoice type (1=A, 6=B, 11=C, etc.)
-  PtoVta: number;        // Sales point number
+  CbteTipo: number; // Invoice type (1=A, 6=B, 11=C, etc.)
+  PtoVta: number; // Sales point number
 
   // Customer information
-  DocTipo: number;       // Document type (80=CUIT, 96=DNI, 99=Consumidor Final)
-  DocNro: number;        // Document number (0 for Consumidor Final)
+  DocTipo: number; // Document type (80=CUIT, 96=DNI, 99=Consumidor Final)
+  DocNro: number; // Document number (0 for Consumidor Final)
 
   // Invoice numbering
-  CbteDesde: number;     // Invoice number from
-  CbteHasta: number;     // Invoice number to (same as CbteDesde for single invoice)
-  CbteFch: string;       // Invoice date (YYYYMMDD format as string)
+  CbteDesde: number; // Invoice number from
+  CbteHasta: number; // Invoice number to (same as CbteDesde for single invoice)
+  CbteFch: string; // Invoice date (YYYYMMDD format as string)
 
   // Concept (1=Products, 2=Services, 3=Both)
   Concepto: number;
 
   // Amounts
-  ImpTotal: number;      // Total amount
-  ImpNeto: number;       // Net taxable amount
-  ImpTotConc: number;    // Not taxed amount (required, use 0 if none)
-  ImpOpEx: number;       // Exempt operations amount (required, use 0 if none)
-  ImpIVA: number;        // Total VAT amount
-  ImpTrib: number;       // Other taxes amount (required, use 0 if none)
+  ImpTotal: number; // Total amount
+  ImpNeto: number; // Net taxable amount
+  ImpTotConc: number; // Not taxed amount (required, use 0 if none)
+  ImpOpEx: number; // Exempt operations amount (required, use 0 if none)
+  ImpIVA: number; // Total VAT amount
+  ImpTrib: number; // Other taxes amount (required, use 0 if none)
 
   // Currency (usually "PES" for pesos)
   MonId: string;
-  MonCotiz: number;      // Exchange rate (1 for pesos)
+  MonCotiz: number; // Exchange rate (1 for pesos)
 
   // IVA Receptor condition (required)
-  CondicionIVAReceptorId: number;  // 1=IVA Responsable Inscripto, 5=Consumidor Final
+  CondicionIVAReceptorId: number; // 1=IVA Responsable Inscripto, 5=Consumidor Final
 
   // VAT breakdown
   Iva?: Array<{
-    Id: number;          // VAT rate type (3=0%, 4=10.5%, 5=21%, 6=27%)
-    BaseImp: number;     // Base amount for this rate
-    Importe: number;     // VAT amount for this rate
+    Id: number; // VAT rate type (3=0%, 4=10.5%, 5=21%, 6=27%)
+    BaseImp: number; // Base amount for this rate
+    Importe: number; // VAT amount for this rate
   }>;
 
   // Optional tributes/other taxes
@@ -65,21 +65,24 @@ export type ArcaInvoiceInput = {
   }>;
 
   // Optional fields
-  FchServDesde?: string;      // Service date from (for services)
-  FchServHasta?: string;      // Service date to (for services)
-  FchVtoPago?: string;        // Payment due date
-  CbtesAsoc?: Array<{         // Associated vouchers
+  FchServDesde?: string; // Service date from (for services)
+  FchServHasta?: string; // Service date to (for services)
+  FchVtoPago?: string; // Payment due date
+  CbtesAsoc?: Array<{
+    // Associated vouchers
     Tipo: number;
     PtoVta: number;
     Nro: number;
     Cuit: string;
     CbteFch?: string;
   }>;
-  Opcionales?: Array<{        // Optional data
+  Opcionales?: Array<{
+    // Optional data
     Id: string;
     Valor: string;
   }>;
-  Compradores?: Array<{       // Buyers
+  Compradores?: Array<{
+    // Buyers
     DocTipo: number;
     DocNro: number;
     Porcentaje: number;
@@ -87,7 +90,7 @@ export type ArcaInvoiceInput = {
 };
 
 // ============================================================================
-// AFIP Response Types
+// ARCA Response Types
 // ============================================================================
 
 /**
@@ -95,10 +98,10 @@ export type ArcaInvoiceInput = {
  * Based on ICreateVoucherResult from @arcasdk/core
  */
 export type ArcaCreateVoucherResponse = {
-  cae: string;            // Authorization code (CAE)
-  caeFchVto: string;      // CAE expiration date
-  response: unknown;      // Full AFIP response (complex object)
-  cuit?: number;          // Issuer CUIT (added for QR generation)
+  cae: string; // Authorization code (CAE)
+  caeFchVto: string; // CAE expiration date
+  response: unknown; // Full ARCA response (complex object)
+  cuit?: number; // Issuer CUIT (added for QR generation)
 };
 
 /**
@@ -106,9 +109,9 @@ export type ArcaCreateVoucherResponse = {
  * Based on LastVoucherResultDto from @arcasdk/core
  */
 export type ArcaLastVoucherResponse = {
-  cbteNro: number;        // Last invoice number (lowercase!)
-  cbteTipo: number;       // Invoice type
-  ptoVta: number;         // Sales point
+  cbteNro: number; // Last invoice number (lowercase!)
+  cbteTipo: number; // Invoice type
+  ptoVta: number; // Sales point
   errors?: {
     err?: Array<{
       code: number;
@@ -118,25 +121,25 @@ export type ArcaLastVoucherResponse = {
 };
 
 /**
- * AFIP QR Code data structure (RG 4892/2020)
+ * ARCA QR Code data structure (RG 4892/2020)
  * Used for generating QR codes on electronic invoices
  *
- * @see https://www.afip.gob.ar/fe/qr/
+ * @see https://www.ARCA.gob.ar/fe/qr/
  */
 export type AfipQrData = {
-  ver: number;              // Format version (always 1)
-  fecha: string;            // Invoice date (YYYY-MM-DD)
-  cuit: number;             // Issuer CUIT (11 digits)
-  ptoVta: number;           // Point of sale
-  tipoCmp: number;          // Invoice type (1=A, 6=B, 11=C)
-  nroCmp: number;           // Invoice number
-  importe: number;          // Total amount (2 decimals)
-  moneda: string;           // Currency code (e.g., "PES")
-  ctz: number;              // Exchange rate (1.00 for pesos)
-  tipoDocRec: number;       // Recipient doc type
-  nroDocRec: number;        // Recipient document number
-  tipoCodAut: string;       // Auth type ("E" for CAE)
-  codAut: string;           // CAE code (14 digits)
+  ver: number; // Format version (always 1)
+  fecha: string; // Invoice date (YYYY-MM-DD)
+  cuit: number; // Issuer CUIT (11 digits)
+  ptoVta: number; // Point of sale
+  tipoCmp: number; // Invoice type (1=A, 6=B, 11=C)
+  nroCmp: number; // Invoice number
+  importe: number; // Total amount (2 decimals)
+  moneda: string; // Currency code (e.g., "PES")
+  ctz: number; // Exchange rate (1.00 for pesos)
+  tipoDocRec: number; // Recipient doc type
+  nroDocRec: number; // Recipient document number
+  tipoCodAut: string; // Auth type ("E" for CAE)
+  codAut: string; // CAE code (14 digits)
 };
 
 // ============================================================================
@@ -167,47 +170,47 @@ export const INVOICE_TYPES: ArcaInvoiceType[] = [
   {
     code: 1,
     name: "Factura A",
-    description: "Responsable Inscripto"
+    description: "Responsable Inscripto",
   },
   {
     code: 6,
     name: "Factura B",
-    description: "Consumidor Final / Monotributista"
+    description: "Consumidor Final / Monotributista",
   },
   {
     code: 11,
     name: "Factura C",
-    description: "IVA Exento"
+    description: "IVA Exento",
   },
   {
     code: 2,
     name: "Nota de Débito A",
-    description: "Débito para Factura A"
+    description: "Débito para Factura A",
   },
   {
     code: 3,
     name: "Nota de Crédito A",
-    description: "Crédito para Factura A"
+    description: "Crédito para Factura A",
   },
   {
     code: 7,
     name: "Nota de Débito B",
-    description: "Débito para Factura B"
+    description: "Débito para Factura B",
   },
   {
     code: 8,
     name: "Nota de Crédito B",
-    description: "Crédito para Factura B"
+    description: "Crédito para Factura B",
   },
   {
     code: 12,
     name: "Nota de Débito C",
-    description: "Débito para Factura C"
+    description: "Débito para Factura C",
   },
   {
     code: 15,
     name: "Nota de Crédito C",
-    description: "Crédito para Factura C"
+    description: "Crédito para Factura C",
   },
 ];
 
@@ -227,28 +230,28 @@ export type ArcaDocumentType = {
 };
 
 /**
- * Customer document types accepted by AFIP
+ * Customer document types accepted by ARCA
  */
 export const DOCUMENT_TYPES: ArcaDocumentType[] = [
   {
     code: 80,
     name: "CUIT",
-    description: "Clave Única de Identificación Tributaria"
+    description: "Clave Única de Identificación Tributaria",
   },
   {
     code: 86,
     name: "CUIL",
-    description: "Código Único de Identificación Laboral"
+    description: "Código Único de Identificación Laboral",
   },
   {
     code: 96,
     name: "DNI",
-    description: "Documento Nacional de Identidad"
+    description: "Documento Nacional de Identidad",
   },
   {
     code: 99,
     name: "Consumidor Final",
-    description: "Sin identificación (usar DocNro = 0)"
+    description: "Sin identificación (usar DocNro = 0)",
   },
 ];
 
@@ -266,7 +269,7 @@ export type ArcaVatRate = {
 /**
  * VAT rates available in Argentina
  *
- * The 'id' is used in the AFIP API
+ * The 'id' is used in the ARCA API
  * The 'rate' is the percentage value
  */
 export const VAT_RATES: ArcaVatRate[] = [
@@ -274,25 +277,25 @@ export const VAT_RATES: ArcaVatRate[] = [
     id: 3,
     rate: 0,
     name: "0%",
-    description: "No Gravado"
+    description: "No Gravado",
   },
   {
     id: 4,
     rate: 10.5,
     name: "10.5%",
-    description: "Tasa reducida"
+    description: "Tasa reducida",
   },
   {
     id: 5,
     rate: 21,
     name: "21%",
-    description: "Tasa general"
+    description: "Tasa general",
   },
   {
     id: 6,
     rate: 27,
     name: "27%",
-    description: "Tasa incrementada"
+    description: "Tasa incrementada",
   },
 ];
 
@@ -313,17 +316,17 @@ export const CONCEPTS: ArcaConcept[] = [
   {
     code: 1,
     name: "Productos",
-    description: "Venta de productos/bienes"
+    description: "Venta de productos/bienes",
   },
   {
     code: 2,
     name: "Servicios",
-    description: "Prestación de servicios"
+    description: "Prestación de servicios",
   },
   {
     code: 3,
     name: "Productos y Servicios",
-    description: "Combinación de ambos"
+    description: "Combinación de ambos",
   },
 ];
 
@@ -332,17 +335,17 @@ export const CONCEPTS: ArcaConcept[] = [
 // ============================================================================
 
 /**
- * Format date to AFIP format (YYYYMMDD as string)
+ * Format date to ARCA format (YYYYMMDD as string)
  */
 export function formatArcaDate(date: Date): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}${month}${day}`;
 }
 
 /**
- * Parse AFIP date format (YYYYMMDD) to Date
+ * Parse ARCA date format (YYYYMMDD) to Date
  */
 export function parseArcaDate(dateStr: string): Date {
   const year = parseInt(dateStr.substring(0, 4));
@@ -369,19 +372,19 @@ export function calculateTotal(netAmount: number, vatAmount: number): number {
  * Get invoice type by code
  */
 export function getInvoiceType(code: number): ArcaInvoiceType | undefined {
-  return INVOICE_TYPES.find(type => type.code === code);
+  return INVOICE_TYPES.find((type) => type.code === code);
 }
 
 /**
  * Get document type by code
  */
 export function getDocumentType(code: number): ArcaDocumentType | undefined {
-  return DOCUMENT_TYPES.find(type => type.code === code);
+  return DOCUMENT_TYPES.find((type) => type.code === code);
 }
 
 /**
  * Get VAT rate by id
  */
 export function getVatRate(id: number): ArcaVatRate | undefined {
-  return VAT_RATES.find(rate => rate.id === id);
+  return VAT_RATES.find((rate) => rate.id === id);
 }

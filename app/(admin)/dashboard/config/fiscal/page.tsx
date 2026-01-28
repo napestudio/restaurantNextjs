@@ -20,7 +20,8 @@ export default async function FiscalConfigPage() {
             Configuración Fiscal
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Configura los datos fiscales y credenciales AFIP para facturación electrónica
+            Configura los datos fiscales y credenciales ARCA para facturación
+            electrónica
           </p>
         </div>
 

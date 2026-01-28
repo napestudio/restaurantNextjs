@@ -52,8 +52,8 @@ export function ConnectionTest({
               Configuración no habilitada
             </p>
             <p className="text-amber-800 mt-1">
-              Debes completar los datos fiscales y habilitar la configuración antes de
-              probar la conexión con AFIP.
+              Debes completar los datos fiscales y habilitar la configuración
+              antes de probar la conexión con ARCA.
             </p>
           </div>
         </div>
@@ -61,10 +61,11 @@ export function ConnectionTest({
 
       {/* Test Connection Section */}
       <div className="p-6 bg-white border rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">Probar conexión con AFIP</h3>
+        <h3 className="text-lg font-semibold mb-4">Probar conexión con ARCA</h3>
         <p className="text-sm text-gray-600 mb-6">
-          Verifica que las credenciales y certificados estén configurados correctamente
-          y que el servidor pueda conectarse a los servicios de AFIP.
+          Verifica que las credenciales y certificados estén configurados
+          correctamente y que el servidor pueda conectarse a los servicios de
+          ARCA.
         </p>
 
         <Button
@@ -127,16 +128,16 @@ export function ConnectionTest({
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
         <p className="font-semibold">¿Qué se verifica en esta prueba?</p>
         <ul className="list-disc list-inside mt-2 space-y-1">
-          <li>Conectividad con los servidores de AFIP</li>
+          <li>Conectividad con los servidores de ARCA</li>
           <li>Validez de los certificados (.crt y .key)</li>
           <li>Autenticación con el CUIT configurado</li>
           <li>Permisos para acceder a los servicios de facturación</li>
         </ul>
         <p className="mt-3 font-semibold">Nota importante:</p>
         <p className="mt-1">
-          Esta prueba utiliza la configuración activa (base de datos si está habilitada,
-          o variables de entorno como fallback). Asegúrate de que la configuración que
-          quieres probar esté guardada y habilitada.
+          Esta prueba utiliza la configuración activa (base de datos si está
+          habilitada, o variables de entorno como fallback). Asegúrate de que la
+          configuración que quieres probar esté guardada y habilitada.
         </p>
       </div>
 
@@ -150,7 +151,7 @@ export function ConnectionTest({
           <li>Los archivos de certificado existen en el servidor</li>
           <li>Los certificados no están vencidos</li>
           <li>El servidor tiene conexión a internet</li>
-          <li>El firewall permite conexiones a los servidores de AFIP</li>
+          <li>El firewall permite conexiones a los servidores de ARCA</li>
         </ul>
       </div>
     </div>

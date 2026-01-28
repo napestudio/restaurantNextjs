@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 /**
  * ARCA SDK Configuration
  *
- * This module handles loading AFIP/ARCA credentials from environment variables
+ * This module handles loading ARCA/ARCA credentials from environment variables
  * and the filesystem. Credentials are kept secure on the server and never
  * exposed to the client.
  *
@@ -27,7 +27,7 @@ export interface ArcaConfig {
 /**
  * Get ARCA configuration for the specified environment
  *
- * @param environment - 'test' for AFIP homologation, 'production' for live invoicing
+ * @param environment - 'test' for ARCA homologation, 'production' for live invoicing
  * @returns Configuration object for Arca SDK initialization
  * @throws Error if required environment variables are missing or files don't exist
  *
@@ -37,7 +37,9 @@ export interface ArcaConfig {
  * const arca = new Arca(config);
  * ```
  */
-export function getArcaConfig(environment: ArcaEnvironment = "test"): ArcaConfig {
+export function getArcaConfig(
+  environment: ArcaEnvironment = "test",
+): ArcaConfig {
   const isProduction = environment === "production";
 
   // Determine environment variable names based on environment
@@ -59,8 +61,8 @@ export function getArcaConfig(environment: ArcaEnvironment = "test"): ArcaConfig
 
     throw new Error(
       `Missing ARCA configuration for ${environment} environment.\n` +
-      `Required environment variables: ${missingVars.join(", ")}\n` +
-      `Please check your .env file.`
+        `Required environment variables: ${missingVars.join(", ")}\n` +
+        `Please check your .env file.`,
     );
   }
 
@@ -72,14 +74,14 @@ export function getArcaConfig(environment: ArcaEnvironment = "test"): ArcaConfig
   if (!fs.existsSync(resolvedCertPath)) {
     throw new Error(
       `ARCA certificate file not found: ${resolvedCertPath}\n` +
-      `Please ensure the certificate file exists at the path specified in ${certPathEnv}`
+        `Please ensure the certificate file exists at the path specified in ${certPathEnv}`,
     );
   }
 
   if (!fs.existsSync(resolvedKeyPath)) {
     throw new Error(
       `ARCA private key file not found: ${resolvedKeyPath}\n` +
-      `Please ensure the private key file exists at the path specified in ${keyPathEnv}`
+        `Please ensure the private key file exists at the path specified in ${keyPathEnv}`,
     );
   }
 
@@ -93,7 +95,7 @@ export function getArcaConfig(environment: ArcaEnvironment = "test"): ArcaConfig
     if (isNaN(cuitNumber) || cuitNumber <= 0) {
       throw new Error(
         `Invalid CUIT in ${cuitEnv}: ${cuit}\n` +
-        `CUIT must be a valid positive number`
+          `CUIT must be a valid positive number`,
       );
     }
 
@@ -112,9 +114,9 @@ export function getArcaConfig(environment: ArcaEnvironment = "test"): ArcaConfig
     // Handle file reading errors
     throw new Error(
       `Failed to read ARCA credential files:\n` +
-      `Certificate: ${resolvedCertPath}\n` +
-      `Key: ${resolvedKeyPath}\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}`
+        `Certificate: ${resolvedCertPath}\n` +
+        `Key: ${resolvedKeyPath}\n` +
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -137,7 +139,9 @@ export function getArcaConfig(environment: ArcaEnvironment = "test"): ArcaConfig
  * const arca = new Arca(config);
  * ```
  */
-export async function getActiveArcaConfig(restaurantId: string): Promise<ArcaConfig> {
+export async function getActiveArcaConfig(
+  restaurantId: string,
+): Promise<ArcaConfig> {
   try {
     // 1. Try database first (production config)
     const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
@@ -154,20 +158,26 @@ export async function getActiveArcaConfig(restaurantId: string): Promise<ArcaCon
       const isProduction = fiscalConfig.environment === "production";
 
       // Resolve paths relative to project root
-      const resolvedCertPath = path.resolve(process.cwd(), fiscalConfig.certificatePath);
-      const resolvedKeyPath = path.resolve(process.cwd(), fiscalConfig.privateKeyPath);
+      const resolvedCertPath = path.resolve(
+        process.cwd(),
+        fiscalConfig.certificatePath,
+      );
+      const resolvedKeyPath = path.resolve(
+        process.cwd(),
+        fiscalConfig.privateKeyPath,
+      );
 
       // Check if files exist
       if (!fs.existsSync(resolvedCertPath)) {
         console.warn(
-          `[getActiveArcaConfig] Certificate file not found at: ${resolvedCertPath}. Falling back to .env`
+          `[getActiveArcaConfig] Certificate file not found at: ${resolvedCertPath}. Falling back to .env`,
         );
         return getArcaConfig(getCurrentArcaEnvironment());
       }
 
       if (!fs.existsSync(resolvedKeyPath)) {
         console.warn(
-          `[getActiveArcaConfig] Private key file not found at: ${resolvedKeyPath}. Falling back to .env`
+          `[getActiveArcaConfig] Private key file not found at: ${resolvedKeyPath}. Falling back to .env`,
         );
         return getArcaConfig(getCurrentArcaEnvironment());
       }
@@ -181,13 +191,13 @@ export async function getActiveArcaConfig(restaurantId: string): Promise<ArcaCon
         const cuitNumber = Number(fiscalConfig.cuit);
         if (isNaN(cuitNumber) || cuitNumber <= 0) {
           console.warn(
-            `[getActiveArcaConfig] Invalid CUIT in database: ${fiscalConfig.cuit}. Falling back to .env`
+            `[getActiveArcaConfig] Invalid CUIT in database: ${fiscalConfig.cuit}. Falling back to .env`,
           );
           return getArcaConfig(getCurrentArcaEnvironment());
         }
 
         console.log(
-          `[getActiveArcaConfig] Using database configuration for restaurant ${restaurantId} (${isProduction ? "PRODUCTION" : "TEST"})`
+          `[getActiveArcaConfig] Using database configuration for restaurant ${restaurantId} (${isProduction ? "PRODUCTION" : "TEST"})`,
         );
 
         return {
@@ -199,7 +209,7 @@ export async function getActiveArcaConfig(restaurantId: string): Promise<ArcaCon
       } catch (fileError) {
         console.warn(
           `[getActiveArcaConfig] Failed to read DB certificate files. Falling back to .env:`,
-          fileError instanceof Error ? fileError.message : String(fileError)
+          fileError instanceof Error ? fileError.message : String(fileError),
         );
         return getArcaConfig(getCurrentArcaEnvironment());
       }
@@ -207,14 +217,14 @@ export async function getActiveArcaConfig(restaurantId: string): Promise<ArcaCon
 
     // 2. Fallback to environment variables (test/dev)
     console.log(
-      `[getActiveArcaConfig] No enabled database config found for restaurant ${restaurantId}. Using .env`
+      `[getActiveArcaConfig] No enabled database config found for restaurant ${restaurantId}. Using .env`,
     );
     return getArcaConfig(getCurrentArcaEnvironment());
   } catch (error) {
     // If database query fails, fall back to env
     console.warn(
       `[getActiveArcaConfig] Database query failed. Falling back to .env:`,
-      error instanceof Error ? error.message : String(error)
+      error instanceof Error ? error.message : String(error),
     );
     return getArcaConfig(getCurrentArcaEnvironment());
   }
@@ -233,7 +243,9 @@ export async function getActiveArcaConfig(restaurantId: string): Promise<ArcaCon
  * }
  * ```
  */
-export function isArcaConfigured(environment: ArcaEnvironment = "test"): boolean {
+export function isArcaConfigured(
+  environment: ArcaEnvironment = "test",
+): boolean {
   try {
     getArcaConfig(environment);
     return true;

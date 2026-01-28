@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { FiscalConfigData } from "@/actions/FiscalConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
@@ -65,11 +71,11 @@ export function FiscalConfigClient({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          Facturación Electrónica AFIP
+          Facturación Electrónica ARCA
           {getStatusBadge()}
         </CardTitle>
         <CardDescription>
-          Administra la configuración de facturación electrónica para AFIP
+          Administra la configuración de facturación electrónica para ARCA
         </CardDescription>
       </CardHeader>
 

@@ -4,23 +4,29 @@ import { Arca } from "@arcasdk/core";
 import { getArcaConfig, getCurrentArcaEnvironment } from "@/lib/arca-config";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
-import type { ArcaInvoiceInput, ArcaCreateVoucherResponse, ArcaLastVoucherResponse } from "@/lib/types/arca";
+import type {
+  ArcaInvoiceInput,
+  ArcaCreateVoucherResponse,
+  ArcaLastVoucherResponse,
+} from "@/lib/types/arca";
 
 /**
- * Server Actions for ARCA/AFIP Integration
+ * Server Actions for ARCA/ARCA Integration
  *
- * These actions handle all interactions with Argentina's ARCA (formerly AFIP)
+ * These actions handle all interactions with Argentina's ARCA (formerly ARCA)
  * electronic invoicing system. All operations require MANAGER role or higher
  * and keep credentials secure on the server.
  */
 
-type ActionResult<T> = {
-  success: true;
-  data: T;
-} | {
-  success: false;
-  error: string;
-};
+type ActionResult<T> =
+  | {
+      success: true;
+      data: T;
+    }
+  | {
+      success: false;
+      error: string;
+    };
 
 type ServerStatus = {
   environment: string;
@@ -40,7 +46,9 @@ type ServerStatus = {
  *
  * @returns Server status information or error
  */
-export async function testArcaConnection(): Promise<ActionResult<ServerStatus>> {
+export async function testArcaConnection(): Promise<
+  ActionResult<ServerStatus>
+> {
   try {
     // Authorization check - MANAGER and above
     await authorizeAction(UserRole.MANAGER);
@@ -51,7 +59,7 @@ export async function testArcaConnection(): Promise<ActionResult<ServerStatus>> 
     const config = getArcaConfig(environment);
     const arca = new Arca(config);
 
-    // Get actual server status from AFIP
+    // Get actual server status from ARCA
     const serverStatus = await arca.electronicBillingService.getServerStatus();
 
     console.log("[ARCA] Connection test successful:", serverStatus);
@@ -68,9 +76,10 @@ export async function testArcaConnection(): Promise<ActionResult<ServerStatus>> 
     console.error("[ARCA] Connection test error:", error);
 
     // Return user-friendly error message
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Error desconocido al conectar con ARCA";
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Error desconocido al conectar con ARCA";
 
     return {
       success: false,
@@ -90,19 +99,24 @@ export async function testArcaConnection(): Promise<ActionResult<ServerStatus>> 
  */
 export async function getLastInvoiceNumber(
   ptoVta: number,
-  cbteTipo: number
+  cbteTipo: number,
 ): Promise<ActionResult<ArcaLastVoucherResponse>> {
   try {
     await authorizeAction(UserRole.MANAGER);
 
     const environment = getCurrentArcaEnvironment();
-    console.log(`[ARCA] Getting last invoice number for PtoVta ${ptoVta}, Type ${cbteTipo}...`);
+    console.log(
+      `[ARCA] Getting last invoice number for PtoVta ${ptoVta}, Type ${cbteTipo}...`,
+    );
 
     const config = getArcaConfig(environment);
     const arca = new Arca(config);
 
     // Get last voucher number
-    const response = await arca.electronicBillingService.getLastVoucher(ptoVta, cbteTipo);
+    const response = await arca.electronicBillingService.getLastVoucher(
+      ptoVta,
+      cbteTipo,
+    );
 
     console.log("[ARCA] Last invoice number retrieved:", response);
 
@@ -113,9 +127,10 @@ export async function getLastInvoiceNumber(
   } catch (error) {
     console.error("[ARCA] Get last invoice error:", error);
 
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Error al obtener último número de comprobante";
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Error al obtener último número de comprobante";
 
     return {
       success: false,
@@ -125,16 +140,16 @@ export async function getLastInvoiceNumber(
 }
 
 /**
- * Emit a test invoice to AFIP
+ * Emit a test invoice to ARCA
  *
- * Creates an electronic invoice in AFIP's system and returns the CAE
+ * Creates an electronic invoice in ARCA's system and returns the CAE
  * (Código de Autorización Electrónico) if successful.
  *
  * @param invoiceData - Invoice parameters
  * @returns CAE and expiration date or error
  */
 export async function emitTestInvoice(
-  invoiceData: ArcaInvoiceInput
+  invoiceData: ArcaInvoiceInput,
 ): Promise<ActionResult<ArcaCreateVoucherResponse>> {
   try {
     await authorizeAction(UserRole.MANAGER);
@@ -151,7 +166,8 @@ export async function emitTestInvoice(
     const arca = new Arca(config);
 
     // Create voucher (invoice)
-    const response = await arca.electronicBillingService.createVoucher(invoiceData);
+    const response =
+      await arca.electronicBillingService.createVoucher(invoiceData);
 
     console.log("[ARCA] Invoice emission response:", response);
 
@@ -159,7 +175,10 @@ export async function emitTestInvoice(
     if (response.cae) {
       console.log(`[ARCA] Invoice approved! CAE: ${response.cae}`);
     } else {
-      console.error("[ARCA] Invoice may have been rejected. Check response:", response);
+      console.error(
+        "[ARCA] Invoice may have been rejected. Check response:",
+        response,
+      );
     }
 
     return {
@@ -172,9 +191,8 @@ export async function emitTestInvoice(
   } catch (error) {
     console.error("[ARCA] Invoice emission error:", error);
 
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Error al emitir factura";
+    const errorMessage =
+      error instanceof Error ? error.message : "Error al emitir factura";
 
     return {
       success: false,
@@ -208,12 +226,16 @@ type SalesPointsResult = {
  *
  * @returns List of sales points or error
  */
-export async function getSalesPoints(): Promise<ActionResult<SalesPointsResult>> {
+export async function getSalesPoints(): Promise<
+  ActionResult<SalesPointsResult>
+> {
   try {
     await authorizeAction(UserRole.MANAGER);
 
     const environment = getCurrentArcaEnvironment();
-    console.log(`[ARCA] Getting sales points for ${environment} environment...`);
+    console.log(
+      `[ARCA] Getting sales points for ${environment} environment...`,
+    );
 
     const config = getArcaConfig(environment);
     const arca = new Arca(config);
@@ -230,9 +252,10 @@ export async function getSalesPoints(): Promise<ActionResult<SalesPointsResult>>
   } catch (error) {
     console.error("[ARCA] Get sales points error:", error);
 
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Error al obtener puntos de venta";
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Error al obtener puntos de venta";
 
     return {
       success: false,
@@ -265,12 +288,16 @@ type VoucherTypesResult = {
  *
  * @returns List of invoice types or error
  */
-export async function getInvoiceTypes(): Promise<ActionResult<VoucherTypesResult>> {
+export async function getInvoiceTypes(): Promise<
+  ActionResult<VoucherTypesResult>
+> {
   try {
     await authorizeAction(UserRole.MANAGER);
 
     const environment = getCurrentArcaEnvironment();
-    console.log(`[ARCA] Getting invoice types for ${environment} environment...`);
+    console.log(
+      `[ARCA] Getting invoice types for ${environment} environment...`,
+    );
 
     const config = getArcaConfig(environment);
     const arca = new Arca(config);
@@ -287,9 +314,10 @@ export async function getInvoiceTypes(): Promise<ActionResult<VoucherTypesResult
   } catch (error) {
     console.error("[ARCA] Get invoice types error:", error);
 
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Error al obtener tipos de comprobantes";
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Error al obtener tipos de comprobantes";
 
     return {
       success: false,

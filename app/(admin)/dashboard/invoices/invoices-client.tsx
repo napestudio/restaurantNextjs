@@ -562,7 +562,7 @@ export function InvoicesClient({
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            Ver en AFIP
+                            Ver en ARCA
                           </a>
                         </Button>
                       )}

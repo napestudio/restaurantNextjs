@@ -557,11 +557,11 @@ export async function hasBranchControlTicketPrinters(
 }
 
 // ============================================================================
-// PREPARE AFIP INVOICE PRINT (TEST PAGE)
+// PREPARE ARCA INVOICE PRINT (TEST PAGE)
 // ============================================================================
 
 /**
- * AFIP Invoice print parameters (for test page)
+ * ARCA Invoice print parameters (for test page)
  */
 export interface AfipInvoicePrintParams {
   // Invoice header
@@ -595,7 +595,7 @@ export interface AfipInvoicePrintParams {
   totalVat: number;
   total: number;
 
-  // AFIP authorization
+  // ARCA authorization
   cae: string;
   caeExpiration: string;
 
@@ -608,7 +608,7 @@ export interface AfipInvoicePrintParams {
 }
 
 /**
- * Prepare AFIP invoice print job for test page
+ * Prepare ARCA invoice print job for test page
  * Returns ESC/POS data for client to send via gg-ez-print
  *
  * NOTE: This is a simplified version for the test page that doesn't use
@@ -665,13 +665,13 @@ export async function prepareAfipInvoicePrint(
       printJobIds: [], // No database tracking for test page
     };
   } catch (error) {
-    console.error("Error preparing AFIP invoice print:", error);
+    console.error("Error preparing ARCA invoice print:", error);
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
-          : "Error al preparar la impresión de factura AFIP",
+          : "Error al preparar la impresión de factura ARCA",
     };
   }
 }
@@ -681,7 +681,7 @@ export async function prepareAfipInvoicePrint(
  * Uses branch's printer configuration
  */
 export async function prepareInvoicePrint(
-  invoiceId: string
+  invoiceId: string,
 ): Promise<PreparedPrintResult> {
   try {
     // Get invoice with order details
@@ -745,12 +745,14 @@ export async function prepareInvoicePrint(
     });
 
     // Get business name and CUIT from DB config or fallback to environment
-    const businessName = (fiscalConfig?.isEnabled && fiscalConfig.businessName)
-      ? fiscalConfig.businessName
-      : (process.env.BUSINESS_NAME || "Kiku Sushi");
-    const businessCuit = (fiscalConfig?.isEnabled && fiscalConfig.cuit)
-      ? fiscalConfig.cuit
-      : (process.env.ARCA_CUIT || "");
+    const businessName =
+      fiscalConfig?.isEnabled && fiscalConfig.businessName
+        ? fiscalConfig.businessName
+        : process.env.BUSINESS_NAME || "Kiku Sushi";
+    const businessCuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? fiscalConfig.cuit
+        : process.env.ARCA_CUIT || "";
 
     // Prepare invoice items
     const items = invoice.order.items.map((item) => ({
@@ -762,7 +764,8 @@ export async function prepareInvoicePrint(
     }));
 
     // Parse VAT breakdown
-    let vatBreakdown: Array<{ rate: number; base: number; amount: number }> = [];
+    let vatBreakdown: Array<{ rate: number; base: number; amount: number }> =
+      [];
     if (invoice.vatBreakdown && typeof invoice.vatBreakdown === "object") {
       if (Array.isArray(invoice.vatBreakdown)) {
         vatBreakdown = invoice.vatBreakdown as Array<{

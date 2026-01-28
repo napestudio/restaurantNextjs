@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { FiscalConfigInput, FiscalConfigData, updateFiscalConfig } from "@/actions/FiscalConfig";
+import {
+  FiscalConfigInput,
+  FiscalConfigData,
+  updateFiscalConfig,
+} from "@/actions/FiscalConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +51,7 @@ export function CertificatesForm({
 
     const result = await updateFiscalConfig(
       restaurantId,
-      formData as FiscalConfigInput
+      formData as FiscalConfigInput,
     );
 
     if (result.success) {
@@ -76,19 +80,23 @@ export function CertificatesForm({
             Importante: Almacenamiento de Certificados
           </p>
           <p className="text-amber-800 mt-1">
-            Esta configuración almacena solo las <strong>rutas</strong> a los archivos de certificados,
-            no el contenido. Los archivos .crt y .key deben estar en el servidor de forma segura.
+            Esta configuración almacena solo las <strong>rutas</strong> a los
+            archivos de certificados, no el contenido. Los archivos .crt y .key
+            deben estar en el servidor de forma segura.
           </p>
         </div>
       </div>
 
       {/* Environment Selection */}
       <div>
-        <Label htmlFor="environment">Ambiente AFIP</Label>
+        <Label htmlFor="environment">Ambiente ARCA</Label>
         <Select
           value={formData.environment}
           onValueChange={(value) =>
-            setFormData({ ...formData, environment: value as "test" | "production" })
+            setFormData({
+              ...formData,
+              environment: value as "test" | "production",
+            })
           }
         >
           <SelectTrigger id="environment">
@@ -101,16 +109,14 @@ export function CertificatesForm({
         </Select>
         <p className="text-xs text-gray-500 mt-1">
           {formData.environment === "production"
-            ? "⚠️ Usará certificados de producción de AFIP"
-            : "Usará certificados de prueba de AFIP"}
+            ? "⚠️ Usará certificados de producción de ARCA"
+            : "Usará certificados de prueba de ARCA"}
         </p>
       </div>
 
       {/* Certificate Path */}
       <div>
-        <Label htmlFor="certificatePath">
-          Ruta del certificado (.crt)
-        </Label>
+        <Label htmlFor="certificatePath">Ruta del certificado (.crt)</Label>
         <Input
           id="certificatePath"
           value={formData.certificatePath || ""}
@@ -126,9 +132,7 @@ export function CertificatesForm({
 
       {/* Private Key Path */}
       <div>
-        <Label htmlFor="privateKeyPath">
-          Ruta de la clave privada (.key)
-        </Label>
+        <Label htmlFor="privateKeyPath">Ruta de la clave privada (.key)</Label>
         <Input
           id="privateKeyPath"
           value={formData.privateKeyPath || ""}
@@ -144,12 +148,17 @@ export function CertificatesForm({
 
       {/* Information about certificates */}
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
-        <p className="font-semibold">Cómo obtener certificados AFIP:</p>
+        <p className="font-semibold">Cómo obtener certificados ARCA:</p>
         <ol className="list-decimal list-inside mt-2 space-y-1">
-          <li>Accede a la web de AFIP con tu CUIT</li>
+          <li>Accede a la web de ARCA con tu CUIT</li>
           <li>Ve a &quot;Administrador de Relaciones de Clave Fiscal&quot;</li>
-          <li>Genera un Certificado Digital para &quot;Facturación Electrónica&quot;</li>
-          <li>Descarga el certificado (.crt) y guarda la clave privada (.key)</li>
+          <li>
+            Genera un Certificado Digital para &quot;Facturación
+            Electrónica&quot;
+          </li>
+          <li>
+            Descarga el certificado (.crt) y guarda la clave privada (.key)
+          </li>
           <li>Coloca los archivos en el servidor y configura las rutas aquí</li>
         </ol>
       </div>

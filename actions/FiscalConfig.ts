@@ -32,7 +32,7 @@ const fiscalConfigSchema = z.object({
     .optional()
     .nullable(),
 
-  // AFIP credentials
+  // ARCA credentials
   environment: z.enum(["test", "production"]),
   certificatePath: z.string().optional().nullable(),
   privateKeyPath: z.string().optional().nullable(),
@@ -41,10 +41,10 @@ const fiscalConfigSchema = z.object({
   defaultPtoVta: z.coerce.number().int().min(1).max(9999),
 
   // Invoice behavior
-  defaultInvoiceType: z.coerce.number().int().refine(
-    (val) => [1, 6, 11].includes(val),
-    "Tipo de factura inválido"
-  ),
+  defaultInvoiceType: z.coerce
+    .number()
+    .int()
+    .refine((val) => [1, 6, 11].includes(val), "Tipo de factura inválido"),
   autoIssue: z.boolean().default(false),
 
   // Status
@@ -80,7 +80,7 @@ export interface ActionResult<T = unknown> {
 // ============================================================================
 
 export async function getFiscalConfig(
-  restaurantId: string
+  restaurantId: string,
 ): Promise<ActionResult<FiscalConfigData | null>> {
   try {
     const session = await auth();
@@ -113,13 +113,13 @@ export async function getFiscalConfig(
 
 export async function updateFiscalConfig(
   restaurantId: string,
-  data: FiscalConfigInput
+  data: FiscalConfigInput,
 ): Promise<ActionResult> {
   try {
     // Check admin permissions
     const { userId } = await authorizeAction(
       UserRole.ADMIN,
-      "No tienes permisos para modificar la configuración fiscal"
+      "No tienes permisos para modificar la configuración fiscal",
     );
 
     // Validate input
@@ -165,7 +165,7 @@ export async function updateFiscalConfig(
 // ============================================================================
 
 export async function testFiscalConnection(
-  restaurantId: string
+  restaurantId: string,
 ): Promise<ActionResult<{ message: string }>> {
   try {
     const session = await auth();
@@ -207,23 +207,23 @@ export async function testFiscalConnection(
 
     return {
       success: true,
-      data: { message: "Conexión exitosa con AFIP" },
+      data: { message: "Conexión exitosa con ARCA" },
     };
   } catch (error) {
     console.error("[testFiscalConnection] Error:", error);
     return {
       success: false,
-      error: "Error al probar conexión con AFIP",
+      error: "Error al probar conexión con ARCA",
     };
   }
 }
 
 // ============================================================================
-// SYNC SALES POINTS FROM AFIP
+// SYNC SALES POINTS FROM ARCA
 // ============================================================================
 
 export async function syncSalesPoints(
-  restaurantId: string
+  restaurantId: string,
 ): Promise<ActionResult<number[]>> {
   try {
     const session = await auth();
@@ -231,22 +231,31 @@ export async function syncSalesPoints(
       return { success: false, error: "No autorizado" };
     }
 
-    // Get sales points from AFIP
+    // Get sales points from ARCA
     const { getSalesPoints } = await import("@/actions/Arca");
     const result = await getSalesPoints();
 
     if (!result.success) {
-      return { success: false, error: result.error || "Error al obtener puntos de venta" };
+      return {
+        success: false,
+        error: result.error || "Error al obtener puntos de venta",
+      };
     }
 
     if (!result.data) {
-      return { success: false, error: "No se obtuvieron datos de puntos de venta" };
+      return {
+        success: false,
+        error: "No se obtuvieron datos de puntos de venta",
+      };
     }
 
-    // Extract sales point numbers from AFIP response
+    // Extract sales point numbers from ARCA response
     const ptoVentaArray = (result.data as any)?.resultGet?.ptoVenta;
     if (!Array.isArray(ptoVentaArray)) {
-      return { success: false, error: "No se encontraron puntos de venta disponibles" };
+      return {
+        success: false,
+        error: "No se encontraron puntos de venta disponibles",
+      };
     }
 
     const salesPoints = ptoVentaArray.map((sp: any) => sp.nro);
