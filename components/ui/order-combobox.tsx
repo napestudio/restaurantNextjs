@@ -114,7 +114,7 @@ export function OrderCombobox({ branchId, value, onSelect }: OrderComboboxProps)
                       <div className="text-right">
                         <div className="font-semibold">${order.total.toFixed(2)}</div>
                         <div className="text-xs text-gray-500">
-                          {order.type === "DINE_IN" ? "Local" : order.type === "TAKEAWAY" ? "Para llevar" : "Delivery"}
+                          {order.type === "DINE_IN" ? "Local" : order.type === "TAKE_AWAY" ? "Para llevar" : "Delivery"}
                         </div>
                       </div>
                     </div>
