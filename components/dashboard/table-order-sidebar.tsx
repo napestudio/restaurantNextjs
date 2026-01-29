@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  addOrderItem,
+  addOrderItems,
   closeEmptyTable,
   createTableOrder,
   getAvailableTablesForMove,
@@ -234,22 +234,13 @@ export function TableOrderSidebar({
     // Store items to print before clearing
     const itemsToPrint = [...preOrderItems];
 
-    // Add all pre-order items to the actual order
-    for (const item of preOrderItems) {
-      const result = await addOrderItem(order.id, {
-        productId: item.productId,
-        itemName: item.itemName,
-        quantity: item.quantity,
-        price: item.price,
-        originalPrice: item.originalPrice,
-        notes: item.notes,
-      });
+    // Add all pre-order items to the actual order (bulk operation - single DB call)
+    const result = await addOrderItems(order.id, preOrderItems);
 
-      if (!result.success) {
-        alert(result.error || "Error al agregar el producto");
-        setIsLoadingAction(false);
-        return;
-      }
+    if (!result.success) {
+      alert(result.error || "Error al agregar los productos");
+      setIsLoadingAction(false);
+      return;
     }
 
     // Auto-print the newly added items via QZ Tray (station comandas - no prices, no waiter)
@@ -275,9 +266,9 @@ export function TableOrderSidebar({
     // Clear pre-order items after successful confirmation
     setPreOrderItems([]);
 
-    // Force refresh to get updated data from server
-    // Using mutate directly to ensure revalidation happens
-    await mutate(undefined, { revalidate: true });
+    // Trigger background revalidation (non-blocking for instant UI responsiveness)
+    // SWR will sync data automatically within 2s (dedupe) or 30s (polling)
+    mutate(undefined, { revalidate: true });
     onOrderUpdated(tableId);
     setIsLoadingAction(false);
   };

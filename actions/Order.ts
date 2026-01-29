@@ -687,6 +687,38 @@ export async function addOrderItem(orderId: string, item: OrderItemInput) {
   }
 }
 
+// Add multiple items to order (bulk operation)
+export async function addOrderItems(
+  orderId: string,
+  items: OrderItemInput[],
+) {
+  try {
+    // Single transaction for all items - much faster than sequential calls
+    const result = await prisma.orderItem.createMany({
+      data: items.map((item) => ({
+        orderId,
+        productId: item.productId,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        price: item.price,
+        originalPrice: item.originalPrice,
+        notes: item.notes || null,
+      })),
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    console.error("Error adding order items:", error);
+    return {
+      success: false,
+      error: "Error al agregar los productos",
+    };
+  }
+}
+
 // Update order item price
 export async function updateOrderItemPrice(itemId: string, price: number) {
   try {
