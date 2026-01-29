@@ -4,9 +4,11 @@ import { useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { InvoiceStatus } from "@/app/generated/prisma";
 import { usePrint } from "@/hooks/use-print";
-import { useToast } from "@/hooks/use-toast";
-import { getInvoices } from "@/actions/Invoice";
+import { downloadInvoicePDF, cancelInvoiceWithCreditNote } from "@/actions/Invoice";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
+import { InvoiceTable } from "./components/invoice-table";
+import { CreateCreditNoteDialog } from "./components/create-credit-note-dialog";
+import { CreateDebitNoteDialog } from "./components/create-debit-note-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -25,20 +27,25 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   FileText,
   Search,
   X,
   Filter,
   Calendar,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertCircle,
   Plus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -46,8 +53,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { getInvoices } from "@/actions/Invoice";
 
 type Invoice = {
   id: string;
@@ -94,42 +101,6 @@ interface InvoicesClientProps {
   initialFilters: Filters;
 }
 
-const INVOICE_TYPE_LABELS: Record<number, string> = {
-  1: "Factura A",
-  6: "Factura B",
-  11: "Factura C",
-};
-
-const DOC_TYPE_LABELS: Record<number, string> = {
-  80: "CUIT",
-  86: "CUIL",
-  96: "DNI",
-  99: "Consumidor Final",
-};
-
-const STATUS_CONFIG = {
-  [InvoiceStatus.PENDING]: {
-    label: "Pendiente",
-    icon: Clock,
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  },
-  [InvoiceStatus.EMITTED]: {
-    label: "Emitida",
-    icon: CheckCircle,
-    color: "bg-green-100 text-green-800 border-green-200",
-  },
-  [InvoiceStatus.CANCELLED]: {
-    label: "Cancelada",
-    icon: XCircle,
-    color: "bg-gray-100 text-gray-800 border-gray-200",
-  },
-  [InvoiceStatus.FAILED]: {
-    label: "Fallida",
-    icon: AlertCircle,
-    color: "bg-red-100 text-red-800 border-red-200",
-  },
-};
-
 export function InvoicesClient({
   branchId,
   initialInvoices,
@@ -142,11 +113,22 @@ export function InvoicesClient({
   const [pagination, setPagination] =
     useState<PaginationInfo>(initialPagination);
   const [, startTransition] = useTransition();
-  const { printInvoice, isPrinting } = usePrint();
+  const { printInvoice } = usePrint();
   const { toast } = useToast();
 
-  // Create invoice dialog state
+  // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creditNoteDialogOpen, setCreditNoteDialogOpen] = useState(false);
+  const [debitNoteDialogOpen, setDebitNoteDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  // Processing states
+  const [processingStates, setProcessingStates] = useState({
+    downloading: null as string | null,
+    printing: null as string | null,
+    canceling: null as string | null,
+  });
 
   // Filter state
   const [searchInput, setSearchInput] = useState(initialFilters.search);
@@ -289,21 +271,116 @@ export function InvoicesClient({
     dateFromFilter ||
     dateToFilter;
 
-  // Handle print invoice
-  const handlePrintInvoice = async (invoiceId: string) => {
-    const success = await printInvoice(invoiceId);
-    if (success) {
-      toast({
-        title: "Impresión enviada",
-        description: "La factura se envió a la impresora",
-      });
-    } else {
-      toast({
-        title: "Error al imprimir",
-        description: "No se pudo enviar la factura a la impresora",
-        variant: "destructive",
-      });
+  // Action handlers
+  const handleDownloadPDF = async (invoiceId: string) => {
+    setProcessingStates((prev) => ({ ...prev, downloading: invoiceId }));
+    try {
+      const result = await downloadInvoicePDF(invoiceId);
+      if (result.success) {
+        const link = document.createElement("a");
+        link.href = result.data.dataUrl;
+        link.download = result.data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({
+          title: "PDF descargado",
+          description: "El archivo PDF se descargó exitosamente",
+        });
+      } else {
+        toast({
+          title: "Error al descargar",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setProcessingStates((prev) => ({ ...prev, downloading: null }));
     }
+  };
+
+  const handlePrintInvoice = async (invoiceId: string) => {
+    setProcessingStates((prev) => ({ ...prev, printing: invoiceId }));
+    try {
+      const success = await printInvoice(invoiceId);
+      if (success) {
+        toast({
+          title: "Impresión enviada",
+          description: "La factura se envió a la impresora",
+        });
+      } else {
+        toast({
+          title: "Error al imprimir",
+          description: "No se pudo enviar la factura a la impresora",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setProcessingStates((prev) => ({ ...prev, printing: null }));
+    }
+  };
+
+  const handleOpenCreditNote = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setCreditNoteDialogOpen(true);
+  };
+
+  const handleOpenDebitNote = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setDebitNoteDialogOpen(true);
+  };
+
+  const handleOpenCancelDialog = (invoiceId: string) => {
+    const invoice = invoices.find((inv) => inv.id === invoiceId);
+    if (invoice) {
+      setSelectedInvoice(invoice);
+      setCancelDialogOpen(true);
+    }
+  };
+
+  const handleCancelInvoice = async () => {
+    if (!selectedInvoice) return;
+
+    startTransition(async () => {
+      const result = await cancelInvoiceWithCreditNote(selectedInvoice.id);
+      if (result.success) {
+        toast({
+          title: "Factura anulada",
+          description: "Se generó automáticamente una nota de crédito",
+        });
+        setCancelDialogOpen(false);
+        setSelectedInvoice(null);
+        // Refresh list
+        await fetchInvoices({
+          page: currentPage,
+          search: searchInput || undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          invoiceType: invoiceTypeFilter !== "all" ? invoiceTypeFilter : undefined,
+          dateFrom: dateFromFilter || undefined,
+          dateTo: dateToFilter || undefined,
+        });
+      } else {
+        toast({
+          title: "Error al anular",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
+  const handleDialogSuccess = () => {
+    // Refresh invoice list after successful credit/debit note creation
+    startTransition(async () => {
+      await fetchInvoices({
+        page: currentPage,
+        search: searchInput || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        invoiceType: invoiceTypeFilter !== "all" ? invoiceTypeFilter : undefined,
+        dateFrom: dateFromFilter || undefined,
+        dateTo: dateToFilter || undefined,
+      });
+    });
   };
 
   return (
@@ -447,142 +524,32 @@ export function InvoicesClient({
         </p>
       </div>
 
-      {/* Invoices List */}
-      <div className="grid gap-4">
-        {invoices.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No se encontraron facturas
-              </h3>
-              <p className="text-sm text-gray-600">
-                {hasActiveFilters
-                  ? "Intenta ajustar los filtros de búsqueda"
-                  : "Aún no se han generado facturas"}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          invoices.map((invoice) => {
-            const StatusIcon = STATUS_CONFIG[invoice.status].icon;
-            return (
-              <Card
-                key={invoice.id}
-                className="hover:shadow-md transition-shadow"
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
-                      {/* Header */}
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold">
-                          {INVOICE_TYPE_LABELS[invoice.invoiceType]} N°{" "}
-                          {invoice.ptoVta.toString().padStart(4, "0")}-
-                          {invoice.invoiceNumber.toString().padStart(8, "0")}
-                        </h3>
-                        <Badge
-                          variant="outline"
-                          className={STATUS_CONFIG[invoice.status].color}
-                        >
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {STATUS_CONFIG[invoice.status].label}
-                        </Badge>
-                      </div>
-
-                      {/* Customer Info */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Cliente</p>
-                          <p className="font-medium">{invoice.customerName}</p>
-                          <p className="text-gray-500">
-                            {DOC_TYPE_LABELS[invoice.customerDocType]}:{" "}
-                            {invoice.customerDocNumber}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Fecha</p>
-                          <p className="font-medium">
-                            {format(new Date(invoice.invoiceDate), "PPP", {
-                              locale: es,
-                            })}
-                          </p>
-                          {invoice.order && (
-                            <p className="text-gray-500">
-                              Orden: #{invoice.order.publicCode}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Amounts */}
-                      <div className="flex items-center gap-6 text-sm border-t pt-3">
-                        <div>
-                          <p className="text-gray-600">Subtotal</p>
-                          <p className="font-medium">
-                            ${invoice.subtotal.toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">IVA</p>
-                          <p className="font-medium">
-                            ${invoice.vatAmount.toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Total</p>
-                          <p className="font-bold text-lg">
-                            ${invoice.totalAmount.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* CAE Info */}
-                      {invoice.cae && (
-                        <div className="text-sm bg-green-50 p-3 rounded-md border border-green-200">
-                          <p className="text-gray-600">CAE</p>
-                          <p className="font-mono font-medium">{invoice.cae}</p>
-                          {invoice.caeFchVto && (
-                            <p className="text-gray-500 text-xs mt-1">
-                              Vto: {invoice.caeFchVto.slice(6, 8)}/
-                              {invoice.caeFchVto.slice(4, 6)}/
-                              {invoice.caeFchVto.slice(0, 4)}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2 ml-4">
-                      {invoice.qrUrl && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a
-                            href={invoice.qrUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Ver en ARCA
-                          </a>
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePrintInvoice(invoice.id)}
-                        disabled={isPrinting}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        {isPrinting ? "Imprimiendo..." : "Imprimir"}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+      {/* Invoices Table */}
+      {invoices.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No se encontraron facturas
+            </h3>
+            <p className="text-sm text-gray-600">
+              {hasActiveFilters
+                ? "Intenta ajustar los filtros de búsqueda"
+                : "Aún no se han generado facturas"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <InvoiceTable
+          invoices={invoices}
+          onDownloadPDF={handleDownloadPDF}
+          onPrint={handlePrintInvoice}
+          onCreditNote={handleOpenCreditNote}
+          onDebitNote={handleOpenDebitNote}
+          onCancel={handleOpenCancelDialog}
+          isProcessing={processingStates}
+        />
+      )}
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
@@ -674,6 +641,57 @@ export function InvoicesClient({
           });
         }}
       />
+
+      {/* Credit Note Dialog */}
+      <CreateCreditNoteDialog
+        invoice={selectedInvoice}
+        open={creditNoteDialogOpen}
+        onOpenChange={setCreditNoteDialogOpen}
+        onSuccess={handleDialogSuccess}
+      />
+
+      {/* Debit Note Dialog */}
+      <CreateDebitNoteDialog
+        invoice={selectedInvoice}
+        open={debitNoteDialogOpen}
+        onOpenChange={setDebitNoteDialogOpen}
+        onSuccess={handleDialogSuccess}
+      />
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Anular factura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción generará automáticamente una nota de crédito por el
+              monto total de la factura y marcará la factura como anulada. Esta
+              acción no se puede deshacer.
+              {selectedInvoice && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm font-medium text-gray-900">
+                    Factura {selectedInvoice.invoiceType}-
+                    {selectedInvoice.ptoVta.toString().padStart(4, "0")}-
+                    {selectedInvoice.invoiceNumber.toString().padStart(8, "0")}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Cliente: {selectedInvoice.customerName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Total: ${selectedInvoice.totalAmount.toFixed(2)}
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelInvoice}>
+              Anular Factura
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

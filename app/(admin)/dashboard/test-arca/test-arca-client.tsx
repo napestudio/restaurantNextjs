@@ -528,10 +528,10 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
       );
 
       // Generate ARCA QR URL
-      const qrData = generateAfipQrData({
-        ...qrInvoiceData,
-        cae: response.cae,
-      });
+      // const qrData = generateAfipQrData({
+      //   ...qrInvoiceData,
+      //   cae: response.cae,
+      // });
 
       console.log("[Print] Preparing print job...");
 

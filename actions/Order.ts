@@ -511,6 +511,12 @@ export async function getTableOrder(tableId: string) {
             username: true,
           },
         },
+        invoices: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -530,6 +536,7 @@ export async function getTableOrder(tableId: string) {
               : null,
             product: serializeProduct(item.product),
           })),
+          invoices: order.invoices || [],
           client: order.client
             ? {
                 id: order.client.id,
@@ -587,6 +594,12 @@ export async function getTableOrders(tableId: string) {
             username: true,
           },
         },
+        invoices: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -603,6 +616,7 @@ export async function getTableOrders(tableId: string) {
         originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
         product: serializeProduct(item.product),
       })),
+      invoices: order.invoices || [],
       client: order.client
         ? {
             id: order.client.id,
