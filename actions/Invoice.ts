@@ -360,7 +360,7 @@ export async function generateInvoiceForOrder(
 
     if (!afipResult.success) {
       // Save as FAILED status for retry later
-      const failedInvoice = await prisma.invoice.create({
+      await prisma.invoice.create({
         data: {
           orderId: order.id,
           customerName: customerData.name,
@@ -395,7 +395,7 @@ export async function generateInvoiceForOrder(
         ", ",
       );
 
-      const failedInvoice = await prisma.invoice.create({
+      await prisma.invoice.create({
         data: {
           orderId: order.id,
           customerName: customerData.name,
@@ -1120,6 +1120,787 @@ export async function generateManualInvoice(params: {
         error instanceof Error
           ? error.message
           : "Error desconocido al generar factura",
+    };
+  }
+}
+
+// ============================================================================
+// CREDIT/DEBIT NOTES
+// ============================================================================
+
+/**
+ * Download invoice PDF as base64 data URL (client-side download wrapper)
+ */
+export async function downloadInvoicePDF(
+  invoiceId: string,
+): Promise<ActionResult<{ dataUrl: string; filename: string }>> {
+  try {
+    const result = await generateInvoicePDF(invoiceId);
+
+    if (!result.success) {
+      return result as ActionResult<{ dataUrl: string; filename: string }>;
+    }
+
+    const { pdf, filename } = result.data;
+    const base64 = pdf.toString("base64");
+    const dataUrl = `data:application/pdf;base64,${base64}`;
+
+    return {
+      success: true,
+      data: { dataUrl, filename },
+    };
+  } catch (error) {
+    console.error("[downloadInvoicePDF] Error:", error);
+    return {
+      success: false,
+      error: "Error al descargar PDF",
+    };
+  }
+}
+
+/**
+ * Cancel invoice by generating a full credit note
+ * Time limit: 21 days from original invoice
+ */
+export async function cancelInvoiceWithCreditNote(
+  invoiceId: string,
+): Promise<ActionResult<unknown>> {
+  try {
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+
+    // Get original invoice
+    const originalInvoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        order: {
+          include: {
+            items: true,
+            branch: {
+              include: { restaurant: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!originalInvoice) {
+      return { success: false, error: "Factura no encontrada" };
+    }
+
+    if (originalInvoice.status !== InvoiceStatus.EMITTED) {
+      return {
+        success: false,
+        error: "Solo se pueden anular facturas emitidas",
+      };
+    }
+
+    // Validate invoice type (only standard invoices can be canceled: 1, 6, 11)
+    if (![1, 6, 11].includes(originalInvoice.invoiceType)) {
+      return {
+        success: false,
+        error: "Solo se pueden anular facturas estándar (A, B, C)",
+      };
+    }
+
+    // Check time limit (21 days)
+    const daysSinceInvoice = Math.floor(
+      (Date.now() - originalInvoice.invoiceDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysSinceInvoice > 21) {
+      return {
+        success: false,
+        error: "No se puede anular facturas con más de 21 días de antigüedad",
+      };
+    }
+
+    // Map invoice type to credit note type (1→3, 6→8, 11→15)
+    const creditNoteTypeMap: Record<number, number> = {
+      1: 3,   // A → NC-A
+      6: 8,   // B → NC-B
+      11: 15, // C → NC-C
+    };
+    const creditNoteType = creditNoteTypeMap[originalInvoice.invoiceType];
+
+    // Get fiscal configuration
+    const restaurantId = originalInvoice.order?.branch.restaurantId;
+    if (!restaurantId) {
+      return {
+        success: false,
+        error: "No se pudo obtener configuración fiscal",
+      };
+    }
+
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
+
+    // Get next credit note number
+    const lastCreditNoteResult = await getLastInvoiceNumber(ptoVta, creditNoteType);
+    if (!lastCreditNoteResult.success) {
+      return {
+        success: false,
+        error: "Error al obtener número de nota de crédito",
+      };
+    }
+
+    const nextCreditNoteNumber = (lastCreditNoteResult.data?.cbteNro || 0) + 1;
+
+    // Format date as YYYYMMDD
+    const creditNoteDate = new Date();
+    const dateStr = creditNoteDate.toISOString().split("T")[0].replace(/-/g, "");
+
+    // Build ARCA payload for credit note
+    const afipPayload = {
+      CantReg: 1,
+      PtoVta: ptoVta,
+      CbteTipo: creditNoteType,
+      Concepto: 1,
+      DocTipo: originalInvoice.customerDocType,
+      DocNro:
+        originalInvoice.customerDocNumber === "0"
+          ? 0
+          : parseInt(originalInvoice.customerDocNumber),
+      CbteDesde: nextCreditNoteNumber,
+      CbteHasta: nextCreditNoteNumber,
+      CbteFch: dateStr,
+      ImpTotal: Number(originalInvoice.totalAmount),
+      ImpTotConc: 0,
+      ImpNeto: Number(originalInvoice.subtotal),
+      ImpOpEx: 0,
+      ImpTrib: 0,
+      ImpIVA: Number(originalInvoice.vatAmount),
+      MonId: "PES",
+      MonCotiz: 1,
+      FchServDesde: undefined,
+      FchServHasta: undefined,
+      FchVtoPago: undefined,
+      CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
+      Iva: (originalInvoice.vatBreakdown as unknown as VatBreakdownItem[]).map((vat) => ({
+        Id: 5, // 21% VAT
+        BaseImp: vat.base,
+        Importe: vat.amount,
+      })),
+      // MANDATORY: Link to original invoice
+      CbtesAsoc: [
+        {
+          Tipo: originalInvoice.invoiceType,
+          PtoVta: originalInvoice.ptoVta,
+          Nro: originalInvoice.invoiceNumber,
+          Cuit: String(cuit),
+          CbteFch: originalInvoice.invoiceDate.toISOString().split("T")[0].replace(/-/g, ""),
+        },
+      ],
+    };
+
+    // Emit credit note to ARCA
+    const afipResult = await emitTestInvoice(afipPayload);
+
+    if (!afipResult.success) {
+      return {
+        success: false,
+        error: "ARCA rechazó la nota de crédito: " + afipResult.error,
+      };
+    }
+
+    const afipData = afipResult.data as AfipResponseData;
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(", ");
+      return { success: false, error: "Error ARCA: " + errorMsg };
+    }
+
+    const cae = afipData.cae;
+    const caeFchVto = afipData.caeFchVto;
+
+    if (!cae) {
+      return { success: false, error: "ARCA no devolvió CAE" };
+    }
+
+    // Generate QR URL
+    const qrData = generateAfipQrData({
+      cuit,
+      ptoVta,
+      tipoCmp: creditNoteType,
+      nroCmp: nextCreditNoteNumber,
+      fecha: dateStr,
+      importe: Number(originalInvoice.totalAmount),
+      moneda: "PES",
+      tipoDocRec: originalInvoice.customerDocType,
+      nroDocRec:
+        originalInvoice.customerDocNumber === "0"
+          ? 0
+          : parseInt(originalInvoice.customerDocNumber),
+      cae,
+    });
+
+    const qrUrl = generateAfipQrUrl(qrData);
+
+    // Save credit note
+    const creditNote = await prisma.invoice.create({
+      data: {
+        orderId: originalInvoice.orderId,
+        customerName: originalInvoice.customerName,
+        customerDocType: originalInvoice.customerDocType,
+        customerDocNumber: originalInvoice.customerDocNumber,
+        invoiceType: creditNoteType,
+        ptoVta,
+        invoiceNumber: nextCreditNoteNumber,
+        invoiceDate: new Date(),
+        subtotal: originalInvoice.subtotal,
+        vatAmount: originalInvoice.vatAmount,
+        totalAmount: originalInvoice.totalAmount,
+        vatBreakdown: originalInvoice.vatBreakdown as Prisma.InputJsonValue,
+        cae,
+        caeFchVto,
+        qrUrl,
+        status: "EMITTED",
+        afipResponse: afipData as unknown as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+
+    // Update original invoice status to CANCELLED
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { status: "CANCELLED" },
+    });
+
+    const serializedCreditNote = {
+      ...creditNote,
+      subtotal: Number(creditNote.subtotal),
+      vatAmount: Number(creditNote.vatAmount),
+      totalAmount: Number(creditNote.totalAmount),
+    };
+
+    return { success: true, data: serializedCreditNote };
+  } catch (error) {
+    console.error("[cancelInvoiceWithCreditNote] Error:", error);
+    return {
+      success: false,
+      error: "Error al anular factura con nota de crédito",
+    };
+  }
+}
+
+/**
+ * Generate credit note (full or partial)
+ */
+export async function generateCreditNote(params: {
+  originalInvoiceId: string;
+  items: ManualInvoiceLineItem[];
+  reason: string;
+}): Promise<ActionResult<unknown>> {
+  try {
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+
+    const { originalInvoiceId, items, reason } = params;
+
+    // Validate items
+    if (!items || items.length === 0) {
+      return { success: false, error: "Debe agregar al menos un ítem" };
+    }
+
+    for (const item of items) {
+      if (item.quantity <= 0) {
+        return { success: false, error: "La cantidad debe ser mayor a 0" };
+      }
+      if (item.unitPrice <= 0) {
+        return { success: false, error: "El precio debe ser mayor a 0" };
+      }
+    }
+
+    // Get original invoice
+    const originalInvoice = await prisma.invoice.findUnique({
+      where: { id: originalInvoiceId },
+      include: {
+        order: {
+          include: {
+            branch: {
+              include: { restaurant: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!originalInvoice) {
+      return { success: false, error: "Factura original no encontrada" };
+    }
+
+    if (originalInvoice.status !== InvoiceStatus.EMITTED) {
+      return {
+        success: false,
+        error: "Solo se pueden crear notas de crédito para facturas emitidas",
+      };
+    }
+
+    // Validate invoice type
+    if (![1, 6, 11].includes(originalInvoice.invoiceType)) {
+      return {
+        success: false,
+        error: "Solo se pueden crear NC para facturas estándar (A, B, C)",
+      };
+    }
+
+    // Check time limit (21 days)
+    const daysSinceInvoice = Math.floor(
+      (Date.now() - originalInvoice.invoiceDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysSinceInvoice > 21) {
+      return {
+        success: false,
+        error: "No se pueden crear NC para facturas con más de 21 días",
+      };
+    }
+
+    // Map invoice type to credit note type
+    const creditNoteTypeMap: Record<number, number> = {
+      1: 3,   // A → NC-A
+      6: 8,   // B → NC-B
+      11: 15, // C → NC-C
+    };
+    const creditNoteType = creditNoteTypeMap[originalInvoice.invoiceType];
+
+    // Calculate totals
+    const totals = calculateVatBreakdownFromItems(items);
+
+    // Validate credit note amount doesn't exceed original invoice
+    if (totals.total > Number(originalInvoice.totalAmount)) {
+      return {
+        success: false,
+        error: "El monto de la NC no puede superar el de la factura original",
+      };
+    }
+
+    // Get fiscal configuration
+    const restaurantId = originalInvoice.order?.branch.restaurantId;
+    if (!restaurantId) {
+      return {
+        success: false,
+        error: "No se pudo obtener configuración fiscal",
+      };
+    }
+
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
+
+    // Get next credit note number
+    const lastCreditNoteResult = await getLastInvoiceNumber(ptoVta, creditNoteType);
+    if (!lastCreditNoteResult.success) {
+      return {
+        success: false,
+        error: "Error al obtener número de nota de crédito",
+      };
+    }
+
+    const nextCreditNoteNumber = (lastCreditNoteResult.data?.cbteNro || 0) + 1;
+
+    // Format date
+    const creditNoteDate = new Date();
+    const dateStr = creditNoteDate.toISOString().split("T")[0].replace(/-/g, "");
+
+    // Map VAT rates to ARCA IDs
+    const vatRateToId: Record<number, number> = {
+      0: 3,
+      10.5: 4,
+      21: 5,
+      27: 6,
+    };
+
+    // Build ARCA payload
+    const afipPayload = {
+      CantReg: 1,
+      PtoVta: ptoVta,
+      CbteTipo: creditNoteType,
+      Concepto: 1,
+      DocTipo: originalInvoice.customerDocType,
+      DocNro:
+        originalInvoice.customerDocNumber === "0"
+          ? 0
+          : parseInt(originalInvoice.customerDocNumber),
+      CbteDesde: nextCreditNoteNumber,
+      CbteHasta: nextCreditNoteNumber,
+      CbteFch: dateStr,
+      ImpTotal: totals.total,
+      ImpTotConc: 0,
+      ImpNeto: totals.subtotal,
+      ImpOpEx: 0,
+      ImpTrib: 0,
+      ImpIVA: totals.totalVat,
+      MonId: "PES",
+      MonCotiz: 1,
+      FchServDesde: undefined,
+      FchServHasta: undefined,
+      FchVtoPago: undefined,
+      CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
+      Iva: totals.vatBreakdown.map((vat) => ({
+        Id: vatRateToId[vat.rate] || 5,
+        BaseImp: vat.base,
+        Importe: vat.amount,
+      })),
+      CbtesAsoc: [
+        {
+          Tipo: originalInvoice.invoiceType,
+          PtoVta: originalInvoice.ptoVta,
+          Nro: originalInvoice.invoiceNumber,
+          Cuit: String(cuit),
+          CbteFch: originalInvoice.invoiceDate.toISOString().split("T")[0].replace(/-/g, ""),
+        },
+      ],
+    };
+
+    // Emit credit note to ARCA
+    const afipResult = await emitTestInvoice(afipPayload);
+
+    if (!afipResult.success) {
+      return {
+        success: false,
+        error: "ARCA rechazó la nota de crédito: " + afipResult.error,
+      };
+    }
+
+    const afipData = afipResult.data as AfipResponseData;
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(", ");
+      return { success: false, error: "Error ARCA: " + errorMsg };
+    }
+
+    const cae = afipData.cae;
+    const caeFchVto = afipData.caeFchVto;
+
+    if (!cae) {
+      return { success: false, error: "ARCA no devolvió CAE" };
+    }
+
+    // Generate QR URL
+    const qrData = generateAfipQrData({
+      cuit,
+      ptoVta,
+      tipoCmp: creditNoteType,
+      nroCmp: nextCreditNoteNumber,
+      fecha: dateStr,
+      importe: totals.total,
+      moneda: "PES",
+      tipoDocRec: originalInvoice.customerDocType,
+      nroDocRec:
+        originalInvoice.customerDocNumber === "0"
+          ? 0
+          : parseInt(originalInvoice.customerDocNumber),
+      cae,
+    });
+
+    const qrUrl = generateAfipQrUrl(qrData);
+
+    // Save credit note
+    const creditNote = await prisma.invoice.create({
+      data: {
+        orderId: originalInvoice.orderId,
+        customerName: originalInvoice.customerName,
+        customerDocType: originalInvoice.customerDocType,
+        customerDocNumber: originalInvoice.customerDocNumber,
+        invoiceType: creditNoteType,
+        ptoVta,
+        invoiceNumber: nextCreditNoteNumber,
+        invoiceDate: new Date(),
+        subtotal: totals.subtotal,
+        vatAmount: totals.totalVat,
+        totalAmount: totals.total,
+        vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+        cae,
+        caeFchVto,
+        qrUrl,
+        status: "EMITTED",
+        afipResponse: afipData as unknown as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+
+    const serializedCreditNote = {
+      ...creditNote,
+      subtotal: Number(creditNote.subtotal),
+      vatAmount: Number(creditNote.vatAmount),
+      totalAmount: Number(creditNote.totalAmount),
+    };
+
+    return { success: true, data: serializedCreditNote };
+  } catch (error) {
+    console.error("[generateCreditNote] Error:", error);
+    return {
+      success: false,
+      error: "Error al generar nota de crédito",
+    };
+  }
+}
+
+/**
+ * Generate debit note for additional charges
+ */
+export async function generateDebitNote(params: {
+  originalInvoiceId: string;
+  items: ManualInvoiceLineItem[];
+  reason: string;
+}): Promise<ActionResult<unknown>> {
+  try {
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+
+    const { originalInvoiceId, items, reason } = params;
+
+    // Validate items
+    if (!items || items.length === 0) {
+      return { success: false, error: "Debe agregar al menos un ítem" };
+    }
+
+    for (const item of items) {
+      if (item.quantity <= 0) {
+        return { success: false, error: "La cantidad debe ser mayor a 0" };
+      }
+      if (item.unitPrice <= 0) {
+        return { success: false, error: "El precio debe ser mayor a 0" };
+      }
+    }
+
+    // Get original invoice
+    const originalInvoice = await prisma.invoice.findUnique({
+      where: { id: originalInvoiceId },
+      include: {
+        order: {
+          include: {
+            branch: {
+              include: { restaurant: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!originalInvoice) {
+      return { success: false, error: "Factura original no encontrada" };
+    }
+
+    if (originalInvoice.status !== InvoiceStatus.EMITTED) {
+      return {
+        success: false,
+        error: "Solo se pueden crear notas de débito para facturas emitidas",
+      };
+    }
+
+    // Validate invoice type
+    if (![1, 6, 11].includes(originalInvoice.invoiceType)) {
+      return {
+        success: false,
+        error: "Solo se pueden crear ND para facturas estándar (A, B, C)",
+      };
+    }
+
+    // Check time limit (21 days)
+    const daysSinceInvoice = Math.floor(
+      (Date.now() - originalInvoice.invoiceDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysSinceInvoice > 21) {
+      return {
+        success: false,
+        error: "No se pueden crear ND para facturas con más de 21 días",
+      };
+    }
+
+    // Map invoice type to debit note type
+    const debitNoteTypeMap: Record<number, number> = {
+      1: 2,   // A → ND-A
+      6: 7,   // B → ND-B
+      11: 12, // C → ND-C
+    };
+    const debitNoteType = debitNoteTypeMap[originalInvoice.invoiceType];
+
+    // Calculate totals
+    const totals = calculateVatBreakdownFromItems(items);
+
+    // Get fiscal configuration
+    const restaurantId = originalInvoice.order?.branch.restaurantId;
+    if (!restaurantId) {
+      return {
+        success: false,
+        error: "No se pudo obtener configuración fiscal",
+      };
+    }
+
+    const fiscalConfig = await prisma.fiscalConfiguration.findUnique({
+      where: { restaurantId },
+    });
+
+    const ptoVta =
+      fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
+        ? fiscalConfig.defaultPtoVta
+        : parseInt(process.env.ARCA_PTO_VTA || "1");
+
+    const cuit =
+      fiscalConfig?.isEnabled && fiscalConfig.cuit
+        ? parseInt(fiscalConfig.cuit)
+        : parseInt(process.env.ARCA_CUIT || "0");
+
+    // Get next debit note number
+    const lastDebitNoteResult = await getLastInvoiceNumber(ptoVta, debitNoteType);
+    if (!lastDebitNoteResult.success) {
+      return {
+        success: false,
+        error: "Error al obtener número de nota de débito",
+      };
+    }
+
+    const nextDebitNoteNumber = (lastDebitNoteResult.data?.cbteNro || 0) + 1;
+
+    // Format date
+    const debitNoteDate = new Date();
+    const dateStr = debitNoteDate.toISOString().split("T")[0].replace(/-/g, "");
+
+    // Map VAT rates to ARCA IDs
+    const vatRateToId: Record<number, number> = {
+      0: 3,
+      10.5: 4,
+      21: 5,
+      27: 6,
+    };
+
+    // Build ARCA payload
+    const afipPayload = {
+      CantReg: 1,
+      PtoVta: ptoVta,
+      CbteTipo: debitNoteType,
+      Concepto: 1,
+      DocTipo: originalInvoice.customerDocType,
+      DocNro:
+        originalInvoice.customerDocNumber === "0"
+          ? 0
+          : parseInt(originalInvoice.customerDocNumber),
+      CbteDesde: nextDebitNoteNumber,
+      CbteHasta: nextDebitNoteNumber,
+      CbteFch: dateStr,
+      ImpTotal: totals.total,
+      ImpTotConc: 0,
+      ImpNeto: totals.subtotal,
+      ImpOpEx: 0,
+      ImpTrib: 0,
+      ImpIVA: totals.totalVat,
+      MonId: "PES",
+      MonCotiz: 1,
+      FchServDesde: undefined,
+      FchServHasta: undefined,
+      FchVtoPago: undefined,
+      CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
+      Iva: totals.vatBreakdown.map((vat) => ({
+        Id: vatRateToId[vat.rate] || 5,
+        BaseImp: vat.base,
+        Importe: vat.amount,
+      })),
+      CbtesAsoc: [
+        {
+          Tipo: originalInvoice.invoiceType,
+          PtoVta: originalInvoice.ptoVta,
+          Nro: originalInvoice.invoiceNumber,
+          Cuit: String(cuit),
+          CbteFch: originalInvoice.invoiceDate.toISOString().split("T")[0].replace(/-/g, ""),
+        },
+      ],
+    };
+
+    // Emit debit note to ARCA
+    const afipResult = await emitTestInvoice(afipPayload);
+
+    if (!afipResult.success) {
+      return {
+        success: false,
+        error: "ARCA rechazó la nota de débito: " + afipResult.error,
+      };
+    }
+
+    const afipData = afipResult.data as AfipResponseData;
+    if ("Errors" in afipData && afipData.Errors && afipData.Errors.length > 0) {
+      const errorMsg = afipData.Errors.map((e) => `[${e.Code}] ${e.Msg}`).join(", ");
+      return { success: false, error: "Error ARCA: " + errorMsg };
+    }
+
+    const cae = afipData.cae;
+    const caeFchVto = afipData.caeFchVto;
+
+    if (!cae) {
+      return { success: false, error: "ARCA no devolvió CAE" };
+    }
+
+    // Generate QR URL
+    const qrData = generateAfipQrData({
+      cuit,
+      ptoVta,
+      tipoCmp: debitNoteType,
+      nroCmp: nextDebitNoteNumber,
+      fecha: dateStr,
+      importe: totals.total,
+      moneda: "PES",
+      tipoDocRec: originalInvoice.customerDocType,
+      nroDocRec:
+        originalInvoice.customerDocNumber === "0"
+          ? 0
+          : parseInt(originalInvoice.customerDocNumber),
+      cae,
+    });
+
+    const qrUrl = generateAfipQrUrl(qrData);
+
+    // Save debit note
+    const debitNote = await prisma.invoice.create({
+      data: {
+        orderId: originalInvoice.orderId,
+        customerName: originalInvoice.customerName,
+        customerDocType: originalInvoice.customerDocType,
+        customerDocNumber: originalInvoice.customerDocNumber,
+        invoiceType: debitNoteType,
+        ptoVta,
+        invoiceNumber: nextDebitNoteNumber,
+        invoiceDate: new Date(),
+        subtotal: totals.subtotal,
+        vatAmount: totals.totalVat,
+        totalAmount: totals.total,
+        vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+        cae,
+        caeFchVto,
+        qrUrl,
+        status: "EMITTED",
+        afipResponse: afipData as unknown as Prisma.InputJsonValue,
+        createdBy: userId,
+      },
+    });
+
+    const serializedDebitNote = {
+      ...debitNote,
+      subtotal: Number(debitNote.subtotal),
+      vatAmount: Number(debitNote.vatAmount),
+      totalAmount: Number(debitNote.totalAmount),
+    };
+
+    return { success: true, data: serializedDebitNote };
+  } catch (error) {
+    console.error("[generateDebitNote] Error:", error);
+    return {
+      success: false,
+      error: "Error al generar nota de débito",
     };
   }
 }

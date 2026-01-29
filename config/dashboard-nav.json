@@ -1,13 +1,13 @@
 {
   "items": [
     {
-      "label": "Ordenes",
-      "href": "/dashboard/orders",
+      "label": "Mesas",
+      "href": "/dashboard/tables",
       "minimumRole": "WAITER"
     },
     {
-      "label": "Mesas",
-      "href": "/dashboard/tables",
+      "label": "Ordenes",
+      "href": "/dashboard/orders",
       "minimumRole": "WAITER"
     },
     {

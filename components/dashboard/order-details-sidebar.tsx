@@ -81,6 +81,10 @@ type Order = {
       categoryId: string | null;
     } | null;
   }>;
+  invoices?: Array<{
+    id: string;
+    status: string;
+  }>;
 };
 
 interface OrderDetailsSidebarProps {
@@ -661,7 +665,8 @@ export function OrderDetailsSidebar({
               Finalizar Venta
             </Button>
           )}
-          {order.status === OrderStatus.COMPLETED && (
+          {order.status === OrderStatus.COMPLETED &&
+           !order.invoices?.some((invoice) => invoice.status === "EMITTED") && (
             <Button
               onClick={() => setIsInvoiceDialogOpen(true)}
               variant="default"
