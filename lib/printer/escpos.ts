@@ -79,28 +79,50 @@ const Commands = {
   BARCODE_HEIGHT: (n: number) => `${GS}h${String.fromCharCode(n)}`,
   BARCODE_WIDTH: (n: number) => `${GS}w${String.fromCharCode(n)}`,
 
-  // QR Code
+  // QR Code (ESC/POS Model 2)
   QR_CODE: (data: string) => {
-    const qrData = `${GS}(k${String.fromCharCode(
-      3,
-      0,
-      49,
-      67,
-      3
-    )}${GS}(k${String.fromCharCode(
-      3,
-      0,
-      49,
-      69,
-      48
-    )}${GS}(k${String.fromCharCode(
-      data.length + 3,
-      0,
-      49,
-      80,
-      48
-    )}${data}${GS}(k${String.fromCharCode(3, 0, 49, 81, 48)}`;
-    return qrData;
+    // GS ( k - QR Code command for ESC/POS printers
+    const pL = (data.length + 3) % 256; // Length low byte
+    const pH = Math.floor((data.length + 3) / 256); // Length high byte
+
+    // Store QR code data (function 180, '1', 'P', '0')
+    const storeData = `${GS}(k${String.fromCharCode(
+      pL,
+      pH,
+      49, // '1' - QR Code model
+      80, // 'P' - Store data
+      48, // '0' - Store to symbol storage area
+    )}${data}`;
+
+    // Print QR code (function 181, '1', 'Q', '0')
+    const printCmd = `${GS}(k${String.fromCharCode(
+      3, // pL (fixed for print command)
+      0, // pH
+      49, // '1' - QR Code model
+      81, // 'Q' - Print symbol data
+      48, // '0' - Print from symbol storage area
+    )}`;
+
+    // Set QR module size (function 167, '1', 'C', size)
+    const setSize = `${GS}(k${String.fromCharCode(
+      3, // pL
+      0, // pH
+      49, // '1'
+      67, // 'C' - Set module size
+      5, // Size (1-16, 5 is medium)
+    )}`;
+
+    // Set error correction level (function 169, '1', 'E', level)
+    const setErrorCorrection = `${GS}(k${String.fromCharCode(
+      3, // pL
+      0, // pH
+      49, // '1'
+      69, // 'E' - Set error correction
+      48, // '0' - Level L (7% recovery)
+    )}`;
+
+    // Full command sequence
+    return setSize + setErrorCorrection + storeData + printCmd;
   },
 };
 
@@ -170,7 +192,7 @@ function encodeForPrinter(text: string): Buffer {
 function formatLine(
   text: string,
   width: number,
-  align: "left" | "center" | "right" = "left"
+  align: "left" | "center" | "right" = "left",
 ): string {
   if (text.length > width) {
     return text.substring(0, width);
@@ -295,7 +317,7 @@ export function prepareEscPosBase64(data: string): string {
 async function sendToPrinterDirect(
   ipAddress: string,
   port: number,
-  data: string
+  data: string,
 ): Promise<PrintResult> {
   return new Promise((resolve) => {
     const socket = new Socket();
@@ -366,7 +388,7 @@ async function sendToPrinterDirect(
  */
 async function sendToPrinter(
   config: PrinterConfig,
-  data: string
+  data: string,
 ): Promise<PrintResult> {
   const connectionType = config.connectionType || "NETWORK";
 
@@ -390,7 +412,7 @@ async function sendToPrinter(
  * Print a test page
  */
 export async function printTestPage(
-  config: PrinterConfig
+  config: PrinterConfig,
 ): Promise<PrintResult> {
   const width = config.charactersPerLine;
   const fontSize = config.controlTicketFontSize ?? 1;
@@ -419,14 +441,19 @@ export async function printTestPage(
   content += "Informacion de Impresora\n";
   content += Commands.BOLD_OFF;
   const connectionType = config.connectionType || "NETWORK";
-  content += formatTwoColumns("Tipo:", connectionType === "USB" ? "USB" : "Red (TCP/IP)", width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Tipo:",
+      connectionType === "USB" ? "USB" : "Red (TCP/IP)",
+      width,
+    ) + "\n";
   content += formatTwoColumns("Sistema:", config.systemName, width) + "\n";
   content += formatTwoColumns("Ancho:", `${config.paperWidth}mm`, width) + "\n";
   content +=
     formatTwoColumns(
       "Caracteres:",
       config.charactersPerLine.toString(),
-      width
+      width,
     ) + "\n";
 
   content += separator(width) + "\n";
@@ -435,8 +462,15 @@ export async function printTestPage(
   content += Commands.BOLD_ON;
   content += "Config. Ticket Control\n";
   content += Commands.BOLD_OFF;
-  content += formatTwoColumns("Tam. Fuente:", fontSizeLabels[fontSize] || "Normal", width) + "\n";
-  content += formatTwoColumns("Espaciado:", spacingLabels[spacing] || "Normal", width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Tam. Fuente:",
+      fontSizeLabels[fontSize] || "Normal",
+      width,
+    ) + "\n";
+  content +=
+    formatTwoColumns("Espaciado:", spacingLabels[spacing] || "Normal", width) +
+    "\n";
 
   content += separator(width) + "\n";
 
@@ -521,7 +555,7 @@ export interface OrderData {
 
 export async function printOrder(
   config: PrinterConfig,
-  order: OrderData
+  order: OrderData,
 ): Promise<PrintResult> {
   const width = config.charactersPerLine;
 
@@ -553,7 +587,11 @@ export async function printOrder(
   content +=
     formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
   content +=
-    formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
+    formatTwoColumns(
+      "Hora:",
+      now.toLocaleTimeString("es-AR", { hour12: false }),
+      width,
+    ) + "\n";
   if (order.waiterName) {
     content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
   }
@@ -624,7 +662,7 @@ export interface FullOrderData {
  */
 export async function printFullOrder(
   config: PrinterConfig,
-  order: FullOrderData
+  order: FullOrderData,
 ): Promise<PrintResult> {
   const width = config.charactersPerLine;
   const fontSize = config.controlTicketFontSize ?? 1;
@@ -676,7 +714,11 @@ export async function printFullOrder(
   content +=
     formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
   content +=
-    formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
+    formatTwoColumns(
+      "Hora:",
+      now.toLocaleTimeString("es-AR", { hour12: false }),
+      width,
+    ) + "\n";
   content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
   if (order.customerName) {
     content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
@@ -734,7 +776,7 @@ export async function printFullOrder(
       `$${order.subtotal.toLocaleString("es-AR", {
         minimumFractionDigits: 2,
       })}`,
-      width
+      width,
     ) + "\n";
 
   if (order.discountPercentage && order.discountPercentage > 0) {
@@ -744,7 +786,7 @@ export async function printFullOrder(
         `-$${(order.discountAmount || 0).toLocaleString("es-AR", {
           minimumFractionDigits: 2,
         })}`,
-        width
+        width,
       ) + "\n";
   }
   content += Commands.NORMAL_SIZE;
@@ -756,7 +798,7 @@ export async function printFullOrder(
     formatTwoColumns(
       "TOTAL:",
       `$${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
-      width
+      width,
     ) + "\n";
   content += Commands.NORMAL_SIZE;
   content += Commands.BOLD_OFF;
@@ -834,18 +876,35 @@ export function generateTestPageData(config: PrinterConfig): string {
   content += "Informacion de Impresora\n";
   content += Commands.BOLD_OFF;
   const connectionTypeGen = config.connectionType || "NETWORK";
-  content += formatTwoColumns("Tipo:", connectionTypeGen === "USB" ? "USB" : "Red (TCP/IP)", width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Tipo:",
+      connectionTypeGen === "USB" ? "USB" : "Red (TCP/IP)",
+      width,
+    ) + "\n";
   content += formatTwoColumns("Sistema:", config.systemName, width) + "\n";
   content += formatTwoColumns("Ancho:", `${config.paperWidth}mm`, width) + "\n";
-  content += formatTwoColumns("Caracteres:", config.charactersPerLine.toString(), width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Caracteres:",
+      config.charactersPerLine.toString(),
+      width,
+    ) + "\n";
 
   content += separator(width) + "\n";
 
   content += Commands.BOLD_ON;
   content += "Config. Ticket Control\n";
   content += Commands.BOLD_OFF;
-  content += formatTwoColumns("Tam. Fuente:", fontSizeLabels[fontSize] || "Normal", width) + "\n";
-  content += formatTwoColumns("Espaciado:", spacingLabels[spacing] || "Normal", width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Tam. Fuente:",
+      fontSizeLabels[fontSize] || "Normal",
+      width,
+    ) + "\n";
+  content +=
+    formatTwoColumns("Espaciado:", spacingLabels[spacing] || "Normal", width) +
+    "\n";
 
   content += separator(width) + "\n";
 
@@ -918,7 +977,10 @@ export function generateTestPageData(config: PrinterConfig): string {
  * Generate order (comanda) ESC/POS data (base64 encoded)
  * Used for station tickets - NO prices, NO waiter
  */
-export function generateOrderData(config: PrinterConfig, order: OrderData): string {
+export function generateOrderData(
+  config: PrinterConfig,
+  order: OrderData,
+): string {
   const width = config.charactersPerLine;
 
   let content = Commands.INIT;
@@ -944,8 +1006,14 @@ export function generateOrderData(config: PrinterConfig, order: OrderData): stri
 
   const now = new Date();
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
-  content += formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
-  content += formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
+  content +=
+    formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Hora:",
+      now.toLocaleTimeString("es-AR", { hour12: false }),
+      width,
+    ) + "\n";
   if (order.waiterName) {
     content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
   }
@@ -987,7 +1055,10 @@ export function generateOrderData(config: PrinterConfig, order: OrderData): stri
  * Generate full order (control ticket) ESC/POS data (base64 encoded)
  * Used for control tickets - WITH prices
  */
-export function generateFullOrderData(config: PrinterConfig, order: FullOrderData): string {
+export function generateFullOrderData(
+  config: PrinterConfig,
+  order: FullOrderData,
+): string {
   const width = config.charactersPerLine;
   const fontSize = config.controlTicketFontSize ?? 1;
   const spacingLines = getSpacingLines(config.controlTicketSpacing ?? 1);
@@ -1031,8 +1102,14 @@ export function generateFullOrderData(config: PrinterConfig, order: FullOrderDat
   const now = new Date();
   content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
-  content += formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
-  content += formatTwoColumns("Hora:", now.toLocaleTimeString("es-AR", { hour12: false }), width) + "\n";
+  content +=
+    formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+  content +=
+    formatTwoColumns(
+      "Hora:",
+      now.toLocaleTimeString("es-AR", { hour12: false }),
+      width,
+    ) + "\n";
   content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
   if (order.customerName) {
     content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
@@ -1078,29 +1155,32 @@ export function generateFullOrderData(config: PrinterConfig, order: FullOrderDat
   content += addSpacing();
 
   content += getControlFontSizeCommand(fontSize);
-  content += formatTwoColumns(
-    "Subtotal:",
-    `$${order.subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
-    width
-  ) + "\n";
+  content +=
+    formatTwoColumns(
+      "Subtotal:",
+      `$${order.subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+      width,
+    ) + "\n";
 
   if (order.discountPercentage && order.discountPercentage > 0) {
-    content += formatTwoColumns(
-      `Descuento (${order.discountPercentage}%):`,
-      `-$${(order.discountAmount || 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
-      width
-    ) + "\n";
+    content +=
+      formatTwoColumns(
+        `Descuento (${order.discountPercentage}%):`,
+        `-$${(order.discountAmount || 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+        width,
+      ) + "\n";
   }
   content += Commands.NORMAL_SIZE;
 
   content += separator(width) + "\n";
   content += Commands.BOLD_ON;
   content += Commands.DOUBLE_HEIGHT_ON;
-  content += formatTwoColumns(
-    "TOTAL:",
-    `$${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
-    width
-  ) + "\n";
+  content +=
+    formatTwoColumns(
+      "TOTAL:",
+      `$${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+      width,
+    ) + "\n";
   content += Commands.NORMAL_SIZE;
   content += Commands.BOLD_OFF;
 
@@ -1135,7 +1215,7 @@ export function generateFullOrderData(config: PrinterConfig, order: FullOrderDat
  * @deprecated Use gg-ez-print for printing instead. This only works for network printers.
  */
 export async function testConnection(
-  config: PrinterConfig
+  config: PrinterConfig,
 ): Promise<PrintResult> {
   const connectionType = config.connectionType || "NETWORK";
 
@@ -1143,7 +1223,8 @@ export async function testConnection(
   if (connectionType === "USB") {
     return {
       success: false,
-      error: "USB printer testing requires gg-ez-print. Use the new printing flow.",
+      error:
+        "USB printer testing requires gg-ez-print. Use the new printing flow.",
     };
   }
 
@@ -1190,4 +1271,208 @@ export async function testConnection(
 
     socket.connect(9100, config.systemName);
   });
+}
+
+// ============================================================================
+// ARCA INVOICE PRINTING (for test-arca page)
+// ============================================================================
+
+/**
+ * ARCA Invoice Data for Thermal Printing
+ */
+export interface AfipInvoiceData {
+  // Invoice header
+  invoiceType: string; // e.g., "FACTURA B"
+  invoiceNumber: string; // e.g., "00001-00000123"
+  invoiceDate: string; // e.g., "25/01/2026"
+
+  // Issuer information
+  businessName?: string; // Optional business name
+  cuit: string; // Issuer CUIT formatted (e.g., "20-12345678-9")
+
+  // Customer information
+  customerDoc: string; // e.g., "Consumidor Final" or "DNI: 12345678"
+
+  // Line items
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    vatRate: number;
+    total: number;
+  }>;
+
+  // Totals
+  subtotal: number;
+  vatBreakdown: Array<{
+    rate: number;
+    base: number;
+    amount: number;
+  }>;
+  totalVat: number;
+  total: number;
+
+  // ARCA authorization
+  cae: string; // CAE code (14 digits)
+  caeExpiration: string; // CAE expiration date (e.g., "31/01/2026")
+
+  // QR code URL
+  qrUrl: string; // ARCA verification URL
+}
+
+/**
+ * Generate ARCA invoice ESC/POS data for thermal printing
+ * Formats electronic invoice according to ARCA requirements with QR code
+ */
+export function generateAfipInvoiceData(
+  invoice: AfipInvoiceData,
+  config?: { charactersPerLine?: number },
+): string {
+  const width = config?.charactersPerLine || 48; // 80mm printer standard
+
+  let content = Commands.INIT;
+
+  // ========== HEADER ==========
+  content += Commands.ALIGN_CENTER;
+
+  // Business name if provided
+  if (invoice.businessName) {
+    content += Commands.DOUBLE_HEIGHT_ON;
+    content += Commands.BOLD_ON;
+    content += `${invoice.businessName}\n`;
+    content += Commands.BOLD_OFF;
+    content += Commands.NORMAL_SIZE;
+    content += Commands.FEED_LINE;
+  }
+
+  // Invoice type (large)
+  content += Commands.DOUBLE_SIZE_ON;
+  content += Commands.BOLD_ON;
+  content += `${invoice.invoiceType}\n`;
+  content += Commands.BOLD_OFF;
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  // Invoice number
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content += `N° ${invoice.invoiceNumber}\n`;
+  content += Commands.NORMAL_SIZE;
+  content += Commands.FEED_LINE;
+
+  content += Commands.ALIGN_LEFT;
+  content += separator(width, "=") + "\n";
+
+  // ========== INVOICE DETAILS ==========
+  content += formatTwoColumns("Fecha:", invoice.invoiceDate, width) + "\n";
+  content += formatTwoColumns("CUIT:", invoice.cuit, width) + "\n";
+  content += formatTwoColumns("Cliente:", invoice.customerDoc, width) + "\n";
+
+  content += separator(width, "=") + "\n";
+
+  // ========== LINE ITEMS ==========
+  content += Commands.BOLD_ON;
+  content += "DETALLE\n";
+  content += Commands.BOLD_OFF;
+  content += separator(width) + "\n";
+
+  // Column headers
+  const headerLine =
+    formatLine("Cant Descripcion", width - 10, "left") +
+    formatLine("Total", 10, "right");
+  content += headerLine + "\n";
+  content += separator(width) + "\n";
+
+  // Items
+  for (const item of invoice.items) {
+    const itemLine = `${item.quantity}x ${item.description}`;
+    const priceStr = `$${item.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+
+    // If item name is too long, wrap to next line
+    const maxDescLength = width - priceStr.length - 1;
+    if (itemLine.length > maxDescLength) {
+      content += itemLine.substring(0, maxDescLength) + "\n";
+      content += formatTwoColumns("", priceStr, width) + "\n";
+    } else {
+      content += formatTwoColumns(itemLine, priceStr, width) + "\n";
+    }
+
+    // Show unit price and VAT rate on separate line
+    const detailLine = `  $${item.unitPrice.toFixed(2)} c/u (IVA ${item.vatRate}%)`;
+    content += detailLine + "\n";
+  }
+
+  content += separator(width) + "\n";
+
+  // ========== TOTALS ==========
+  content +=
+    formatTwoColumns(
+      "Subtotal:",
+      `$${invoice.subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+      width,
+    ) + "\n";
+
+  // VAT breakdown
+  for (const vat of invoice.vatBreakdown) {
+    content +=
+      formatTwoColumns(
+        `IVA ${vat.rate}%:`,
+        `$${vat.amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+        width,
+      ) + "\n";
+  }
+
+  content += separator(width) + "\n";
+
+  // Total (bold and large)
+  content += Commands.BOLD_ON;
+  content += Commands.DOUBLE_HEIGHT_ON;
+  content +=
+    formatTwoColumns(
+      "TOTAL:",
+      `$${invoice.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+      width,
+    ) + "\n";
+  content += Commands.NORMAL_SIZE;
+  content += Commands.BOLD_OFF;
+
+  content += separator(width, "=") + "\n";
+
+  // ========== ARCA AUTHORIZATION ==========
+  content += Commands.BOLD_ON;
+  content += "AUTORIZACION ARCA\n";
+  content += Commands.BOLD_OFF;
+
+  content += formatTwoColumns("CAE:", invoice.cae, width) + "\n";
+  content += formatTwoColumns("Vto. CAE:", invoice.caeExpiration, width) + "\n";
+
+  content += separator(width) + "\n";
+
+  // ========== QR CODE ==========
+  content += Commands.ALIGN_CENTER;
+  content += "Codigo QR ARCA\n";
+  content += "Escanear para verificar\n";
+  content += Commands.FEED_LINE;
+
+  // Try to print QR code using ESC/POS command (Model 2)
+  // This works with most ESC/POS compatible printers
+  try {
+    content += Commands.QR_CODE(invoice.qrUrl);
+    content += Commands.FEED_LINE;
+  } catch (e) {
+    console.warn("QR code generation failed");
+  }
+
+  content += Commands.ALIGN_CENTER;
+  content += separator(width, "=") + "\n";
+
+  // ========== FOOTER ==========
+  content += Commands.ALIGN_CENTER;
+  content += Commands.NORMAL_SIZE;
+  content += "Documento no valido como factura\n";
+  content += "COMPROBANTE DE PRUEBA\n";
+  content += Commands.FEED_LINE;
+
+  // Note: Feed and cut commands are handled by gg-ez-print automatically
+
+  return prepareEscPosBase64(content);
 }

@@ -184,9 +184,10 @@ model Restaurant {
   /**
    * Los menús/categorías quedan aislados por restaurante
    */
-  categories Category[]
-  products   Product[]
-  menus      Menu[]
+  categories          Category[]
+  products            Product[]
+  menus               Menu[]
+  fiscalConfiguration FiscalConfiguration?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -597,7 +598,8 @@ model Client {
 
   // Additional info
   birthDate DateTime?
-  taxId     String? // CUIT/DNI
+  taxId     String? // CUIT/DNI number
+  taxIdType Int?    // 80=CUIT, 96=DNI, null=not specified
   notes     String?
 
   // Address
@@ -689,20 +691,105 @@ model OrderItem {
 // FACTURAS
 //
 model Invoice {
-  id      String @id @default(cuid())
-  order   Order  @relation(fields: [orderId], references: [id])
-  orderId String
+  id      String  @id @default(cuid())
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
 
-  // Invoice details
-  name        String // Customer/Business name
-  cuit        String? // Tax ID (CUIT/CUIL in Argentina)
-  description String? // Additional notes or description
-  customItem  String? // Optional custom item not in the order
+  // Customer information
+  customerName      String // Business or person name
+  customerDocType   Int    // 80=CUIT, 86=CUIL, 96=DNI, 99=Consumidor Final
+  customerDocNumber String // Document number ("0" for Consumidor Final)
 
+  // ARCA invoice details
+  invoiceType   Int      // 1=Factura A, 6=Factura B, 11=Factura C
+  ptoVta        Int      // Sales point from ARCA_PTO_VTA
+  invoiceNumber Int      // Sequential number from ARCA
+  invoiceDate   DateTime // Invoice emission date
+
+  // Amounts (denormalized for queries)
+  subtotal    Decimal @db.Decimal(12, 2) // Net taxable amount
+  vatAmount   Decimal @db.Decimal(12, 2) // Total VAT
+  totalAmount Decimal @db.Decimal(12, 2) // Final total
+
+  // VAT breakdown stored as JSON
+  vatBreakdown Json? // [{rate: 21, base: 1000, amount: 210}]
+
+  // ARCA authorization
+  cae          String? // CAE authorization (14 digits)
+  caeFchVto    String? // CAE expiration (YYYYMMDD)
+  afipResponse Json?   // Full ARCA response for audit
+
+  // Status
+  status InvoiceStatus @default(PENDING)
+
+  // QR code
+  qrUrl String? // ARCA verification URL
+
+  // Audit
   createdAt DateTime @default(now())
+  createdBy String? // User ID
+  updatedAt DateTime @updatedAt
   updatedBy String?
 
   @@index([orderId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([ptoVta, invoiceType, invoiceNumber])
+}
+
+enum InvoiceStatus {
+  PENDING   // Created but not sent to ARCA
+  EMITTED   // Authorized by ARCA (has CAE)
+  CANCELLED // Cancelled (requires credit note)
+  FAILED    // ARCA rejected
+}
+
+//
+// FISCAL CONFIGURATION (ARCA)
+//
+
+model FiscalConfiguration {
+  id           String     @id @default(cuid())
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId String     @unique
+
+  // ========== FISCAL IDENTITY ==========
+  businessName      String    // Razón social
+  cuit              String    // 11-digit CUIT (tax ID)
+  address           String?   // Fiscal address
+  activityStartDate DateTime? // Inicio de actividad
+  grossIncome       String?   // Ingresos brutos (province registration)
+  taxStatus         String?   // e.g. "Responsable Inscripto", "Monotributo", "Exento"
+
+  // ========== ARCA CREDENTIALS ==========
+  environment          String    @default("test") // "test" or "production"
+  certificatePath      String?   // Path to .crt file (NOT contents)
+  privateKeyPath       String?   // Path to .key file (NOT contents)
+  certificateExpiresAt DateTime? // Track expiration for alerts
+
+  // ========== SALES POINTS ==========
+  defaultPtoVta   Int       @default(1) // Default Punto de Venta
+  availablePtoVta Json?     // Array of available sales points from ARCA, e.g. [1, 2, 3]
+  lastSyncedAt    DateTime? // When sales points were last synced with ARCA
+
+  // ========== INVOICE BEHAVIOR ==========
+  defaultInvoiceType Int     @default(6) // 1=Factura A, 6=Factura B, 11=Factura C
+  autoIssue          Boolean @default(false) // Auto-generate invoice on order complete
+
+  // ========== STATUS & HEALTH ==========
+  isEnabled       Boolean   @default(false) // Master switch
+  lastTestedAt    DateTime? // Last connection test timestamp
+  lastTestSuccess Boolean?  // Whether last test succeeded
+  lastTestError   String?   // Error message from last test
+
+  // ========== AUDIT TRAIL ==========
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  // User ID who created config
+  updatedBy String?  // User ID who last updated config
+
+  @@index([restaurantId])
+  @@index([cuit])
 }
 
 //
