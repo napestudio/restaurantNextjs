@@ -66,7 +66,7 @@ type MenuItemWithProduct = MenuItem & {
     categoryId: string | null;
     branches: {
       branchId: string;
-      prices: { price: unknown }[];
+      prices: { type: PriceType; price: unknown }[];
     }[];
   };
 };
