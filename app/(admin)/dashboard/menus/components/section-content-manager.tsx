@@ -73,7 +73,13 @@ export function SectionContentManager({
   restaurantId,
   onUpdate,
 }: SectionContentManagerProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Only render DndContext on client to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Build a unified list of items and groups sorted by order
   const buildSortedElements = useCallback((): SectionElement[] => {
@@ -290,12 +296,17 @@ export function SectionContentManager({
   return (
     <div className="space-y-3">
       {/* Sortable content */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
+      {!isMounted ? (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          Cargando...
+        </div>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
         <SortableContext
           items={elements.map(getElementId)}
           strategy={verticalListSortingStrategy}
@@ -351,7 +362,8 @@ export function SectionContentManager({
             </div>
           ) : null}
         </DragOverlay>
-      </DndContext>
+        </DndContext>
+      )}
 
       {/* Action buttons */}
       <div className="flex gap-2">

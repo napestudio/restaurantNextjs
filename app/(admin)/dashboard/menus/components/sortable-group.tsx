@@ -79,8 +79,14 @@ export function SortableGroup({
   onDelete,
   isPending: parentPending = false,
 }: SortableGroupProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isLoading = isPending || parentPending;
+
+  // Only render DndContext on client to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const {
     attributes,
@@ -351,12 +357,17 @@ export function SortableGroup({
         <CollapsibleContent>
           <div className="px-3 pb-3 space-y-2">
             {/* Internal sortable items */}
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={(e) => setActiveItemId(e.active.id as string)}
-              onDragEnd={handleItemDragEnd}
-            >
+            {!isMounted ? (
+              <div className="text-center py-4 text-gray-500 text-xs">
+                Cargando...
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={(e) => setActiveItemId(e.active.id as string)}
+                onDragEnd={handleItemDragEnd}
+              >
               <SortableContext
                 items={items.map((item) => `group-item-${item.id}`)}
                 strategy={verticalListSortingStrategy}
@@ -388,7 +399,8 @@ export function SortableGroup({
                   </div>
                 ) : null}
               </DragOverlay>
-            </DndContext>
+              </DndContext>
+            )}
 
             {/* Add item button */}
             <Button

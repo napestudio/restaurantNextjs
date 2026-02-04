@@ -25,7 +25,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Star, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Star, Eye, EyeOff, Pencil } from "lucide-react";
+import { EditMenuItemDialog } from "./edit-menu-item-dialog";
 
 interface GroupItemsManagerProps {
   group: SerializedMenuItemGroup;
@@ -69,6 +70,7 @@ export function GroupItemsManager({
 
   // UI state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<SerializedMenuItem | null>(null);
   const [availableProducts, setAvailableProducts] = useState<
     Array<{
       id: string;
@@ -314,6 +316,16 @@ export function GroupItemsManager({
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="h-6 w-6 text-blue-600"
+                  onClick={() => setEditingItem(item)}
+                  disabled={isPending}
+                  title="Editar"
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-6 w-6 text-red-600"
                   onClick={() => handleRemoveProduct(item.id)}
                   disabled={isPending}
@@ -324,6 +336,15 @@ export function GroupItemsManager({
             </div>
           ))}
         </div>
+      )}
+
+      {editingItem && (
+        <EditMenuItemDialog
+          item={editingItem}
+          open={!!editingItem}
+          onOpenChange={(open) => !open && setEditingItem(null)}
+          onUpdate={onUpdate}
+        />
       )}
 
       {/* Add Product Button */}
