@@ -1,13 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { SerializedMenuItem } from "@/actions/menus";
 import { updateMenuItem, removeMenuItem } from "@/actions/menus";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical, Trash2, Star, Eye, EyeOff } from "lucide-react";
+import { GripVertical, Trash2, Star, Eye, EyeOff, Pencil } from "lucide-react";
+import { EditMenuItemDialog } from "./edit-menu-item-dialog";
 
 interface SortableItemProps {
   id: string;
@@ -25,6 +26,7 @@ export function SortableItem({
   isInGroup = false,
 }: SortableItemProps) {
   const [isPending, startTransition] = useTransition();
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const isLoading = isPending || parentPending;
 
   const {
@@ -114,9 +116,9 @@ export function SortableItem({
               No disponible
             </Badge>
           )}
-          {item.customPrice && (
+          {item.product?.basePrice && (
             <Badge variant="outline" className="text-[10px] h-4">
-              ${item.customPrice}
+              ${item.customPrice ? item.customPrice : item.product.basePrice}
             </Badge>
           )}
         </div>
@@ -144,13 +146,25 @@ export function SortableItem({
           className="h-7 w-7"
           onClick={handleToggleAvailability}
           disabled={isLoading}
-          title={item.isAvailable ? "Marcar no disponible" : "Marcar disponible"}
+          title={
+            item.isAvailable ? "Marcar no disponible" : "Marcar disponible"
+          }
         >
           {item.isAvailable ? (
             <Eye className="h-3.5 w-3.5" />
           ) : (
             <EyeOff className="h-3.5 w-3.5" />
           )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-blue-600"
+          onClick={() => setIsEditOpen(true)}
+          disabled={isLoading}
+          title="Editar"
+        >
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
@@ -163,6 +177,13 @@ export function SortableItem({
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
+
+      <EditMenuItemDialog
+        item={item}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 }
