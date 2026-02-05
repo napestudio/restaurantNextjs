@@ -2,10 +2,18 @@
 
 import type { SerializedMenu } from "@/actions/menus";
 import { createMenu, getMenu, updateMenu } from "@/actions/menus";
+import { PriceType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { SITE_URL } from "@/lib/constants";
@@ -32,6 +40,9 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
   );
   const [isActive, setIsActive] = useState(initialMenu?.isActive ?? true);
   const [showPrices, setShowPrices] = useState(initialMenu?.showPrices ?? true);
+  const [priceType, setPriceType] = useState<PriceType>(
+    initialMenu?.priceType || PriceType.DINE_IN
+  );
 
   // Auto-generate slug from name for new menus
   useEffect(() => {
@@ -65,6 +76,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
           description: description.trim() || undefined,
           isActive,
           showPrices,
+          priceType,
         });
 
         if (result.success && result.menu) {
@@ -94,6 +106,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
           slug: slug.trim(),
           description: description.trim() || undefined,
           isActive,
+          priceType,
         });
 
         if (result.success && result.menu) {
@@ -212,6 +225,35 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     placeholder="Descripción del menú"
                     rows={3}
                   />
+                </div>
+
+                {/* Price Type Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="priceType">
+                    Tipo de Precio <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={priceType}
+                    onValueChange={(value) => setPriceType(value as PriceType)}
+                  >
+                    <SelectTrigger id="priceType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={PriceType.DINE_IN}>
+                        Comer Aquí (Dine-In)
+                      </SelectItem>
+                      <SelectItem value={PriceType.TAKE_AWAY}>
+                        Para Llevar (Take-Away)
+                      </SelectItem>
+                      <SelectItem value={PriceType.DELIVERY}>
+                        Delivery
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    Los productos mostrarán los precios configurados para este tipo
+                  </p>
                 </div>
 
                 {/* Active Status */}

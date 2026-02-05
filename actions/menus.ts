@@ -1,6 +1,6 @@
 "use server";
 
-import type { Menu, MenuItem, MenuSection, MenuItemGroup } from "@/app/generated/prisma";
+import type { Menu, MenuItem, MenuSection, MenuItemGroup, PriceType } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -66,7 +66,7 @@ type MenuItemWithProduct = MenuItem & {
     categoryId: string | null;
     branches: {
       branchId: string;
-      prices: { price: unknown }[];
+      prices: { type: PriceType; price: unknown }[];
     }[];
   };
 };
@@ -74,12 +74,22 @@ type MenuItemWithProduct = MenuItem & {
 // Helper to serialize menu items
 function serializeMenuItem(
   item: MenuItemWithProduct,
-  branchId: string
+  branchId: string,
+  menuPriceType: PriceType
 ): SerializedMenuItem {
   const branchProduct = item.product.branches.find(
     (b) => b.branchId === branchId
   );
-  const basePrice = branchProduct?.prices[0]?.price;
+
+  // Try to find price matching menuPriceType
+  let priceObj = branchProduct?.prices.find((p) => p.type === menuPriceType);
+
+  // Fallback to DINE_IN if menuPriceType price not found
+  if (!priceObj && menuPriceType !== "DINE_IN") {
+    priceObj = branchProduct?.prices.find((p) => p.type === "DINE_IN");
+  }
+
+  const basePrice = priceObj?.price;
 
   return {
     id: item.id,
@@ -116,8 +126,10 @@ const menuItemInclude = {
         select: {
           branchId: true,
           prices: {
-            where: { type: "DINE_IN" as const },
-            select: { price: true },
+            select: {
+              type: true,
+              price: true,
+            },
           },
         },
       },
@@ -166,13 +178,13 @@ export async function getMenus(
       // Only include ungrouped items at section level
       menuItems: section.menuItems
         .filter((item) => !item.menuItemGroupId)
-        .map((item) => serializeMenuItem(item, menu.branchId)),
+        .map((item) => serializeMenuItem(item, menu.branchId, menu.priceType)),
       menuItemGroups: section.menuItemGroups.map((group) => ({
         ...group,
         createdAt: group.createdAt.toISOString(),
         updatedAt: group.updatedAt.toISOString(),
         menuItems: group.menuItems.map((item) =>
-          serializeMenuItem(item, menu.branchId)
+          serializeMenuItem(item, menu.branchId, menu.priceType)
         ),
       })),
     })),
@@ -222,13 +234,13 @@ export async function getMenu(menuId: string): Promise<SerializedMenu | null> {
       // Only include ungrouped items at section level
       menuItems: section.menuItems
         .filter((item) => !item.menuItemGroupId)
-        .map((item) => serializeMenuItem(item, menu.branchId)),
+        .map((item) => serializeMenuItem(item, menu.branchId, menu.priceType)),
       menuItemGroups: section.menuItemGroups.map((group) => ({
         ...group,
         createdAt: group.createdAt.toISOString(),
         updatedAt: group.updatedAt.toISOString(),
         menuItems: group.menuItems.map((item) =>
-          serializeMenuItem(item, menu.branchId)
+          serializeMenuItem(item, menu.branchId, menu.priceType)
         ),
       })),
     })),
@@ -246,6 +258,7 @@ export async function createMenu(data: {
   description?: string;
   branchId?: string; // Optional - will use BRANCH_ID from env if not provided
   isActive?: boolean;
+  priceType?: PriceType;
 }) {
   try {
     const branchId = data.branchId || process.env.BRANCH_ID;
@@ -261,6 +274,7 @@ export async function createMenu(data: {
         description: data.description,
         branchId,
         isActive: data.isActive ?? true,
+        priceType: data.priceType ?? "DINE_IN",
         // Available 24/7 by default - no time or day restrictions
         availableFrom: null,
         availableUntil: null,
@@ -288,6 +302,7 @@ export async function updateMenu(
     branchId?: string;
     isActive?: boolean;
     showPrices?: boolean;
+    priceType?: PriceType;
     availableFrom?: string;
     availableUntil?: string;
     daysOfWeek?: string[];
@@ -305,6 +320,7 @@ export async function updateMenu(
         ...(data.branchId !== undefined && { branchId: data.branchId }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         ...(data.showPrices !== undefined && { showPrices: data.showPrices }),
+        ...(data.priceType !== undefined && { priceType: data.priceType }),
         ...(data.availableFrom !== undefined && {
           availableFrom: data.availableFrom
             ? new Date(`1970-01-01T${data.availableFrom}:00Z`)
@@ -696,13 +712,13 @@ export async function getMenuBySlug(slug: string): Promise<{
         // Only include ungrouped items at section level
         menuItems: section.menuItems
           .filter((item) => !item.menuItemGroupId)
-          .map((item) => serializeMenuItem(item, menu.branchId)),
+          .map((item) => serializeMenuItem(item, menu.branchId, menu.priceType)),
         menuItemGroups: section.menuItemGroups.map((group) => ({
           ...group,
           createdAt: group.createdAt.toISOString(),
           updatedAt: group.updatedAt.toISOString(),
           menuItems: group.menuItems.map((item) =>
-            serializeMenuItem(item, menu.branchId)
+            serializeMenuItem(item, menu.branchId, menu.priceType)
           ),
         })),
       })),
