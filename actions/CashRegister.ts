@@ -502,6 +502,34 @@ export async function closeCashRegisterSession(
         throw new Error("Esta sesión ya está cerrada");
       }
 
+      // Check for open orders associated with this session
+      const openOrders = await tx.order.findMany({
+        where: {
+          cashMovements: {
+            some: {
+              sessionId: validatedData.sessionId,
+            },
+          },
+          status: {
+            in: ["PENDING", "IN_PROGRESS"],
+          },
+        },
+        select: {
+          id: true,
+          publicCode: true,
+          status: true,
+          type: true,
+        },
+      });
+
+      if (openOrders.length > 0) {
+        const orderCodes = openOrders.map((o) => o.publicCode).join(", ");
+        throw new Error(
+          `No se puede cerrar la caja con órdenes abiertas. ` +
+            `Completá o cancelá las siguientes órdenes primero: ${orderCodes}`
+        );
+      }
+
       // Calculate expected cash
       // Start with opening amount
       let expectedCash = Number(session.openingAmount);
