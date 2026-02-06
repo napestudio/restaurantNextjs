@@ -38,7 +38,7 @@ export interface ArcaConfig {
  * ```
  */
 export function getArcaConfig(
-  environment: ArcaEnvironment = "production",
+  environment: ArcaEnvironment = "test",
 ): ArcaConfig {
   const isProduction = environment === "production";
 
