@@ -237,12 +237,14 @@ async function buildAfipInvoicePayload(
     // Customer condition: 5=Consumidor Final for Factura B
     CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
 
-    // VAT breakdown - empty for Factura C (Type 11)
-    Iva: invoiceType === 11 ? [] : totals.vatBreakdown.map((vat) => ({
-      Id: 5, // 21% VAT
-      BaseImp: vat.base,
-      Importe: vat.amount,
-    })),
+    // VAT breakdown - completely omit for Factura C (Type 11)
+    ...(invoiceType !== 11 && {
+      Iva: totals.vatBreakdown.map((vat) => ({
+        Id: 5, // 21% VAT
+        BaseImp: vat.base,
+        Importe: vat.amount,
+      })),
+    }),
   };
 
   return payload;
@@ -1042,12 +1044,14 @@ export async function generateManualInvoice(params: {
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
-      // VAT breakdown - empty for Factura C (Type 11)
-      Iva: invoiceType === 11 ? [] : totals.vatBreakdown.map((vat) => ({
-        Id: vatRateToId[vat.rate] || 5,
-        BaseImp: vat.base,
-        Importe: vat.amount,
-      })),
+      // VAT breakdown - completely omit for Factura C (Type 11)
+      ...(invoiceType !== 11 && {
+        Iva: totals.vatBreakdown.map((vat) => ({
+          Id: vatRateToId[vat.rate] || 5,
+          BaseImp: vat.base,
+          Importe: vat.amount,
+        })),
+      }),
     };
 
     // Emit invoice to ARCA
@@ -1661,12 +1665,14 @@ export async function generateCreditNote(params: {
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
-      // VAT breakdown - empty for NC-C (Type 15)
-      Iva: creditNoteType === 15 ? [] : totals.vatBreakdown.map((vat) => ({
-        Id: vatRateToId[vat.rate] || 5,
-        BaseImp: vat.base,
-        Importe: vat.amount,
-      })),
+      // VAT breakdown - completely omit for NC-C (Type 15)
+      ...(creditNoteType !== 15 && {
+        Iva: totals.vatBreakdown.map((vat) => ({
+          Id: vatRateToId[vat.rate] || 5,
+          BaseImp: vat.base,
+          Importe: vat.amount,
+        })),
+      }),
       CbtesAsoc: [
         {
           Tipo: originalInvoice.invoiceType,
@@ -1940,12 +1946,14 @@ export async function generateDebitNote(params: {
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
-      // VAT breakdown - empty for ND-C (Type 12)
-      Iva: debitNoteType === 12 ? [] : totals.vatBreakdown.map((vat) => ({
-        Id: vatRateToId[vat.rate] || 5,
-        BaseImp: vat.base,
-        Importe: vat.amount,
-      })),
+      // VAT breakdown - completely omit for ND-C (Type 12)
+      ...(debitNoteType !== 12 && {
+        Iva: totals.vatBreakdown.map((vat) => ({
+          Id: vatRateToId[vat.rate] || 5,
+          BaseImp: vat.base,
+          Importe: vat.amount,
+        })),
+      }),
       CbtesAsoc: [
         {
           Tipo: originalInvoice.invoiceType,
