@@ -437,7 +437,31 @@ export async function generateInvoiceForOrder(
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "ARCA no devolvió CAE" };
+      // Save invoice as FAILED with full AFIP response for debugging
+      await prisma.invoice.create({
+        data: {
+          orderId: order.id,
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA no devolvió CAE. Revisa los detalles en la base de datos (tabla Invoice, filtrar por status FAILED).",
+      };
     }
 
     // Generate QR URL
@@ -1094,7 +1118,31 @@ export async function generateManualInvoice(params: {
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "ARCA no devolvió CAE" };
+      // Save invoice as FAILED with full AFIP response for debugging
+      await prisma.invoice.create({
+        data: {
+          orderId: null, // Manual invoice has no order
+          customerName: customerData.name,
+          customerDocType: customerData.docType,
+          customerDocNumber: customerData.docNumber,
+          invoiceType,
+          ptoVta,
+          invoiceNumber: nextInvoiceNumber,
+          invoiceDate: new Date(),
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA no devolvió CAE. Revisa los detalles en la base de datos (tabla Invoice, filtrar por status FAILED).",
+      };
     }
 
     // Generate QR URL
@@ -1357,7 +1405,31 @@ export async function cancelInvoiceWithCreditNote(
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "ARCA no devolvió CAE" };
+      // Save credit note as FAILED with full AFIP response for debugging
+      await prisma.invoice.create({
+        data: {
+          orderId: originalInvoice.order?.id || null,
+          customerName: originalInvoice.customerName,
+          customerDocType: originalInvoice.customerDocType,
+          customerDocNumber: originalInvoice.customerDocNumber,
+          invoiceType: creditNoteType,
+          ptoVta,
+          invoiceNumber: nextCreditNoteNumber,
+          invoiceDate: creditNoteDate,
+          subtotal: Number(originalInvoice.subtotal),
+          vatAmount: Number(originalInvoice.vatAmount),
+          totalAmount: Number(originalInvoice.totalAmount),
+          vatBreakdown: originalInvoice.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA no devolvió CAE. Revisa los detalles en la base de datos (tabla Invoice, filtrar por status FAILED).",
+      };
     }
 
     // Generate QR URL
@@ -1626,7 +1698,31 @@ export async function generateCreditNote(params: {
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "ARCA no devolvió CAE" };
+      // Save credit note as FAILED with full AFIP response for debugging
+      await prisma.invoice.create({
+        data: {
+          orderId: originalInvoice.order?.id || null,
+          customerName: originalInvoice.customerName,
+          customerDocType: originalInvoice.customerDocType,
+          customerDocNumber: originalInvoice.customerDocNumber,
+          invoiceType: creditNoteType,
+          ptoVta,
+          invoiceNumber: nextCreditNoteNumber,
+          invoiceDate: creditNoteDate,
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA no devolvió CAE. Revisa los detalles en la base de datos (tabla Invoice, filtrar por status FAILED).",
+      };
     }
 
     // Generate QR URL
@@ -1881,7 +1977,31 @@ export async function generateDebitNote(params: {
     const caeFchVto = afipData.caeFchVto;
 
     if (!cae) {
-      return { success: false, error: "ARCA no devolvió CAE" };
+      // Save debit note as FAILED with full AFIP response for debugging
+      await prisma.invoice.create({
+        data: {
+          orderId: originalInvoice.order?.id || null,
+          customerName: originalInvoice.customerName,
+          customerDocType: originalInvoice.customerDocType,
+          customerDocNumber: originalInvoice.customerDocNumber,
+          invoiceType: debitNoteType,
+          ptoVta,
+          invoiceNumber: nextDebitNoteNumber,
+          invoiceDate: debitNoteDate,
+          subtotal: totals.subtotal,
+          vatAmount: totals.totalVat,
+          totalAmount: totals.total,
+          vatBreakdown: totals.vatBreakdown as unknown as Prisma.InputJsonValue,
+          status: "FAILED",
+          afipResponse: afipData as unknown as Prisma.InputJsonValue,
+          createdBy: userId,
+        },
+      });
+
+      return {
+        success: false,
+        error: "ARCA no devolvió CAE. Revisa los detalles en la base de datos (tabla Invoice, filtrar por status FAILED).",
+      };
     }
 
     // Generate QR URL
