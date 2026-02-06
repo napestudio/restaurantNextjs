@@ -73,8 +73,36 @@ export function getArcaConfig(
     console.log(
       `[getArcaConfig] Using certificate content from ${certContentEnv} and ${keyContentEnv}`,
     );
-    cert = certContent;
-    key = keyContent;
+    console.log(`[getArcaConfig] Certificate length: ${certContent.length}, Key length: ${keyContent.length}`);
+
+    // Check if content is base64 encoded (no BEGIN/END markers)
+    const certIsBase64 = !certContent.includes('BEGIN CERTIFICATE');
+    const keyIsBase64 = !keyContent.includes('BEGIN PRIVATE KEY');
+
+    if (certIsBase64 && keyIsBase64) {
+      console.log('[getArcaConfig] Detected base64-encoded certificates, decoding...');
+      try {
+        cert = Buffer.from(certContent, 'base64').toString('utf-8');
+        key = Buffer.from(keyContent, 'base64').toString('utf-8');
+        console.log('[getArcaConfig] Base64 decode successful');
+      } catch (decodeError) {
+        throw new Error(
+          `Failed to decode base64 certificates. Ensure they are valid base64 or PEM format.\n` +
+          `Error: ${decodeError instanceof Error ? decodeError.message : String(decodeError)}`,
+        );
+      }
+    } else if (!certIsBase64 && !keyIsBase64) {
+      // Already in PEM format
+      console.log('[getArcaConfig] Using PEM format certificates directly');
+      cert = certContent;
+      key = keyContent;
+    } else {
+      // Mixed formats - error
+      throw new Error(
+        `Certificate format mismatch. Both certificate and key must be either base64 or PEM format.\n` +
+        `Certificate is ${certIsBase64 ? 'base64' : 'PEM'}, Key is ${keyIsBase64 ? 'base64' : 'PEM'}`,
+      );
+    }
   }
   // Option 2: Read from file paths (for local development)
   else if (certPath && keyPath) {
