@@ -46,49 +46,88 @@ export function getArcaConfig(
   const cuitEnv = isProduction ? "ARCA_PROD_CUIT" : "ARCA_CUIT";
   const certPathEnv = isProduction ? "ARCA_PROD_CERT_PATH" : "ARCA_CERT_PATH";
   const keyPathEnv = isProduction ? "ARCA_PROD_KEY_PATH" : "ARCA_KEY_PATH";
+  const certContentEnv = isProduction ? "ARCA_PROD_CERT" : "ARCA_CERT";
+  const keyContentEnv = isProduction ? "ARCA_PROD_KEY" : "ARCA_KEY";
 
   // Read environment variables
   const cuit = process.env[cuitEnv];
   const certPath = process.env[certPathEnv];
   const keyPath = process.env[keyPathEnv];
+  const certContent = process.env[certContentEnv];
+  const keyContent = process.env[keyContentEnv];
 
-  // Validate that all required variables are present
-  if (!cuit || !certPath || !keyPath) {
-    const missingVars = [];
-    if (!cuit) missingVars.push(cuitEnv);
-    if (!certPath) missingVars.push(certPathEnv);
-    if (!keyPath) missingVars.push(keyPathEnv);
-
+  // Validate CUIT is present
+  if (!cuit) {
     throw new Error(
       `Missing ARCA configuration for ${environment} environment.\n` +
-        `Required environment variables: ${missingVars.join(", ")}\n` +
+        `Required environment variable: ${cuitEnv}\n` +
         `Please check your .env file.`,
     );
   }
 
-  // Resolve paths relative to project root
-  const resolvedCertPath = path.resolve(process.cwd(), certPath);
-  const resolvedKeyPath = path.resolve(process.cwd(), keyPath);
+  let cert: string;
+  let key: string;
 
-  // Check if files exist
-  if (!fs.existsSync(resolvedCertPath)) {
-    throw new Error(
-      `ARCA certificate file not found: ${resolvedCertPath}\n` +
-        `Please ensure the certificate file exists at the path specified in ${certPathEnv}`,
+  // Option 1: Use certificate content directly from env vars (for Vercel/serverless)
+  if (certContent && keyContent) {
+    console.log(
+      `[getArcaConfig] Using certificate content from ${certContentEnv} and ${keyContentEnv}`,
     );
+    cert = certContent;
+    key = keyContent;
   }
+  // Option 2: Read from file paths (for local development)
+  else if (certPath && keyPath) {
+    console.log(
+      `[getArcaConfig] Reading certificates from file paths: ${certPath}, ${keyPath}`,
+    );
 
-  if (!fs.existsSync(resolvedKeyPath)) {
+    // Resolve paths relative to project root
+    const resolvedCertPath = path.resolve(process.cwd(), certPath);
+    const resolvedKeyPath = path.resolve(process.cwd(), keyPath);
+
+    // Check if files exist
+    if (!fs.existsSync(resolvedCertPath)) {
+      throw new Error(
+        `ARCA certificate file not found: ${resolvedCertPath}\n` +
+          `Please ensure the certificate file exists at the path specified in ${certPathEnv}`,
+      );
+    }
+
+    if (!fs.existsSync(resolvedKeyPath)) {
+      throw new Error(
+        `ARCA private key file not found: ${resolvedKeyPath}\n` +
+          `Please ensure the private key file exists at the path specified in ${keyPathEnv}`,
+      );
+    }
+
+    try {
+      // Read certificate and key files
+      cert = fs.readFileSync(resolvedCertPath, "utf-8");
+      key = fs.readFileSync(resolvedKeyPath, "utf-8");
+    } catch (fileError) {
+      throw new Error(
+        `Failed to read ARCA credential files:\n` +
+          `Certificate: ${resolvedCertPath}\n` +
+          `Key: ${resolvedKeyPath}\n` +
+          `Error: ${fileError instanceof Error ? fileError.message : String(fileError)}`,
+      );
+    }
+  } else {
+    // Neither content nor paths provided
+    const missingInfo = [];
+    if (!certContent && !certPath) missingInfo.push(`${certContentEnv} or ${certPathEnv}`);
+    if (!keyContent && !keyPath) missingInfo.push(`${keyContentEnv} or ${keyPathEnv}`);
+
     throw new Error(
-      `ARCA private key file not found: ${resolvedKeyPath}\n` +
-        `Please ensure the private key file exists at the path specified in ${keyPathEnv}`,
+      `Missing ARCA configuration for ${environment} environment.\n` +
+        `Required: ${missingInfo.join(", ")}\n` +
+        `Provide either certificate content as env vars or file paths.\n` +
+        `Please check your .env file.`,
     );
   }
 
   try {
-    // Read certificate and key files
-    const cert = fs.readFileSync(resolvedCertPath, "utf-8");
-    const key = fs.readFileSync(resolvedKeyPath, "utf-8");
 
     // Validate CUIT is a valid number
     const cuitNumber = Number(cuit);
@@ -106,17 +145,13 @@ export function getArcaConfig(
       production: isProduction,
     };
   } catch (error) {
-    // Re-throw validation errors
-    if (error instanceof Error && error.message.includes("CUIT")) {
+    // Re-throw if it's already a formatted error
+    if (error instanceof Error) {
       throw error;
     }
 
-    // Handle file reading errors
     throw new Error(
-      `Failed to read ARCA credential files:\n` +
-        `Certificate: ${resolvedCertPath}\n` +
-        `Key: ${resolvedKeyPath}\n` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to process ARCA credentials: ${String(error)}`,
     );
   }
 }
