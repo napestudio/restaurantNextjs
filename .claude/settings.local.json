@@ -12,7 +12,8 @@
       "Bash(ls:*)",
       "Bash(npm install:*)",
       "WebFetch(domain:www.ARCA.gob.ar)",
-      "Bash(npx prisma migrate resolve:*)"
+      "Bash(npx prisma migrate resolve:*)",
+      "WebFetch(domain:www.afipts.com)"
     ],
     "deny": [],
     "ask": []
