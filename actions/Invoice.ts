@@ -128,10 +128,13 @@ function validateInvoiceTypeCompatibility(
  * Calculate VAT breakdown from order items
  * Default: 21% VAT rate (most common in Argentina)
  * Assumes prices are VAT-inclusive (Factura B style)
+ *
+ * For Factura C (Type 11): Returns zero VAT as these are IVA-exempt invoices
  */
 function calculateVatBreakdown(
   orderItems: Array<{ price: unknown; quantity: number }>,
   discountPercentage: unknown,
+  invoiceType: number,
 ): CalculatedTotals {
   const discount = Number(discountPercentage) || 0;
 
@@ -145,6 +148,16 @@ function calculateVatBreakdown(
 
   // Apply discount
   const discountedTotal = itemsTotal * (1 - discount / 100);
+
+  // Factura C (Type 11) is IVA-exempt - no VAT calculation
+  if (invoiceType === 11) {
+    return {
+      subtotal: Math.round(discountedTotal * 100) / 100,
+      vatBreakdown: [],
+      totalVat: 0,
+      total: Math.round(discountedTotal * 100) / 100,
+    };
+  }
 
   // Extract VAT (21% inclusive)
   // Formula: net = total / 1.21, vat = total - net
@@ -213,7 +226,8 @@ async function buildAfipInvoicePayload(
     ImpNeto: totals.subtotal,
     ImpOpEx: 0, // Exempt operations
     ImpTrib: 0, // Other taxes
-    ImpIVA: totals.totalVat,
+    // Factura C (Type 11) must have ImpIVA = 0 (IVA-exempt)
+    ImpIVA: invoiceType === 11 ? 0 : totals.totalVat,
     MonId: "PES",
     MonCotiz: 1,
     FchServDesde: undefined,
@@ -223,8 +237,8 @@ async function buildAfipInvoicePayload(
     // Customer condition: 5=Consumidor Final for Factura B
     CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
 
-    // VAT breakdown
-    Iva: totals.vatBreakdown.map((vat) => ({
+    // VAT breakdown - empty for Factura C (Type 11)
+    Iva: invoiceType === 11 ? [] : totals.vatBreakdown.map((vat) => ({
       Id: 5, // 21% VAT
       BaseImp: vat.base,
       Importe: vat.amount,
@@ -343,7 +357,7 @@ export async function generateInvoiceForOrder(
     const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
 
     // Calculate VAT breakdown
-    const totals = calculateVatBreakdown(order.items, order.discountPercentage);
+    const totals = calculateVatBreakdown(order.items, order.discountPercentage, invoiceType);
 
     // Build ARCA payload
     const afipPayload = await buildAfipInvoicePayload(
@@ -807,10 +821,29 @@ export interface ManualInvoiceLineItem {
 /**
  * Calculate VAT breakdown from manual invoice line items
  * Prices are VAT-inclusive - we extract the VAT component
+ *
+ * For Factura C (Type 11): Returns zero VAT as these are IVA-exempt invoices
  */
 function calculateVatBreakdownFromItems(
   items: ManualInvoiceLineItem[],
+  invoiceType: number,
 ): CalculatedTotals {
+  // Calculate total from items
+  let itemsTotal = 0;
+  for (const item of items) {
+    itemsTotal += item.quantity * item.unitPrice;
+  }
+
+  // Factura C (Type 11) is IVA-exempt - no VAT calculation
+  if (invoiceType === 11) {
+    return {
+      subtotal: Math.round(itemsTotal * 100) / 100,
+      vatBreakdown: [],
+      totalVat: 0,
+      total: Math.round(itemsTotal * 100) / 100,
+    };
+  }
+
   // Group by VAT rate
   const vatGroups: Record<number, { base: number; amount: number }> = {};
 
@@ -946,7 +979,7 @@ export async function generateManualInvoice(params: {
     const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
 
     // Calculate VAT breakdown from items
-    const totals = calculateVatBreakdownFromItems(items);
+    const totals = calculateVatBreakdownFromItems(items, invoiceType);
 
     // Format date as YYYYMMDD
     const invoiceDate = new Date();
@@ -977,14 +1010,16 @@ export async function generateManualInvoice(params: {
       ImpNeto: totals.subtotal,
       ImpOpEx: 0, // Exempt operations
       ImpTrib: 0, // Other taxes
-      ImpIVA: totals.totalVat,
+      // Factura C (Type 11) must have ImpIVA = 0 (IVA-exempt)
+      ImpIVA: invoiceType === 11 ? 0 : totals.totalVat,
       MonId: "PES",
       MonCotiz: 1,
       FchServDesde: undefined,
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: invoiceType === 1 ? 1 : 5,
-      Iva: totals.vatBreakdown.map((vat) => ({
+      // VAT breakdown - empty for Factura C (Type 11)
+      Iva: invoiceType === 11 ? [] : totals.vatBreakdown.map((vat) => ({
         Id: vatRateToId[vat.rate] || 5,
         BaseImp: vat.base,
         Importe: vat.amount,
@@ -1471,7 +1506,7 @@ export async function generateCreditNote(params: {
     const creditNoteType = creditNoteTypeMap[originalInvoice.invoiceType];
 
     // Calculate totals
-    const totals = calculateVatBreakdownFromItems(items);
+    const totals = calculateVatBreakdownFromItems(items, creditNoteType);
 
     // Validate credit note amount doesn't exceed original invoice
     if (totals.total > Number(originalInvoice.totalAmount)) {
@@ -1546,14 +1581,16 @@ export async function generateCreditNote(params: {
       ImpNeto: totals.subtotal,
       ImpOpEx: 0,
       ImpTrib: 0,
-      ImpIVA: totals.totalVat,
+      // NC-C (Type 15) must have ImpIVA = 0 (IVA-exempt)
+      ImpIVA: creditNoteType === 15 ? 0 : totals.totalVat,
       MonId: "PES",
       MonCotiz: 1,
       FchServDesde: undefined,
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
-      Iva: totals.vatBreakdown.map((vat) => ({
+      // VAT breakdown - empty for NC-C (Type 15)
+      Iva: creditNoteType === 15 ? [] : totals.vatBreakdown.map((vat) => ({
         Id: vatRateToId[vat.rate] || 5,
         BaseImp: vat.base,
         Importe: vat.amount,
@@ -1732,7 +1769,7 @@ export async function generateDebitNote(params: {
     const debitNoteType = debitNoteTypeMap[originalInvoice.invoiceType];
 
     // Calculate totals
-    const totals = calculateVatBreakdownFromItems(items);
+    const totals = calculateVatBreakdownFromItems(items, debitNoteType);
 
     // Get fiscal configuration
     const restaurantId = originalInvoice.order?.branch.restaurantId;
@@ -1799,14 +1836,16 @@ export async function generateDebitNote(params: {
       ImpNeto: totals.subtotal,
       ImpOpEx: 0,
       ImpTrib: 0,
-      ImpIVA: totals.totalVat,
+      // ND-C (Type 12) must have ImpIVA = 0 (IVA-exempt)
+      ImpIVA: debitNoteType === 12 ? 0 : totals.totalVat,
       MonId: "PES",
       MonCotiz: 1,
       FchServDesde: undefined,
       FchServHasta: undefined,
       FchVtoPago: undefined,
       CondicionIVAReceptorId: originalInvoice.invoiceType === 1 ? 1 : 5,
-      Iva: totals.vatBreakdown.map((vat) => ({
+      // VAT breakdown - empty for ND-C (Type 12)
+      Iva: debitNoteType === 12 ? [] : totals.vatBreakdown.map((vat) => ({
         Id: vatRateToId[vat.rate] || 5,
         BaseImp: vat.base,
         Importe: vat.amount,
