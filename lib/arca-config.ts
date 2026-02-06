@@ -22,6 +22,7 @@ export interface ArcaConfig {
   cert: string;
   key: string;
   production?: boolean;
+  ticketPath?: string;
 }
 
 /**
@@ -166,11 +167,20 @@ export function getArcaConfig(
       );
     }
 
+    // Use /tmp for serverless environments (Vercel, Lambda, etc.)
+    // Use local storage for development
+    const ticketPath = process.env.VERCEL
+      ? "/tmp/arca-tickets"
+      : path.resolve(process.cwd(), "storage", "arca-tickets");
+
+    console.log(`[getArcaConfig] Using ticket storage path: ${ticketPath}`);
+
     return {
       cuit: cuitNumber,
       cert,
       key,
       production: isProduction,
+      ticketPath,
     };
   } catch (error) {
     // Re-throw if it's already a formatted error
