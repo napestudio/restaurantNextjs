@@ -124,7 +124,7 @@ export function generateAfipQrData(params: {
 export function generateAfipQrUrl(qrData: AfipQrData): string {
   const jsonStr = JSON.stringify(qrData);
   const base64 = Buffer.from(jsonStr, "utf-8").toString("base64");
-  return `https://www.ARCA.gob.ar/fe/qr/?p=${base64}`;
+  return `https://www.afip.gob.ar/fe/qr/?p=${base64}`;
 }
 
 /**
