@@ -7,6 +7,7 @@ import type { Prisma } from "@/app/generated/prisma";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import { emitTestInvoice, getLastInvoiceNumber } from "./Arca";
 import { generateAfipQrData, generateAfipQrUrl } from "@/lib/arca-qr";
+import { getCurrentArcaEnvironment } from "@/lib/arca-config";
 
 // ============================================================================
 // TYPES
@@ -335,17 +336,29 @@ export async function generateInvoiceForOrder(
       where: { restaurantId },
     });
 
+    // Detect current environment (production vs test)
+    const currentEnv = getCurrentArcaEnvironment();
+    const isProduction = currentEnv === "production";
+
     // Get sales point from DB config or fallback to environment
     const ptoVta =
       fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
         ? fiscalConfig.defaultPtoVta
-        : parseInt(process.env.ARCA_PTO_VTA || "1");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_PTO_VTA || process.env.ARCA_PTO_VTA || "1"
+              : process.env.ARCA_PTO_VTA || "1"
+          );
 
     // Get CUIT from DB config or fallback to environment
     const cuit =
       fiscalConfig?.isEnabled && fiscalConfig.cuit
         ? parseInt(fiscalConfig.cuit)
-        : parseInt(process.env.ARCA_CUIT || "0");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_CUIT || "0"
+              : process.env.ARCA_CUIT || "0"
+          );
 
     // Get next invoice number from ARCA
     const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
@@ -770,6 +783,10 @@ export async function generateInvoicePDF(
       where: { restaurantId },
     });
 
+    // Detect current environment (production vs test)
+    const currentEnv = getCurrentArcaEnvironment();
+    const isProduction = currentEnv === "production";
+
     const businessName =
       fiscalConfig?.isEnabled && fiscalConfig.businessName
         ? fiscalConfig.businessName
@@ -777,7 +794,9 @@ export async function generateInvoicePDF(
     const businessCuit =
       fiscalConfig?.isEnabled && fiscalConfig.cuit
         ? fiscalConfig.cuit
-        : process.env.ARCA_CUIT || "";
+        : isProduction
+          ? process.env.ARCA_PROD_CUIT || ""
+          : process.env.ARCA_CUIT || "";
 
     // Generate PDF using library
     const { generateInvoicePDF: pdfGenerator } =
@@ -981,17 +1000,29 @@ export async function generateManualInvoice(params: {
       where: { restaurantId: branch.restaurantId },
     });
 
+    // Detect current environment (production vs test)
+    const currentEnv = getCurrentArcaEnvironment();
+    const isProduction = currentEnv === "production";
+
     // Get sales point from DB config or fallback to environment
     const ptoVta =
       fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
         ? fiscalConfig.defaultPtoVta
-        : parseInt(process.env.ARCA_PTO_VTA || "1");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_PTO_VTA || process.env.ARCA_PTO_VTA || "1"
+              : process.env.ARCA_PTO_VTA || "1"
+          );
 
     // Get CUIT from DB config or fallback to environment
     const cuit =
       fiscalConfig?.isEnabled && fiscalConfig.cuit
         ? parseInt(fiscalConfig.cuit)
-        : parseInt(process.env.ARCA_CUIT || "0");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_CUIT || "0"
+              : process.env.ARCA_CUIT || "0"
+          );
 
     // Get next invoice number from ARCA
     const lastInvoiceResult = await getLastInvoiceNumber(ptoVta, invoiceType);
@@ -1321,15 +1352,27 @@ export async function cancelInvoiceWithCreditNote(
       where: { restaurantId },
     });
 
+    // Detect current environment (production vs test)
+    const currentEnv = getCurrentArcaEnvironment();
+    const isProduction = currentEnv === "production";
+
     const ptoVta =
       fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
         ? fiscalConfig.defaultPtoVta
-        : parseInt(process.env.ARCA_PTO_VTA || "1");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_PTO_VTA || process.env.ARCA_PTO_VTA || "1"
+              : process.env.ARCA_PTO_VTA || "1"
+          );
 
     const cuit =
       fiscalConfig?.isEnabled && fiscalConfig.cuit
         ? parseInt(fiscalConfig.cuit)
-        : parseInt(process.env.ARCA_CUIT || "0");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_CUIT || "0"
+              : process.env.ARCA_CUIT || "0"
+          );
 
     // Get next credit note number
     const lastCreditNoteResult = await getLastInvoiceNumber(ptoVta, creditNoteType);
@@ -1605,15 +1648,27 @@ export async function generateCreditNote(params: {
       where: { restaurantId },
     });
 
+    // Detect current environment (production vs test)
+    const currentEnv = getCurrentArcaEnvironment();
+    const isProduction = currentEnv === "production";
+
     const ptoVta =
       fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
         ? fiscalConfig.defaultPtoVta
-        : parseInt(process.env.ARCA_PTO_VTA || "1");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_PTO_VTA || process.env.ARCA_PTO_VTA || "1"
+              : process.env.ARCA_PTO_VTA || "1"
+          );
 
     const cuit =
       fiscalConfig?.isEnabled && fiscalConfig.cuit
         ? parseInt(fiscalConfig.cuit)
-        : parseInt(process.env.ARCA_CUIT || "0");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_CUIT || "0"
+              : process.env.ARCA_CUIT || "0"
+          );
 
     // Get next credit note number
     const lastCreditNoteResult = await getLastInvoiceNumber(ptoVta, creditNoteType);
@@ -1886,15 +1941,27 @@ export async function generateDebitNote(params: {
       where: { restaurantId },
     });
 
+    // Detect current environment (production vs test)
+    const currentEnv = getCurrentArcaEnvironment();
+    const isProduction = currentEnv === "production";
+
     const ptoVta =
       fiscalConfig?.isEnabled && fiscalConfig.defaultPtoVta
         ? fiscalConfig.defaultPtoVta
-        : parseInt(process.env.ARCA_PTO_VTA || "1");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_PTO_VTA || process.env.ARCA_PTO_VTA || "1"
+              : process.env.ARCA_PTO_VTA || "1"
+          );
 
     const cuit =
       fiscalConfig?.isEnabled && fiscalConfig.cuit
         ? parseInt(fiscalConfig.cuit)
-        : parseInt(process.env.ARCA_CUIT || "0");
+        : parseInt(
+            isProduction
+              ? process.env.ARCA_PROD_CUIT || "0"
+              : process.env.ARCA_CUIT || "0"
+          );
 
     // Get next debit note number
     const lastDebitNoteResult = await getLastInvoiceNumber(ptoVta, debitNoteType);
