@@ -17,6 +17,7 @@ import {
   Printer,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 
 type Invoice = {
   id: string;
@@ -261,20 +262,17 @@ export function InvoiceTable({
                       <Printer className="h-4 w-4" />
                     </Button>
 
-                    {/* View in ARCA (only if qrUrl exists) */}
+                    {/* View in AFIP (only if qrUrl exists) */}
                     {invoice.qrUrl && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(invoice.qrUrl!, "_blank");
-                        }}
-                        title="Ver en ARCA"
-                        className="h-8 w-8 p-0"
+                      <Link
+                        href={invoice.qrUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Ver en AFIP"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
                         <ExternalLink className="h-4 w-4" />
-                      </Button>
+                      </Link>
                     )}
 
                     {/* Credit Note (only for EMITTED standard invoices) */}
