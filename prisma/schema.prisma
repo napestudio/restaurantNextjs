@@ -550,6 +550,7 @@ model ProductOnBranch {
   @@unique([productId, branchId])
   @@index([branchId])
   @@index([productId])
+  @@index([branchId, isActive]) // Performance: Filter active products by branch
 }
 
 model ProductPrice {
@@ -671,6 +672,7 @@ model Order {
   @@index([clientId])
   @@index([branchId, status])
   @@index([branchId, createdAt])
+  @@index([branchId, type]) // Performance: Filter orders by branch and type
 }
 
 model OrderItem {
