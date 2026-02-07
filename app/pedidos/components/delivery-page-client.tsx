@@ -36,11 +36,11 @@ type Product = {
   id: string;
   name: string;
   description: string | null;
-  price: number;
-  category?: {
-    id: string;
+  categoryId: string | null;
+  category: {
     name: string;
-  };
+  } | null;
+  price: number;
 };
 
 interface DeliveryPageProps {

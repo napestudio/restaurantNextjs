@@ -9,7 +9,7 @@ type Product = {
   name: string;
   description: string | null;
   categoryId: string | null;
-  category: { name: string } | null;
+  category: { id?: string; name: string } | null | undefined;
   price: number;
 };
 
