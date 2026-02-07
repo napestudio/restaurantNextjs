@@ -38,7 +38,7 @@ export default async function OrdersPage({
 
   // Validate and set page number
   const page = pageParam ? Math.max(1, parseInt(pageParam) || 1) : 1;
-  const pageSize = 5;
+  const pageSize = 15; // Match client-side pagination expectations
 
   // Fetch orders, tables, and products in parallel for faster loading
   const [ordersResult, tables, products] = await Promise.all([
