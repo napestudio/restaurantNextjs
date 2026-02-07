@@ -1081,6 +1081,7 @@ export async function getAvailableProductsForOrder(
         categoryId: true,
         category: {
           select: {
+            id: true,
             name: true,
           },
         },
@@ -1132,7 +1133,7 @@ export async function getAvailableProductsForOrder(
         name: product.name,
         description: product.description,
         categoryId: product.categoryId,
-        category: product.category,
+        category: product.category || undefined,
         price: Number(priceObj?.price ?? 0),
       };
     });
