@@ -3,19 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  category?: {
-    name: string;
-  };
-  price: number;
-}
+import { OrderProduct } from "@/types/products";
 
 interface ProductListProps {
-  products: Product[];
+  products: OrderProduct[];
   onAddToCart: (productId: string, name: string, price: number) => void;
   onUpdateQuantity: (productId: string, quantity: number) => void;
   cart: CartItem[];
@@ -47,7 +38,7 @@ export function ProductList({
       acc[categoryName].push(product);
       return acc;
     },
-    {} as Record<string, Product[]>,
+    {} as Record<string, OrderProduct[]>,
   );
 
   const getQuantityInCart = (productId: string): number => {

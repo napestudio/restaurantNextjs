@@ -3,18 +3,10 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { getAvailableProductsForOrder } from "@/actions/Order";
 import { OrderType } from "@/app/generated/prisma";
-
-type Product = {
-  id: string;
-  name: string;
-  description: string | null;
-  categoryId: string | null;
-  category: { id?: string; name: string } | null | undefined;
-  price: number;
-};
+import { OrderProduct } from "@/types/products";
 
 interface ProductsContextType {
-  products: Product[];
+  products: OrderProduct[];
   isLoading: boolean;
   error: string | null;
   refreshProducts: () => Promise<void>;
@@ -26,12 +18,12 @@ interface ProductsProviderProps {
   branchId: string;
   orderType: OrderType;
   children: ReactNode;
-  initialProducts?: Product[];
+  initialProducts?: OrderProduct[];
 }
 
 export function ProductsProvider({ branchId, orderType, children, initialProducts }: ProductsProviderProps) {
   // Use initial products if provided, avoiding double fetch
-  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
+  const [products, setProducts] = useState<OrderProduct[]>(initialProducts ?? []);
   const [isLoading, setIsLoading] = useState(!initialProducts);
   const [error, setError] = useState<string | null>(null);
 

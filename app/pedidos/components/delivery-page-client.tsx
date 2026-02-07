@@ -7,6 +7,7 @@ import { ProductList } from "./product-list";
 import { ShoppingCart } from "./shopping-cart";
 import { CustomerInfoForm } from "./customer-info-form";
 import { OrderConfirmation } from "./order-confirmation";
+import { OrderProduct } from "@/types/products";
 
 export type CartItem = {
   productId: string;
@@ -32,21 +33,10 @@ type DeliveryConfig = {
   } | null;
 };
 
-type Product = {
-  id: string;
-  name: string;
-  description: string | null;
-  categoryId: string | null;
-  category: {
-    name: string;
-  } | null;
-  price: number;
-};
-
 interface DeliveryPageProps {
   branchId: string;
   config: DeliveryConfig;
-  products: Product[];
+  products: OrderProduct[];
 }
 
 export default function DeliveryPage({

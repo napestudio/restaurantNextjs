@@ -4,19 +4,11 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
-type Product = {
-  id: string;
-  name: string;
-  description: string | null;
-  categoryId: string | null;
-  category: { name: string } | null;
-  price: number;
-};
+import { OrderProduct } from "@/types/products";
 
 interface ProductPickerProps {
-  products: Product[];
-  onSelectProduct: (product: Product) => void;
+  products: OrderProduct[];
+  onSelectProduct: (product: OrderProduct) => void;
   onSubmitPreOrder?: () => void;
   label?: string;
   placeholder?: string;
@@ -75,7 +67,7 @@ export function ProductPicker({
     }
   }, [highlightedIndex]);
 
-  const handleSelectProduct = (product: Product) => {
+  const handleSelectProduct = (product: OrderProduct) => {
     onSelectProduct(product);
     setSearchQuery("");
     setShowSuggestions(false);
