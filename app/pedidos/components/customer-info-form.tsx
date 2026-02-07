@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,7 @@ export function CustomerInfoForm({
   onOrderComplete,
 }: CustomerInfoFormProps) {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -78,7 +78,7 @@ export function CustomerInfoForm({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -111,77 +111,80 @@ export function CustomerInfoForm({
       return;
     }
 
-    startTransition(async () => {
-      try {
-        // 1. Find or create client
-        let clientResult = await getClientByEmail(branchId, formData.email);
-        let clientId: string;
+    setIsSubmitting(true);
 
-        if (!clientResult.success || !clientResult.data) {
-          // Create new client
-          const newClientResult = await createClient({
-            branchId,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            addressStreet: formData.addressStreet,
-            addressNumber: formData.addressNumber,
-            addressApartment: formData.addressApartment,
-            addressCity: formData.addressCity,
-          });
+    try {
+      // 1. Find or create client
+      const clientResult = await getClientByEmail(branchId, formData.email);
+      let clientId: string;
 
-          if (!newClientResult.success) {
-            toast({
-              title: "Error",
-              description: "Error al crear cliente",
-              variant: "destructive",
-            });
-            return;
-          }
-
-          clientId = newClientResult.data!.id;
-        } else {
-          clientId = clientResult.data.id;
-        }
-
-        // 2. Create order with items
-        const orderResult = await createOrderWithItems({
-          branchId,
-          type: OrderType.DELIVERY,
-          clientId,
-          description: formData.notes || undefined,
-          items: cart.map((item) => ({
-            productId: item.productId,
-            itemName: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            originalPrice: item.price,
-            notes: item.notes,
-          })),
+      if (!clientResult.success || !clientResult.data) {
+        // Create new client
+        const newClientResult = await createClient(branchId, {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          addressStreet: formData.addressStreet,
+          addressNumber: formData.addressNumber,
+          addressApartment: formData.addressApartment,
+          addressCity: formData.addressCity,
         });
 
-        if (orderResult.success && orderResult.data) {
+        if (!newClientResult.success) {
           toast({
-            title: "¡Pedido creado!",
-            description: "Tu pedido ha sido confirmado exitosamente",
-          });
-          onOrderComplete(orderResult.data.publicCode);
-        } else {
-          toast({
-            title: "Error al crear pedido",
-            description: orderResult.error || "Error al crear pedido",
+            title: "Error",
+            description: "Error al crear cliente",
             variant: "destructive",
           });
+          setIsSubmitting(false);
+          return;
         }
-      } catch (error) {
-        console.error("Error creating order:", error);
+
+        clientId = newClientResult.data!.id;
+      } else {
+        clientId = clientResult.data.id;
+      }
+
+      // 2. Create order with items
+      const orderResult = await createOrderWithItems({
+        branchId,
+        type: OrderType.DELIVERY,
+        clientId,
+        description: formData.notes || undefined,
+        items: cart.map((item) => ({
+          productId: item.productId,
+          itemName: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          originalPrice: item.price,
+          notes: item.notes,
+        })),
+      });
+
+      if (orderResult.success && orderResult.data) {
         toast({
-          title: "Error",
-          description: "Error al procesar el pedido",
+          title: "¡Pedido creado!",
+          description: "Tu pedido ha sido confirmado exitosamente",
+        });
+        onOrderComplete(orderResult.data.publicCode);
+        // Note: isSubmitting stays true since we're navigating to confirmation
+      } else {
+        toast({
+          title: "Error al crear pedido",
+          description: orderResult.error || "Error al crear pedido",
           variant: "destructive",
         });
+        setIsSubmitting(false);
       }
-    });
+    } catch (error) {
+      console.error("Error creating order:", error);
+      toast({
+        title: "Error",
+        description: "Error al procesar el pedido",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -342,8 +345,8 @@ export function CustomerInfoForm({
         </CardContent>
       </Card>
 
-      <Button type="submit" size="lg" className="w-full" disabled={isPending}>
-        {isPending ? "Procesando..." : "Confirmar Pedido"}
+      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Procesando..." : "Confirmar Pedido"}
       </Button>
     </form>
   );

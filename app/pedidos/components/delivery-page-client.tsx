@@ -35,7 +35,7 @@ type DeliveryConfig = {
 type Product = {
   id: string;
   name: string;
-  description?: string;
+  description: string | null;
   price: number;
   category?: {
     id: string;
@@ -128,6 +128,7 @@ export default function DeliveryPage({
           <ProductList
             products={products}
             onAddToCart={addToCart}
+            onUpdateQuantity={updateQuantity}
             cart={cart}
           />
         )}
