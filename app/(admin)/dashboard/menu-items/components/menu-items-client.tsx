@@ -1,15 +1,25 @@
 "use client";
 
 import { useState, useOptimistic, useTransition } from "react";
-import { Plus, Search, Filter, FolderPlus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Plus,
+  Search,
+  Filter,
+  FolderPlus,
+  Download,
+  X,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
-  getMenuItems,
+  getMenuItemsPaginated,
   getCategories,
   deleteMenuItem,
   duplicateProduct,
+  exportMenuItemsCSV,
+  type PaginationInfo,
 } from "@/actions/menuItems";
-import { MenuItemCard } from "./menu-item-card";
+import { MenuItemsTable } from "./menu-items-table";
 import { MenuItemDialog } from "./menu-item-dialog";
 import { CategoryDialog } from "./category-dialog";
 import type {
@@ -29,6 +39,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Serialized types for client components (Decimal -> number, Date -> string)
 type SerializedProductPrice = {
@@ -84,8 +115,18 @@ type OptimisticAction =
   | { type: "create"; tempId: string; item: MenuItemWithRelations }
   | { type: "update"; id: string; item: MenuItemWithRelations };
 
+type FilterState = {
+  search?: string;
+  category?: string;
+  stockStatus?: string;
+  unitType?: string;
+  includeInactive?: boolean;
+};
+
 type MenuItemsClientProps = {
   initialMenuItems: MenuItemWithRelations[];
+  initialPagination: PaginationInfo;
+  initialFilters: FilterState;
   categories: SerializedCategory[];
   restaurantId: string;
   branchId: string;
@@ -93,12 +134,19 @@ type MenuItemsClientProps = {
 
 export function MenuItemsClient({
   initialMenuItems,
+  initialPagination,
+  initialFilters,
   categories: initialCategories,
   restaurantId,
   branchId,
 }: MenuItemsClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  const [menuItems, setMenuItems] = useState(initialMenuItems);
   const [optimisticMenuItems, setOptimisticMenuItems] = useOptimistic(
-    initialMenuItems,
+    menuItems,
     (state: MenuItemWithRelations[], action: OptimisticAction) => {
       switch (action.type) {
         case "create":
@@ -114,10 +162,30 @@ export function MenuItemsClient({
       }
     }
   );
-  const [menuItems, setMenuItems] = useState(initialMenuItems);
+  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
   const [categories, setCategories] = useState(initialCategories);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [isPending, startTransition] = useTransition();
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState(initialFilters.search || "");
+  const [selectedCategory, setSelectedCategory] = useState(
+    initialFilters.category || "all"
+  );
+  const [stockStatusFilter, setStockStatusFilter] = useState(
+    initialFilters.stockStatus || "all"
+  );
+  const [unitTypeFilter, setUnitTypeFilter] = useState(
+    initialFilters.unitType || "all"
+  );
+  const [showInactive, setShowInactive] = useState(
+    initialFilters.includeInactive || false
+  );
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Export state
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Dialog states
   const [showDialog, setShowDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemWithRelations | null>(
@@ -125,21 +193,122 @@ export function MenuItemsClient({
   );
   const [deletingItem, setDeletingItem] =
     useState<MenuItemWithRelations | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
 
-  // Filtrar items
-  const filteredItems = optimisticMenuItems.filter((item) => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" ||
-      (selectedCategory === "uncategorized" && !item.categoryId) ||
-      item.categoryId === selectedCategory;
+  // Current page from URL
+  const currentPage = parseInt(searchParams.get("page") || "1");
 
-    return matchesSearch && matchesCategory && item.isActive;
-  });
+  // Check if filters are active
+  const hasActiveFilters =
+    searchQuery !== "" ||
+    selectedCategory !== "all" ||
+    stockStatusFilter !== "all" ||
+    unitTypeFilter !== "all" ||
+    showInactive;
+
+  const updateFilters = (page: number = 1) => {
+    const params = new URLSearchParams();
+    params.set("page", page.toString());
+
+    if (searchQuery) params.set("search", searchQuery);
+    if (selectedCategory !== "all") params.set("category", selectedCategory);
+    if (stockStatusFilter !== "all")
+      params.set("stockStatus", stockStatusFilter);
+    if (unitTypeFilter !== "all") params.set("unitType", unitTypeFilter);
+    if (showInactive) params.set("includeInactive", "true");
+
+    startTransition(async () => {
+      const result = await getMenuItemsPaginated({
+        restaurantId,
+        branchId,
+        page,
+        pageSize: 20,
+        search: searchQuery || undefined,
+        categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+        stockStatus: stockStatusFilter !== "all" ? stockStatusFilter : undefined,
+        unitType: unitTypeFilter !== "all" ? unitTypeFilter : undefined,
+        includeInactive: showInactive,
+      });
+
+      if (result.success && result.data) {
+        setMenuItems(result.data.products);
+        setPagination(result.data.pagination);
+      }
+    });
+
+    router.push(`/dashboard/menu-items?${params.toString()}`, {
+      scroll: false,
+    });
+  };
+
+  const handleSearch = () => {
+    updateFilters(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("all");
+    setStockStatusFilter("all");
+    setUnitTypeFilter("all");
+    setShowInactive(false);
+
+    startTransition(async () => {
+      const result = await getMenuItemsPaginated({
+        restaurantId,
+        branchId,
+        page: 1,
+        pageSize: 20,
+      });
+
+      if (result.success && result.data) {
+        setMenuItems(result.data.products);
+        setPagination(result.data.pagination);
+      }
+    });
+
+    router.push("/dashboard/menu-items", { scroll: false });
+  };
+
+  const handlePageChange = (page: number) => {
+    updateFilters(page);
+  };
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportMenuItemsCSV({
+        restaurantId,
+        branchId,
+        search: searchQuery || undefined,
+        categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+        stockStatus:
+          stockStatusFilter !== "all" ? stockStatusFilter : undefined,
+        unitType: unitTypeFilter !== "all" ? unitTypeFilter : undefined,
+        includeInactive: showInactive,
+      });
+
+      if (result.success && result.data) {
+        const link = document.createElement("a");
+        link.href = result.data.dataUrl;
+        link.download = result.data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+          title: "CSV exportado",
+          description: `Se descargó el archivo ${result.data.filename}`,
+        });
+      } else {
+        toast({
+          title: "Error al exportar",
+          description: result.error || "Error al exportar el CSV",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleAddNew = () => {
     setEditingItem(null);
@@ -222,10 +391,13 @@ export function MenuItemsClient({
         // Refetch for consistency
         handleSuccess();
       } else {
-        // Auto-rollback on error - show error in AlertDialog
+        // Auto-rollback on error
         setDeletingItem(null);
-        // TODO: Show error toast instead of alert
-        alert(result.error || "Error al eliminar el producto");
+        toast({
+          title: "Error al eliminar",
+          description: result.error || "No se pudo eliminar el producto",
+          variant: "destructive",
+        });
       }
     });
   };
@@ -274,12 +446,23 @@ export function MenuItemsClient({
 
       // Refetch data in background for consistency
       const [menuItemsResult, categoriesResult] = await Promise.all([
-        getMenuItems(restaurantId),
+        getMenuItemsPaginated({
+          restaurantId,
+          branchId,
+          page: currentPage,
+          pageSize: 20,
+          search: searchQuery || undefined,
+          categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+          stockStatus: stockStatusFilter !== "all" ? stockStatusFilter : undefined,
+          unitType: unitTypeFilter !== "all" ? unitTypeFilter : undefined,
+          includeInactive: showInactive,
+        }),
         getCategories(restaurantId),
       ]);
 
       if (menuItemsResult.success && menuItemsResult.data) {
-        setMenuItems(menuItemsResult.data);
+        setMenuItems(menuItemsResult.data.products);
+        setPagination(menuItemsResult.data.pagination);
       }
 
       if (categoriesResult.success && categoriesResult.data) {
@@ -293,106 +476,249 @@ export function MenuItemsClient({
       {/* Loading overlay durante refetch */}
       {isPending && <LoadingToast />}
 
-      {/* Barra de herramientas */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex-1 w-full sm:w-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
+      {/* Enhanced Toolbar */}
+      <div className="space-y-4">
+        {/* Top row: Search + Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
               placeholder="Buscar productos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="pl-10"
             />
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={isExporting}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "Exportando..." : "Exportar CSV"}
+            </Button>
+
+            <Button
+              onClick={() => setShowCategoryDialog(true)}
+              variant="outline"
+            >
+              <FolderPlus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Categorías</span>
+            </Button>
+
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Nuevo Producto</span>
+            </Button>
           </div>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        {/* Stats + Filter toggle */}
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <span>Total: {pagination.totalCount} productos</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
           >
-            <option value="all">Todas las categorías</option>
-            <option value="uncategorized">Sin categoría</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => setShowCategoryDialog(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            title="Gestionar categorías"
-          >
-            <FolderPlus className="w-5 h-5" />
-            <span className="hidden sm:inline">Categorías</span>
-          </button>
-
-          <button
-            onClick={handleAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Nuevo Producto</span>
-          </button>
+            <Filter className="h-4 w-4 mr-2" />
+            {showAdvancedFilters ? "Ocultar" : "Mostrar"} filtros
+          </Button>
         </div>
       </div>
 
-      {/* Estadísticas */}
-      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600">Total de Productos</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {filteredItems.length}
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600">Categorías</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {categories.length}
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-sm text-gray-600">Productos Activos</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {menuItems.filter((item) => item.isActive).length}
-          </div>
-        </div>
-      </div> */}
+      {/* Advanced Filters */}
+      {showAdvancedFilters && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Category */}
+              <div className="space-y-2">
+                <Label>Categoría</Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="uncategorized">Sin categoría</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-      {/* Lista de productos */}
-      {filteredItems.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <div className="text-gray-400 mb-2">
-            <Filter className="w-12 h-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">
-            No se encontraron productos
-          </h3>
-          <p className="text-gray-500">
-            {searchQuery || selectedCategory !== "all"
-              ? "Intenta cambiar los filtros de búsqueda"
-              : "Comienza agregando tu primer producto al menú"}
-          </p>
-        </div>
+              {/* Stock Status */}
+              <div className="space-y-2">
+                <Label>Estado de Stock</Label>
+                <Select
+                  value={stockStatusFilter}
+                  onValueChange={setStockStatusFilter}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="in_stock">En Stock</SelectItem>
+                    <SelectItem value="low_stock">Stock Bajo</SelectItem>
+                    <SelectItem value="out_stock">Sin Stock</SelectItem>
+                    <SelectItem value="always_available">
+                      Siempre Disponible
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Unit Type */}
+              <div className="space-y-2">
+                <Label>Tipo de Unidad</Label>
+                <Select value={unitTypeFilter} onValueChange={setUnitTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="UNIT">Unidades</SelectItem>
+                    <SelectItem value="WEIGHT">Peso</SelectItem>
+                    <SelectItem value="VOLUME">Volumen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Show Inactive */}
+              <div className="space-y-2">
+                <Label>Mostrar Inactivos</Label>
+                <div className="flex items-center space-x-2 h-10">
+                  <Checkbox
+                    id="showInactive"
+                    checked={showInactive}
+                    onCheckedChange={(checked) =>
+                      setShowInactive(checked as boolean)
+                    }
+                  />
+                  <label htmlFor="showInactive" className="text-sm">
+                    Incluir inactivos
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <Button onClick={handleSearch}>
+                <Search className="h-4 w-4 mr-2" />
+                Aplicar Filtros
+              </Button>
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={handleClearFilters}>
+                  <X className="h-4 w-4 mr-2" />
+                  Limpiar Filtros
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Products Table */}
+      {optimisticMenuItems.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Filter className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No se encontraron productos
+            </h3>
+            <p className="text-sm text-gray-600">
+              {hasActiveFilters
+                ? "Intenta ajustar los filtros de búsqueda"
+                : "Comienza agregando tu primer producto"}
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="divide-y divide-gray-200">
-            {filteredItems.map((item) => (
-              <MenuItemCard
-                key={item.id}
-                item={item}
-                branchId={branchId}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
-              />
-            ))}
-          </div>
+        <MenuItemsTable
+          items={optimisticMenuItems}
+          branchId={branchId}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
+        />
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() =>
+                    currentPage > 1 && handlePageChange(currentPage - 1)
+                  }
+                  className={
+                    currentPage === 1
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
+                (page) => {
+                  if (
+                    page === 1 ||
+                    page === pagination.totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => handlePageChange(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                }
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    currentPage < pagination.totalPages &&
+                    handlePageChange(currentPage + 1)
+                  }
+                  className={
+                    currentPage === pagination.totalPages
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 

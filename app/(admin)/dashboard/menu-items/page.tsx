@@ -1,23 +1,60 @@
-import { getMenuItems, getCategories } from "@/actions/menuItems";
+import { getMenuItemsPaginated, getCategories } from "@/actions/menuItems";
 import { MenuItemsClient } from "./components/menu-items-client";
 import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
 
-export default async function MenuItemsPage() {
+type SearchParams = {
+  page?: string;
+  search?: string;
+  category?: string;
+  stockStatus?: string;
+  unitType?: string;
+  includeInactive?: string;
+};
+
+export default async function MenuItemsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   await requireRole(UserRole.ADMIN);
 
   // TODO: Get restaurantId and branchId from user session/context
   const restaurantId = process.env.RESTAURANT_ID || "";
   const branchId = process.env.BRANCH_ID || "";
 
-  // Fetch menu items and categories
-  const [menuItemsResult, categoriesResult] = await Promise.all([
-    getMenuItems(restaurantId),
+  // Parse filters from URL
+  const page = parseInt(searchParams.page || "1");
+  const search = searchParams.search;
+  const categoryId = searchParams.category || "all";
+  const stockStatus = searchParams.stockStatus || "all";
+  const unitType = searchParams.unitType || "all";
+  const includeInactive = searchParams.includeInactive === "true";
+
+  // Fetch paginated menu items and categories
+  const [productsResult, categoriesResult] = await Promise.all([
+    getMenuItemsPaginated({
+      restaurantId,
+      branchId,
+      page,
+      pageSize: 20,
+      search,
+      categoryId,
+      stockStatus,
+      unitType,
+      includeInactive,
+    }),
     getCategories(restaurantId),
   ]);
 
   const menuItems =
-    menuItemsResult.success && menuItemsResult.data ? menuItemsResult.data : [];
+    productsResult.success && productsResult.data?.products
+      ? productsResult.data.products
+      : [];
+  const pagination =
+    productsResult.success && productsResult.data?.pagination
+      ? productsResult.data.pagination
+      : { page: 1, pageSize: 20, totalPages: 0, totalCount: 0 };
   const categories =
     categoriesResult.success && categoriesResult.data
       ? categoriesResult.data
@@ -36,6 +73,14 @@ export default async function MenuItemsPage() {
 
         <MenuItemsClient
           initialMenuItems={menuItems}
+          initialPagination={pagination}
+          initialFilters={{
+            search,
+            category: categoryId,
+            stockStatus,
+            unitType,
+            includeInactive,
+          }}
           categories={categories}
           restaurantId={restaurantId}
           branchId={branchId}

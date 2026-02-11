@@ -49,6 +49,13 @@ export type SetProductBranchInput = {
   }[];
 };
 
+export type PaginationInfo = {
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalCount: number;
+};
+
 /**
  * Crea un nuevo producto (menu item)
  */
@@ -610,6 +617,334 @@ export async function getLowStockProducts(branchId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Error al obtener productos con bajo stock"
+    };
+  }
+}
+
+/**
+ * Obtiene productos con paginación y filtros
+ */
+export async function getMenuItemsPaginated(params: {
+  restaurantId: string;
+  branchId: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  categoryId?: string;
+  stockStatus?: string;
+  unitType?: string;
+  includeInactive?: boolean;
+}) {
+  try {
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
+    // Build where clause
+    const where: any = {
+      restaurantId: params.restaurantId,
+    };
+
+    // Active filter
+    if (!params.includeInactive) {
+      where.isActive = true;
+    }
+
+    // Search filter
+    if (params.search) {
+      where.name = {
+        contains: params.search,
+        mode: "insensitive",
+      };
+    }
+
+    // Category filter
+    if (params.categoryId && params.categoryId !== "all") {
+      if (params.categoryId === "uncategorized") {
+        where.categoryId = null;
+      } else {
+        where.categoryId = params.categoryId;
+      }
+    }
+
+    // Unit type filter
+    if (params.unitType && params.unitType !== "all") {
+      where.unitType = params.unitType;
+    }
+
+    // Get total count and products
+    const [totalCount, products] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          branches: {
+            where: { branchId: params.branchId },
+            include: {
+              branch: true,
+              prices: true,
+            },
+          },
+        },
+        orderBy: {
+          name: "asc",
+        },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    // Apply stock status filter (post-query)
+    let filteredProducts = products;
+    if (params.stockStatus && params.stockStatus !== "all") {
+      filteredProducts = products.filter((product) => {
+        const branchData = product.branches[0];
+        const stock = branchData ? Number(branchData.stock) : 0;
+        const minStockAlert = product.minStockAlert
+          ? Number(product.minStockAlert)
+          : 0;
+
+        switch (params.stockStatus) {
+          case "in_stock":
+            return product.trackStock && stock > 0;
+          case "low_stock":
+            return product.trackStock && minStockAlert > 0 && stock < minStockAlert;
+          case "out_stock":
+            return product.trackStock && stock === 0;
+          case "always_available":
+            return !product.trackStock;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Serialize Decimal and Date fields
+    const serializedProducts = filteredProducts.map((product) => ({
+      ...product,
+      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+      branches: product.branches.map((branch) => ({
+        ...branch,
+        stock: Number(branch.stock),
+        minStock: branch.minStock ? Number(branch.minStock) : null,
+        maxStock: branch.maxStock ? Number(branch.maxStock) : null,
+        lastRestocked: branch.lastRestocked
+          ? branch.lastRestocked.toISOString()
+          : null,
+        createdAt: branch.createdAt.toISOString(),
+        updatedAt: branch.updatedAt.toISOString(),
+        prices: branch.prices.map((price) => ({
+          ...price,
+          price: Number(price.price),
+        })),
+      })),
+    }));
+
+    const pagination: PaginationInfo = {
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize),
+      totalCount,
+    };
+
+    return {
+      success: true,
+      data: {
+        products: serializedProducts,
+        pagination,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching paginated menu items:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al obtener los productos",
+    };
+  }
+}
+
+/**
+ * Exporta productos a CSV
+ */
+export async function exportMenuItemsCSV(params: {
+  restaurantId: string;
+  branchId: string;
+  search?: string;
+  categoryId?: string;
+  stockStatus?: string;
+  unitType?: string;
+  includeInactive?: boolean;
+}) {
+  try {
+    // Authorization check
+    await authorizeAction(UserRole.MANAGER);
+
+    // Build where clause (same as paginated)
+    const where: any = {
+      restaurantId: params.restaurantId,
+    };
+
+    if (!params.includeInactive) {
+      where.isActive = true;
+    }
+
+    if (params.search) {
+      where.name = {
+        contains: params.search,
+        mode: "insensitive",
+      };
+    }
+
+    if (params.categoryId && params.categoryId !== "all") {
+      if (params.categoryId === "uncategorized") {
+        where.categoryId = null;
+      } else {
+        where.categoryId = params.categoryId;
+      }
+    }
+
+    if (params.unitType && params.unitType !== "all") {
+      where.unitType = params.unitType;
+    }
+
+    // Fetch ALL matching products (no pagination)
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        branches: {
+          where: { branchId: params.branchId },
+          include: {
+            prices: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    // Apply stock status filter
+    let filteredProducts = products;
+    if (params.stockStatus && params.stockStatus !== "all") {
+      filteredProducts = products.filter((product) => {
+        const branchData = product.branches[0];
+        const stock = branchData ? Number(branchData.stock) : 0;
+        const minStockAlert = product.minStockAlert
+          ? Number(product.minStockAlert)
+          : 0;
+
+        switch (params.stockStatus) {
+          case "in_stock":
+            return product.trackStock && stock > 0;
+          case "low_stock":
+            return product.trackStock && minStockAlert > 0 && stock < minStockAlert;
+          case "out_stock":
+            return product.trackStock && stock === 0;
+          case "always_available":
+            return !product.trackStock;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // CSV escape function
+    const escapeCsv = (value: string | number | null | undefined): string => {
+      if (value === null || value === undefined) return "";
+      const str = String(value);
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Get unit label
+    const getUnitLabel = (
+      unitType: UnitType,
+      weightUnit: any,
+      volumeUnit: any
+    ): string => {
+      if (unitType === "WEIGHT" && weightUnit) {
+        return weightUnit;
+      }
+      if (unitType === "VOLUME" && volumeUnit) {
+        return volumeUnit;
+      }
+      return "Unidades";
+    };
+
+    // Generate CSV
+    const headers = [
+      "Nombre",
+      "SKU",
+      "Categoría",
+      "Stock",
+      "Stock Mínimo",
+      "Precio Comedor",
+      "Precio Para Llevar",
+      "Precio Delivery",
+      "Tipo de Unidad",
+      "Descripción",
+      "Activo",
+    ];
+
+    const rows = filteredProducts.map((product) => {
+      const branchData = product.branches[0];
+      const stock = branchData ? Number(branchData.stock) : 0;
+      const dineInPrice = branchData?.prices.find((p) => p.type === "DINE_IN");
+      const takeAwayPrice = branchData?.prices.find((p) => p.type === "TAKE_AWAY");
+      const deliveryPrice = branchData?.prices.find((p) => p.type === "DELIVERY");
+
+      return [
+        escapeCsv(product.name),
+        escapeCsv(product.sku || "Sin SKU"),
+        escapeCsv(product.category?.name || "Sin categoría"),
+        product.trackStock
+          ? escapeCsv(stock)
+          : escapeCsv("Siempre disponible"),
+        escapeCsv(
+          product.minStockAlert ? Number(product.minStockAlert) : "N/A"
+        ),
+        escapeCsv(dineInPrice ? `$${Number(dineInPrice.price).toFixed(2)}` : "-"),
+        escapeCsv(takeAwayPrice ? `$${Number(takeAwayPrice.price).toFixed(2)}` : "-"),
+        escapeCsv(deliveryPrice ? `$${Number(deliveryPrice.price).toFixed(2)}` : "-"),
+        escapeCsv(
+          getUnitLabel(product.unitType, product.weightUnit, product.volumeUnit)
+        ),
+        escapeCsv(product.description?.substring(0, 100) || ""),
+        escapeCsv(product.isActive ? "Sí" : "No"),
+      ].join(",");
+    });
+
+    const csv = [headers.join(","), ...rows].join("\n");
+
+    // Generate filename
+    const filename = `productos-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    // Convert to base64 data URL
+    const base64 = Buffer.from(csv, "utf-8").toString("base64");
+    const dataUrl = `data:text/csv;charset=utf-8;base64,${base64}`;
+
+    return {
+      success: true,
+      data: {
+        dataUrl,
+        filename,
+      },
+    };
+  } catch (error) {
+    console.error("Error exporting CSV:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error al exportar CSV",
     };
   }
 }
