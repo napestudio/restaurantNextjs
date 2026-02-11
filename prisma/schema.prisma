@@ -208,18 +208,19 @@ model Branch {
    */
   slug String? @db.Citext
 
-  reservations  Reservation[]
-  orders        Order[]
-  sectors       Sector[]
-  tables        Table[]
-  timeSlots     TimeSlot[]
-  products      ProductOnBranch[]
-  userAccess    UserOnBranch[]
-  menus         Menu[]
-  cashRegisters CashRegister[]
-  clients       Client[]
-  stations      Station[]
-  printers      Printer[]
+  reservations   Reservation[]
+  orders         Order[]
+  sectors        Sector[]
+  tables         Table[]
+  timeSlots      TimeSlot[]
+  products       ProductOnBranch[]
+  userAccess     UserOnBranch[]
+  menus          Menu[]
+  cashRegisters  CashRegister[]
+  clients        Client[]
+  stations       Station[]
+  printers       Printer[]
+  deliveryConfig DeliveryConfig?
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -374,6 +375,53 @@ model TimeSlotTable {
 }
 
 //
+// CONFIGURACIÓN DE DELIVERY
+//
+model DeliveryConfig {
+  id        String   @id @default(cuid())
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId  String   @unique // One config per branch
+
+  // Menu selection - which menu to show customers for delivery
+  menu   Menu?   @relation(fields: [menuId], references: [id])
+  menuId String?
+
+  // Service configuration
+  isActive         Boolean  @default(true) // Master toggle for delivery service
+  minOrderAmount   Decimal? @default(0) @db.Decimal(10, 2) // Minimum order amount
+  deliveryFee      Decimal? @default(0) @db.Decimal(10, 2) // Delivery fee
+  estimatedMinutes Int?     @default(45) // Estimated delivery time in minutes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveryWindows DeliveryWindow[]
+
+  @@index([branchId])
+}
+
+model DeliveryWindow {
+  id               String         @id @default(cuid())
+  deliveryConfig   DeliveryConfig @relation(fields: [deliveryConfigId], references: [id], onDelete: Cascade)
+  deliveryConfigId String
+
+  name       String // "Lunch Delivery", "Dinner Delivery"
+  startTime  DateTime @db.Time // HH:mm
+  endTime    DateTime @db.Time
+  daysOfWeek String[] // ["monday", "tuesday", etc.]
+  maxOrders  Int      @default(10) // Capacity per window
+  isActive   Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([deliveryConfigId])
+  @@index([deliveryConfigId, isActive]) // Performance: Query active windows for a config
+}
+
+//
 // PRODUCTOS Y MENÚ (aislados por restaurante)
 //
 model Category {
@@ -419,6 +467,9 @@ model Menu {
 
   // Organization
   menuSections MenuSection[]
+
+  // Delivery configuration
+  deliveryConfigs DeliveryConfig[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -550,6 +601,7 @@ model ProductOnBranch {
   @@unique([productId, branchId])
   @@index([branchId])
   @@index([productId])
+  @@index([branchId, isActive]) // Performance: Filter active products by branch
 }
 
 model ProductPrice {
@@ -621,6 +673,7 @@ model Client {
   @@index([branchId])
   @@index([name])
   @@index([phone])
+  @@index([branchId, email]) // Performance: Fast email lookup for delivery checkout
 }
 
 //
@@ -639,6 +692,17 @@ model Order {
   // Client association
   client   Client? @relation(fields: [clientId], references: [id])
   clientId String?
+
+  // Delivery window (for DELIVERY orders)
+  deliveryWindow   DeliveryWindow? @relation(fields: [deliveryWindowId], references: [id])
+  deliveryWindowId String?
+
+  // Optional delivery address (if different from client address)
+  deliveryAddressStreet    String?
+  deliveryAddressNumber    String?
+  deliveryAddressApartment String?
+  deliveryAddressCity      String?
+  deliveryPhone            String?
 
   customerName  String?
   customerEmail String?
@@ -669,8 +733,11 @@ model Order {
   @@index([tableId])
   @@index([assignedToId])
   @@index([clientId])
+  @@index([deliveryWindowId]) // Performance: Query orders by delivery window
   @@index([branchId, status])
   @@index([branchId, createdAt])
+  @@index([branchId, type]) // Performance: Filter orders by branch and type
+  @@index([type, status]) // Performance: Filter delivery orders by status
 }
 
 model OrderItem {

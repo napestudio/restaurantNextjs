@@ -248,3 +248,49 @@ export async function getClientById(clientId: string): Promise<{
     };
   }
 }
+
+/**
+ * Get a client by email for a specific branch
+ */
+export async function getClientByEmail(
+  branchId: string,
+  email: string
+): Promise<{
+  success: boolean;
+  data?: ClientData;
+  error?: string;
+}> {
+  try {
+    if (!email || email.trim().length === 0) {
+      return {
+        success: false,
+        error: "El email es requerido",
+      };
+    }
+
+    const client = await prisma.client.findFirst({
+      where: {
+        branchId,
+        email: email.trim(),
+      },
+    });
+
+    if (!client) {
+      return {
+        success: false,
+        error: "Cliente no encontrado",
+      };
+    }
+
+    return {
+      success: true,
+      data: serializeClient(client),
+    };
+  } catch (error) {
+    console.error("Error fetching client by email:", error);
+    return {
+      success: false,
+      error: "Error al obtener cliente",
+    };
+  }
+}

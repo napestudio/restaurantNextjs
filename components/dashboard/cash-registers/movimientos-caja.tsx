@@ -65,7 +65,7 @@ export function MovimientosCaja({
   const [filterCashRegister, setFilterCashRegister] = useState<string>("all");
   const [filterMovementType, setFilterMovementType] = useState<string>("all");
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(
-    null
+    null,
   );
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
@@ -82,47 +82,59 @@ export function MovimientosCaja({
   }, []);
 
   // Load movements based on filter
-  const loadMovements = useCallback(async (pageNum: number = 0) => {
-    setIsLoading(true);
-    try {
-      let fromDate: string | undefined;
-      let toDate: string | undefined;
+  const loadMovements = useCallback(
+    async (pageNum: number = 0) => {
+      setIsLoading(true);
+      try {
+        let fromDate: string | undefined;
+        let toDate: string | undefined;
 
-      if (filterType === "today") {
-        fromDate = today;
-        toDate = today;
-      } else if (filterType === "dateRange" && dateFrom && dateTo) {
-        fromDate = dateFrom;
-        toDate = dateTo;
+        if (filterType === "today") {
+          fromDate = today;
+          toDate = today;
+        } else if (filterType === "dateRange" && dateFrom && dateTo) {
+          fromDate = dateFrom;
+          toDate = dateTo;
+        }
+        // For "history" mode, no date filter (show all)
+
+        const result = await getManualMovements({
+          branchId,
+          dateFrom: fromDate,
+          dateTo: toDate,
+          cashRegisterId:
+            filterCashRegister !== "all" ? filterCashRegister : undefined,
+          type:
+            filterMovementType !== "all"
+              ? (filterMovementType as "INCOME" | "EXPENSE")
+              : undefined,
+          limit: pageSize,
+          offset: pageNum * pageSize,
+        });
+
+        if (result.success && result.data) {
+          setMovements(result.data as Movement[]);
+          setTotal(result.total ?? 0);
+          setHasMore(result.hasMore ?? false);
+          setPage(pageNum);
+        }
+      } catch (error) {
+        console.error("Error loading movements:", error);
+      } finally {
+        setIsLoading(false);
       }
-      // For "history" mode, no date filter (show all)
-
-      const result = await getManualMovements({
-        branchId,
-        dateFrom: fromDate,
-        dateTo: toDate,
-        cashRegisterId:
-          filterCashRegister !== "all" ? filterCashRegister : undefined,
-        type:
-          filterMovementType !== "all"
-            ? (filterMovementType as "INCOME" | "EXPENSE")
-            : undefined,
-        limit: pageSize,
-        offset: pageNum * pageSize,
-      });
-
-      if (result.success && result.data) {
-        setMovements(result.data as Movement[]);
-        setTotal(result.total ?? 0);
-        setHasMore(result.hasMore ?? false);
-        setPage(pageNum);
-      }
-    } catch (error) {
-      console.error("Error loading movements:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [branchId, dateFrom, dateTo, filterCashRegister, filterMovementType, filterType, pageSize, today]);
+    },
+    [
+      branchId,
+      dateFrom,
+      dateTo,
+      filterCashRegister,
+      filterMovementType,
+      filterType,
+      pageSize,
+      today,
+    ],
+  );
 
   // Load today's movements on mount only
   useEffect(() => {
@@ -247,14 +259,14 @@ export function MovimientosCaja({
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-[140px]"
+              className="w-35"
             />
             <span className="text-muted-foreground">-</span>
             <Input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-[140px]"
+              className="w-35"
             />
           </div>
         )}
@@ -264,7 +276,7 @@ export function MovimientosCaja({
           value={filterCashRegister}
           onValueChange={setFilterCashRegister}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-40">
             <SelectValue placeholder="Caja" />
           </SelectTrigger>
           <SelectContent>
@@ -282,7 +294,7 @@ export function MovimientosCaja({
           value={filterMovementType}
           onValueChange={setFilterMovementType}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-35">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -319,7 +331,8 @@ export function MovimientosCaja({
         {/* Pagination info */}
         {total > 0 && (
           <div className="px-4 py-2 bg-gray-50 border-b text-sm text-gray-600">
-            Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, total)} de {total} movimientos
+            Mostrando {page * pageSize + 1} -{" "}
+            {Math.min((page + 1) * pageSize, total)} de {total} movimientos
           </div>
         )}
         <table className="w-full">
@@ -373,7 +386,7 @@ export function MovimientosCaja({
                     "hover:bg-gray-50 transition-colors cursor-pointer",
                     movement.type === "INCOME"
                       ? "border-l-4 border-l-green-500"
-                      : "border-l-4 border-l-red-500"
+                      : "border-l-4 border-l-red-500",
                   )}
                 >
                   {/* Date/Time */}
@@ -388,7 +401,7 @@ export function MovimientosCaja({
                         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
                         movement.type === "INCOME"
                           ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+                          : "bg-red-100 text-red-700",
                       )}
                     >
                       {movement.type === "INCOME" ? (
@@ -413,7 +426,7 @@ export function MovimientosCaja({
                   </td>
 
                   {/* Description */}
-                  <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate">
+                  <td className="px-4 py-3 text-sm text-gray-500 max-w-50 truncate">
                     {movement.description || "—"}
                   </td>
 
@@ -424,7 +437,7 @@ export function MovimientosCaja({
                         "font-medium",
                         movement.type === "INCOME"
                           ? "text-green-600"
-                          : "text-red-600"
+                          : "text-red-600",
                       )}
                     >
                       {movement.type === "INCOME" ? "+" : "-"}
