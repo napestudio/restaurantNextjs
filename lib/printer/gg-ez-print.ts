@@ -8,12 +8,18 @@
  */
 
 const WS_URL = "ws://localhost:8080/ws";
-const RECONNECT_DELAY = 3000; // 3 seconds
-const MAX_RECONNECT_ATTEMPTS = 5;
 
 // ============================================================================
 // TYPES
 // ============================================================================
+
+export interface ReconnectionConfig {
+  enabled: boolean;              // Enable/disable auto-reconnect
+  initialDelay: number;          // Initial delay in ms
+  maxDelay: number;              // Maximum delay in ms
+  maxAttempts: number;           // Max reconnection attempts
+  backoffMultiplier: number;     // Exponential backoff multiplier
+}
 
 export interface DiscoveredPrinter {
   name: string;
@@ -44,6 +50,9 @@ export interface GgEzPrintConnection {
   isConnected: boolean;
   error: string | null;
   reconnectAttempts: number;
+  isReconnecting: boolean;       // Active reconnection in progress
+  nextRetryIn?: number;          // Milliseconds until next retry attempt
+  maxAttempts?: number;          // Maximum attempts configured
 }
 
 // ============================================================================
@@ -52,13 +61,33 @@ export interface GgEzPrintConnection {
 
 export class GgEzPrintClient {
   private ws: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private connection: GgEzPrintConnection = {
+    isConnected: false,
+    error: null,
+    reconnectAttempts: 0,
+    isReconnecting: false,
+  };
+  private reconnectionConfig: ReconnectionConfig;
+  private isReconnecting: boolean = false;
+  private userDisconnected: boolean = false;
+  private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private messageHandlers: ((response: GgEzPrintResponse) => void)[] = [];
   private connectionHandlers: ((connection: GgEzPrintConnection) => void)[] = [];
 
-  constructor() {
-    // Connect once on instantiation (no auto-reconnect)
+  constructor(
+    url: string = WS_URL,
+    reconnectionConfig?: Partial<ReconnectionConfig>
+  ) {
+    this.reconnectionConfig = {
+      enabled: true,
+      initialDelay: 2000,
+      maxDelay: 30000,
+      maxAttempts: 20,
+      backoffMultiplier: 1.5,
+      ...reconnectionConfig,
+    };
+
+    // Connect once on instantiation
     this.connect();
   }
 
@@ -73,6 +102,8 @@ export class GgEzPrintClient {
    * Connect to gg-ez-print WebSocket server
    */
   public connect(): void {
+    this.userDisconnected = false; // Reset flag when manually connecting
+
     if (this.ws?.readyState === WebSocket.OPEN) {
       return; // Already connected
     }
@@ -81,12 +112,13 @@ export class GgEzPrintClient {
       this.ws = new WebSocket(WS_URL);
 
       this.ws.onopen = () => {
-        this.reconnectAttempts = 0;
-        this.notifyConnectionChange({
+        this.connection = {
           isConnected: true,
           error: null,
           reconnectAttempts: 0,
-        });
+          isReconnecting: false,
+        };
+        this.notifyConnectionChange(this.connection);
       };
 
       this.ws.onmessage = (event) => {
@@ -100,29 +132,50 @@ export class GgEzPrintClient {
 
       this.ws.onerror = (error) => {
         console.warn("gg-ez-print WebSocket error:", error);
-        this.notifyConnectionChange({
+        this.connection = {
           isConnected: false,
           error: "Error de conexión con gg-ez-print",
-          reconnectAttempts: this.reconnectAttempts,
-        });
+          reconnectAttempts: this.connection.reconnectAttempts,
+          isReconnecting: this.connection.isReconnecting,
+        };
+        this.notifyConnectionChange(this.connection);
       };
 
       this.ws.onclose = () => {
-        this.notifyConnectionChange({
+        const wasConnected = this.connection.isConnected;
+
+        this.connection = {
           isConnected: false,
-          error: null,
-          reconnectAttempts: this.reconnectAttempts,
-        });
-        // No auto-reconnect - user must manually reconnect
+          error: "Desconectado del servidor",
+          reconnectAttempts: this.connection.reconnectAttempts,
+          isReconnecting: false,
+        };
+
+        this.notifyConnectionChange(this.connection);
+
+        // Only auto-reconnect if:
+        // 1. Auto-reconnect is enabled
+        // 2. This wasn't a user-initiated disconnect
+        // 3. We were previously connected (not initial connection failure)
+        // 4. We haven't exceeded max attempts
+        if (
+          this.reconnectionConfig.enabled &&
+          !this.userDisconnected &&
+          wasConnected &&
+          this.connection.reconnectAttempts < this.reconnectionConfig.maxAttempts
+        ) {
+          this.scheduleReconnect();
+        }
       };
     } catch (error) {
       console.warn("Failed to create gg-ez-print WebSocket:", error);
-      this.notifyConnectionChange({
+      this.connection = {
         isConnected: false,
         error: "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose?",
-        reconnectAttempts: this.reconnectAttempts,
-      });
-      // No auto-reconnect - user must manually reconnect
+        reconnectAttempts: this.connection.reconnectAttempts,
+        isReconnecting: false,
+      };
+      this.notifyConnectionChange(this.connection);
     }
   }
 
@@ -130,33 +183,79 @@ export class GgEzPrintClient {
    * Disconnect from gg-ez-print server
    */
   public disconnect(): void {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
+    this.userDisconnected = true; // Prevent auto-reconnect
+    this.cancelReconnection();
 
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
+
+    this.connection = {
+      isConnected: false,
+      error: null,
+      reconnectAttempts: 0,
+      isReconnecting: false,
+    };
+
+    this.notifyConnectionChange(this.connection);
   }
 
   /**
-   * Attempt to reconnect with exponential backoff
+   * Schedule a reconnection attempt with exponential backoff
+   */
+  private scheduleReconnect(): void {
+    if (this.isReconnecting) return; // Prevent multiple reconnection loops
+
+    this.isReconnecting = true;
+
+    // Calculate delay using exponential backoff
+    const delay = Math.min(
+      this.reconnectionConfig.initialDelay *
+        Math.pow(this.reconnectionConfig.backoffMultiplier, this.connection.reconnectAttempts),
+      this.reconnectionConfig.maxDelay
+    );
+
+    // Update UI with reconnecting status
+    this.connection.isReconnecting = true;
+    this.connection.nextRetryIn = delay;
+    this.connection.maxAttempts = this.reconnectionConfig.maxAttempts;
+    this.notifyConnectionChange(this.connection);
+
+    // Schedule reconnection attempt
+    this.reconnectTimeoutId = setTimeout(() => {
+      this.attemptReconnect();
+    }, delay);
+  }
+
+  /**
+   * Attempt to reconnect
    */
   private attemptReconnect(): void {
-    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.warn("Max reconnect attempts reached for gg-ez-print");
-      return;
+    console.log(`[GgEzPrint] Intento de reconexión ${this.connection.reconnectAttempts + 1}/${this.reconnectionConfig.maxAttempts}`);
+
+    this.connection.reconnectAttempts++;
+    this.isReconnecting = false;
+
+    // Try to connect (this will trigger onopen/onclose/onerror)
+    this.connect();
+  }
+
+  /**
+   * Cancel ongoing reconnection attempts
+   */
+  public cancelReconnection(): void {
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
     }
 
-    this.reconnectAttempts++;
-    const delay = RECONNECT_DELAY * this.reconnectAttempts;
+    this.isReconnecting = false;
+    this.connection.isReconnecting = false;
+    this.connection.nextRetryIn = undefined;
+    this.notifyConnectionChange(this.connection);
 
-    this.reconnectTimeout = setTimeout(() => {
-      console.log(`Attempting to reconnect to gg-ez-print (attempt ${this.reconnectAttempts})...`);
-      this.connect();
-    }, delay);
+    console.log("[GgEzPrint] Reconexión cancelada por el usuario");
   }
 
   /**
@@ -256,11 +355,7 @@ export class GgEzPrintClient {
     this.connectionHandlers.push(handler);
 
     // Immediately notify with current status
-    handler({
-      isConnected: this.ws?.readyState === WebSocket.OPEN,
-      error: null,
-      reconnectAttempts: this.reconnectAttempts,
-    });
+    handler(this.connection);
 
     // Return unsubscribe function
     return () => {
@@ -282,11 +377,7 @@ export class GgEzPrintClient {
    * Get current connection status
    */
   public getConnectionStatus(): GgEzPrintConnection {
-    return {
-      isConnected: this.ws?.readyState === WebSocket.OPEN,
-      error: null,
-      reconnectAttempts: this.reconnectAttempts,
-    };
+    return this.connection;
   }
 }
 

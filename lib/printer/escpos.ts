@@ -1468,8 +1468,8 @@ export function generateAfipInvoiceData(
   // ========== FOOTER ==========
   content += Commands.ALIGN_CENTER;
   content += Commands.NORMAL_SIZE;
-  content += "Documento no valido como factura\n";
-  content += "COMPROBANTE DE PRUEBA\n";
+  // content += "Documento no valido como factura\n";
+  // content += "COMPROBANTE DE PRUEBA\n";
   content += Commands.FEED_LINE;
 
   // Note: Feed and cut commands are handled by gg-ez-print automatically

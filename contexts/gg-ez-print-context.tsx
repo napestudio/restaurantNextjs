@@ -17,6 +17,9 @@ interface GgEzPrintContextValue {
   isConnected: boolean;
   connectionError: string | null;
   reconnectAttempts: number;
+  isReconnecting: boolean;
+  nextRetryIn: number | undefined;
+  maxAttempts: number | undefined;
 
   // Printer management
   printers: DiscoveredPrinter[];
@@ -26,6 +29,7 @@ interface GgEzPrintContextValue {
   // Actions
   connect: () => void;
   disconnect: () => void;
+  cancelReconnection: () => void;
   refreshPrinters: () => Promise<DiscoveredPrinter[]>;
   print: (request: PrintRequest) => Promise<void>;
 
@@ -50,6 +54,9 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [nextRetryIn, setNextRetryIn] = useState<number | undefined>(undefined);
+  const [maxAttempts, setMaxAttempts] = useState<number | undefined>(undefined);
 
   // Printer discovery state
   const [printers, setPrinters] = useState<DiscoveredPrinter[]>([]);
@@ -62,6 +69,9 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(connection.isConnected);
       setConnectionError(connection.error);
       setReconnectAttempts(connection.reconnectAttempts);
+      setIsReconnecting(connection.isReconnecting);
+      setNextRetryIn(connection.nextRetryIn);
+      setMaxAttempts(connection.maxAttempts);
     });
 
     return () => {
@@ -84,6 +94,11 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
   // Disconnect from gg-ez-print
   const disconnect = useCallback(() => {
     client.disconnect();
+  }, [client]);
+
+  // Cancel reconnection attempts
+  const cancelReconnection = useCallback(() => {
+    client.cancelReconnection();
   }, [client]);
 
   // Refresh printer list
@@ -127,6 +142,9 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
     isConnected,
     connectionError,
     reconnectAttempts,
+    isReconnecting,
+    nextRetryIn,
+    maxAttempts,
 
     // Printer management
     printers,
@@ -136,6 +154,7 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
     // Actions
     connect,
     disconnect,
+    cancelReconnection,
     refreshPrinters,
     print,
 
