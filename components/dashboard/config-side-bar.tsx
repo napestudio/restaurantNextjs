@@ -25,9 +25,13 @@ const CONFIG_ITEMS = [
     label: "Cajas",
     href: "/dashboard/config/cash-registers",
   },
+  // {
+  //   label: "Facturación",
+  //   href: "/dashboard/config/fiscal",
+  // },
   {
-    label: "Facturación",
-    href: "/dashboard/config/fiscal",
+    label: "Pedidos",
+    href: "/dashboard/config/delivery",
   },
   {
     label: "Usuarios",

@@ -29,6 +29,7 @@ import { PreOrderItemsList, type PreOrderItem } from "./pre-order-items-list";
 import { ProductPicker } from "./product-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { useToast } from "@/hooks/use-toast";
+import { OrderProduct } from "@/types/products";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -40,15 +41,6 @@ interface TableOrderSidebarProps {
   onTableChange?: (tableId: string) => void;
   onOrderUpdated: (tableId: string) => void;
 }
-
-type Product = {
-  id: string;
-  name: string;
-  description: string | null;
-  categoryId: string | null;
-  category: { name: string } | null;
-  price: number;
-};
 
 export function TableOrderSidebar({
   tableId,
@@ -200,7 +192,7 @@ export function TableOrderSidebar({
     setShowCreateClientDialog(false);
   };
 
-  const handleSelectProduct = (product: Product) => {
+  const handleSelectProduct = (product: OrderProduct) => {
     // Add to pre-order state instead of directly to order
     setPreOrderItems((prev) => [
       ...prev,

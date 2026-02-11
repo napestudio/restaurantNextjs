@@ -1059,6 +1059,11 @@ export async function getAvailableProductsForOrder(
   orderType: OrderType = OrderType.DINE_IN,
 ) {
   try {
+    // Build price type filter: fetch requested type + DINE_IN for fallback
+    const priceTypes = orderType === OrderType.DINE_IN
+      ? [OrderType.DINE_IN]
+      : [orderType, OrderType.DINE_IN];
+
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
@@ -1069,7 +1074,11 @@ export async function getAvailableProductsForOrder(
           },
         },
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        categoryId: true,
         category: {
           select: {
             name: true,
@@ -1079,8 +1088,18 @@ export async function getAvailableProductsForOrder(
           where: {
             branchId,
           },
-          include: {
-            prices: true, // Fetch all price types for fallback logic
+          select: {
+            prices: {
+              where: {
+                type: {
+                  in: priceTypes, // Only fetch needed price types
+                },
+              },
+              select: {
+                price: true,
+                type: true,
+              },
+            },
           },
         },
       },
@@ -1104,8 +1123,8 @@ export async function getAvailableProductsForOrder(
       let priceObj = branchPrices.find((p) => p.type === orderType);
 
       // Fallback to DINE_IN if orderType price not found
-      if (!priceObj && orderType !== "DINE_IN") {
-        priceObj = branchPrices.find((p) => p.type === "DINE_IN");
+      if (!priceObj && orderType !== OrderType.DINE_IN) {
+        priceObj = branchPrices.find((p) => p.type === OrderType.DINE_IN);
       }
 
       return {
@@ -1487,11 +1506,10 @@ export async function getOrders(filters: OrderFilters) {
             select: {
               id: true,
               status: true,
-              cae: true,
-              invoiceNumber: true,
-              invoiceDate: true,
+              // Removed: cae, invoiceNumber, invoiceDate - not needed in order list
+              // Full invoice details loaded only when viewing specific order
             },
-            orderBy: { invoiceDate: "desc" },
+            // Removed orderBy - reduces query complexity, order list only needs existence/status
           },
         },
         orderBy: {
