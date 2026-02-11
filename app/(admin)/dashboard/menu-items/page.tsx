@@ -15,21 +15,24 @@ type SearchParams = {
 export default async function MenuItemsPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   await requireRole(UserRole.ADMIN);
+
+  // Await searchParams (Next.js 15 requirement)
+  const params = await searchParams;
 
   // TODO: Get restaurantId and branchId from user session/context
   const restaurantId = process.env.RESTAURANT_ID || "";
   const branchId = process.env.BRANCH_ID || "";
 
   // Parse filters from URL
-  const page = parseInt(searchParams.page || "1");
-  const search = searchParams.search;
-  const categoryId = searchParams.category || "all";
-  const stockStatus = searchParams.stockStatus || "all";
-  const unitType = searchParams.unitType || "all";
-  const includeInactive = searchParams.includeInactive === "true";
+  const page = parseInt(params.page || "1");
+  const search = params.search;
+  const categoryId = params.category || "all";
+  const stockStatus = params.stockStatus || "all";
+  const unitType = params.unitType || "all";
+  const includeInactive = params.includeInactive === "true";
 
   // Fetch paginated menu items and categories
   const [productsResult, categoriesResult] = await Promise.all([

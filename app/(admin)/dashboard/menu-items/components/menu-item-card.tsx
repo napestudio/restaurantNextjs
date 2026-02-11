@@ -1,6 +1,12 @@
 "use client";
 
-import { Edit, AlertTriangle, Trash2, Copy } from "lucide-react";
+import {
+  Edit,
+  AlertTriangle,
+  Trash2,
+  Copy,
+  Image as ImageIcon,
+} from "lucide-react";
 import type {
   UnitType,
   WeightUnit,
@@ -8,6 +14,7 @@ import type {
   PriceType,
 } from "@/app/generated/prisma";
 import { getUnitLabel } from "../lib/units";
+import Image from "next/image";
 
 // Serialized types for client components
 type SerializedProductPrice = {
@@ -87,6 +94,23 @@ export function MenuItemCard({
   return (
     <div className="p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-center gap-4">
+        {/* Product Image */}
+        {item.imageUrl ? (
+          <Image
+            src={item.imageUrl.replace(
+              "/upload/",
+              "/upload/w_64,h_64,c_fill,q_auto,f_auto/",
+            )}
+            alt={item.name}
+            className="w-16 h-16 object-cover rounded-lg shrink-0"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+            <ImageIcon className="w-8 h-8 text-gray-400" />
+          </div>
+        )}
+
         {/* Información principal */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
@@ -139,8 +163,8 @@ export function MenuItemCard({
                 isOutOfStock
                   ? "text-red-600"
                   : hasLowStock
-                  ? "text-yellow-600"
-                  : "text-gray-900"
+                    ? "text-yellow-600"
+                    : "text-gray-900"
               }`}
             >
               {stock}{" "}

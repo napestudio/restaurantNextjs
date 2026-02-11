@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Copy, AlertTriangle } from "lucide-react";
+import { Edit, Trash2, Copy, AlertTriangle, Image as ImageIcon } from "lucide-react";
 import type {
   UnitType,
   WeightUnit,
@@ -87,10 +87,11 @@ export function MenuItemsTable({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16">Imagen</TableHead>
               <TableHead>Nombre</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="text-right">Precio Comedor</TableHead>
+              <TableHead className="text-right">Precios</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
@@ -98,7 +99,7 @@ export function MenuItemsTable({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-12 text-gray-500">
                   No se encontraron productos
                 </TableCell>
               </TableRow>
@@ -108,9 +109,6 @@ export function MenuItemsTable({
                   (b) => b.branchId === branchId
                 );
                 const stock = branchData?.stock ?? 0;
-                const dineInPrice = branchData?.prices.find(
-                  (p) => p.type === "DINE_IN"
-                );
                 const hasLowStock =
                   item.trackStock &&
                   item.minStockAlert &&
@@ -119,6 +117,20 @@ export function MenuItemsTable({
 
                 return (
                   <TableRow key={item.id}>
+                    <TableCell>
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl.replace('/upload/', '/upload/w_48,h_48,c_fill,q_auto,f_auto/')}
+                          alt={item.name}
+                          className="w-12 h-12 object-cover rounded"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium max-w-xs">
                       <div className="truncate">{item.name}</div>
                       {item.description && (
@@ -151,8 +163,27 @@ export function MenuItemsTable({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-green-600">
-                      {dineInPrice ? `$${dineInPrice.price.toFixed(2)}` : "-"}
+                    <TableCell className="text-right">
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900 mb-1">Precios</div>
+                        <div className="space-y-0.5">
+                          {branchData?.prices && branchData.prices.length > 0 ? (
+                            branchData.prices.map((price) => {
+                              const priceLabel =
+                                price.type === "DINE_IN" ? "Comedor" :
+                                price.type === "TAKE_AWAY" ? "Llevar" :
+                                "Delivery";
+                              return (
+                                <div key={price.type} className="text-xs text-gray-600">
+                                  <span className="font-medium">{priceLabel}:</span> ${price.price.toFixed(2)}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-xs text-gray-500">Sin precios</div>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {!item.trackStock && (

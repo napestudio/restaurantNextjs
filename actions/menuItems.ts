@@ -1,10 +1,20 @@
 "use server";
 
+import {
+  Prisma,
+  PriceType,
+  UnitType,
+  UserRole,
+  VolumeUnit,
+  WeightUnit,
+} from "@/app/generated/prisma";
+import {
+  deleteImage,
+  extractPublicIdFromUrl,
+} from "@/lib/cloudinary/upload-helper";
+import { authorizeAction } from "@/lib/permissions/middleware";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { UnitType, WeightUnit, VolumeUnit, PriceType, UserRole } from "@/app/generated/prisma";
-import { auth } from "@/lib/auth";
-import { authorizeAction } from "@/lib/permissions/middleware";
 
 export type CreateMenuItemInput = {
   name: string;
@@ -84,7 +94,9 @@ export async function createMenuItem(input: CreateMenuItemInput) {
     // Serialize Decimal and Date fields
     const serializedProduct = {
       ...product,
-      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      minStockAlert: product.minStockAlert
+        ? Number(product.minStockAlert)
+        : null,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };
@@ -96,27 +108,34 @@ export async function createMenuItem(input: CreateMenuItemInput) {
 
     // Handle unique constraint errors with user-friendly messages
     if (error instanceof Error) {
-      if (error.message.includes("Unique constraint") && error.message.includes("restaurantId") && error.message.includes("name")) {
+      if (
+        error.message.includes("Unique constraint") &&
+        error.message.includes("restaurantId") &&
+        error.message.includes("name")
+      ) {
         return {
           success: false,
-          error: "Ya existe un producto con este nombre en tu restaurante"
+          error: "Ya existe un producto con este nombre en tu restaurante",
         };
       }
-      if (error.message.includes("Unique constraint") && error.message.includes("sku")) {
+      if (
+        error.message.includes("Unique constraint") &&
+        error.message.includes("sku")
+      ) {
         return {
           success: false,
-          error: "El código SKU ya está en uso"
+          error: "El código SKU ya está en uso",
         };
       }
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
 
     return {
       success: false,
-      error: "Error al crear el producto"
+      error: "Error al crear el producto",
     };
   }
 }
@@ -149,7 +168,9 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
     // Serialize Decimal and Date fields
     const serializedProduct = {
       ...product,
-      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      minStockAlert: product.minStockAlert
+        ? Number(product.minStockAlert)
+        : null,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };
@@ -161,27 +182,34 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
 
     // Handle unique constraint errors with user-friendly messages
     if (error instanceof Error) {
-      if (error.message.includes("Unique constraint") && error.message.includes("restaurantId") && error.message.includes("name")) {
+      if (
+        error.message.includes("Unique constraint") &&
+        error.message.includes("restaurantId") &&
+        error.message.includes("name")
+      ) {
         return {
           success: false,
-          error: "Ya existe un producto con este nombre en tu restaurante"
+          error: "Ya existe un producto con este nombre en tu restaurante",
         };
       }
-      if (error.message.includes("Unique constraint") && error.message.includes("sku")) {
+      if (
+        error.message.includes("Unique constraint") &&
+        error.message.includes("sku")
+      ) {
         return {
           success: false,
-          error: "El código SKU ya está en uso"
+          error: "El código SKU ya está en uso",
         };
       }
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
 
     return {
       success: false,
-      error: "Error al actualizar el producto"
+      error: "Error al actualizar el producto",
     };
   }
 }
@@ -191,10 +219,24 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
  */
 export async function deleteMenuItem(id: string) {
   try {
+    // Get product to retrieve imageUrl before deletion
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { imageUrl: true },
+    });
+
+    // Soft delete (mark as inactive)
     await prisma.product.update({
       where: { id },
       data: { isActive: false },
     });
+
+    // Clean up image if exists
+    if (product?.imageUrl) {
+      deleteProductImage(product.imageUrl).catch((err) => {
+        console.warn("Failed to delete product image:", err);
+      });
+    }
 
     revalidatePath("/dashboard/menu-items");
     return { success: true };
@@ -202,7 +244,46 @@ export async function deleteMenuItem(id: string) {
     console.error("Error deleting menu item:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al eliminar el producto"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al eliminar el producto",
+    };
+  }
+}
+
+/**
+ * Deletes a product image from Cloudinary
+ * Called when updating/removing product images to clean up storage
+ */
+export async function deleteProductImage(imageUrl: string) {
+  try {
+    // Validate that the URL is from Cloudinary
+    if (!imageUrl || !imageUrl.includes("cloudinary.com")) {
+      console.warn(
+        "[deleteProductImage] Not a Cloudinary URL, skipping deletion:",
+        imageUrl,
+      );
+      return { success: false, error: "Invalid image URL" };
+    }
+
+    const publicId = extractPublicIdFromUrl(imageUrl);
+    if (!publicId) {
+      console.warn(
+        "[deleteProductImage] Could not extract public ID from URL:",
+        imageUrl,
+      );
+      return { success: false, error: "Could not extract public ID from URL" };
+    }
+
+    const result = await deleteImage(publicId);
+    return result;
+  } catch (error) {
+    console.error("[deleteProductImage] Error deleting product image:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Error al eliminar la imagen",
     };
   }
 }
@@ -379,9 +460,10 @@ export async function duplicateProduct(productId: string) {
     console.error("Error duplicating product:", error);
     return {
       success: false,
-      error: error instanceof Error
-        ? error.message
-        : "Error al duplicar el producto",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al duplicar el producto",
     };
   }
 }
@@ -410,7 +492,9 @@ export async function getMenuItems(restaurantId: string) {
     // Serialize Decimal and Date fields for client components
     const serializedProducts = products.map((product) => ({
       ...product,
-      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      minStockAlert: product.minStockAlert
+        ? Number(product.minStockAlert)
+        : null,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
       branches: product.branches.map((branch) => ({
@@ -435,7 +519,10 @@ export async function getMenuItems(restaurantId: string) {
     console.error("Error fetching menu items:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al obtener los productos"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al obtener los productos",
     };
   }
 }
@@ -467,7 +554,8 @@ export async function getMenuItem(id: string) {
     console.error("Error fetching menu item:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al obtener el producto"
+      error:
+        error instanceof Error ? error.message : "Error al obtener el producto",
     };
   }
 }
@@ -553,8 +641,12 @@ export async function setProductOnBranch(input: SetProductBranchInput) {
     const serializedProductOnBranch = {
       ...completeProductOnBranch,
       stock: Number(completeProductOnBranch.stock),
-      minStock: completeProductOnBranch.minStock ? Number(completeProductOnBranch.minStock) : null,
-      maxStock: completeProductOnBranch.maxStock ? Number(completeProductOnBranch.maxStock) : null,
+      minStock: completeProductOnBranch.minStock
+        ? Number(completeProductOnBranch.minStock)
+        : null,
+      maxStock: completeProductOnBranch.maxStock
+        ? Number(completeProductOnBranch.maxStock)
+        : null,
       lastRestocked: completeProductOnBranch.lastRestocked
         ? completeProductOnBranch.lastRestocked.toISOString()
         : null,
@@ -572,7 +664,10 @@ export async function setProductOnBranch(input: SetProductBranchInput) {
     console.error("Error setting product on branch:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al configurar el producto en la sucursal"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al configurar el producto en la sucursal",
     };
   }
 }
@@ -605,7 +700,7 @@ export async function getLowStockProducts(branchId: string) {
     });
 
     // Filtrar productos donde stock < minStockAlert
-    const lowStockProducts = products.filter(product => {
+    const lowStockProducts = products.filter((product) => {
       const branchData = product.branches[0];
       if (!branchData || !product.minStockAlert) return false;
       return Number(branchData.stock) < Number(product.minStockAlert);
@@ -616,7 +711,10 @@ export async function getLowStockProducts(branchId: string) {
     console.error("Error fetching low stock products:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al obtener productos con bajo stock"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al obtener productos con bajo stock",
     };
   }
 }
@@ -641,7 +739,7 @@ export async function getMenuItemsPaginated(params: {
     const skip = (page - 1) * pageSize;
 
     // Build where clause
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       restaurantId: params.restaurantId,
     };
 
@@ -669,7 +767,7 @@ export async function getMenuItemsPaginated(params: {
 
     // Unit type filter
     if (params.unitType && params.unitType !== "all") {
-      where.unitType = params.unitType;
+      where.unitType = params.unitType as UnitType;
     }
 
     // Get total count and products
@@ -709,7 +807,9 @@ export async function getMenuItemsPaginated(params: {
           case "in_stock":
             return product.trackStock && stock > 0;
           case "low_stock":
-            return product.trackStock && minStockAlert > 0 && stock < minStockAlert;
+            return (
+              product.trackStock && minStockAlert > 0 && stock < minStockAlert
+            );
           case "out_stock":
             return product.trackStock && stock === 0;
           case "always_available":
@@ -723,7 +823,9 @@ export async function getMenuItemsPaginated(params: {
     // Serialize Decimal and Date fields
     const serializedProducts = filteredProducts.map((product) => ({
       ...product,
-      minStockAlert: product.minStockAlert ? Number(product.minStockAlert) : null,
+      minStockAlert: product.minStockAlert
+        ? Number(product.minStockAlert)
+        : null,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
       branches: product.branches.map((branch) => ({
@@ -786,7 +888,7 @@ export async function exportMenuItemsCSV(params: {
     await authorizeAction(UserRole.MANAGER);
 
     // Build where clause (same as paginated)
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       restaurantId: params.restaurantId,
     };
 
@@ -810,7 +912,7 @@ export async function exportMenuItemsCSV(params: {
     }
 
     if (params.unitType && params.unitType !== "all") {
-      where.unitType = params.unitType;
+      where.unitType = params.unitType as UnitType;
     }
 
     // Fetch ALL matching products (no pagination)
@@ -844,7 +946,9 @@ export async function exportMenuItemsCSV(params: {
           case "in_stock":
             return product.trackStock && stock > 0;
           case "low_stock":
-            return product.trackStock && minStockAlert > 0 && stock < minStockAlert;
+            return (
+              product.trackStock && minStockAlert > 0 && stock < minStockAlert
+            );
           case "out_stock":
             return product.trackStock && stock === 0;
           case "always_available":
@@ -868,8 +972,8 @@ export async function exportMenuItemsCSV(params: {
     // Get unit label
     const getUnitLabel = (
       unitType: UnitType,
-      weightUnit: any,
-      volumeUnit: any
+      weightUnit: WeightUnit | null,
+      volumeUnit: VolumeUnit | null,
     ): string => {
       if (unitType === "WEIGHT" && weightUnit) {
         return weightUnit;
@@ -899,24 +1003,36 @@ export async function exportMenuItemsCSV(params: {
       const branchData = product.branches[0];
       const stock = branchData ? Number(branchData.stock) : 0;
       const dineInPrice = branchData?.prices.find((p) => p.type === "DINE_IN");
-      const takeAwayPrice = branchData?.prices.find((p) => p.type === "TAKE_AWAY");
-      const deliveryPrice = branchData?.prices.find((p) => p.type === "DELIVERY");
+      const takeAwayPrice = branchData?.prices.find(
+        (p) => p.type === "TAKE_AWAY",
+      );
+      const deliveryPrice = branchData?.prices.find(
+        (p) => p.type === "DELIVERY",
+      );
 
       return [
         escapeCsv(product.name),
         escapeCsv(product.sku || "Sin SKU"),
         escapeCsv(product.category?.name || "Sin categoría"),
-        product.trackStock
-          ? escapeCsv(stock)
-          : escapeCsv("Siempre disponible"),
+        product.trackStock ? escapeCsv(stock) : escapeCsv("Siempre disponible"),
         escapeCsv(
-          product.minStockAlert ? Number(product.minStockAlert) : "N/A"
+          product.minStockAlert ? Number(product.minStockAlert) : "N/A",
         ),
-        escapeCsv(dineInPrice ? `$${Number(dineInPrice.price).toFixed(2)}` : "-"),
-        escapeCsv(takeAwayPrice ? `$${Number(takeAwayPrice.price).toFixed(2)}` : "-"),
-        escapeCsv(deliveryPrice ? `$${Number(deliveryPrice.price).toFixed(2)}` : "-"),
         escapeCsv(
-          getUnitLabel(product.unitType, product.weightUnit, product.volumeUnit)
+          dineInPrice ? `$${Number(dineInPrice.price).toFixed(2)}` : "-",
+        ),
+        escapeCsv(
+          takeAwayPrice ? `$${Number(takeAwayPrice.price).toFixed(2)}` : "-",
+        ),
+        escapeCsv(
+          deliveryPrice ? `$${Number(deliveryPrice.price).toFixed(2)}` : "-",
+        ),
+        escapeCsv(
+          getUnitLabel(
+            product.unitType,
+            product.weightUnit,
+            product.volumeUnit,
+          ),
         ),
         escapeCsv(product.description?.substring(0, 100) || ""),
         escapeCsv(product.isActive ? "Sí" : "No"),
@@ -943,8 +1059,7 @@ export async function exportMenuItemsCSV(params: {
     console.error("Error exporting CSV:", error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Error al exportar CSV",
+      error: error instanceof Error ? error.message : "Error al exportar CSV",
     };
   }
 }
@@ -964,7 +1079,10 @@ export async function getCategories(restaurantId: string) {
     console.error("Error fetching categories:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al obtener las categorías"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al obtener las categorías",
     };
   }
 }
@@ -1001,7 +1119,8 @@ export async function createCategory(input: {
     console.error("Error creating category:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al crear la categoría"
+      error:
+        error instanceof Error ? error.message : "Error al crear la categoría",
     };
   }
 }
@@ -1029,7 +1148,10 @@ export async function updateCategory(input: {
     console.error("Error updating category:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al actualizar la categoría"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al actualizar la categoría",
     };
   }
 }
@@ -1047,7 +1169,7 @@ export async function deleteCategory(id: string) {
     if (productsCount > 0) {
       return {
         success: false,
-        error: `No se puede eliminar la categoría porque tiene ${productsCount} producto(s) asociado(s)`
+        error: `No se puede eliminar la categoría porque tiene ${productsCount} producto(s) asociado(s)`,
       };
     }
 
@@ -1061,7 +1183,10 @@ export async function deleteCategory(id: string) {
     console.error("Error deleting category:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Error al eliminar la categoría"
+      error:
+        error instanceof Error
+          ? error.message
+          : "Error al eliminar la categoría",
     };
   }
 }
