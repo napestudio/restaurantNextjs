@@ -201,6 +201,185 @@ export async function deleteMenuItem(id: string) {
 }
 
 /**
+ * Duplica un producto con todas sus configuraciones de sucursales y precios
+ */
+export async function duplicateProduct(productId: string) {
+  try {
+    // Authorization check
+    await authorizeAction(UserRole.ADMIN);
+
+    // 1. Fetch original product with all related data
+    const originalProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: true,
+        branches: {
+          include: {
+            prices: true,
+            branch: true,
+          },
+        },
+      },
+    });
+
+    if (!originalProduct) {
+      return { success: false, error: "Producto no encontrado" };
+    }
+
+    // 2. Generate unique name (append " - copia", " - copia 2", etc.)
+    let newName = `${originalProduct.name} - copia`;
+    let suffix = 2;
+    let nameExists = true;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 100;
+
+    while (nameExists && attempts < MAX_ATTEMPTS) {
+      const existing = await prisma.product.findUnique({
+        where: {
+          restaurantId_name: {
+            restaurantId: originalProduct.restaurantId,
+            name: newName,
+          },
+        },
+      });
+
+      if (!existing) {
+        nameExists = false;
+      } else {
+        newName = `${originalProduct.name} - copia ${suffix}`;
+        suffix++;
+        attempts++;
+      }
+    }
+
+    if (attempts >= MAX_ATTEMPTS) {
+      return {
+        success: false,
+        error: "No se pudo generar un nombre único para la copia",
+      };
+    }
+
+    // 3. Generate unique SKU or set to null
+    let newSku = null;
+    if (originalProduct.sku) {
+      newSku = `${originalProduct.sku}_copia`;
+      const skuExists = await prisma.product.findUnique({
+        where: {
+          restaurantId_sku: {
+            restaurantId: originalProduct.restaurantId,
+            sku: newSku,
+          },
+        },
+      });
+
+      if (skuExists) {
+        newSku = null; // Fallback to null if SKU conflict
+      }
+    }
+
+    // 4. Create duplicated product with transaction
+    const duplicatedProduct = await prisma.$transaction(async (tx) => {
+      // Create main product
+      const newProduct = await tx.product.create({
+        data: {
+          name: newName,
+          description: originalProduct.description,
+          imageUrl: originalProduct.imageUrl,
+          sku: newSku,
+          unitType: originalProduct.unitType,
+          weightUnit: originalProduct.weightUnit,
+          volumeUnit: originalProduct.volumeUnit,
+          minStockAlert: originalProduct.minStockAlert,
+          trackStock: originalProduct.trackStock,
+          categoryId: originalProduct.categoryId,
+          restaurantId: originalProduct.restaurantId,
+          isActive: originalProduct.isActive,
+        },
+      });
+
+      // Create ProductOnBranch entries with prices
+      for (const branchConfig of originalProduct.branches) {
+        const productOnBranch = await tx.productOnBranch.create({
+          data: {
+            productId: newProduct.id,
+            branchId: branchConfig.branchId,
+            stock: branchConfig.stock,
+            minStock: branchConfig.minStock,
+            maxStock: branchConfig.maxStock,
+            isActive: branchConfig.isActive,
+          },
+        });
+
+        // Create prices for this branch
+        for (const price of branchConfig.prices) {
+          await tx.productPrice.create({
+            data: {
+              productOnBranchId: productOnBranch.id,
+              type: price.type,
+              price: price.price,
+            },
+          });
+        }
+      }
+
+      // Fetch complete product with all relations
+      return await tx.product.findUnique({
+        where: { id: newProduct.id },
+        include: {
+          category: true,
+          branches: {
+            include: {
+              prices: true,
+              branch: true,
+            },
+          },
+        },
+      });
+    });
+
+    if (!duplicatedProduct) {
+      throw new Error("Error al obtener el producto duplicado");
+    }
+
+    // 5. Serialize for client
+    const serializedProduct = {
+      ...duplicatedProduct,
+      minStockAlert: duplicatedProduct.minStockAlert
+        ? Number(duplicatedProduct.minStockAlert)
+        : null,
+      createdAt: duplicatedProduct.createdAt.toISOString(),
+      updatedAt: duplicatedProduct.updatedAt.toISOString(),
+      branches: duplicatedProduct.branches.map((branch) => ({
+        ...branch,
+        stock: Number(branch.stock),
+        minStock: branch.minStock ? Number(branch.minStock) : null,
+        maxStock: branch.maxStock ? Number(branch.maxStock) : null,
+        lastRestocked: branch.lastRestocked
+          ? branch.lastRestocked.toISOString()
+          : null,
+        createdAt: branch.createdAt.toISOString(),
+        updatedAt: branch.updatedAt.toISOString(),
+        prices: branch.prices.map((price) => ({
+          ...price,
+          price: Number(price.price),
+        })),
+      })),
+    };
+
+    revalidatePath("/dashboard/menu-items");
+    return { success: true, data: serializedProduct };
+  } catch (error) {
+    console.error("Error duplicating product:", error);
+    return {
+      success: false,
+      error: error instanceof Error
+        ? error.message
+        : "Error al duplicar el producto",
+    };
+  }
+}
+
+/**
  * Obtiene todos los productos de un restaurante
  */
 export async function getMenuItems(restaurantId: string) {

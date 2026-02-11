@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, AlertTriangle, Trash2 } from "lucide-react";
+import { Edit, AlertTriangle, Trash2, Copy } from "lucide-react";
 import type {
   UnitType,
   WeightUnit,
@@ -63,6 +63,7 @@ type MenuItemCardProps = {
   branchId: string;
   onEdit: (item: MenuItemWithRelations) => void;
   onDelete: (item: MenuItemWithRelations) => void;
+  onDuplicate: (item: MenuItemWithRelations) => void;
 };
 
 export function MenuItemCard({
@@ -70,6 +71,7 @@ export function MenuItemCard({
   branchId,
   onEdit,
   onDelete,
+  onDuplicate,
 }: MenuItemCardProps) {
   // Obtener datos de la sucursal actual
   const branchData = item.branches.find((b) => b.branchId === branchId);
@@ -164,6 +166,15 @@ export function MenuItemCard({
           title="Editar producto"
         >
           <Edit className="w-5 h-5" />
+        </button>
+
+        {/* Botón duplicar */}
+        <button
+          onClick={() => onDuplicate(item)}
+          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+          title="Duplicar producto"
+        >
+          <Copy className="w-5 h-5" />
         </button>
 
         {/* Botón eliminar */}

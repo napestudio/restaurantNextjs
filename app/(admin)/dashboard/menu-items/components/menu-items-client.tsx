@@ -2,10 +2,12 @@
 
 import { useState, useOptimistic, useTransition } from "react";
 import { Plus, Search, Filter, FolderPlus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   getMenuItems,
   getCategories,
   deleteMenuItem,
+  duplicateProduct,
 } from "@/actions/menuItems";
 import { MenuItemCard } from "./menu-item-card";
 import { MenuItemDialog } from "./menu-item-dialog";
@@ -124,6 +126,7 @@ export function MenuItemsClient({
   const [deletingItem, setDeletingItem] =
     useState<MenuItemWithRelations | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   // Filtrar items
   const filteredItems = optimisticMenuItems.filter((item) => {
@@ -150,6 +153,55 @@ export function MenuItemsClient({
 
   const handleDelete = (item: MenuItemWithRelations) => {
     setDeletingItem(item);
+  };
+
+  const handleDuplicate = async (item: MenuItemWithRelations) => {
+    startTransition(async () => {
+      // Optimistic update - add duplicate immediately with temp ID
+      const optimisticDuplicate: MenuItemWithRelations = {
+        ...item,
+        id: `temp-${Date.now()}`,
+        name: `${item.name} - copia`,
+        sku: item.sku ? `${item.sku}_copia` : null,
+      };
+
+      setOptimisticMenuItems({
+        type: "create",
+        tempId: optimisticDuplicate.id,
+        item: optimisticDuplicate,
+      });
+
+      // Execute server action
+      const result = await duplicateProduct(item.id);
+
+      if (result.success && result.data) {
+        // Replace optimistic item with real data
+        setMenuItems((prevItems) => [
+          ...prevItems.filter((i) => i.id !== optimisticDuplicate.id),
+          result.data,
+        ]);
+
+        // Show success toast
+        toast({
+          title: "Producto duplicado",
+          description: `"${result.data.name}" se creó exitosamente`,
+        });
+
+        // Refetch for consistency
+        handleSuccess();
+      } else {
+        // Remove optimistic item and show error
+        setMenuItems((prevItems) =>
+          prevItems.filter((i) => i.id !== optimisticDuplicate.id)
+        );
+
+        toast({
+          title: "Error al duplicar",
+          description: result.error || "No se pudo duplicar el producto",
+          variant: "destructive",
+        });
+      }
+    });
   };
 
   const confirmDelete = async () => {
@@ -337,6 +389,7 @@ export function MenuItemsClient({
                 branchId={branchId}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
               />
             ))}
           </div>
