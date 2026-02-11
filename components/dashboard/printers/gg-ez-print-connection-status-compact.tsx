@@ -2,7 +2,7 @@
 
 import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
 import { cn } from "@/lib/utils";
-import { Wifi, WifiOff } from "lucide-react";
+import { Wifi, WifiOff, Loader2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -29,10 +29,21 @@ export function GgEzPrintConnectionStatusCompact({
     return null;
   }
 
-  const { isConnected, connectionError, connect } = ggEzPrint;
+  const {
+    isConnected,
+    connectionError,
+    isReconnecting,
+    reconnectAttempts,
+    maxAttempts,
+    nextRetryIn,
+    connect,
+    cancelReconnection,
+  } = ggEzPrint;
 
   const handleClick = async () => {
-    if (!isConnected) {
+    if (isReconnecting) {
+      cancelReconnection();
+    } else if (!isConnected) {
       await connect();
     }
   };
@@ -41,12 +52,18 @@ export function GgEzPrintConnectionStatusCompact({
     if (isConnected) {
       return "text-green-500";
     }
+    if (isReconnecting) {
+      return "text-yellow-500";
+    }
     return connectionError ? "text-red-500" : "text-gray-400";
   };
 
   const getStatusIcon = () => {
     if (isConnected) {
       return <Wifi className="h-4 w-4" />;
+    }
+    if (isReconnecting) {
+      return <Loader2 className="h-4 w-4 animate-spin" />;
     }
     return <WifiOff className="h-4 w-4" />;
   };
@@ -58,6 +75,28 @@ export function GgEzPrintConnectionStatusCompact({
           <p className="font-medium">gg-ez-print conectado</p>
           <p className="text-xs text-muted-foreground">
             Servicio de impresión activo
+          </p>
+        </div>
+      );
+    }
+
+    if (isReconnecting) {
+      const formattedRetryIn = nextRetryIn
+        ? `${Math.ceil(nextRetryIn / 1000)}s`
+        : null;
+
+      return (
+        <div className="space-y-1">
+          <p className="font-medium">
+            Reconectando ({reconnectAttempts}/{maxAttempts})
+          </p>
+          {formattedRetryIn && (
+            <p className="text-xs text-muted-foreground">
+              Próximo intento en {formattedRetryIn}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Click para cancelar
           </p>
         </div>
       );

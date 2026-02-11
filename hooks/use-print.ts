@@ -134,11 +134,19 @@ export function usePrint(): UsePrintReturn {
       // Check if connected
       if (!ggEzPrint.isConnected) {
         console.debug("[usePrint] gg-ez-print not connected");
-        setPrintStatus({
-          status: "error",
-          message:
-            "No conectado a gg-ez-print. Verifica que el servicio esté ejecutándose.",
-        });
+
+        if (ggEzPrint.isReconnecting) {
+          setPrintStatus({
+            status: "error",
+            message: `Reconectando a impresoras (intento ${ggEzPrint.reconnectAttempts}/${ggEzPrint.maxAttempts}). Por favor espere...`,
+          });
+        } else {
+          setPrintStatus({
+            status: "error",
+            message:
+              "No hay conexión con el servicio de impresoras. Verifique que gg-ez-print esté ejecutándose.",
+          });
+        }
         return { success: false, successCount: 0, failCount: jobs.length };
       }
 
