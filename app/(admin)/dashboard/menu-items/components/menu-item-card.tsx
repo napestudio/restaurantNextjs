@@ -1,6 +1,12 @@
 "use client";
 
-import { Edit, AlertTriangle, Trash2 } from "lucide-react";
+import {
+  Edit,
+  AlertTriangle,
+  Trash2,
+  Copy,
+  Image as ImageIcon,
+} from "lucide-react";
 import type {
   UnitType,
   WeightUnit,
@@ -8,6 +14,7 @@ import type {
   PriceType,
 } from "@/app/generated/prisma";
 import { getUnitLabel } from "../lib/units";
+import Image from "next/image";
 
 // Serialized types for client components
 type SerializedProductPrice = {
@@ -63,6 +70,7 @@ type MenuItemCardProps = {
   branchId: string;
   onEdit: (item: MenuItemWithRelations) => void;
   onDelete: (item: MenuItemWithRelations) => void;
+  onDuplicate: (item: MenuItemWithRelations) => void;
 };
 
 export function MenuItemCard({
@@ -70,6 +78,7 @@ export function MenuItemCard({
   branchId,
   onEdit,
   onDelete,
+  onDuplicate,
 }: MenuItemCardProps) {
   // Obtener datos de la sucursal actual
   const branchData = item.branches.find((b) => b.branchId === branchId);
@@ -85,6 +94,23 @@ export function MenuItemCard({
   return (
     <div className="p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-center gap-4">
+        {/* Product Image */}
+        {item.imageUrl ? (
+          <Image
+            src={item.imageUrl.replace(
+              "/upload/",
+              "/upload/w_64,h_64,c_fill,q_auto,f_auto/",
+            )}
+            alt={item.name}
+            className="w-16 h-16 object-cover rounded-lg shrink-0"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+            <ImageIcon className="w-8 h-8 text-gray-400" />
+          </div>
+        )}
+
         {/* Información principal */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
@@ -137,8 +163,8 @@ export function MenuItemCard({
                 isOutOfStock
                   ? "text-red-600"
                   : hasLowStock
-                  ? "text-yellow-600"
-                  : "text-gray-900"
+                    ? "text-yellow-600"
+                    : "text-gray-900"
               }`}
             >
               {stock}{" "}
@@ -164,6 +190,15 @@ export function MenuItemCard({
           title="Editar producto"
         >
           <Edit className="w-5 h-5" />
+        </button>
+
+        {/* Botón duplicar */}
+        <button
+          onClick={() => onDuplicate(item)}
+          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+          title="Duplicar producto"
+        >
+          <Copy className="w-5 h-5" />
         </button>
 
         {/* Botón eliminar */}
