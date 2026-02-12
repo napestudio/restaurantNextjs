@@ -65,7 +65,7 @@ type MenuItemWithRelations = {
   branches: SerializedProductOnBranch[];
 };
 
-type MenuItemCardProps = {
+type ProductProps = {
   item: MenuItemWithRelations;
   branchId: string;
   onEdit: (item: MenuItemWithRelations) => void;
@@ -73,13 +73,13 @@ type MenuItemCardProps = {
   onDuplicate: (item: MenuItemWithRelations) => void;
 };
 
-export function MenuItemCard({
+export function ProductCard({
   item,
   branchId,
   onEdit,
   onDelete,
   onDuplicate,
-}: MenuItemCardProps) {
+}: ProductProps) {
   // Obtener datos de la sucursal actual
   const branchData = item.branches.find((b) => b.branchId === branchId);
   const stock = branchData ? branchData.stock : 0;

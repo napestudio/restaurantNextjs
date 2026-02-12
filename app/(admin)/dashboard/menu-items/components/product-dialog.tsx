@@ -50,7 +50,7 @@ type SerializedCategory = {
   restaurantId: string;
 };
 
-type MenuItemWithRelations = {
+type ProductWithRelations = {
   id: string;
   name: string;
   description: string | null;
@@ -70,13 +70,13 @@ type MenuItemWithRelations = {
   branches: SerializedProductOnBranch[];
 };
 
-type MenuItemDialogProps = {
-  item: MenuItemWithRelations | null;
+type ProductDialogProps = {
+  item: ProductWithRelations | null;
   categories: SerializedCategory[];
   restaurantId: string;
   branchId: string;
   onClose: () => void;
-  onSuccess: (savedItem?: MenuItemWithRelations, isNewItem?: boolean) => void;
+  onSuccess: (savedItem?: ProductWithRelations, isNewItem?: boolean) => void;
 };
 
 type FormData = {
@@ -101,14 +101,14 @@ type FormData = {
   };
 };
 
-export function MenuItemDialog({
+export function ProductDialog({
   item,
   categories,
   restaurantId,
   branchId,
   onClose,
   onSuccess,
-}: MenuItemDialogProps) {
+}: ProductDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState<"basic" | "stock" | "prices">(
@@ -236,7 +236,7 @@ export function MenuItemDialog({
     try {
       // 1. Crear o actualizar el producto
       let productId = item?.id;
-      let savedProduct: MenuItemWithRelations | null = null;
+      let savedProduct: ProductWithRelations | null = null;
       const isNewItem = !item;
 
       if (item) {

@@ -1,5 +1,5 @@
 import { getMenuItemsPaginated, getCategories } from "@/actions/menuItems";
-import { MenuItemsClient } from "./components/menu-items-client";
+import { ProductsClient } from "./components/product-client";
 import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
 
@@ -74,7 +74,7 @@ export default async function MenuItemsPage({
           </p>
         </div>
 
-        <MenuItemsClient
+        <ProductsClient
           initialMenuItems={menuItems}
           initialPagination={pagination}
           initialFilters={{

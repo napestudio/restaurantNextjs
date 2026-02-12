@@ -81,7 +81,7 @@ type MenuItemsTableProps = {
   onDuplicate: (item: MenuItemWithRelations) => void;
 };
 
-export function MenuItemsTable({
+export function ProductsTable({
   items,
   branchId,
   onEdit,
