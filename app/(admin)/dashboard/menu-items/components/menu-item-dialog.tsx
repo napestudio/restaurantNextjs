@@ -2,9 +2,9 @@
 
 import {
   createMenuItem,
+  deleteProductImage,
   setProductOnBranch,
   updateMenuItem,
-  deleteProductImage,
 } from "@/actions/menuItems";
 import type {
   PriceType,
@@ -12,15 +12,14 @@ import type {
   VolumeUnit,
   WeightUnit,
 } from "@/app/generated/prisma";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Loader2, Save, X } from "lucide-react";
 import { useState } from "react";
 import {
-  PRICE_TYPE_OPTIONS,
   UNIT_TYPE_OPTIONS,
   VOLUME_UNIT_OPTIONS,
   WEIGHT_UNIT_OPTIONS,
 } from "../lib/units";
-import { ImageUpload } from "@/components/ui/image-upload";
 
 // Serialized types for client components
 type SerializedProductPrice = {
@@ -750,7 +749,7 @@ export function MenuItemDialog({
                   {/* Precio Comedor (DINE_IN) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Precio Comedor (para consumir en local)
+                      Precio Salón (para consumir en local)
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">

@@ -10,13 +10,20 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Copy, AlertTriangle, Image as ImageIcon } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Copy,
+  AlertTriangle,
+  Image as ImageIcon,
+} from "lucide-react";
 import type {
   UnitType,
   WeightUnit,
   VolumeUnit,
   PriceType,
 } from "@/app/generated/prisma";
+import Image from "next/image";
 
 type SerializedProductPrice = {
   id: string;
@@ -99,14 +106,17 @@ export function MenuItemsTable({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-gray-500">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-12 text-gray-500"
+                >
                   No se encontraron productos
                 </TableCell>
               </TableRow>
             ) : (
               items.map((item) => {
                 const branchData = item.branches.find(
-                  (b) => b.branchId === branchId
+                  (b) => b.branchId === branchId,
                 );
                 const stock = branchData?.stock ?? 0;
                 const hasLowStock =
@@ -119,11 +129,16 @@ export function MenuItemsTable({
                   <TableRow key={item.id}>
                     <TableCell>
                       {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl.replace('/upload/', '/upload/w_48,h_48,c_fill,q_auto,f_auto/')}
+                        <Image
+                          src={item.imageUrl.replace(
+                            "/upload/",
+                            "/upload/w_48,h_48,c_fill,q_auto,f_auto/",
+                          )}
                           alt={item.name}
                           className="w-12 h-12 object-cover rounded"
                           loading="lazy"
+                          width={100}
+                          height={100}
                         />
                       ) : (
                         <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
@@ -155,8 +170,8 @@ export function MenuItemsTable({
                             isOutOfStock
                               ? "text-red-600 font-semibold"
                               : hasLowStock
-                              ? "text-yellow-600"
-                              : ""
+                                ? "text-yellow-600"
+                                : ""
                           }
                         >
                           {stock}
@@ -165,22 +180,35 @@ export function MenuItemsTable({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="text-sm">
-                        <div className="font-medium text-gray-900 mb-1">Precios</div>
+                        <div className="font-medium text-gray-900 mb-1">
+                          Precios
+                        </div>
                         <div className="space-y-0.5">
-                          {branchData?.prices && branchData.prices.length > 0 ? (
+                          {branchData?.prices &&
+                          branchData.prices.length > 0 ? (
                             branchData.prices.map((price) => {
                               const priceLabel =
-                                price.type === "DINE_IN" ? "Comedor" :
-                                price.type === "TAKE_AWAY" ? "Llevar" :
-                                "Delivery";
+                                price.type === "DINE_IN"
+                                  ? "Salón"
+                                  : price.type === "TAKE_AWAY"
+                                    ? "Llevar"
+                                    : "Delivery";
                               return (
-                                <div key={price.type} className="text-xs text-gray-600">
-                                  <span className="font-medium">{priceLabel}:</span> ${price.price.toFixed(2)}
+                                <div
+                                  key={price.type}
+                                  className="text-xs text-gray-600"
+                                >
+                                  <span className="font-medium">
+                                    {priceLabel}:
+                                  </span>{" "}
+                                  ${price.price.toFixed(2)}
                                 </div>
                               );
                             })
                           ) : (
-                            <div className="text-xs text-gray-500">Sin precios</div>
+                            <div className="text-xs text-gray-500">
+                              Sin precios
+                            </div>
                           )}
                         </div>
                       </div>
