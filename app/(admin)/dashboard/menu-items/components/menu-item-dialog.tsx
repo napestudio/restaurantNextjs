@@ -112,7 +112,9 @@ export function MenuItemDialog({
 }: MenuItemDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentTab, setCurrentTab] = useState<"basic" | "stock" | "prices">("basic");
+  const [currentTab, setCurrentTab] = useState<"basic" | "stock" | "prices">(
+    "basic",
+  );
 
   // Track original image URL for cleanup
   const [originalImageUrl] = useState(item?.imageUrl ?? null);
@@ -155,7 +157,7 @@ export function MenuItemDialog({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -334,7 +336,7 @@ export function MenuItemDialog({
         if (savedProduct) {
           savedProduct = {
             ...savedProduct,
-            branches: [branchResult.data]
+            branches: [branchResult.data],
           };
         }
       }
@@ -342,8 +344,8 @@ export function MenuItemDialog({
       // Clean up old image if it changed
       if (originalImageUrl && originalImageUrl !== formData.imageUrl) {
         // Image was changed or removed - delete old one from Cloudinary
-        deleteProductImage(originalImageUrl).catch(err => {
-          console.warn('Failed to delete old image:', err);
+        deleteProductImage(originalImageUrl).catch((err) => {
+          console.warn("Failed to delete old image:", err);
           // Don't fail the operation - deletion is cleanup, not critical
         });
       }
@@ -351,13 +353,24 @@ export function MenuItemDialog({
       // Call onSuccess with the saved product data for optimistic updates
       onSuccess(savedProduct || undefined, isNewItem);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Error al guardar el producto";
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al guardar el producto";
 
       // Check for unique constraint errors
-      if (errorMessage.includes("Unique constraint failed") && errorMessage.includes("name")) {
-        setError("Ya existe un producto con este nombre en tu restaurante. Por favor, usa un nombre diferente.");
-      } else if (errorMessage.includes("Unique constraint failed") && errorMessage.includes("sku")) {
-        setError("El código SKU ya está en uso. Por favor, usa un código diferente.");
+      if (
+        errorMessage.includes("Unique constraint failed") &&
+        errorMessage.includes("name")
+      ) {
+        setError(
+          "Ya existe un producto con este nombre en tu restaurante. Por favor, usa un nombre diferente.",
+        );
+      } else if (
+        errorMessage.includes("Unique constraint failed") &&
+        errorMessage.includes("sku")
+      ) {
+        setError(
+          "El código SKU ya está en uso. Por favor, usa un código diferente.",
+        );
       } else {
         setError(errorMessage);
       }
@@ -473,8 +486,12 @@ export function MenuItemDialog({
                   </label>
                   <ImageUpload
                     value={formData.imageUrl}
-                    onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
-                    onRemove={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                    onChange={(url) =>
+                      setFormData((prev) => ({ ...prev, imageUrl: url }))
+                    }
+                    onRemove={() =>
+                      setFormData((prev) => ({ ...prev, imageUrl: "" }))
+                    }
                     disabled={loading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -638,7 +655,9 @@ export function MenuItemDialog({
             {currentTab === "stock" && (
               <div className="space-y-6 p-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Gestión de Stock</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Gestión de Stock
+                  </h3>
                   <p className="text-sm text-gray-600">
                     Configura el inventario disponible en esta sucursal
                   </p>
@@ -647,10 +666,13 @@ export function MenuItemDialog({
                 {!formData.trackStock ? (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
                     <p className="text-sm text-gray-600">
-                      El seguimiento de stock está desactivado para este producto.
+                      El seguimiento de stock está desactivado para este
+                      producto.
                     </p>
                     <p className="text-xs text-gray-500 mt-2">
-                      Activa el seguimiento de stock en la pestaña "Información Básica" para gestionar el inventario.
+                      Activa el seguimiento de stock en la pestaña
+                      `&quot;`Información Básica`&quot;` para gestionar el
+                      inventario.
                     </p>
                   </div>
                 ) : (
@@ -715,9 +737,12 @@ export function MenuItemDialog({
             {currentTab === "prices" && (
               <div className="space-y-6 p-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Precios por Tipo de Servicio</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Precios por Tipo de Servicio
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    Configura los precios según el tipo de servicio. Al menos un precio es requerido.
+                    Configura los precios según el tipo de servicio. Al menos un
+                    precio es requerido.
                   </p>
                 </div>
 
@@ -728,7 +753,9 @@ export function MenuItemDialog({
                       Precio Comedor (para consumir en local)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        $
+                      </span>
                       <input
                         type="number"
                         name="prices.dineIn"
@@ -748,7 +775,9 @@ export function MenuItemDialog({
                       Precio Para Llevar
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        $
+                      </span>
                       <input
                         type="number"
                         name="prices.takeAway"
@@ -768,7 +797,9 @@ export function MenuItemDialog({
                       Precio Delivery
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        $
+                      </span>
                       <input
                         type="number"
                         name="prices.delivery"
@@ -785,7 +816,9 @@ export function MenuItemDialog({
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-xs text-blue-800">
-                    <strong>Nota:</strong> Los precios son por unidad base (unidad, kg, litro, etc.). Al menos un precio debe estar configurado.
+                    <strong>Nota:</strong> Los precios son por unidad base
+                    (unidad, kg, litro, etc.). Al menos un precio debe estar
+                    configurado.
                   </p>
                 </div>
               </div>
