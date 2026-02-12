@@ -33,6 +33,7 @@ interface FloorPlanPageProps {
   onRefreshTables?: () => Promise<void>;
   onRefreshSingleTable?: (tableId: string) => Promise<void>;
   editModeOnly?: boolean;
+  isLoading?: boolean;
 }
 
 export default function FloorPlanHandler({
@@ -47,7 +48,16 @@ export default function FloorPlanHandler({
   onRefreshTables,
   onRefreshSingleTable,
   editModeOnly = false,
+  isLoading = false,
 }: FloorPlanPageProps) {
+  // Early return for loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-muted-foreground">Cargando plano...</div>
+      </div>
+    );
+  }
   // UI State
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(editModeOnly);

@@ -4,6 +4,13 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Settings, Plus, X, Receipt, CreditCard, Percent } from "lucide-react";
 import {
   closeTableWithPayment,
@@ -62,6 +69,7 @@ interface CloseOrderDialogProps {
   order: Order;
   branchId: string;
   branchName?: string;
+  sectorId?: string | null;
   onSuccess: () => void;
 }
 
@@ -83,6 +91,7 @@ export function CloseOrderDialog({
   order,
   branchId,
   branchName = "Principal",
+  sectorId,
   onSuccess,
 }: CloseOrderDialogProps) {
   const [payments, setPayments] = useState<PaymentLine[]>([
@@ -157,21 +166,40 @@ export function CloseOrderDialog({
     const loadCashRegisters = async () => {
       setIsLoadingRegisters(true);
       const result = await getOpenCashRegistersForBranch(branchId);
-      if (result.success && result.data) {
-        setCashRegisters(result.data);
 
-        // Auto-select first register with session if only one exists
-        if (result.data.length === 1 && result.data[0].session) {
-          setSelectedRegisterId(result.data[0].id);
+      if (result.success && result.data) {
+        // Filter registers by sector if sectorId is provided
+        let availableRegisters = result.data;
+
+        if (sectorId) {
+          // Only show registers that serve this sector
+          availableRegisters = result.data.filter((register) =>
+            register.sectors.some((sector) => sector.id === sectorId)
+          );
+        }
+
+        // Fallback: If no registers found for sector, show all (safety net)
+        if (availableRegisters.length === 0) {
+          console.warn(`No cash registers found for sector ${sectorId}, showing all available registers`);
+          availableRegisters = result.data;
+        }
+
+        setCashRegisters(availableRegisters);
+
+        // Auto-select the first register with an open session
+        const registerWithSession = availableRegisters.find((r) => r.session);
+        if (registerWithSession) {
+          setSelectedRegisterId(registerWithSession.id);
         }
       }
+
       setIsLoadingRegisters(false);
     };
 
     if (open) {
       loadCashRegisters();
     }
-  }, [open, branchId]);
+  }, [open, branchId, sectorId]);
 
   // Set initial payment amount when total changes
   useEffect(() => {
@@ -525,15 +553,48 @@ export function CloseOrderDialog({
                 </div>
 
                 <div className="space-y-4">
-                  {/* Cash Register Display */}
-                  <div className="flex items-center gap-1">
-                    <Label>Caja:</Label>
-                    <div className="text-sm">
-                      {isLoadingRegisters
-                        ? "Cargando..."
-                        : cashRegisters.find((r) => r.id === selectedRegisterId)
-                            ?.name || "Sin caja seleccionada"}
-                    </div>
+                  {/* Cash Register Selector */}
+                  <div className="space-y-2">
+                    <Label htmlFor="cash-register-select">Caja:</Label>
+                    {isLoadingRegisters ? (
+                      <div className="text-sm text-muted-foreground">Cargando cajas...</div>
+                    ) : cashRegisters.length === 0 ? (
+                      <div className="text-sm text-destructive">
+                        No hay cajas abiertas en este sector. Abra una caja primero.
+                      </div>
+                    ) : cashRegisters.length === 1 ? (
+                      // Show read-only for single register
+                      <div className="text-sm font-medium">
+                        {cashRegisters[0].name}
+                        {cashRegisters[0].sectors.length > 0 && (
+                          <span className="text-muted-foreground ml-2">
+                            ({cashRegisters[0].sectors.map(s => s.name).join(", ")})
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      // Show dropdown for multiple registers
+                      <Select
+                        value={selectedRegisterId}
+                        onValueChange={setSelectedRegisterId}
+                      >
+                        <SelectTrigger id="cash-register-select">
+                          <SelectValue placeholder="Seleccione una caja" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cashRegisters.map((register) => (
+                            <SelectItem key={register.id} value={register.id}>
+                              {register.name}
+                              {register.sectors.length > 0 && (
+                                <span className="text-muted-foreground ml-2">
+                                  ({register.sectors.map(s => s.name).join(", ")})
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* Payment Lines */}
@@ -635,7 +696,12 @@ export function CloseOrderDialog({
             <Button
               onClick={handleClose}
               className="bg-green-600 hover:bg-green-700"
-              disabled={isLoadingAction || !selectedRegisterId}
+              disabled={
+                isLoadingAction ||
+                isLoadingRegisters ||
+                !selectedRegisterId ||
+                cashRegisters.length === 0
+              }
             >
               {isLoadingAction ? "Procesando..." : "Finalizar Venta"}
             </Button>

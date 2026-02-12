@@ -63,6 +63,7 @@ type Order = {
   table: {
     number: number;
     name: string | null;
+    sectorId: string | null;
   } | null;
   client: ClientData | null;
   assignedTo: {
@@ -243,13 +244,28 @@ export function OrderDetailsSidebar({
     try {
       const result = await updateOrderStatus(order.id, newStatus);
       if (result.success) {
+        toast({
+          title: "Estado actualizado",
+          description: `La orden ahora está ${statusLabels[newStatus].toLowerCase()}`,
+        });
         onOrderUpdated?.();
       } else {
+        // Show error message from backend
+        toast({
+          title: "Error",
+          description: result.error || "No se pudo actualizar el estado",
+          variant: "destructive",
+        });
         // Refresh to restore correct state
         onOrderUpdated?.();
         console.error("Failed to update status:", result.error);
       }
     } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al actualizar el estado de la orden",
+        variant: "destructive",
+      });
       console.error("Error updating status:", error);
       // Refresh to restore correct state
       onOrderUpdated?.();
@@ -407,9 +423,12 @@ export function OrderDetailsSidebar({
                   <SelectItem value={OrderStatus.IN_PROGRESS}>
                     {statusLabels[OrderStatus.IN_PROGRESS]}
                   </SelectItem>
-                  <SelectItem value={OrderStatus.COMPLETED}>
-                    {statusLabels[OrderStatus.COMPLETED]}
-                  </SelectItem>
+                  {/* Only show COMPLETED if order is already completed (for visibility) */}
+                  {order.status === OrderStatus.COMPLETED && (
+                    <SelectItem value={OrderStatus.COMPLETED} disabled>
+                      {statusLabels[OrderStatus.COMPLETED]} (Pagada)
+                    </SelectItem>
+                  )}
                   <SelectItem value={OrderStatus.CANCELED}>
                     {statusLabels[OrderStatus.CANCELED]}
                   </SelectItem>
@@ -694,6 +713,7 @@ export function OrderDetailsSidebar({
         onOpenChange={setIsCloseOrderDialogOpen}
         order={order}
         branchId={branchId}
+        sectorId={order.table?.sectorId}
         onSuccess={handleCloseOrderSuccess}
       />
 

@@ -183,6 +183,7 @@ export async function createOrder(data: {
             select: {
               number: true,
               name: true,
+              sectorId: true,
             },
           },
         },
@@ -348,6 +349,7 @@ export async function createOrderWithItems(data: {
             select: {
               number: true,
               name: true,
+              sectorId: true,
             },
           },
         },
@@ -1479,6 +1481,7 @@ export async function getOrders(filters: OrderFilters) {
             select: {
               number: true,
               name: true,
+              sectorId: true,
             },
           },
           items: {
@@ -1668,6 +1671,15 @@ export async function assignStaffToOrder(
 // Update order status
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   try {
+    // Prevent manual status change to COMPLETED
+    // COMPLETED status should only be set via closeTableWithPayment()
+    if (status === OrderStatus.COMPLETED) {
+      return {
+        success: false,
+        error: "No se puede marcar como completada manualmente. Use 'Finalizar Venta' para registrar el pago.",
+      };
+    }
+
     const order = await prisma.order.update({
       where: { id: orderId },
       data: { status },

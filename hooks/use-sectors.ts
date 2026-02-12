@@ -2,12 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import { getSectorsByBranch } from "@/actions/Sector";
 import type { Sector } from "@/types/tables-client";
 
-export function useSectors(branchId: string) {
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [selectedSector, setSelectedSector] = useState<string | null>(null);
-  const [sectorsLoaded, setSectorsLoaded] = useState(false);
+export function useSectors(branchId: string, initialSectors?: Sector[]) {
+  const [sectors, setSectors] = useState<Sector[]>(initialSectors || []);
+  const [selectedSector, setSelectedSector] = useState<string | null>(
+    initialSectors && initialSectors.length > 0 ? initialSectors[0].id : null
+  );
+  const [sectorsLoaded, setSectorsLoaded] = useState(!!initialSectors);
 
   const fetchSectors = useCallback(async () => {
+    // Skip fetch if initial sectors provided
+    if (initialSectors) {
+      return;
+    }
+
     const result = await getSectorsByBranch(branchId);
     if (result.success && result.data) {
       setSectors(result.data);
@@ -17,7 +24,7 @@ export function useSectors(branchId: string) {
       }
       setSectorsLoaded(true);
     }
-  }, [branchId, selectedSector]);
+  }, [branchId, selectedSector, initialSectors]);
 
   const refreshSectors = useCallback(async () => {
     const result = await getSectorsByBranch(branchId);

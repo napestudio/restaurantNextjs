@@ -47,6 +47,7 @@ type Order = {
   table: {
     number: number;
     name: string | null;
+    sectorId: string | null;
   } | null;
   client: ClientData | null;
   assignedTo: {

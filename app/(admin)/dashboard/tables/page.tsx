@@ -1,4 +1,5 @@
 import { getTablesWithStatus } from "@/actions/Table";
+import { getSectorsByBranch } from "@/actions/Sector";
 import { TablesClientWrapper } from "@/components/dashboard/tables-client-wrapper";
 import { BRANCH_ID } from "@/lib/constants";
 import { requireRole } from "@/lib/permissions/middleware";
@@ -10,9 +11,21 @@ export default async function TablesPage() {
   // TODO: Get branchId from user session/context
   const branchId = BRANCH_ID || "";
 
-  const tablesResult = await getTablesWithStatus(branchId);
-  const tables =
-    tablesResult.success && tablesResult.data ? tablesResult.data : [];
+  // Fetch tables and sectors in parallel
+  const [tablesResult, sectorsResult] = await Promise.all([
+    getTablesWithStatus(branchId),
+    getSectorsByBranch(branchId),
+  ]);
+
+  if (!tablesResult.success || !tablesResult.data) {
+    return <div>Error loading tables</div>;
+  }
+
+  if (!sectorsResult.success || !sectorsResult.data) {
+    return <div>Error loading sectors</div>;
+  }
+
+  const tables = tablesResult.data;
 
   // Serialize dates for client components
   const serializedTables = tables.map((table) => ({
@@ -44,6 +57,7 @@ export default async function TablesPage() {
       <TablesClientWrapper
         branchId={branchId}
         initialTables={serializedTables}
+        initialSectors={sectorsResult.data}
       />
     </div>
   );
