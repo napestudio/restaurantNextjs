@@ -6,16 +6,12 @@ import { X } from "lucide-react";
 
 const CONFIG_ITEMS = [
   {
-    label: "Turnos",
+    label: "Reservas",
     href: "/dashboard/config/slots",
   },
   {
-    label: "Clientes",
-    href: "/dashboard/config/clients",
-  },
-  {
-    label: "Impresoras",
-    href: "/dashboard/config/printers",
+    label: "Pedidos",
+    href: "/dashboard/config/delivery",
   },
   {
     label: "Mesas",
@@ -25,14 +21,18 @@ const CONFIG_ITEMS = [
     label: "Cajas",
     href: "/dashboard/config/cash-registers",
   },
+  {
+    label: "Clientes",
+    href: "/dashboard/config/clients",
+  },
+  {
+    label: "Impresoras",
+    href: "/dashboard/config/printers",
+  },
   // {
   //   label: "Facturación",
   //   href: "/dashboard/config/fiscal",
   // },
-  {
-    label: "Pedidos",
-    href: "/dashboard/config/delivery",
-  },
   {
     label: "Usuarios",
     href: "/dashboard/config/users",
