@@ -4,6 +4,7 @@ import {
   createMenuItem,
   setProductOnBranch,
   updateMenuItem,
+  deleteProductImage,
 } from "@/actions/menuItems";
 import type {
   PriceType,
@@ -19,6 +20,7 @@ import {
   VOLUME_UNIT_OPTIONS,
   WEIGHT_UNIT_OPTIONS,
 } from "../lib/units";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 // Serialized types for client components
 type SerializedProductPrice = {
@@ -110,7 +112,12 @@ export function MenuItemDialog({
 }: MenuItemDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentTab, setCurrentTab] = useState<"basic" | "stock">("basic");
+  const [currentTab, setCurrentTab] = useState<"basic" | "stock" | "prices">(
+    "basic",
+  );
+
+  // Track original image URL for cleanup
+  const [originalImageUrl] = useState(item?.imageUrl ?? null);
 
   // Obtener datos de la sucursal si estamos editando
   const branchData = item?.branches.find((b) => b.branchId === branchId);
@@ -150,7 +157,7 @@ export function MenuItemDialog({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -329,21 +336,41 @@ export function MenuItemDialog({
         if (savedProduct) {
           savedProduct = {
             ...savedProduct,
-            branches: [branchResult.data]
+            branches: [branchResult.data],
           };
         }
+      }
+
+      // Clean up old image if it changed
+      if (originalImageUrl && originalImageUrl !== formData.imageUrl) {
+        // Image was changed or removed - delete old one from Cloudinary
+        deleteProductImage(originalImageUrl).catch((err) => {
+          console.warn("Failed to delete old image:", err);
+          // Don't fail the operation - deletion is cleanup, not critical
+        });
       }
 
       // Call onSuccess with the saved product data for optimistic updates
       onSuccess(savedProduct || undefined, isNewItem);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Error al guardar el producto";
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al guardar el producto";
 
       // Check for unique constraint errors
-      if (errorMessage.includes("Unique constraint failed") && errorMessage.includes("name")) {
-        setError("Ya existe un producto con este nombre en tu restaurante. Por favor, usa un nombre diferente.");
-      } else if (errorMessage.includes("Unique constraint failed") && errorMessage.includes("sku")) {
-        setError("El código SKU ya está en uso. Por favor, usa un código diferente.");
+      if (
+        errorMessage.includes("Unique constraint failed") &&
+        errorMessage.includes("name")
+      ) {
+        setError(
+          "Ya existe un producto con este nombre en tu restaurante. Por favor, usa un nombre diferente.",
+        );
+      } else if (
+        errorMessage.includes("Unique constraint failed") &&
+        errorMessage.includes("sku")
+      ) {
+        setError(
+          "El código SKU ya está en uso. Por favor, usa un código diferente.",
+        );
       } else {
         setError(errorMessage);
       }
@@ -372,24 +399,37 @@ export function MenuItemDialog({
         {/* Tabs */}
         <div className="flex border-b border-gray-200">
           <button
+            type="button"
             onClick={() => setCurrentTab("basic")}
-            className={`flex-1 px-6 py-3 font-medium transition-colors ${
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
               currentTab === "basic"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-600 hover:text-gray-900"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-600 hover:text-gray-900"
             }`}
           >
             Información Básica
           </button>
           <button
+            type="button"
             onClick={() => setCurrentTab("stock")}
-            className={`flex-1 px-6 py-3 font-medium transition-colors ${
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
               currentTab === "stock"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-600 hover:text-gray-900"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-600 hover:text-gray-900"
             }`}
           >
-            Stock y Precios
+            Stock
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentTab("prices")}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              currentTab === "prices"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Precios
           </button>
         </div>
 
@@ -437,6 +477,26 @@ export function MenuItemDialog({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Descripción del producto..."
                   />
+                </div>
+
+                {/* Imagen del Producto */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Imagen del Producto
+                  </label>
+                  <ImageUpload
+                    value={formData.imageUrl}
+                    onChange={(url) =>
+                      setFormData((prev) => ({ ...prev, imageUrl: url }))
+                    }
+                    onRemove={() =>
+                      setFormData((prev) => ({ ...prev, imageUrl: "" }))
+                    }
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Formatos: JPG, PNG, WebP. Tamaño máximo: 5MB
+                  </p>
                 </div>
 
                 {/* Categoría */}
@@ -591,119 +651,174 @@ export function MenuItemDialog({
               </div>
             )}
 
-            {/* Tab: Stock y Precios */}
+            {/* Tab: Stock */}
             {currentTab === "stock" && (
-              <div className="space-y-6">
-                {/* Stock */}
-                {formData.trackStock ? (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Control de Stock
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Stock Actual
-                        </label>
-                        <input
-                          type="number"
-                          name="stock"
-                          value={formData.stock}
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
+              <div className="space-y-6 p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Gestión de Stock
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Configura el inventario disponible en esta sucursal
+                  </p>
+                </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Stock Mínimo
-                        </label>
-                        <input
-                          type="number"
-                          name="minStock"
-                          value={formData.minStock}
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Stock Máximo
-                        </label>
-                        <input
-                          type="number"
-                          name="maxStock"
-                          value={formData.maxStock}
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                      Producto sin seguimiento de stock
-                    </h3>
-                    <p className="text-sm text-blue-700">
-                      Este producto estará siempre disponible. El seguimiento de
-                      stock está deshabilitado. Para habilitar el control de
-                      stock, ve a la pestaña `&quot;`Información Básica`&quot;`
-                      y activa la opción.
+                {!formData.trackStock ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                    <p className="text-sm text-gray-600">
+                      El seguimiento de stock está desactivado para este
+                      producto.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Activa el seguimiento de stock en la pestaña
+                      `&quot;`Información Básica`&quot;` para gestionar el
+                      inventario.
                     </p>
                   </div>
-                )}
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Stock Actual */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock Actual *
+                      </label>
+                      <input
+                        type="number"
+                        name="stock"
+                        value={formData.stock}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        required={formData.trackStock}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
 
-                {/* Precios */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {/* Stock Mínimo */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock Mínimo
+                      </label>
+                      <input
+                        type="number"
+                        name="minStock"
+                        value={formData.minStock}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+
+                    {/* Stock Máximo */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock Máximo
+                      </label>
+                      <input
+                        type="number"
+                        name="maxStock"
+                        value={formData.maxStock}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab: Precios */}
+            {currentTab === "prices" && (
+              <div className="space-y-6 p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Precios por Tipo de Servicio
                   </h3>
-                  <div className="space-y-4">
-                    {PRICE_TYPE_OPTIONS.map((priceType) => {
-                      // Map enum values to form keys
-                      let priceKey: keyof typeof formData.prices;
-                      if (priceType.value === "DINE_IN") {
-                        priceKey = "dineIn";
-                      } else if (priceType.value === "TAKE_AWAY") {
-                        priceKey = "takeAway";
-                      } else {
-                        priceKey = "delivery";
-                      }
+                  <p className="text-sm text-gray-600">
+                    Configura los precios según el tipo de servicio. Al menos un
+                    precio es requerido.
+                  </p>
+                </div>
 
-                      return (
-                        <div key={priceType.value}>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {priceType.label}
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                              $
-                            </span>
-                            <input
-                              type="number"
-                              name={`price_${priceType.value}`}
-                              value={formData.prices[priceKey]}
-                              onChange={handleChange}
-                              step="0.01"
-                              min="0"
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="space-y-4">
+                  {/* Precio Comedor (DINE_IN) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Precio Comedor (para consumir en local)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        name="prices.dineIn"
+                        value={formData.prices.dineIn}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    * Debe definir al menos un precio
+
+                  {/* Precio Para Llevar (TAKE_AWAY) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Precio Para Llevar
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        name="prices.takeAway"
+                        value={formData.prices.takeAway}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Precio Delivery */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Precio Delivery
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        name="prices.delivery"
+                        value={formData.prices.delivery}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-xs text-blue-800">
+                    <strong>Nota:</strong> Los precios son por unidad base
+                    (unidad, kg, litro, etc.). Al menos un precio debe estar
+                    configurado.
                   </p>
                 </div>
               </div>

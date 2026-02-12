@@ -193,7 +193,7 @@ export function InvoiceTable({
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="text-sm text-gray-900 max-w-[200px] truncate">
+                  <div className="text-sm text-gray-900 max-w-50 truncate">
                     {invoice.customerName}
                   </div>
                 </td>
