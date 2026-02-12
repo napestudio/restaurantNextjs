@@ -50,15 +50,11 @@ export default function FloorPlanHandler({
   editModeOnly = false,
   isLoading = false,
 }: FloorPlanPageProps) {
-  // Early return for loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Cargando plano...</div>
-      </div>
-    );
-  }
-  // UI State
+  // 1. Derived values from props (no hooks) - needed by useState initialization
+  const sectors = externalSectors;
+  const selectedSector = externalSelectedSector ?? null;
+
+  // 2. ALL useState hooks - must be called before any early returns
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(editModeOnly);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -69,24 +65,29 @@ export default function FloorPlanHandler({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
-  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<
     string | null
   >(null);
   const [selectedTableHasOrders, setSelectedTableHasOrders] = useState(false);
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  // Edit sidebar state (for editModeOnly)
   const [tableEditSidebarOpen, setTableEditSidebarOpen] = useState(false);
   const [selectedTableForEdit, setSelectedTableForEdit] = useState<
     string | null
   >(null);
+  const [hasDragged, setHasDragged] = useState(false);
+  const [newTable, setNewTable] = useState({
+    number: "",
+    name: "",
+    shape: "SQUARE" as TableShapeType,
+    capacity: "2",
+    isShared: false,
+    sectorId: selectedSector || "",
+  });
 
-  // Use external sectors and selectedSector
-  const sectors = externalSectors;
-  const selectedSector = externalSelectedSector ?? null;
+  // 3. ALL useRef hooks
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
-  // Get canvas dimensions from selected sector or use defaults
+  // 4. useMemo for canvas dimensions
   const { canvasWidth, canvasHeight } = useMemo(() => {
     const currentSector = selectedSector
       ? sectors.find((s) => s.id === selectedSector)
@@ -97,7 +98,7 @@ export default function FloorPlanHandler({
     };
   }, [selectedSector, sectors]);
 
-  // Use custom hook for floor plan state management
+  // 5. Custom hooks - use floor plan state and actions
   const {
     tables,
     setTables,
@@ -117,7 +118,6 @@ export default function FloorPlanHandler({
     zoom,
   });
 
-  // Use custom hook for table actions
   const {
     deleteTable,
     rotateTable,
@@ -135,16 +135,7 @@ export default function FloorPlanHandler({
     setHasUnsavedChanges,
   });
 
-  // New table form state
-  const [newTable, setNewTable] = useState({
-    number: "",
-    name: "",
-    shape: "SQUARE" as TableShapeType,
-    capacity: "2",
-    isShared: false,
-    sectorId: selectedSector || "",
-  });
-
+  // 6. ALL useEffect hooks
   // Check if selected table has active orders
   useEffect(() => {
     const checkActiveOrders = async () => {
@@ -163,6 +154,90 @@ export default function FloorPlanHandler({
     checkActiveOrders();
   }, [selectedTable]);
 
+  // Handle mouse move and mouse up for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggedTable) return;
+
+      setHasDragged(true);
+      const svg = svgRef.current;
+      if (!svg) return;
+
+      const rect = svg.getBoundingClientRect();
+      handleTableDrag(e.clientX, e.clientY, rect);
+    };
+
+    const handleMouseUp = () => {
+      if (!draggedTable) return;
+
+      // If we dragged, mark as having unsaved changes
+      if (hasDragged) {
+        setHasUnsavedChanges(true);
+      } else if (editModeOnly) {
+        // If no drag occurred and in editModeOnly, open the sidebar
+        setSelectedTableForEdit(draggedTable);
+        setTableEditSidebarOpen(true);
+      }
+
+      setDraggedTable(null);
+      setHasDragged(false);
+    };
+
+    if (draggedTable) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [
+    draggedTable,
+    handleTableDrag,
+    setDraggedTable,
+    hasDragged,
+    editModeOnly,
+  ]);
+
+  // Autosave with debounce (1.5s after last change)
+  useEffect(() => {
+    if (!editModeOnly || !hasUnsavedChanges) return;
+
+    // Clear any existing timeout
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    // Set new timeout for autosave
+    autosaveTimeoutRef.current = setTimeout(() => {
+      if (!hasUnsavedChanges || isSaving) return;
+
+      setIsSaving(true);
+      saveFloorPlanChanges(
+        setIsSaving,
+        setHasUnsavedChanges,
+        () => {}, // Don't exit edit mode on autosave
+      )
+        .then(() => {
+          // Show saved indicator
+          setShowSavedIndicator(true);
+          setTimeout(() => setShowSavedIndicator(false), 2000);
+        })
+        .catch((error) => {
+          console.error("Error in autosave:", error);
+        });
+    }, 1500);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [editModeOnly, hasUnsavedChanges, saveFloorPlanChanges, isSaving]);
+
+  // 7. ALL useCallback hooks
   // Handle table mouse down - memoized
   // Note: table.x and table.y are CENTER coordinates
   const handleTableMouseDown = useCallback(
@@ -204,66 +279,6 @@ export default function FloorPlanHandler({
       setDragOffset,
     ],
   );
-
-  // Track if a drag occurred to distinguish click from drag
-  const [hasDragged, setHasDragged] = useState(false);
-
-  // Handle table click to open edit sidebar (defined before useEffect that uses it)
-  const openEditSidebar = useCallback(
-    (tableId: string) => {
-      if (editModeOnly) {
-        setSelectedTableForEdit(tableId);
-        setTableEditSidebarOpen(true);
-      }
-    },
-    [editModeOnly],
-  );
-
-  // Handle mouse move and mouse up for dragging
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!draggedTable) return;
-
-      setHasDragged(true);
-      const svg = svgRef.current;
-      if (!svg) return;
-
-      const rect = svg.getBoundingClientRect();
-      handleTableDrag(e.clientX, e.clientY, rect);
-    };
-
-    const handleMouseUp = () => {
-      if (!draggedTable) return;
-
-      // If we dragged, mark as having unsaved changes
-      if (hasDragged) {
-        setHasUnsavedChanges(true);
-      } else if (editModeOnly) {
-        // If no drag occurred and in editModeOnly, open the sidebar
-        openEditSidebar(draggedTable);
-      }
-
-      setDraggedTable(null);
-      setHasDragged(false);
-    };
-
-    if (draggedTable) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [
-    draggedTable,
-    handleTableDrag,
-    setDraggedTable,
-    hasDragged,
-    editModeOnly,
-    openEditSidebar,
-  ]);
 
   // Add table handler - memoized
   // Note: FloorTable uses center coordinates, DB uses top-left
@@ -361,49 +376,6 @@ export default function FloorPlanHandler({
     selectedSector,
   ]);
 
-  // Save handler - memoized (for autosave, doesn't exit edit mode)
-  const handleSave = useCallback(async () => {
-    if (!hasUnsavedChanges || isSaving) return;
-
-    setIsSaving(true);
-    try {
-      // Use saveFloorPlanChanges but keep edit mode active
-      await saveFloorPlanChanges(
-        setIsSaving,
-        setHasUnsavedChanges,
-        () => {}, // Don't exit edit mode on autosave
-      );
-
-      // Show saved indicator
-      setShowSavedIndicator(true);
-      setTimeout(() => setShowSavedIndicator(false), 2000);
-    } catch (error) {
-      console.error("Error in autosave:", error);
-    }
-  }, [saveFloorPlanChanges, hasUnsavedChanges, isSaving]);
-
-  // Autosave with debounce (1.5s after last change)
-  useEffect(() => {
-    if (!editModeOnly || !hasUnsavedChanges) return;
-
-    // Clear any existing timeout
-    if (autosaveTimeoutRef.current) {
-      clearTimeout(autosaveTimeoutRef.current);
-    }
-
-    // Set new timeout for autosave
-    autosaveTimeoutRef.current = setTimeout(() => {
-      handleSave();
-    }, 1500);
-
-    // Cleanup on unmount or when dependencies change
-    return () => {
-      if (autosaveTimeoutRef.current) {
-        clearTimeout(autosaveTimeoutRef.current);
-      }
-    };
-  }, [editModeOnly, hasUnsavedChanges, handleSave]);
-
   // Zoom handlers - memoized
   const handleZoomIn = useCallback(() => {
     setZoom((prev) => Math.min(1, prev + 0.05));
@@ -435,22 +407,19 @@ export default function FloorPlanHandler({
     setSelectedTableForOrder(null);
   }, []);
 
-  const handleTableChange = useCallback((newTableId: string) => {
-    setSelectedTableForOrder(newTableId);
-    setSelectedTable(newTableId);
-  }, [setSelectedTable]);
+  const handleTableChange = useCallback(
+    (newTableId: string) => {
+      setSelectedTableForOrder(newTableId);
+      setSelectedTable(newTableId);
+    },
+    [setSelectedTable],
+  );
 
   // Edit sidebar handlers (for editModeOnly)
   const handleCloseEditSidebar = useCallback(() => {
     setTableEditSidebarOpen(false);
     setTimeout(() => setSelectedTableForEdit(null), 300); // Clear after animation
   }, []);
-
-  // Get table data for edit sidebar
-  const selectedTableForEditData = useMemo(() => {
-    if (!selectedTableForEdit) return null;
-    return tables.find((t) => t.id === selectedTableForEdit) || null;
-  }, [selectedTableForEdit, tables]);
 
   // Handle canvas click to add table
   const handleCanvasClick = useCallback(
@@ -474,6 +443,13 @@ export default function FloorPlanHandler({
     [dbTables, selectedSector],
   );
 
+  // 8. Additional useMemo for derived values
+  // Get table data for edit sidebar
+  const selectedTableForEditData = useMemo(() => {
+    if (!selectedTableForEdit) return null;
+    return tables.find((t) => t.id === selectedTableForEdit) || null;
+  }, [selectedTableForEdit, tables]);
+
   // Get additional table info for properties panel - memoized
   const selectedDbTable = useMemo(() => {
     return selectedTable
@@ -492,6 +468,15 @@ export default function FloorPlanHandler({
     if (!selectedTableForOrder) return null;
     return dbTables.find((t) => t.id === selectedTableForOrder) ?? null;
   }, [selectedTableForOrder, dbTables]);
+
+  // 9. Early return for loading state (after ALL hooks to comply with Rules of Hooks)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-muted-foreground">Cargando plano...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
