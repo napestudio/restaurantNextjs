@@ -6,7 +6,7 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
-} from "@/actions/menuItems";
+} from "@/actions/Products";
 
 type Category = {
   id: string;
@@ -56,14 +56,14 @@ export function CategoryDialog({
           ];
         case "update":
           return state.map((cat) =>
-            cat.id === action.id ? { ...cat, name: action.name } : cat
+            cat.id === action.id ? { ...cat, name: action.name } : cat,
           );
         case "delete":
           return state.filter((cat) => cat.id !== action.id);
         default:
           return state;
       }
-    }
+    },
   );
 
   const handleCreate = async () => {
