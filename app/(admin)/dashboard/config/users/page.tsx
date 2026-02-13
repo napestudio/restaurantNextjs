@@ -6,7 +6,7 @@ import { UserRole } from "@/app/generated/prisma";
 import { redirect } from "next/navigation";
 
 export default async function UsersPage() {
-  const { userId } = await requireRole(UserRole.SUPERADMIN);
+  const { userId } = await requireRole(UserRole.ADMIN);
 
   // Get the user's branch
   const userOnBranch = await prisma.userOnBranch.findFirst({

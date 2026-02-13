@@ -1,62 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { generateInvoicePDF } from "@/actions/Invoice";
+import { prepareInvoicePrint } from "@/actions/PrinterActions";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Order } from "@/types/orders";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Download, Package, Printer, Truck, UtensilsCrossed } from "lucide-react";
-import type { ClientData } from "@/lib/serializers";
-import { generateInvoicePDF } from "@/actions/Invoice";
-import { prepareInvoicePrint } from "@/actions/PrinterActions";
-import { useToast } from "@/hooks/use-toast";
-
-type Order = {
-  id: string;
-  publicCode: string;
-  type: OrderType;
-  status: OrderStatus;
-  customerName: string | null;
-  customerEmail: string | null;
-  partySize: number | null;
-  description: string | null;
-  courierName: string | null;
-  createdAt: Date;
-  tableId: string | null;
-  paymentMethod: string;
-  discountPercentage: number;
-  needsInvoice: boolean;
-  assignedToId: string | null;
-  table: {
-    number: number;
-    name: string | null;
-  } | null;
-  client: ClientData | null;
-  assignedTo: {
-    id: string;
-    name: string | null;
-    username: string;
-  } | null;
-  items: Array<{
-    id: string;
-    itemName: string;
-    quantity: number;
-    price: number;
-    originalPrice: number | null;
-    product: {
-      name: string;
-      categoryId: string | null;
-    } | null;
-  }>;
-  invoices?: Array<{
-    id: string;
-    status: "PENDING" | "EMITTED" | "CANCELLED" | "FAILED";
-    cae: string | null;
-    invoiceNumber: number;
-    invoiceDate: Date;
-  }>;
-};
+import {
+  Download,
+  Package,
+  Printer,
+  Truck,
+  UtensilsCrossed,
+} from "lucide-react";
+import { useState } from "react";
+// type Order = {
+//   id: string;
+//   publicCode: string;
+//   type: OrderType;
+//   status: OrderStatus;
+//   customerName: string | null;
+//   customerEmail: string | null;
+//   partySize: number | null;
+//   description: string | null;
+//   courierName: string | null;
+//   createdAt: Date;
+//   tableId: string | null;
+//   paymentMethod: string;
+//   discountPercentage: number;
+//   needsInvoice: boolean;
+//   assignedToId: string | null;
+//   table: {
+//     number: number;
+//     name: string | null;
+//   } | null;
+//   client: ClientData | null;
+//   assignedTo: {
+//     id: string;
+//     name: string | null;
+//     username: string;
+//   } | null;
+//   items: Array<{
+//     id: string;
+//     itemName: string;
+//     quantity: number;
+//     price: number;
+//     originalPrice: number | null;
+//     product: {
+//       name: string;
+//       categoryId: string | null;
+//     } | null;
+//   }>;
+//   invoices?: Array<{
+//     id: string;
+//     status: "PENDING" | "EMITTED" | "CANCELLED" | "FAILED";
+//     cae: string | null;
+//     invoiceNumber: number;
+//     invoiceDate: Date;
+//   }>;
+// };
 
 interface OrderListViewProps {
   orders: Order[];
@@ -91,10 +96,16 @@ const typeLabels = {
 
 export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
   const { toast } = useToast();
-  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(
+    null,
+  );
   const [printingInvoice, setPrintingInvoice] = useState<string | null>(null);
 
-  const handleDownloadInvoice = async (e: React.MouseEvent, invoiceId: string, orderId: string) => {
+  const handleDownloadInvoice = async (
+    e: React.MouseEvent,
+    invoiceId: string,
+    orderId: string,
+  ) => {
     e.stopPropagation(); // Prevent row click
     setDownloadingInvoice(orderId);
 
@@ -107,7 +118,7 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
         // Convert Node.js Buffer to ArrayBuffer for browser
         const arrayBuffer = pdfBuffer.buffer.slice(
           pdfBuffer.byteOffset,
-          pdfBuffer.byteOffset + pdfBuffer.byteLength
+          pdfBuffer.byteOffset + pdfBuffer.byteLength,
         ) as ArrayBuffer;
         const blob = new Blob([arrayBuffer], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
@@ -126,7 +137,9 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
       } else {
         toast({
           title: "Error",
-          description: !result.success ? result.error || "No se pudo descargar la factura" : "No se pudo descargar la factura",
+          description: !result.success
+            ? result.error || "No se pudo descargar la factura"
+            : "No se pudo descargar la factura",
           variant: "destructive",
         });
       }
@@ -141,7 +154,11 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
     }
   };
 
-  const handlePrintInvoice = async (e: React.MouseEvent, invoiceId: string, orderId: string) => {
+  const handlePrintInvoice = async (
+    e: React.MouseEvent,
+    invoiceId: string,
+    orderId: string,
+  ) => {
     e.stopPropagation(); // Prevent row click
     setPrintingInvoice(orderId);
 
@@ -156,7 +173,9 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
       } else {
         toast({
           title: "Error",
-          description: !result.success ? result.error || "No se pudo imprimir la factura" : "No se pudo imprimir la factura",
+          description: !result.success
+            ? result.error || "No se pudo imprimir la factura"
+            : "No se pudo imprimir la factura",
           variant: "destructive",
         });
       }
@@ -176,7 +195,9 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
       return { hasInvoice: false, label: "No facturado", emittedInvoice: null };
     }
 
-    const emittedInvoice = order.invoices.find((inv) => inv.status === "EMITTED");
+    const emittedInvoice = order.invoices.find(
+      (inv) => inv.status === "EMITTED",
+    );
 
     if (emittedInvoice) {
       return { hasInvoice: true, label: "Facturado", emittedInvoice };
@@ -200,7 +221,10 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
   }
 
   const calculateTotal = (order: Order) => {
-    const subtotal = order.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    const subtotal = order.items.reduce(
+      (sum, item) => sum + item.quantity * item.price,
+      0,
+    );
     const discount = subtotal * (order.discountPercentage / 100);
     return subtotal - discount;
   };
@@ -357,7 +381,13 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={(e) => handleDownloadInvoice(e, status.emittedInvoice!.id, order.id)}
+                            onClick={(e) =>
+                              handleDownloadInvoice(
+                                e,
+                                status.emittedInvoice!.id,
+                                order.id,
+                              )
+                            }
                             disabled={downloadingInvoice === order.id}
                             title="Descargar PDF"
                           >
@@ -366,7 +396,13 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={(e) => handlePrintInvoice(e, status.emittedInvoice!.id, order.id)}
+                            onClick={(e) =>
+                              handlePrintInvoice(
+                                e,
+                                status.emittedInvoice!.id,
+                                order.id,
+                              )
+                            }
                             disabled={printingInvoice === order.id}
                             title="Re-imprimir"
                           >

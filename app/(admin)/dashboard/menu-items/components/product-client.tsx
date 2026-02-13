@@ -2,14 +2,7 @@
 
 import { useState, useOptimistic, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Plus,
-  Search,
-  Filter,
-  FolderPlus,
-  Download,
-  X,
-} from "lucide-react";
+import { Plus, Search, Filter, FolderPlus, Download, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   getMenuItemsPaginated,
@@ -18,10 +11,11 @@ import {
   duplicateProduct,
   exportMenuItemsCSV,
   type PaginationInfo,
-} from "@/actions/menuItems";
-import { MenuItemsTable } from "./menu-items-table";
-import { MenuItemDialog } from "./menu-item-dialog";
+} from "@/actions/Products";
+import { ProductsTable } from "./products-table";
+import { ProductDialog } from "./product-dialog";
 import { CategoryDialog } from "./category-dialog";
+import { CSVImportDialog } from "./csv-import-dialog";
 import type {
   UnitType,
   WeightUnit,
@@ -123,7 +117,7 @@ type FilterState = {
   includeInactive?: boolean;
 };
 
-type MenuItemsClientProps = {
+type ProductsProps = {
   initialMenuItems: MenuItemWithRelations[];
   initialPagination: PaginationInfo;
   initialFilters: FilterState;
@@ -132,14 +126,14 @@ type MenuItemsClientProps = {
   branchId: string;
 };
 
-export function MenuItemsClient({
+export function ProductsClient({
   initialMenuItems,
   initialPagination,
   initialFilters,
   categories: initialCategories,
   restaurantId,
   branchId,
-}: MenuItemsClientProps) {
+}: ProductsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -153,32 +147,33 @@ export function MenuItemsClient({
           return [...state, action.item];
         case "update":
           return state.map((item) =>
-            item.id === action.id ? action.item : item
+            item.id === action.id ? action.item : item,
           );
         case "delete":
           return state.filter((item) => item.id !== action.id);
         default:
           return state;
       }
-    }
+    },
   );
-  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
+  const [pagination, setPagination] =
+    useState<PaginationInfo>(initialPagination);
   const [categories, setCategories] = useState(initialCategories);
   const [isPending, startTransition] = useTransition();
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState(initialFilters.search || "");
   const [selectedCategory, setSelectedCategory] = useState(
-    initialFilters.category || "all"
+    initialFilters.category || "all",
   );
   const [stockStatusFilter, setStockStatusFilter] = useState(
-    initialFilters.stockStatus || "all"
+    initialFilters.stockStatus || "all",
   );
   const [unitTypeFilter, setUnitTypeFilter] = useState(
-    initialFilters.unitType || "all"
+    initialFilters.unitType || "all",
   );
   const [showInactive, setShowInactive] = useState(
-    initialFilters.includeInactive || false
+    initialFilters.includeInactive || false,
   );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -188,8 +183,9 @@ export function MenuItemsClient({
   // Dialog states
   const [showDialog, setShowDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemWithRelations | null>(
-    null
+    null,
   );
   const [deletingItem, setDeletingItem] =
     useState<MenuItemWithRelations | null>(null);
@@ -224,7 +220,8 @@ export function MenuItemsClient({
         pageSize: 20,
         search: searchQuery || undefined,
         categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
-        stockStatus: stockStatusFilter !== "all" ? stockStatusFilter : undefined,
+        stockStatus:
+          stockStatusFilter !== "all" ? stockStatusFilter : undefined,
         unitType: unitTypeFilter !== "all" ? unitTypeFilter : undefined,
         includeInactive: showInactive,
       });
@@ -361,7 +358,7 @@ export function MenuItemsClient({
       } else {
         // Remove optimistic item and show error
         setMenuItems((prevItems) =>
-          prevItems.filter((i) => i.id !== optimisticDuplicate.id)
+          prevItems.filter((i) => i.id !== optimisticDuplicate.id),
         );
 
         toast({
@@ -385,7 +382,7 @@ export function MenuItemsClient({
       if (result.success) {
         // Update actual state
         setMenuItems((prevItems) =>
-          prevItems.filter((i) => i.id !== deletingItem.id)
+          prevItems.filter((i) => i.id !== deletingItem.id),
         );
         setDeletingItem(null);
         // Refetch for consistency
@@ -409,38 +406,39 @@ export function MenuItemsClient({
 
   const handleSuccess = (
     savedItem?: MenuItemWithRelations,
-    isNewItem?: boolean
+    isNewItem?: boolean,
   ) => {
     // Close dialog immediately
     setShowDialog(false);
     setEditingItem(null);
 
-    // Wrap optimistic updates in startTransition
+    // Wrap updates in startTransition
     startTransition(async () => {
-      // Optimistic update if we have the saved item
+      // Update actual state immediately if we have the saved item
+      // (savedItem is already the confirmed server response, not an optimistic prediction)
       if (savedItem) {
         if (isNewItem) {
-          // Add new item optimistically
-          setOptimisticMenuItems({
-            type: "create",
-            tempId: savedItem.id,
-            item: savedItem,
-          });
-          // Update actual state
+          // Add new item to actual state
           setMenuItems((prevItems) => [...prevItems, savedItem]);
-        } else {
-          // Update existing item optimistically
-          setOptimisticMenuItems({
-            type: "update",
-            id: savedItem.id,
-            item: savedItem,
+
+          // Show success toast for new product
+          toast({
+            title: "Producto creado",
+            description: `"${savedItem.name}" se creó exitosamente`,
           });
-          // Update actual state
+        } else {
+          // Update existing item in actual state
           setMenuItems((prevItems) =>
             prevItems.map((item) =>
-              item.id === savedItem.id ? savedItem : item
-            )
+              item.id === savedItem.id ? savedItem : item,
+            ),
           );
+
+          // Show success toast for updated product
+          toast({
+            title: "Producto actualizado",
+            description: `"${savedItem.name}" se actualizó correctamente`,
+          });
         }
       }
 
@@ -453,7 +451,8 @@ export function MenuItemsClient({
           pageSize: 20,
           search: searchQuery || undefined,
           categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
-          stockStatus: stockStatusFilter !== "all" ? stockStatusFilter : undefined,
+          stockStatus:
+            stockStatusFilter !== "all" ? stockStatusFilter : undefined,
           unitType: unitTypeFilter !== "all" ? unitTypeFilter : undefined,
           includeInactive: showInactive,
         }),
@@ -499,6 +498,14 @@ export function MenuItemsClient({
             >
               <Download className="h-4 w-4 mr-2" />
               {isExporting ? "Exportando..." : "Exportar CSV"}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowImportDialog(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Importar CSV
             </Button>
 
             <Button
@@ -582,7 +589,10 @@ export function MenuItemsClient({
               {/* Unit Type */}
               <div className="space-y-2">
                 <Label>Tipo de Unidad</Label>
-                <Select value={unitTypeFilter} onValueChange={setUnitTypeFilter}>
+                <Select
+                  value={unitTypeFilter}
+                  onValueChange={setUnitTypeFilter}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -645,7 +655,7 @@ export function MenuItemsClient({
           </CardContent>
         </Card>
       ) : (
-        <MenuItemsTable
+        <ProductsTable
           items={optimisticMenuItems}
           branchId={branchId}
           onEdit={handleEdit}
@@ -672,37 +682,38 @@ export function MenuItemsClient({
                 />
               </PaginationItem>
 
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
-                (page) => {
-                  if (
-                    page === 1 ||
-                    page === pagination.totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  } else if (
-                    page === currentPage - 2 ||
-                    page === currentPage + 2
-                  ) {
-                    return (
-                      <PaginationItem key={page}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    );
-                  }
-                  return null;
+              {Array.from(
+                { length: pagination.totalPages },
+                (_, i) => i + 1,
+              ).map((page) => {
+                if (
+                  page === 1 ||
+                  page === pagination.totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  );
                 }
-              )}
+                return null;
+              })}
 
               <PaginationItem>
                 <PaginationNext
@@ -724,7 +735,7 @@ export function MenuItemsClient({
 
       {/* Diálogo de crear/editar */}
       {showDialog && (
-        <MenuItemDialog
+        <ProductDialog
           item={editingItem}
           categories={categories}
           restaurantId={restaurantId}
@@ -743,6 +754,23 @@ export function MenuItemsClient({
           onSuccess={handleSuccess}
         />
       )}
+
+      {/* CSV Import Dialog */}
+      <CSVImportDialog
+        open={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        restaurantId={restaurantId}
+        branchId={branchId}
+        categories={categories}
+        onSuccess={() => {
+          setShowImportDialog(false);
+          updateFilters(currentPage);
+          toast({
+            title: "Importación exitosa",
+            description: "Los productos han sido importados correctamente",
+          });
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

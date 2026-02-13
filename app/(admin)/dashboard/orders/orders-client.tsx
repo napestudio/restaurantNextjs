@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { getOrders } from "@/actions/Order";
-import { OrderStatus, OrderType } from "@/app/generated/prisma";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OrderType } from "@/app/generated/prisma";
+import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,60 +10,72 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-  PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { Plus, ChevronDown, Loader2, UtensilsCrossed, ShoppingBag, Truck, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { OrderListView } from "./components/order-list-view";
-import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Order } from "@/types/orders";
+import {
+  ChevronDown,
+  Loader2,
+  Plus,
+  Search,
+  ShoppingBag,
+  Truck,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
 import { CreateOrderSidebar } from "./components/create-order-sidebar";
-import type { ClientData } from "@/lib/serializers";
+import { OrderListView } from "./components/order-list-view";
 
-type Order = {
-  id: string;
-  publicCode: string;
-  type: OrderType;
-  status: OrderStatus;
-  customerName: string | null;
-  customerEmail: string | null;
-  partySize: number | null;
-  description: string | null;
-  courierName: string | null;
-  createdAt: Date;
-  tableId: string | null;
-  paymentMethod: string;
-  discountPercentage: number;
-  needsInvoice: boolean;
-  assignedToId: string | null;
-  table: {
-    number: number;
-    name: string | null;
-  } | null;
-  client: ClientData | null;
-  assignedTo: {
-    id: string;
-    name: string | null;
-    username: string;
-  } | null;
-  items: Array<{
-    id: string;
-    itemName: string;
-    quantity: number;
-    price: number;
-    originalPrice: number | null;
-    product: {
-      name: string;
-      categoryId: string | null;
-    } | null;
-  }>;
-};
+// type Order = {
+//   id: string;
+//   publicCode: string;
+//   type: OrderType;
+//   status: OrderStatus;
+//   customerName: string | null;
+//   customerEmail: string | null;
+//   partySize: number | null;
+//   description: string | null;
+//   courierName: string | null;
+//   createdAt: Date;
+//   tableId: string | null;
+//   paymentMethod: string;
+//   discountPercentage: number;
+//   needsInvoice: boolean;
+//   assignedToId: string | null;
+//   table: {
+//     number: number;
+//     name: string | null;
+//     sectorId?: string | null;
+//   } | null;
+//   client: ClientData | null;
+//   assignedTo: {
+//     id: string;
+//     name: string | null;
+//     username: string;
+//   } | null;
+//   items: Array<{
+//     id: string;
+//     itemName: string;
+//     quantity: number;
+//     price: number;
+//     originalPrice: number | null;
+//     product: {
+//       name: string;
+//       categoryId: string | null;
+//     } | null;
+//   }>;
+// };
 
 type Table = {
   id: string;
@@ -100,14 +110,17 @@ export function OrdersClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
+  const [pagination, setPagination] =
+    useState<PaginationInfo>(initialPagination);
   const [isPending, startTransition] = useTransition();
 
   // Sidebar state
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createOrderSidebarOpen, setCreateOrderSidebarOpen] = useState(false);
-  const [createOrderType, setCreateOrderType] = useState<OrderType | null>(null);
+  const [createOrderType, setCreateOrderType] = useState<OrderType | null>(
+    null,
+  );
 
   // Search state
   const [searchInput, setSearchInput] = useState(initialSearch);
@@ -168,7 +181,8 @@ export function OrdersClient({
   // Refresh orders for current tab and page
   const refreshOrders = () => {
     startTransition(async () => {
-      const orderType = currentTab === "ALL" ? undefined : (currentTab as OrderType);
+      const orderType =
+        currentTab === "ALL" ? undefined : (currentTab as OrderType);
       const result = await getOrders({
         branchId,
         type: orderType,
@@ -212,7 +226,10 @@ export function OrdersClient({
   };
 
   // Handle order created - switch tab, refresh and open the details sidebar
-  const handleOrderCreated = async (orderId?: string, createdOrderType?: OrderType) => {
+  const handleOrderCreated = async (
+    orderId?: string,
+    createdOrderType?: OrderType,
+  ) => {
     // Switch to the tab matching the created order type
     const targetTab = createdOrderType || currentTab;
 
@@ -319,15 +336,21 @@ export function OrdersClient({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => handleCreateOrder(OrderType.TAKE_AWAY)}>
+            <DropdownMenuItem
+              onClick={() => handleCreateOrder(OrderType.TAKE_AWAY)}
+            >
               <ShoppingBag className="h-4 w-4 mr-2" />
               Para Llevar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateOrder(OrderType.DINE_IN)}>
+            <DropdownMenuItem
+              onClick={() => handleCreateOrder(OrderType.DINE_IN)}
+            >
               <UtensilsCrossed className="h-4 w-4 mr-2" />
               Para Comer Aquí
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateOrder(OrderType.DELIVERY)}>
+            <DropdownMenuItem
+              onClick={() => handleCreateOrder(OrderType.DELIVERY)}
+            >
               <Truck className="h-4 w-4 mr-2" />
               Delivery
             </DropdownMenuItem>
@@ -336,7 +359,11 @@ export function OrdersClient({
       </div>
 
       {/* Order Type Tabs */}
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs
+        value={currentTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
         <TabsList className="w-full justify-start">
           <TabsTrigger value="DINE_IN">Para Comer Aquí</TabsTrigger>
           <TabsTrigger value="TAKE_AWAY">Para Llevar</TabsTrigger>
@@ -383,7 +410,7 @@ export function OrdersClient({
                     {pageNum}
                   </PaginationLink>
                 </PaginationItem>
-              )
+              ),
             )}
             <PaginationItem>
               <PaginationNext

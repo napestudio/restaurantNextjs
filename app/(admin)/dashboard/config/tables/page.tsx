@@ -3,12 +3,16 @@ import { TablesClientWrapper } from "@/components/dashboard/tables-client-wrappe
 import { BRANCH_ID } from "@/lib/constants";
 import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
+import { getSectorsByBranch } from "@/actions/Sector";
 
 export default async function ConfigTables() {
   await requireRole(UserRole.ADMIN);
 
   const branchId = BRANCH_ID || "";
-  const tablesResult = await getTablesWithStatus(branchId);
+  const [tablesResult, sectorsResult] = await Promise.all([
+    getTablesWithStatus(branchId),
+    getSectorsByBranch(branchId),
+  ]);
   const tables =
     tablesResult.success && tablesResult.data ? tablesResult.data : [];
 
@@ -35,6 +39,7 @@ export default async function ConfigTables() {
         branchId={branchId}
         initialTables={serializedTables}
         editModeOnly={true}
+        initialSectors={sectorsResult.data}
       />
     </div>
   );

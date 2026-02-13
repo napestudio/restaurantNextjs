@@ -346,7 +346,7 @@ model TimeSlot {
   startTime      DateTime @db.Time
   endTime        DateTime @db.Time
   daysOfWeek     String[]
-  pricePerPerson Decimal? @default(0)
+  pricePerPerson Decimal? @default(0) @db.Decimal(10, 2)
   customerLimit  Int?     // NULL = no limit (shared pool), >0 = manual limit with exclusive tables
   capacity       Int      @default(0) // Auto-calculated from exclusive tables OR 0 if using shared pool
   notes          String?
@@ -554,7 +554,7 @@ model Product {
   volumeUnit VolumeUnit? // Solo si unitType = VOLUME
 
   // Alertas de stock
-  minStockAlert Decimal? // Alerta cuando el stock esté por debajo de este valor
+  minStockAlert Decimal? @db.Decimal(10, 2) // Alerta cuando el stock esté por debajo de este valor
   trackStock    Boolean  @default(true) // Si es false, el producto siempre estará disponible sin importar el stock
 
   isActive  Boolean  @default(true)
@@ -587,9 +587,9 @@ model ProductOnBranch {
   branchId  String
 
   // Stock con soporte para decimales (peso/volumen)
-  stock         Decimal   @default(0)
-  minStock      Decimal? // Stock mínimo para esta sucursal
-  maxStock      Decimal? // Stock máximo recomendado
+  stock         Decimal   @default(0) @db.Decimal(10, 2)
+  minStock      Decimal?  @db.Decimal(10, 2) // Stock mínimo para esta sucursal
+  maxStock      Decimal?  @db.Decimal(10, 2) // Stock máximo recomendado
   lastRestocked DateTime? // Última vez que se reabastació
 
   isActive       Boolean         @default(true)
@@ -609,7 +609,7 @@ model ProductPrice {
   productOnBranch   ProductOnBranch @relation(fields: [productOnBranchId], references: [id])
   productOnBranchId String
   type              PriceType
-  price             Decimal
+  price             Decimal @db.Decimal(10, 2)
 
   @@unique([productOnBranchId, type])
 }
@@ -620,9 +620,9 @@ model StockMovement {
   productOnBranchId String
 
   // Movimiento de stock
-  quantity      Decimal // Positivo = entrada, Negativo = salida
-  previousStock Decimal // Stock anterior al movimiento
-  newStock      Decimal // Stock después del movimiento
+  quantity      Decimal @db.Decimal(10, 2) // Positivo = entrada, Negativo = salida
+  previousStock Decimal @db.Decimal(10, 2) // Stock anterior al movimiento
+  newStock      Decimal @db.Decimal(10, 2) // Stock después del movimiento
 
   // Información del movimiento
   reason    String // "Compra", "Venta", "Merma", "Ajuste", "Devolución", etc.
@@ -748,8 +748,8 @@ model OrderItem {
   productId     String?
   itemName      String
   quantity      Int
-  price         Decimal // Current price (can be modified)
-  originalPrice Decimal? // Original price from product
+  price         Decimal @db.Decimal(10, 2) // Current price (can be modified)
+  originalPrice Decimal? @db.Decimal(10, 2) // Original price from product
   notes         String? // Special instructions (e.g., "no sugar", "extra spicy")
 
   @@index([orderId])

@@ -5,7 +5,7 @@ import {
   deleteProductImage,
   setProductOnBranch,
   updateMenuItem,
-} from "@/actions/menuItems";
+} from "@/actions/Products";
 import type {
   PriceType,
   UnitType,
@@ -50,7 +50,7 @@ type SerializedCategory = {
   restaurantId: string;
 };
 
-type MenuItemWithRelations = {
+type ProductWithRelations = {
   id: string;
   name: string;
   description: string | null;
@@ -70,13 +70,13 @@ type MenuItemWithRelations = {
   branches: SerializedProductOnBranch[];
 };
 
-type MenuItemDialogProps = {
-  item: MenuItemWithRelations | null;
+type ProductDialogProps = {
+  item: ProductWithRelations | null;
   categories: SerializedCategory[];
   restaurantId: string;
   branchId: string;
   onClose: () => void;
-  onSuccess: (savedItem?: MenuItemWithRelations, isNewItem?: boolean) => void;
+  onSuccess: (savedItem?: ProductWithRelations, isNewItem?: boolean) => void;
 };
 
 type FormData = {
@@ -92,8 +92,6 @@ type FormData = {
   isActive: boolean;
   // Datos de sucursal
   stock: string;
-  minStock: string;
-  maxStock: string;
   prices: {
     dineIn: string;
     takeAway: string;
@@ -101,14 +99,14 @@ type FormData = {
   };
 };
 
-export function MenuItemDialog({
+export function ProductDialog({
   item,
   categories,
   restaurantId,
   branchId,
   onClose,
   onSuccess,
-}: MenuItemDialogProps) {
+}: ProductDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState<"basic" | "stock" | "prices">(
@@ -138,8 +136,6 @@ export function MenuItemDialog({
     categoryId: item?.categoryId ?? "",
     isActive: item?.isActive ?? true,
     stock: branchData?.stock ? branchData.stock.toString() : "0",
-    minStock: branchData?.minStock ? branchData.minStock.toString() : "",
-    maxStock: branchData?.maxStock ? branchData.maxStock.toString() : "",
     prices: {
       dineIn: existingPrices.dineIn?.price
         ? existingPrices.dineIn.price.toString()
@@ -236,7 +232,7 @@ export function MenuItemDialog({
     try {
       // 1. Crear o actualizar el producto
       let productId = item?.id;
-      let savedProduct: MenuItemWithRelations | null = null;
+      let savedProduct: ProductWithRelations | null = null;
       const isNewItem = !item;
 
       if (item) {
@@ -317,12 +313,6 @@ export function MenuItemDialog({
           productId,
           branchId,
           stock: parseFloat(formData.stock) || 0,
-          minStock: formData.minStock
-            ? parseFloat(formData.minStock)
-            : undefined,
-          maxStock: formData.maxStock
-            ? parseFloat(formData.maxStock)
-            : undefined,
           isActive: formData.isActive,
           prices,
         });
@@ -518,6 +508,38 @@ export function MenuItemDialog({
                   </select>
                 </div>
 
+                {/* Estado Activo */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="isActive"
+                    className="ml-2 text-sm text-gray-700"
+                  >
+                    Producto activo
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Stock */}
+            {currentTab === "stock" && (
+              <div className="space-y-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Gestión de Stock
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Configura el inventario disponible en esta sucursal
+                  </p>
+                </div>
+
                 {/* Tipo de Unidad */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -607,7 +629,7 @@ export function MenuItemDialog({
                   </div>
                 </div>
 
-                {/* Alerta de Stock Mínimo - Solo si trackStock está habilitado */}
+                {/* Alerta de Stock Mínimo - Show for both new and edit */}
                 {formData.trackStock && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -624,43 +646,11 @@ export function MenuItemDialog({
                       placeholder="Cantidad mínima antes de alertar"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Se mostrará una alerta cuando el stock esté por debajo de
-                      este valor
+                      Se mostrará una alerta cuando el stock de cualquier
+                      sucursal esté por debajo de este valor
                     </p>
                   </div>
                 )}
-
-                {/* Estado Activo */}
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    id="isActive"
-                    checked={formData.isActive}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <label
-                    htmlFor="isActive"
-                    className="ml-2 text-sm text-gray-700"
-                  >
-                    Producto activo
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Tab: Stock */}
-            {currentTab === "stock" && (
-              <div className="space-y-6 p-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Gestión de Stock
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Configura el inventario disponible en esta sucursal
-                  </p>
-                </div>
 
                 {!formData.trackStock ? (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
@@ -669,65 +659,37 @@ export function MenuItemDialog({
                       producto.
                     </p>
                     <p className="text-xs text-gray-500 mt-2">
-                      Activa el seguimiento de stock en la pestaña
-                      `&quot;`Información Básica`&quot;` para gestionar el
-                      inventario.
+                      Activa la opción &quot;Habilitar seguimiento de
+                      stock&quot; arriba para gestionar el inventario.
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Stock Actual */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Actual *
-                      </label>
-                      <input
-                        type="number"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleChange}
-                        min="0"
-                        step="0.01"
-                        required={formData.trackStock}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-
-                    {/* Stock Mínimo */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Mínimo
-                      </label>
-                      <input
-                        type="number"
-                        name="minStock"
-                        value={formData.minStock}
-                        onChange={handleChange}
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-
-                    {/* Stock Máximo */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Máximo
-                      </label>
-                      <input
-                        type="number"
-                        name="maxStock"
-                        value={formData.maxStock}
-                        onChange={handleChange}
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
+                  <>
+                    {!item && (
+                      <div>
+                        {/* Stock Actual - Single field instead of 3-column grid */}
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stock Actual *
+                        </label>
+                        <input
+                          type="number"
+                          name="stock"
+                          value={formData.stock}
+                          onChange={handleChange}
+                          min="0"
+                          step="0.01"
+                          required={formData.trackStock}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Stock disponible en esta sucursal. Para configurar
+                          alertas, usa &quot;Alerta de Stock Mínimo&quot;
+                          arriba.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -757,7 +719,7 @@ export function MenuItemDialog({
                       </span>
                       <input
                         type="number"
-                        name="prices.dineIn"
+                        name="price_DINE_IN"
                         value={formData.prices.dineIn}
                         onChange={handleChange}
                         min="0"
@@ -779,7 +741,7 @@ export function MenuItemDialog({
                       </span>
                       <input
                         type="number"
-                        name="prices.takeAway"
+                        name="price_TAKE_AWAY"
                         value={formData.prices.takeAway}
                         onChange={handleChange}
                         min="0"
@@ -801,7 +763,7 @@ export function MenuItemDialog({
                       </span>
                       <input
                         type="number"
-                        name="prices.delivery"
+                        name="price_DELIVERY"
                         value={formData.prices.delivery}
                         onChange={handleChange}
                         min="0"

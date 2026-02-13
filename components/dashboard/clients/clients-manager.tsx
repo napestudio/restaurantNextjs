@@ -54,7 +54,7 @@ export function ClientsManager({
     setClients((prev) => {
       // Check if this is replacing a temp client (real client from server)
       const tempClientIndex = prev.findIndex(
-        (c) => c.id.startsWith("temp-") && c.name === newClient.name
+        (c) => c.id.startsWith("temp-") && c.name === newClient.name,
       );
       if (tempClientIndex !== -1) {
         // Replace temp client with real one
@@ -67,7 +67,7 @@ export function ClientsManager({
 
   const handleClientUpdated = (updatedClient: ClientData) => {
     setClients((prev) =>
-      prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+      prev.map((c) => (c.id === updatedClient.id ? updatedClient : c)),
     );
   };
 
@@ -135,9 +135,7 @@ export function ClientsManager({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground">
-            Administra los clientes de tu sucursal
-          </p>
+          <p className="text-muted-foreground">Administra los clientes.</p>
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}

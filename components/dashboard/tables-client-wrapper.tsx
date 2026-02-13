@@ -11,7 +11,7 @@ import { useSectors } from "@/hooks/use-sectors";
 import { useDialogs } from "@/hooks/use-dialogs";
 import { useTableForm } from "@/hooks/use-table-form";
 import { getTablesWithStatus, getTableWithStatus } from "@/actions/Table";
-import type { TableWithReservations } from "@/types/tables-client";
+import type { TableWithReservations, Sector } from "@/types/tables-client";
 import { ProductsProvider } from "@/contexts/products-context";
 import { OrderType } from "@/app/generated/prisma";
 
@@ -21,12 +21,14 @@ export type { TableWithReservations };
 interface TablesClientWrapperProps {
   branchId: string;
   initialTables: TableWithReservations[];
+  initialSectors: Sector[];
   editModeOnly?: boolean;
 }
 
 export function TablesClientWrapper({
   branchId,
   initialTables,
+  initialSectors,
   editModeOnly = false,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
@@ -38,7 +40,7 @@ export function TablesClientWrapper({
     setSelectedSector,
     sectorsLoaded,
     refreshSectors,
-  } = useSectors(branchId);
+  } = useSectors(branchId, initialSectors);
 
   const {
     state: dialogState,
@@ -131,26 +133,20 @@ export function TablesClientWrapper({
   return (
     <ProductsProvider branchId={branchId} orderType={OrderType.DINE_IN}>
       <TablesTabs>
-        {/* Only render FloorPlanHandler after sectors are loaded to prevent flicker */}
-        {sectorsLoaded ? (
-          <FloorPlanHandler
-            branchId={branchId}
-            tables={tables}
-            setTables={setTables}
-            selectedSector={selectedSector}
-            setSelectedSector={setSelectedSector}
-            sectors={sectors}
-            onAddSector={openAddSector}
-            onEditSector={openEditSector}
-            onRefreshTables={refreshTables}
-            onRefreshSingleTable={refreshSingleTable}
-            editModeOnly={editModeOnly}
-          />
-        ) : (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-muted-foreground">Cargando plano...</div>
-          </div>
-        )}
+        <FloorPlanHandler
+          branchId={branchId}
+          tables={tables}
+          setTables={setTables}
+          selectedSector={selectedSector}
+          setSelectedSector={setSelectedSector}
+          sectors={sectors}
+          onAddSector={openAddSector}
+          onEditSector={openEditSector}
+          onRefreshTables={refreshTables}
+          onRefreshSingleTable={refreshSingleTable}
+          editModeOnly={editModeOnly}
+          isLoading={!sectorsLoaded}
+        />
         <TablesSimpleView tables={tables} sectors={sectors} />
       </TablesTabs>
 
