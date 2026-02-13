@@ -276,7 +276,7 @@ export function StockManagementClient({
                   Stock Actual
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock Mínimo
+                  Alerta Stock
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Precio
@@ -350,9 +350,9 @@ export function StockManagementClient({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
                       {isAlwaysAvailable
                         ? "-"
-                        : product.minStock
+                        : product.product.minStockAlert
                         ? formatStock(
-                            product.minStock,
+                            product.product.minStockAlert,
                             product.product.unitType,
                             product.product.weightUnit,
                             product.product.volumeUnit

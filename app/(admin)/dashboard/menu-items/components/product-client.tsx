@@ -2,7 +2,7 @@
 
 import { useState, useOptimistic, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search, Filter, FolderPlus, Download, X } from "lucide-react";
+import { Plus, Search, Filter, FolderPlus, Download, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   getMenuItemsPaginated,
@@ -11,10 +11,11 @@ import {
   duplicateProduct,
   exportMenuItemsCSV,
   type PaginationInfo,
-} from "@/actions/menuItems";
+} from "@/actions/Products";
 import { ProductsTable } from "./products-table";
 import { ProductDialog } from "./product-dialog";
 import { CategoryDialog } from "./category-dialog";
+import { CSVImportDialog } from "./csv-import-dialog";
 import type {
   UnitType,
   WeightUnit,
@@ -182,6 +183,7 @@ export function ProductsClient({
   // Dialog states
   const [showDialog, setShowDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemWithRelations | null>(
     null,
   );
@@ -410,32 +412,33 @@ export function ProductsClient({
     setShowDialog(false);
     setEditingItem(null);
 
-    // Wrap optimistic updates in startTransition
+    // Wrap updates in startTransition
     startTransition(async () => {
-      // Optimistic update if we have the saved item
+      // Update actual state immediately if we have the saved item
+      // (savedItem is already the confirmed server response, not an optimistic prediction)
       if (savedItem) {
         if (isNewItem) {
-          // Add new item optimistically
-          setOptimisticMenuItems({
-            type: "create",
-            tempId: savedItem.id,
-            item: savedItem,
-          });
-          // Update actual state
+          // Add new item to actual state
           setMenuItems((prevItems) => [...prevItems, savedItem]);
-        } else {
-          // Update existing item optimistically
-          setOptimisticMenuItems({
-            type: "update",
-            id: savedItem.id,
-            item: savedItem,
+
+          // Show success toast for new product
+          toast({
+            title: "Producto creado",
+            description: `"${savedItem.name}" se creó exitosamente`,
           });
-          // Update actual state
+        } else {
+          // Update existing item in actual state
           setMenuItems((prevItems) =>
             prevItems.map((item) =>
               item.id === savedItem.id ? savedItem : item,
             ),
           );
+
+          // Show success toast for updated product
+          toast({
+            title: "Producto actualizado",
+            description: `"${savedItem.name}" se actualizó correctamente`,
+          });
         }
       }
 
@@ -495,6 +498,14 @@ export function ProductsClient({
             >
               <Download className="h-4 w-4 mr-2" />
               {isExporting ? "Exportando..." : "Exportar CSV"}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowImportDialog(true)}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Importar CSV
             </Button>
 
             <Button
@@ -743,6 +754,23 @@ export function ProductsClient({
           onSuccess={handleSuccess}
         />
       )}
+
+      {/* CSV Import Dialog */}
+      <CSVImportDialog
+        open={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        restaurantId={restaurantId}
+        branchId={branchId}
+        categories={categories}
+        onSuccess={() => {
+          setShowImportDialog(false);
+          updateFilters(currentPage);
+          toast({
+            title: "Importación exitosa",
+            description: "Los productos han sido importados correctamente",
+          });
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog
