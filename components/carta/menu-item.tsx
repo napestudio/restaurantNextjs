@@ -1,4 +1,5 @@
 import Image from "next/image";
+import StarIcon from "../ui/star-icon";
 
 interface MenuItemProps {
   name: string;
@@ -33,11 +34,12 @@ export function MenuItem({
           <h3 className="font-semibold text-lg text-white">
             {name}
             {isFeatured && (
-              <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
-                Destacado
+              <span className="ml-2 text-yellow-400 rounded-full inline-block">
+                <StarIcon />
               </span>
             )}
           </h3>
+          <div className="flex-1 h-px w-full bg-white/50 mb-1.5 self-end"></div>
           {price !== null && price !== undefined && (
             <span className="font-bold text-lg text-white shrink-0">
               ${price}

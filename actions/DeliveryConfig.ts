@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 export type DeliveryWindowInput = {
   name: string;
   startTime: string; // "HH:mm"
+  deliveryStartTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
   daysOfWeek: string[];
   maxOrders?: number;
@@ -16,6 +17,7 @@ type SerializedDeliveryWindow = {
   id: string;
   name: string;
   startTime: string;
+  deliveryStartTime: string;
   endTime: string;
   daysOfWeek: string[];
   maxOrders: number;
@@ -93,6 +95,7 @@ export async function getDeliveryConfig(branchId: string): Promise<{
           id: w.id,
           name: w.name,
           startTime: w.startTime.toISOString(),
+          deliveryStartTime: w.deliveryStartTime.toISOString(),
           endTime: w.endTime.toISOString(),
           daysOfWeek: w.daysOfWeek,
           maxOrders: w.maxOrders,
@@ -159,6 +162,7 @@ export async function updateDeliveryConfig(data: {
             deliveryConfigId: config.id,
             name: w.name,
             startTime: new Date(`1970-01-01T${w.startTime}:00.000Z`),
+            deliveryStartTime: new Date(`1970-01-01T${w.deliveryStartTime}:00.000Z`),
             endTime: new Date(`1970-01-01T${w.endTime}:00.000Z`),
             daysOfWeek: w.daysOfWeek,
             maxOrders: w.maxOrders ?? 10,
@@ -230,6 +234,7 @@ export async function getAvailableDeliveryWindows(
     const serialized = config.deliveryWindows.map((w) => ({
       ...w,
       startTime: w.startTime.toISOString(),
+      deliveryStartTime: w.deliveryStartTime.toISOString(),
       endTime: w.endTime.toISOString(),
       createdAt: w.createdAt.toISOString(),
       updatedAt: w.updatedAt.toISOString(),

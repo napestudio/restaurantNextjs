@@ -45,8 +45,10 @@ export function DeliveryWindowList({
 
               <div className="space-y-1 text-sm text-gray-600">
                 <p>
-                  <span className="font-medium">Horario:</span> {window.startTime} -{" "}
-                  {window.endTime}
+                  <span className="font-medium">Pedidos:</span> {window.startTime} - {window.endTime}
+                </p>
+                <p>
+                  <span className="font-medium">Entregas desde:</span> {window.deliveryStartTime}
                 </p>
                 <p>
                   <span className="font-medium">Días:</span>{" "}

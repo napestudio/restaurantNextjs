@@ -405,12 +405,13 @@ model DeliveryWindow {
   deliveryConfig   DeliveryConfig @relation(fields: [deliveryConfigId], references: [id], onDelete: Cascade)
   deliveryConfigId String
 
-  name       String // "Lunch Delivery", "Dinner Delivery"
-  startTime  DateTime @db.Time // HH:mm
-  endTime    DateTime @db.Time
-  daysOfWeek String[] // ["monday", "tuesday", etc.]
-  maxOrders  Int      @default(10) // Capacity per window
-  isActive   Boolean  @default(true)
+  name              String // "Lunch Delivery", "Dinner Delivery"
+  startTime         DateTime @db.Time // HH:mm - When customers can START ordering
+  deliveryStartTime DateTime @db.Time // HH:mm - When actual deliveries BEGIN
+  endTime           DateTime @db.Time // HH:mm - When ordering window closes
+  daysOfWeek        String[] // ["monday", "tuesday", etc.]
+  maxOrders         Int      @default(10) // Capacity per window
+  isActive          Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

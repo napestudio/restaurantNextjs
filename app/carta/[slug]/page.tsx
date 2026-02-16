@@ -28,7 +28,7 @@ export default async function CartaPage({ params }: CartaPageProps) {
           <Avatar alt={restaurant.name} />
         </div>
 
-        <div className="text-white py-12 px-6 md:px-8 ">
+        <div className="text-white py-12 px-4 md:px-8 ">
           <div className="text-center space-y-2 mb-8">
             <h1 className="text-4xl font-bold">{menu.name}</h1>
             {menu.description && (
