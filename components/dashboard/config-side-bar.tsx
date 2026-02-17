@@ -6,6 +6,10 @@ import { X } from "lucide-react";
 
 const CONFIG_ITEMS = [
   {
+    label: "Restaurant",
+    href: "/dashboard/config/restaurant",
+  },
+  {
     label: "Página Principal",
     href: "/dashboard/config/homepage",
   },
@@ -40,10 +44,6 @@ const CONFIG_ITEMS = [
   {
     label: "Usuarios",
     href: "/dashboard/config/users",
-  },
-  {
-    label: "Restaurant",
-    href: "/dashboard/config/restaurant",
   },
 ];
 

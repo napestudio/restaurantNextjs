@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import Avatar from "@/components/avatar";
 import { ProductList } from "./product-list";
 import { ShoppingCart } from "./shopping-cart";
 import { CustomerInfoForm } from "./customer-info-form";
@@ -102,6 +103,9 @@ export default function DeliveryPage({
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-6">
+            <Avatar />
+          </div>
           <h1 className="text-4xl font-bold mb-2">Pedidos para Delivery</h1>
           <p className="text-gray-400">
             {config.menu?.name || "Menú de Delivery"}
