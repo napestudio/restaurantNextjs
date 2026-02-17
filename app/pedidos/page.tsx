@@ -1,9 +1,10 @@
-import { getDeliveryConfig } from "@/actions/DeliveryConfig";
+import { getDeliveryConfig, isDeliveryAvailable } from "@/actions/DeliveryConfig";
 import { getAvailableProductsForOrder } from "@/actions/Order";
 import { OrderType } from "@/app/generated/prisma";
 import { BRANCH_ID } from "@/lib/constants";
 import { notFound } from "next/navigation";
 import DeliveryPage from "./components/delivery-page-client";
+import DeliveryClosedPage from "./components/delivery-closed-page";
 
 export default async function PedidosPage() {
   if (!BRANCH_ID) {
@@ -17,11 +18,23 @@ export default async function PedidosPage() {
   // Fetch delivery config
   const configResult = await getDeliveryConfig(BRANCH_ID);
 
-  if (!configResult.success || !configResult.data?.isActive) {
+  if (!configResult.success || !configResult.data) {
     notFound();
   }
 
   const config = configResult.data;
+
+  // Check real-time availability (service active + current time within a window)
+  const availability = await isDeliveryAvailable(BRANCH_ID, new Date());
+
+  if (!availability.available) {
+    return (
+      <DeliveryClosedPage
+        reason={availability.reason}
+        windows={config.deliveryWindows}
+      />
+    );
+  }
 
   // Fetch products with delivery prices
   const productsResult = await getAvailableProductsForOrder(
