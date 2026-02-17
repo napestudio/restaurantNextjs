@@ -1,6 +1,5 @@
 "use client";
 
-import { generateInvoicePDF } from "@/actions/Invoice";
 import { prepareInvoicePrint } from "@/actions/PrinterActions";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Order } from "@/types/orders";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  Download,
-  Package,
-  Printer,
-  Truck,
-  UtensilsCrossed,
-} from "lucide-react";
+import { Package, Printer, Truck, UtensilsCrossed } from "lucide-react";
 import { useState } from "react";
 // type Order = {
 //   id: string;
@@ -96,63 +89,8 @@ const typeLabels = {
 
 export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
   const { toast } = useToast();
-  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(
-    null,
-  );
+
   const [printingInvoice, setPrintingInvoice] = useState<string | null>(null);
-
-  const handleDownloadInvoice = async (
-    e: React.MouseEvent,
-    invoiceId: string,
-    orderId: string,
-  ) => {
-    e.stopPropagation(); // Prevent row click
-    setDownloadingInvoice(orderId);
-
-    try {
-      const result = await generateInvoicePDF(invoiceId);
-
-      if (result.success && result.data) {
-        // Convert buffer to blob and download
-        const pdfBuffer = result.data.pdf;
-        // Convert Node.js Buffer to ArrayBuffer for browser
-        const arrayBuffer = pdfBuffer.buffer.slice(
-          pdfBuffer.byteOffset,
-          pdfBuffer.byteOffset + pdfBuffer.byteLength,
-        ) as ArrayBuffer;
-        const blob = new Blob([arrayBuffer], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = result.data.filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        toast({
-          title: "Factura descargada",
-          description: "El PDF se descargó correctamente",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: !result.success
-            ? result.error || "No se pudo descargar la factura"
-            : "No se pudo descargar la factura",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al descargar la factura",
-        variant: "destructive",
-      });
-    } finally {
-      setDownloadingInvoice(null);
-    }
-  };
 
   const handlePrintInvoice = async (
     e: React.MouseEvent,
@@ -259,9 +197,6 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Total
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -345,54 +280,27 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(() => {
                       const status = getInvoiceStatus(order);
-                      return (
-                        <Badge
-                          variant="outline"
-                          className={
-                            status.hasInvoice
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : "bg-gray-100 text-gray-600 border-gray-200"
-                          }
-                        >
-                          {status.label}
-                        </Badge>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm font-bold text-gray-900">
-                      ${total.toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {(() => {
-                      const status = getInvoiceStatus(order);
 
                       if (!status.emittedInvoice) {
                         return (
-                          <span className="text-xs text-gray-400">
-                            Sin factura
-                          </span>
+                          <Badge
+                            variant="outline"
+                            className="bg-gray-100 text-gray-600 border-gray-200"
+                          >
+                            {status.label}
+                          </Badge>
                         );
                       }
 
                       return (
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            size="sm"
+                        <div className="flex items-center gap-2">
+                          <Badge
                             variant="outline"
-                            onClick={(e) =>
-                              handleDownloadInvoice(
-                                e,
-                                status.emittedInvoice!.id,
-                                order.id,
-                              )
-                            }
-                            disabled={downloadingInvoice === order.id}
-                            title="Descargar PDF"
+                            className="bg-green-100 text-green-800 border-green-200"
                           >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                            {status.label}
+                          </Badge>
+
                           <Button
                             size="sm"
                             variant="outline"
@@ -411,6 +319,11 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                         </div>
                       );
                     })()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-bold text-gray-900">
+                      ${total.toFixed(2)}
+                    </div>
                   </td>
                 </tr>
               );

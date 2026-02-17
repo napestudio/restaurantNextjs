@@ -36,6 +36,7 @@ export function DeliveryWindowDialog({
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [deliveryStartTime, setDeliveryStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [daysOfWeek, setDaysOfWeek] = useState<string[]>([]);
   const [maxOrders, setMaxOrders] = useState("10");
@@ -46,6 +47,7 @@ export function DeliveryWindowDialog({
     if (open && editingWindow) {
       setName(editingWindow.name);
       setStartTime(editingWindow.startTime);
+      setDeliveryStartTime(editingWindow.deliveryStartTime);
       setEndTime(editingWindow.endTime);
       setDaysOfWeek(editingWindow.daysOfWeek);
       setMaxOrders(editingWindow.maxOrders.toString());
@@ -54,6 +56,7 @@ export function DeliveryWindowDialog({
       // Reset for new window
       setName("");
       setStartTime("");
+      setDeliveryStartTime("");
       setEndTime("");
       setDaysOfWeek([]);
       setMaxOrders("10");
@@ -84,6 +87,7 @@ export function DeliveryWindowDialog({
       id: editingWindow?.id,
       name,
       startTime,
+      deliveryStartTime,
       endTime,
       daysOfWeek,
       maxOrders: parseInt(maxOrders) || 10,
@@ -125,24 +129,36 @@ export function DeliveryWindowDialog({
           </div>
 
           {/* Time Range */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startTime">Hora de Inicio</Label>
+              <Label htmlFor="startTime">Inicio de Pedidos</Label>
               <Input
                 id="startTime"
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
               />
+              <p className="text-xs text-gray-500">Clientes pueden empezar a ordenar</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endTime">Hora de Fin</Label>
+              <Label htmlFor="deliveryStartTime">Inicio de Entregas</Label>
+              <Input
+                id="deliveryStartTime"
+                type="time"
+                value={deliveryStartTime}
+                onChange={(e) => setDeliveryStartTime(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">Entregas comienzan</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endTime">Fin de Pedidos</Label>
               <Input
                 id="endTime"
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
               />
+              <p className="text-xs text-gray-500">Ya no se aceptan pedidos</p>
             </div>
           </div>
 

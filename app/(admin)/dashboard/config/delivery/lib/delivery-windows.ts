@@ -3,6 +3,7 @@ export interface DeliveryWindow {
   id?: string;
   name: string;
   startTime: string; // "HH:mm"
+  deliveryStartTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
   daysOfWeek: string[];
   maxOrders: number;
@@ -102,11 +103,24 @@ export function validateDeliveryWindow(window: Partial<DeliveryWindow>): {
   }
 
   if (!window.startTime) {
-    errors.push("La hora de inicio es requerida");
+    errors.push("La hora de inicio de pedidos es requerida");
+  }
+
+  if (!window.deliveryStartTime) {
+    errors.push("La hora de inicio de entregas es requerida");
   }
 
   if (!window.endTime) {
     errors.push("La hora de fin es requerida");
+  }
+
+  // Validate time sequence: startTime <= deliveryStartTime <= endTime
+  if (window.startTime && window.deliveryStartTime && window.startTime > window.deliveryStartTime) {
+    errors.push("El inicio de entregas debe ser posterior o igual al inicio de pedidos");
+  }
+
+  if (window.deliveryStartTime && window.endTime && window.deliveryStartTime > window.endTime) {
+    errors.push("La hora de fin debe ser posterior al inicio de entregas");
   }
 
   if (window.startTime && window.endTime && window.startTime >= window.endTime) {

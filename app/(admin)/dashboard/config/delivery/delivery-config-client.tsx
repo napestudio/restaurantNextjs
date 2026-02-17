@@ -35,6 +35,7 @@ type SerializedDeliveryWindow = {
   id: string;
   name: string;
   startTime: string;
+  deliveryStartTime: string;
   endTime: string;
   daysOfWeek: string[];
   maxOrders: number;
@@ -90,6 +91,7 @@ export default function DeliveryConfigClient({
       id: w.id,
       name: w.name,
       startTime: w.startTime.slice(11, 16), // Extract HH:mm from ISO
+      deliveryStartTime: w.deliveryStartTime.slice(11, 16),
       endTime: w.endTime.slice(11, 16),
       daysOfWeek: w.daysOfWeek,
       maxOrders: w.maxOrders,
@@ -109,6 +111,7 @@ export default function DeliveryConfigClient({
         windows: windows.map((w) => ({
           name: w.name,
           startTime: w.startTime,
+          deliveryStartTime: w.deliveryStartTime,
           endTime: w.endTime,
           daysOfWeek: w.daysOfWeek,
           maxOrders: w.maxOrders,

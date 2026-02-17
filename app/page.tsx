@@ -1,13 +1,16 @@
 import { getRestaurant } from "@/actions/Restaurant";
+import { getActiveHomePageLinks } from "@/actions/HomePageLinks";
 import Avatar from "@/components/avatar";
 import WhatsappIcon from "@/components/ui/icons/Whatsapp";
 import { MapPin } from "lucide-react";
 import Link from "next/link";
+import type { SerializedHomePageLink } from "@/actions/HomePageLinks";
 
 export default async function Home() {
   const restaurantId = process.env.RESTAURANT_ID || "";
+  const branchId = process.env.BRANCH_ID || "";
 
-  if (!restaurantId) {
+  if (!restaurantId || !branchId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <p className="text-lg">El restaurante no está configurado.</p>
@@ -15,45 +18,79 @@ export default async function Home() {
     );
   }
 
-  const restaurant = await getRestaurant(restaurantId);
+  const [restaurant, linksResult] = await Promise.all([
+    getRestaurant(restaurantId),
+    getActiveHomePageLinks(branchId),
+  ]);
+
+  // Helper function to generate URL based on link type
+  const generateLinkUrl = (link: SerializedHomePageLink): string => {
+    switch (link.type) {
+      case "MENU":
+        return link.menu?.slug ? `/carta/${link.menu.slug}` : "/";
+      case "TIMESLOT":
+        // Link to reservations with query param for pre-selecting the time slot
+        return link.timeSlotId
+          ? `/reservas?slot=${link.timeSlotId}`
+          : "/reservas";
+      case "RESERVATION":
+        return "/reservas";
+      case "PEDIDOS":
+        return "/pedidos";
+      case "CUSTOM":
+        return link.customUrl || "#";
+      default:
+        return "/";
+    }
+  };
+
+  const links = linksResult.success && linksResult.data ? linksResult.data : [];
+
+  // Default link if no links configured
+  const hasLinks = links.length > 0;
+
   return (
     <div className="min-h-screen place-content-center bg-black text-white">
       <div className="max-w-100 mx-auto px-8 md:px-0 flex justify-center flex-col items-center gap-9">
         <Avatar />
         <div className="flex flex-col items-center justify-center gap-4 w-full">
-          <Link
-            href="/reservas"
-            prefetch={true}
-            className="bg-black border-2 border-purple-900 group relative transition-colors rounded-full py-2 text-xl text-center font-bold uppercase w-full overflow-hidden"
-          >
-            <div className="absolute h-full w-full inset-0 bg-purple-900 scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500"></div>
-            <div className="relative overflow-hidden w-max mx-auto">
-              <span className="inline-block group-hover:translate-y-[105%] group-hover:skew-12 transition-transform duration-500">
-                Reservas
-              </span>
-              <span className="inline-block absolute left-0 -top-full skew-12 group-hover:skew-0 group-hover:translate-y-full -translate-y-full transition-transform duration-500">
-                Reservas
-              </span>
-            </div>
-          </Link>
-          {/* <Link
-            href="/carta/menu-principal"
-            className="bg-black border-2 border-purple-900 hover:bg-purple-900 transition-colors rounded-full py-2 text-xl text-center font-bold uppercase w-full"
-          >
-            Carta
-          </Link> */}
-          {/* <a
-            href="#"
-            className="bg-black rounded-md py-2 text-xl text-center font-bold uppercase w-full"
-          >
-            Pedidos
-          </a>
-          <a
-            href="#"
-            className="bg-black rounded-md py-2 text-xl text-center font-bold uppercase w-full"
-          >
-            Take Away
-          </a> */}
+          {hasLinks ? (
+            links.map((link) => (
+              <Link
+                key={link.id}
+                href={generateLinkUrl(link)}
+                prefetch={true}
+                className="bg-black border-2 border-purple-900 group relative transition-colors rounded-full py-2 text-xl text-center font-bold uppercase w-full overflow-hidden"
+              >
+                <div className="absolute h-full w-full inset-0 bg-purple-900 scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500"></div>
+                <div className="relative overflow-hidden w-max mx-auto">
+                  <span className="inline-block group-hover:translate-y-[140%] group-hover:skew-12 transition-transform duration-500">
+                    {link.label}
+                  </span>
+                  <span className="inline-block absolute left-0 -top-full skew-12 group-hover:skew-0 group-hover:translate-y-full -translate-y-full transition-transform duration-500">
+                    {link.label}
+                  </span>
+                </div>
+              </Link>
+            ))
+          ) : (
+            // Default fallback link if no links configured
+            <Link
+              href="/reservas"
+              prefetch={true}
+              className="bg-black border-2 border-purple-900 group relative transition-colors rounded-full py-2 text-xl text-center font-bold uppercase w-full overflow-hidden"
+            >
+              <div className="absolute h-full w-full inset-0 bg-purple-900 scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500"></div>
+              <div className="relative overflow-hidden w-max mx-auto">
+                <span className="inline-block group-hover:translate-y-[105%] group-hover:skew-12 transition-transform duration-500">
+                  Reservas
+                </span>
+                <span className="inline-block absolute left-0 -top-full skew-12 group-hover:skew-0 group-hover:translate-y-full -translate-y-full transition-transform duration-500">
+                  Reservas
+                </span>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
       <div>
@@ -80,18 +117,6 @@ export default async function Home() {
                 </Link>
               )}
             </p>
-            {/* <p className="text-sm text-gray-400 mt-1">
-              {restaurant.data.websiteUrl && (
-                <a
-                  href={restaurant.data.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-purple-400 hover:underline"
-                >
-                  Sitio Web
-                </a>
-              )}
-            </p> */}
           </div>
         )}
       </div>

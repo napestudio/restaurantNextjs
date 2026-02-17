@@ -1,4 +1,8 @@
-import { getOrders, getAvailableProductsForOrder } from "@/actions/Order";
+import {
+  getOrders,
+  getAvailableProductsForOrder,
+  getActiveOrderCounts,
+} from "@/actions/Order";
 import { OrdersClient } from "./orders-client";
 import prisma from "@/lib/prisma";
 import { ProductsProvider } from "@/contexts/products-context";
@@ -40,8 +44,8 @@ export default async function OrdersPage({
   const page = pageParam ? Math.max(1, parseInt(pageParam) || 1) : 1;
   const pageSize = 15; // Match client-side pagination expectations
 
-  // Fetch orders, tables, and products in parallel for faster loading
-  const [ordersResult, tables, products] = await Promise.all([
+  // Fetch orders, tables, products, and order counts in parallel for faster loading
+  const [ordersResult, tables, products, orderCounts] = await Promise.all([
     getOrders({
       branchId,
       type: orderType,
@@ -64,6 +68,7 @@ export default async function OrdersPage({
       },
     }),
     getAvailableProductsForOrder(branchId, orderType ?? OrderType.DINE_IN),
+    getActiveOrderCounts(branchId),
   ]);
 
   const rawOrders =
@@ -105,6 +110,7 @@ export default async function OrdersPage({
             initialPagination={pagination}
             initialTab={activeTab}
             initialSearch={searchParam || ""}
+            activeOrderCounts={orderCounts}
           />
         </ProductsProvider>
       </main>

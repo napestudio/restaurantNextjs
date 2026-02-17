@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
 import { ArrowRightLeft, Edit, Percent, RefreshCw, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
 import { CommittedOrderItemsList } from "./committed-order-items-list";
@@ -54,6 +54,7 @@ export function TableOrderSidebar({
 }: TableOrderSidebarProps) {
   const [partySize, setPartySize] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const hasAutoSelectedRef = useRef(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
@@ -121,6 +122,7 @@ export function TableOrderSidebar({
     if (tableId) {
       setPartySize("");
       setSelectedOrderId(null);
+      hasAutoSelectedRef.current = false;
       setSelectedClient(null);
       setSelectedWaiterId(null);
       setClientSearchQuery("");
@@ -133,9 +135,11 @@ export function TableOrderSidebar({
       tableIsShared &&
       Array.isArray(allOrders) &&
       allOrders.length > 0 &&
-      !selectedOrderId
+      !selectedOrderId &&
+      !hasAutoSelectedRef.current
     ) {
       setSelectedOrderId(allOrders[0].id);
+      hasAutoSelectedRef.current = true;
     }
   }, [tableIsShared, allOrders, selectedOrderId]);
 

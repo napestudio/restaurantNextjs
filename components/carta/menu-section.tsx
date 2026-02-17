@@ -28,7 +28,7 @@ export function MenuSection({ section }: MenuSectionProps) {
   const hasContent = elements.length > 0;
 
   return (
-    <div className="text-white not-first:mt-12 bg-neutral-950 rounded-xl p-6">
+    <div className="text-white not-first:mt-12 bg-neutral-950 rounded-xl md:p-6 px-0 py-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold font-serif">{section.name}</h2>
         {section.description && <p className="mt-2">{section.description}</p>}
@@ -52,7 +52,7 @@ export function MenuSection({ section }: MenuSectionProps) {
               />
             ) : (
               <MenuItemGroup key={element.data.id} group={element.data} />
-            )
+            ),
           )
         ) : (
           <p className="text-neutral-500 text-center py-4">
