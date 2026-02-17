@@ -2083,3 +2083,43 @@ export async function getOrdersWithoutInvoice(params: {
     };
   }
 }
+
+// ============================================================================
+// Active Order Counts (for tab badges)
+// ============================================================================
+
+/**
+ * Get count of active orders by type
+ * Used for displaying badges on order type tabs
+ */
+export async function getActiveOrderCounts(branchId: string) {
+  try {
+    const counts = await prisma.order.groupBy({
+      by: ["type"],
+      where: {
+        branchId,
+        status: {
+          in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS],
+        },
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    return {
+      DINE_IN: counts.find((c) => c.type === OrderType.DINE_IN)?._count.id ?? 0,
+      TAKE_AWAY:
+        counts.find((c) => c.type === OrderType.TAKE_AWAY)?._count.id ?? 0,
+      DELIVERY:
+        counts.find((c) => c.type === OrderType.DELIVERY)?._count.id ?? 0,
+    };
+  } catch (error) {
+    console.error("Error getting active order counts:", error);
+    return {
+      DINE_IN: 0,
+      TAKE_AWAY: 0,
+      DELIVERY: 0,
+    };
+  }
+}

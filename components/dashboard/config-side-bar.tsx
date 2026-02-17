@@ -6,6 +6,10 @@ import { X } from "lucide-react";
 
 const CONFIG_ITEMS = [
   {
+    label: "Página Principal",
+    href: "/dashboard/config/homepage",
+  },
+  {
     label: "Reservas",
     href: "/dashboard/config/slots",
   },

@@ -111,6 +111,14 @@ enum PaymentMethodExtended {
   TRANSFER
 }
 
+enum HomePageLinkType {
+  MENU        // Link to /carta/[slug]
+  TIMESLOT    // Link to /reservas with specific slot
+  RESERVATION // Link to /reservas (general)
+  PEDIDOS     // Link to /pedidos (orders)
+  CUSTOM      // Custom URL with custom label
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -221,6 +229,7 @@ model Branch {
   stations       Station[]
   printers       Printer[]
   deliveryConfig DeliveryConfig?
+  homePageLinks  HomePageLink[]
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -357,8 +366,9 @@ model TimeSlot {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  reservations Reservation[]
-  tables       TimeSlotTable[]
+  reservations  Reservation[]
+  tables        TimeSlotTable[]
+  homePageLinks HomePageLink[]
 }
 
 model TimeSlotTable {
@@ -407,7 +417,7 @@ model DeliveryWindow {
 
   name              String // "Lunch Delivery", "Dinner Delivery"
   startTime         DateTime @db.Time // HH:mm - When customers can START ordering
-  deliveryStartTime DateTime @db.Time // HH:mm - When actual deliveries BEGIN
+  deliveryStartTime DateTime @db.Time @default(now()) // HH:mm - When actual deliveries BEGIN
   endTime           DateTime @db.Time // HH:mm - When ordering window closes
   daysOfWeek        String[] // ["monday", "tuesday", etc.]
   maxOrders         Int      @default(10) // Capacity per window
@@ -420,6 +430,35 @@ model DeliveryWindow {
 
   @@index([deliveryConfigId])
   @@index([deliveryConfigId, isActive]) // Performance: Query active windows for a config
+}
+
+//
+// HOME PAGE LINKS
+//
+model HomePageLink {
+  id       String           @id @default(cuid())
+  branch   Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId String
+
+  type     HomePageLinkType
+  label    String           // Button text shown to users
+  order    Int              @default(0) // For sorting links
+  isActive Boolean          @default(true)
+
+  // Conditional foreign keys based on type
+  menu       Menu?     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  menuId     String?   // For MENU type
+  timeSlot   TimeSlot? @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+  timeSlotId String?   // For TIMESLOT type
+
+  // For CUSTOM type
+  customUrl String? // External or internal URL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId, isActive, order])
+  @@index([branchId])
 }
 
 //
@@ -471,6 +510,9 @@ model Menu {
 
   // Delivery configuration
   deliveryConfigs DeliveryConfig[]
+
+  // Home page links
+  homePageLinks HomePageLink[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
