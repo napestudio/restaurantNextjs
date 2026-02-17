@@ -1,18 +1,8 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
-
-export interface Sector {
-  id: string;
-  name: string;
-  color: string;
-  order: number;
-  width: number;
-  height: number;
-  _count: {
-    tables: number;
-  };
-}
+import type { Sector } from "@/types/tables-client";
+export type { Sector };
 
 interface SectorSelectorProps {
   sectors: Sector[];

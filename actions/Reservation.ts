@@ -533,23 +533,8 @@ export async function getReservationsByStatus(
 /**
  * Filter types for reservations
  */
-export type ReservationFilterType = "today" | "past" | "dateRange";
-
-export interface ReservationFilters {
-  type: ReservationFilterType;
-  dateFrom?: string; // ISO date string
-  dateTo?: string; // ISO date string
-  status?: ReservationStatus;
-  cursor?: string; // For pagination - reservation ID
-  limit?: number;
-}
-
-export interface PaginatedReservationsResult {
-  reservations: ReturnType<typeof serializeReservation>[];
-  nextCursor: string | null;
-  hasMore: boolean;
-  totalCount: number;
-}
+import type { ReservationFilterType, ReservationFilters, PaginatedReservationsResult } from "@/types/reservation";
+export type { ReservationFilterType, ReservationFilters, PaginatedReservationsResult };
 
 /**
  * Get reservations with filters and pagination

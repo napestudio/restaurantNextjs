@@ -3,21 +3,7 @@ import type { TableShapeType, TableStatus } from "@/types/table";
 import { Maximize2 } from "lucide-react";
 import { TablePropertiesForm } from "./table-properties-form";
 import TableIcon from "@/components/ui/icons/TableIcon";
-
-interface FloorTable {
-  id: string;
-  number: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  shape: TableShapeType;
-  capacity: number;
-  status: TableStatus;
-  currentGuests: number;
-  isShared?: boolean;
-}
+import type { FloorTable } from "@/lib/floor-plan-utils";
 
 interface TablePropertiesPanelProps {
   selectedTable: FloorTable | undefined;

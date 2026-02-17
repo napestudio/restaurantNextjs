@@ -29,21 +29,7 @@ import {
   RectangleVertical,
 } from "lucide-react";
 import type { TableShapeType, TableStatus } from "@/types/table";
-
-interface FloorTable {
-  id: string;
-  number: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  shape: TableShapeType;
-  capacity: number;
-  status: TableStatus;
-  currentGuests: number;
-  isShared?: boolean;
-}
+import type { FloorTable } from "@/lib/floor-plan-utils";
 
 interface TablePropertiesFormProps {
   selectedTable: FloorTable;

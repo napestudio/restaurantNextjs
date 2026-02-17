@@ -65,3 +65,47 @@ export type Order = {
     status: string;
   }>;
 };
+
+export type OrderItemInput = {
+  productId: string;
+  itemName: string;
+  quantity: number;
+  price: number;
+  originalPrice: number;
+  notes?: string;
+};
+
+export type OrderFilters = {
+  branchId: string;
+  startDate?: Date;
+  endDate?: Date;
+  status?: OrderStatus;
+  tableId?: string;
+  type?: OrderType;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+// Payment method type for closing tables (extended)
+export type PaymentMethodExtended =
+  | "CASH"
+  | "CARD_DEBIT"
+  | "CARD_CREDIT"
+  | "ACCOUNT"
+  | "TRANSFER";
+
+// Payment entry for split payments
+export type PaymentEntry = {
+  method: PaymentMethodExtended;
+  amount: number;
+};
+
+export type OrderWithoutInvoice = {
+  id: string;
+  publicCode: string;
+  customerName: string | null;
+  table: { name: string | null; number: number } | null;
+  type: OrderType;
+  total: number;
+};

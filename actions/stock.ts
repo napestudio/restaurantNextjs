@@ -4,22 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/app/generated/prisma";
 
-export type AdjustStockInput = {
-  productOnBranchId: string;
-  quantity: number; // Positivo = entrada, Negativo = salida
-  reason: string;
-  notes?: string;
-  reference?: string;
-  createdBy?: string;
-};
-
-export type StockMovementFilter = {
-  productOnBranchId?: string;
-  branchId?: string;
-  startDate?: Date;
-  endDate?: Date;
-  reason?: string;
-};
+import type { AdjustStockInput, StockMovementFilter } from "@/types/stock";
+export type { AdjustStockInput, StockMovementFilter };
 
 /**
  * Ajusta el stock de un producto en una sucursal

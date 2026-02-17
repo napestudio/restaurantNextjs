@@ -4,24 +4,8 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { HomePageLinkType } from "@/app/generated/prisma";
 
-// Serialized type for client components
-export type SerializedHomePageLink = {
-  id: string;
-  branchId: string;
-  type: HomePageLinkType;
-  label: string;
-  order: number;
-  isActive: boolean;
-  menuId: string | null;
-  timeSlotId: string | null;
-  customUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-
-  // Related data for display
-  menu?: { id: string; name: string; slug: string } | null;
-  timeSlot?: { id: string; name: string } | null;
-};
+import type { SerializedHomePageLink } from "@/types/home-page";
+export type { SerializedHomePageLink };
 
 /**
  * Get all home page links for a branch
