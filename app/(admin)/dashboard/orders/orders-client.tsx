@@ -3,6 +3,7 @@
 import { getOrders } from "@/actions/Order";
 import { OrderType } from "@/app/generated/prisma";
 import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -97,6 +98,11 @@ interface OrdersClientProps {
   initialPagination: PaginationInfo;
   initialTab: string;
   initialSearch: string;
+  activeOrderCounts: {
+    DINE_IN: number;
+    TAKE_AWAY: number;
+    DELIVERY: number;
+  };
 }
 
 export function OrdersClient({
@@ -106,6 +112,7 @@ export function OrdersClient({
   initialPagination,
   initialTab,
   initialSearch,
+  activeOrderCounts,
 }: OrdersClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -365,9 +372,30 @@ export function OrdersClient({
         className="w-full"
       >
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="DINE_IN">Para Comer Aquí</TabsTrigger>
-          <TabsTrigger value="TAKE_AWAY">Para Llevar</TabsTrigger>
-          <TabsTrigger value="DELIVERY">Delivery</TabsTrigger>
+          <TabsTrigger value="DINE_IN">
+            <span>Para Comer Aquí</span>
+            {activeOrderCounts.DINE_IN > 0 && (
+              <Badge variant="destructive" className="ml-1.5">
+                {activeOrderCounts.DINE_IN}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="TAKE_AWAY">
+            <span>Para Llevar</span>
+            {activeOrderCounts.TAKE_AWAY > 0 && (
+              <Badge variant="destructive" className="ml-1.5">
+                {activeOrderCounts.TAKE_AWAY}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="DELIVERY">
+            <span>Delivery</span>
+            {activeOrderCounts.DELIVERY > 0 && (
+              <Badge variant="destructive" className="ml-1.5">
+                {activeOrderCounts.DELIVERY}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="ALL">Todas</TabsTrigger>
         </TabsList>
 
