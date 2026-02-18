@@ -187,6 +187,7 @@ model Restaurant {
   twitterUrl   String?
   linkedinUrl  String?
   tiktokUrl    String?
+  whatsappNumber String?
 
   branches   Branch[]
   /**

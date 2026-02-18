@@ -21,9 +21,9 @@ export function OrderConfirmation({
         </div>
 
         <div>
-          <h2 className="text-3xl font-bold mb-2">¡Pedido Confirmado!</h2>
+          <h2 className="text-3xl font-bold mb-2">¡Pedido Pendiente!</h2>
           <p className="text-gray-600">
-            Tu pedido ha sido recibido y está siendo preparado
+            Te redigiremos a WhatsApp para que puedas realizar el pago.
           </p>
         </div>
 
@@ -33,8 +33,8 @@ export function OrderConfirmation({
         </div>
 
         <div className="text-sm text-gray-600 space-y-1">
-          <p>Te hemos enviado la confirmación por email</p>
-          <p>Puedes consultar el estado de tu pedido con este número</p>
+          {/* <p>Te hemos enviado la confirmación por email</p> */}
+          <p>Una vez abonado, tu pedido será confirmado.</p>
         </div>
 
         <Button onClick={onStartNewOrder} size="lg" className="w-full">

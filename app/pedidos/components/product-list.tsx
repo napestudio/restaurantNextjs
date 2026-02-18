@@ -111,7 +111,7 @@ export function ProductList({
       {Object.entries(productsByCategory).map(
         ([categoryName, categoryProducts]) => (
           <div key={categoryName}>
-            <h2 className="text-2xl font-bold mb-4 text-white sticky top-0 bg-black py-2 z-10">
+            <h2 className="text-2xl font-bold mb-4 text-neutral-900 sticky top-0 px-4 py-2 z-10">
               {categoryName}
             </h2>
             <div className="space-y-3">
@@ -123,24 +123,20 @@ export function ProductList({
                     className="bg-white rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow"
                   >
                     {/* Product Image Placeholder */}
-                    <div className="w-20 h-20 bg-gray-200 rounded-md shrink-0 flex items-center justify-center">
-                      <span className="text-gray-400 text-xs text-center px-1">
-                        Sin imagen
-                      </span>
-                    </div>
+                    <div className="w-20 h-20 bg-gray-200 rounded-md shrink-0 flex items-center justify-center"></div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-black text-lg mb-1 truncate">
+                      <h3 className="font-bold text-black text-lg truncate">
                         {product.name}
                       </h3>
                       {product.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                        <p className="text-sm text-gray-600 line-clamp-2 ">
                           {product.description}
                         </p>
                       )}
-                      <p className="text-lg font-bold text-red-500">
-                        ${product.price.toFixed(2)}
+                      <p className="text-lg font-bold text-neutral-900 mt-1">
+                        ${product.price.toLocaleString("es-AR")}
                       </p>
                     </div>
 

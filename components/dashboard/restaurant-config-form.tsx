@@ -24,6 +24,7 @@ type Restaurant = {
   twitterUrl: string | null;
   linkedinUrl: string | null;
   tiktokUrl: string | null;
+  whatsappNumber: string | null;
 };
 
 type RestaurantConfigFormProps = {
@@ -53,6 +54,7 @@ export default function RestaurantConfigForm({
     twitterUrl: restaurant.twitterUrl || "",
     linkedinUrl: restaurant.linkedinUrl || "",
     tiktokUrl: restaurant.tiktokUrl || "",
+    whatsappNumber: restaurant.whatsappNumber || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -338,6 +340,27 @@ export default function RestaurantConfigForm({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="https://www.tiktok.com/@turestaurante"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="whatsappNumber"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              WhatsApp
+            </label>
+            <input
+              type="tel"
+              id="whatsappNumber"
+              name="whatsappNumber"
+              value={formData.whatsappNumber}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="5491112345678"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Código de país + número, sin espacios ni símbolos. Ej: 5491112345678
+            </p>
           </div>
         </div>
       </div>
