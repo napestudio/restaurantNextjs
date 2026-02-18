@@ -20,6 +20,8 @@ interface CustomerInfoFormProps {
   minOrderAmount: number;
   onBack: () => void;
   onOrderComplete: (publicCode: string) => void;
+  restaurantName: string;
+  whatsappUrl: string;
 }
 
 export function CustomerInfoForm({
@@ -29,6 +31,8 @@ export function CustomerInfoForm({
   minOrderAmount,
   onBack,
   onOrderComplete,
+  restaurantName,
+  whatsappUrl,
 }: CustomerInfoFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +48,7 @@ export function CustomerInfoForm({
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -65,7 +69,8 @@ export function CustomerInfoForm({
           phone: result.data!.phone || prev.phone,
           addressStreet: result.data!.addressStreet || prev.addressStreet,
           addressNumber: result.data!.addressNumber || prev.addressNumber,
-          addressApartment: result.data!.addressApartment || prev.addressApartment,
+          addressApartment:
+            result.data!.addressApartment || prev.addressApartment,
           addressCity: result.data!.addressCity || prev.addressCity,
         }));
         toast({
@@ -91,7 +96,11 @@ export function CustomerInfoForm({
       return;
     }
 
-    if (!formData.addressStreet || !formData.addressNumber || !formData.addressCity) {
+    if (
+      !formData.addressStreet ||
+      !formData.addressNumber ||
+      !formData.addressCity
+    ) {
       toast({
         title: "Dirección incompleta",
         description: "Por favor completa la dirección de entrega",
@@ -100,7 +109,10 @@ export function CustomerInfoForm({
       return;
     }
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const subtotal = cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
 
     if (minOrderAmount > 0 && subtotal < minOrderAmount) {
       toast({
@@ -112,6 +124,10 @@ export function CustomerInfoForm({
     }
 
     setIsSubmitting(true);
+
+    // Open a blank window synchronously so iOS Safari treats it as user-initiated.
+    // We'll navigate it to WhatsApp after the order is created (when we have the code).
+    const waWindow = whatsappUrl ? window.open("", "_blank") : null;
 
     try {
       // 1. Find or create client
@@ -166,9 +182,41 @@ export function CustomerInfoForm({
           title: "¡Pedido creado!",
           description: "Tu pedido ha sido confirmado exitosamente",
         });
+
+        if (waWindow && whatsappUrl) {
+          const itemLines = cart
+            .map((item) => `- ${item.quantity}x ${item.name}`)
+            .join("\n");
+          const address = [
+            formData.addressStreet,
+            formData.addressNumber,
+            formData.addressApartment,
+            formData.addressCity,
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const message = [
+            `Hola ${restaurantName}, quiero realizar un pedido:`,
+            ``,
+            itemLines,
+            ``,
+            `*Datos de entrega:*`,
+            `Nombre: ${formData.name}`,
+            `Teléfono: ${formData.phone}`,
+            `Dirección: ${address}`,
+            formData.notes ? `Notas: ${formData.notes}` : null,
+            ``,
+            `Código de pedido: ${orderResult.data.publicCode}`,
+          ]
+            .filter((line) => line !== null)
+            .join("\n");
+          waWindow.location.href = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
+        }
+
         onOrderComplete(orderResult.data.publicCode);
         // Note: isSubmitting stays true since we're navigating to confirmation
       } else {
+        waWindow?.close();
         toast({
           title: "Error al crear pedido",
           description: orderResult.error || "Error al crear pedido",
@@ -187,22 +235,18 @@ export function CustomerInfoForm({
     }
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
   const total = subtotal + deliveryFee;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBack}
-          className="text-black"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver
-        </Button>
-        <h2 className="text-2xl font-bold">Información de Entrega</h2>
+      <div className="flex items-center justify-center gap-4">
+        <h2 className="text-2xl font-bold text-neutral-900 pt-3">
+          Información de Entrega
+        </h2>
       </div>
 
       <Card className="bg-white text-black">
@@ -344,10 +388,25 @@ export function CustomerInfoForm({
           </div>
         </CardContent>
       </Card>
-
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Procesando..." : "Confirmar Pedido"}
-      </Button>
+      <div className="space-y-4">
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full bg-purple-900 hover:bg-purple-900/90 transition-colors text-xl py-6"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Procesando..." : "Confirmar Pedido"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          className="text-black w-full"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver
+        </Button>
+      </div>
     </form>
   );
 }

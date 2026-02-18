@@ -38,12 +38,16 @@ interface DeliveryPageProps {
   branchId: string;
   config: DeliveryConfig;
   products: OrderProduct[];
+  restaurantName: string;
+  whatsappUrl: string;
 }
 
 export default function DeliveryPage({
   branchId,
   config,
   products,
+  restaurantName,
+  whatsappUrl,
 }: DeliveryPageProps) {
   const [step, setStep] = useState<WizardStep>("menu");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -56,7 +60,7 @@ export default function DeliveryPage({
         return prev.map((item) =>
           item.productId === productId
             ? { ...item, quantity: item.quantity + 1 }
-            : item
+            : item,
         );
       }
       return [...prev, { productId, name, price, quantity: 1 }];
@@ -70,8 +74,8 @@ export default function DeliveryPage({
     }
     setCart((prev) =>
       prev.map((item) =>
-        item.productId === productId ? { ...item, quantity } : item
-      )
+        item.productId === productId ? { ...item, quantity } : item,
+      ),
     );
   };
 
@@ -83,9 +87,7 @@ export default function DeliveryPage({
     setCart([]);
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryFee = config.deliveryFee || 0;
-  const total = subtotal + deliveryFee;
 
   const handleOrderComplete = (publicCode: string) => {
     setOrderPublicCode(publicCode);
@@ -106,10 +108,7 @@ export default function DeliveryPage({
           <div className="flex justify-center mb-6">
             <Avatar />
           </div>
-          <h1 className="text-4xl font-bold mb-2">Pedidos para Delivery</h1>
-          <p className="text-gray-400">
-            {config.menu?.name || "Menú de Delivery"}
-          </p>
+          <h1 className="text-4xl font-bold mb-2">Pedidos</h1>
           {config.estimatedMinutes && (
             <p className="text-sm text-gray-500 mt-1">
               Tiempo estimado de entrega: {config.estimatedMinutes} minutos
@@ -118,58 +117,61 @@ export default function DeliveryPage({
         </div>
 
         {/* Step Content */}
-        {step === "menu" && (
-          <ProductList
-            products={products}
-            onAddToCart={addToCart}
-            onUpdateQuantity={updateQuantity}
-            cart={cart}
-          />
-        )}
-
-        {step === "cart" && (
-          <div className="max-w-2xl mx-auto">
-            <ShoppingCart
-              cart={cart}
+        <div className="bg-white p-2 rounded-xl">
+          {step === "menu" && (
+            <ProductList
+              products={products}
+              onAddToCart={addToCart}
               onUpdateQuantity={updateQuantity}
-              onRemove={removeFromCart}
-              deliveryFee={deliveryFee}
-              onBack={() => setStep("menu")}
-              onCheckout={() => setStep("info")}
-            />
-          </div>
-        )}
-
-        {step === "info" && (
-          <div className="max-w-2xl mx-auto">
-            <CustomerInfoForm
-              branchId={branchId}
               cart={cart}
-              deliveryFee={deliveryFee}
-              minOrderAmount={config.minOrderAmount || 0}
-              onBack={() => setStep("cart")}
-              onOrderComplete={handleOrderComplete}
             />
-          </div>
-        )}
+          )}
 
-        {step === "confirmation" && (
-          <div className="max-w-2xl mx-auto">
-            <OrderConfirmation
-              publicCode={orderPublicCode}
-              onStartNewOrder={startNewOrder}
-            />
-          </div>
-        )}
+          {step === "cart" && (
+            <div className="max-w-2xl mx-auto">
+              <ShoppingCart
+                cart={cart}
+                onUpdateQuantity={updateQuantity}
+                onRemove={removeFromCart}
+                deliveryFee={deliveryFee}
+                onBack={() => setStep("menu")}
+                onCheckout={() => setStep("info")}
+              />
+            </div>
+          )}
+
+          {step === "info" && (
+            <div className="max-w-2xl mx-auto">
+              <CustomerInfoForm
+                branchId={branchId}
+                cart={cart}
+                deliveryFee={deliveryFee}
+                minOrderAmount={config.minOrderAmount || 0}
+                onBack={() => setStep("cart")}
+                onOrderComplete={handleOrderComplete}
+                restaurantName={restaurantName}
+                whatsappUrl={whatsappUrl}
+              />
+            </div>
+          )}
+          {step === "confirmation" && (
+            <div className="max-w-2xl mx-auto">
+              <OrderConfirmation
+                publicCode={orderPublicCode}
+                onStartNewOrder={startNewOrder}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Floating Cart Button (only on menu step) */}
         {step === "menu" && cart.length > 0 && (
-          <div className="fixed bottom-6 right-6 z-50">
+          <div className="fixed bottom-6 z-50 w-full flex items-center justify-center">
             <button
               onClick={() => setStep("cart")}
-              className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-4 shadow-lg flex items-center gap-3 transition-all"
+              className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6 py-2 shadow-lg flex items-center gap-3 transition-all"
             >
-              <span className="font-semibold">Ver Carrito</span>
+              <span className="font-semibold">Pedido</span>
               <span className="bg-white text-red-500 rounded-full w-8 h-8 flex items-center justify-center font-bold">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)}
               </span>

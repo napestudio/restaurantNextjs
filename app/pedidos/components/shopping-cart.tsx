@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
 
 interface ShoppingCartProps {
@@ -24,7 +24,7 @@ export function ShoppingCart({
 }: ShoppingCartProps) {
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
   const total = subtotal + deliveryFee;
 
@@ -33,7 +33,7 @@ export function ShoppingCart({
       <Card className="bg-white text-black">
         <CardContent className="py-16 text-center">
           <p className="text-gray-500 mb-4">Tu carrito está vacío</p>
-          <Button onClick={onBack}>Volver al Menú</Button>
+          <Button onClick={onBack}>Elegir productos</Button>
         </CardContent>
       </Card>
     );
@@ -41,12 +41,8 @@ export function ShoppingCart({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={onBack} className="text-black">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver
-        </Button>
-        <h2 className="text-2xl font-bold">Tu Carrito</h2>
+      <div className="flex items-center justify-center pt-3 gap-4">
+        <h2 className="text-2xl text-neutral-900 font-bold">Tu Pedido</h2>
       </div>
 
       <Card className="bg-white text-black">
@@ -124,10 +120,21 @@ export function ShoppingCart({
           </div>
         </CardContent>
       </Card>
-
-      <Button onClick={onCheckout} size="lg" className="w-full">
-        Continuar al Checkout
-      </Button>
+      <div className="space-y-4">
+        <Button
+          onClick={onCheckout}
+          className="w-full bg-purple-900 hover:bg-purple-900/90 transition-colors text-xl py-6"
+        >
+          Finalizar pedido
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="text-black w-full"
+        >
+          Agregar productos
+        </Button>
+      </div>
     </div>
   );
 }
