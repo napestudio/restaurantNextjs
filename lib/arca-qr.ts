@@ -7,21 +7,8 @@
  * @see https://www.ARCA.gob.ar/fe/qr/
  */
 
-export interface AfipQrData {
-  ver: number; // Format version (always 1)
-  fecha: string; // Invoice date (YYYY-MM-DD)
-  cuit: number; // Issuer CUIT (11 digits)
-  ptoVta: number; // Point of sale
-  tipoCmp: number; // Invoice type (1=A, 6=B, 11=C)
-  nroCmp: number; // Invoice number
-  importe: number; // Total amount (2 decimals)
-  moneda: string; // Currency code (e.g., "PES")
-  ctz: number; // Exchange rate (1.00 for pesos)
-  tipoDocRec: number; // Recipient doc type
-  nroDocRec: number; // Recipient document number
-  tipoCodAut: string; // Auth type ("E" for CAE)
-  codAut: string; // CAE code (14 digits)
-}
+import type { AfipQrData } from "@/types/arca";
+export type { AfipQrData };
 
 /**
  * Convert ARCA internal date format (YYYYMMDD) to QR format (YYYY-MM-DD)

@@ -78,13 +78,19 @@ async function getClientDiscount(
 // Types
 // ============================================================================
 
-export type OrderItemInput = {
-  productId: string;
-  itemName: string;
-  quantity: number;
-  price: number;
-  originalPrice: number;
-  notes?: string;
+import type {
+  OrderItemInput,
+  OrderFilters,
+  PaymentMethodExtended,
+  PaymentEntry,
+  OrderWithoutInvoice,
+} from "@/types/orders";
+export type {
+  OrderItemInput,
+  OrderFilters,
+  PaymentMethodExtended,
+  PaymentEntry,
+  OrderWithoutInvoice,
 };
 
 // Helper to serialize product (convert Decimal fields to numbers)
@@ -1382,19 +1388,6 @@ export async function moveOrderToTable(orderId: string, targetTableId: string) {
 }
 
 // Filters for getting orders
-export type OrderFilters = {
-  branchId: string;
-  startDate?: Date;
-  endDate?: Date;
-  status?: OrderStatus;
-  tableId?: string;
-  type?: OrderType;
-  // Search
-  search?: string;
-  // Pagination
-  page?: number;
-  pageSize?: number;
-};
 
 // Get orders with filters and pagination
 export async function getOrders(filters: OrderFilters) {
@@ -1773,19 +1766,6 @@ export async function setNeedsInvoice(orderId: string, needsInvoice: boolean) {
 // - getInvoices() - Lists invoices with pagination and filters
 // - getInvoiceById() - Gets a single invoice with full details
 
-// Payment method type for closing tables (extended)
-export type PaymentMethodExtended =
-  | "CASH"
-  | "CARD_DEBIT"
-  | "CARD_CREDIT"
-  | "ACCOUNT"
-  | "TRANSFER";
-
-// Payment entry for split payments
-export type PaymentEntry = {
-  method: PaymentMethodExtended;
-  amount: number;
-};
 
 // Close table with payment - records payment in cash register
 export async function closeTableWithPayment(data: {
@@ -1992,18 +1972,8 @@ export async function closeTableWithPayment(data: {
 /**
  * Order without invoice (for invoice creation)
  */
-export type OrderWithoutInvoice = {
-  id: string;
-  publicCode: string;
-  customerName: string | null;
-  table: { name: string | null; number: number } | null;
-  type: OrderType;
-  total: number;
-};
 
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+import type { ActionResult } from "@/types/action-result";
 
 /**
  * Get completed orders without emitted invoices

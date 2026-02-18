@@ -53,27 +53,11 @@ const fiscalConfigSchema = z.object({
 
 export type FiscalConfigInput = z.infer<typeof fiscalConfigSchema>;
 
-// Extended type that includes read-only fields from database
-export interface FiscalConfigData extends FiscalConfigInput {
-  id?: string;
-  restaurantId?: string;
-  availablePtoVta?: number[] | null;
-  lastSyncedAt?: Date | null;
-  certificateExpiresAt?: Date | null;
-  lastTestedAt?: Date | null;
-  lastTestSuccess?: boolean | null;
-  lastTestError?: string | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-  createdBy?: string | null;
-  updatedBy?: string | null;
-}
+import type { FiscalConfigData } from "@/types/fiscal-config";
+export type { FiscalConfigData };
 
-export interface ActionResult<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import type { ActionResult } from "@/types/action-result";
+export type { ActionResult };
 
 // ============================================================================
 // GET FISCAL CONFIGURATION
@@ -97,7 +81,15 @@ export async function getFiscalConfig(
       return { success: true, data: null };
     }
 
-    return { success: true, data: config as unknown as FiscalConfigData };
+    return {
+      success: true,
+      data: {
+        ...config,
+        environment: config.environment as "test" | "production",
+        taxStatus: config.taxStatus as FiscalConfigData["taxStatus"],
+        availablePtoVta: config.availablePtoVta as number[] | null,
+      },
+    };
   } catch (error) {
     console.error("[getFiscalConfig] Error:", error);
     return {
@@ -250,7 +242,7 @@ export async function syncSalesPoints(
     }
 
     // Extract sales point numbers from ARCA response
-    const ptoVentaArray = (result.data as any)?.resultGet?.ptoVenta;
+    const ptoVentaArray = result.data.resultGet?.ptoVenta;
     if (!Array.isArray(ptoVentaArray)) {
       return {
         success: false,
@@ -258,7 +250,7 @@ export async function syncSalesPoints(
       };
     }
 
-    const salesPoints = ptoVentaArray.map((sp: any) => sp.nro);
+    const salesPoints = ptoVentaArray.map((sp) => sp.nro);
 
     // Update in database
     await prisma.fiscalConfiguration.update({

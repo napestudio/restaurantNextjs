@@ -14,7 +14,10 @@
       "WebFetch(domain:www.ARCA.gob.ar)",
       "Bash(npx prisma migrate resolve:*)",
       "WebFetch(domain:www.afipts.com)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(wc:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

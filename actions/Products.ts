@@ -18,55 +18,11 @@ import { prisma } from "@/lib/prisma";
 import { generateProductSKU } from "@/lib/sku-generator";
 import { revalidatePath } from "next/cache";
 
-export type CreateMenuItemInput = {
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  sku?: string;
-  unitType: UnitType;
-  weightUnit?: WeightUnit;
-  volumeUnit?: VolumeUnit;
-  minStockAlert?: number;
-  trackStock?: boolean;
-  categoryId?: string;
-  restaurantId: string;
-  isActive?: boolean;
-};
+import type { CreateMenuItemInput, UpdateMenuItemInput, SetProductBranchInput } from "@/types/products";
+export type { CreateMenuItemInput, UpdateMenuItemInput, SetProductBranchInput };
 
-export type UpdateMenuItemInput = {
-  id: string;
-  name?: string;
-  description?: string;
-  imageUrl?: string;
-  sku?: string;
-  unitType?: UnitType;
-  weightUnit?: WeightUnit;
-  volumeUnit?: VolumeUnit;
-  minStockAlert?: number;
-  trackStock?: boolean;
-  categoryId?: string;
-  isActive?: boolean;
-};
-
-export type SetProductBranchInput = {
-  productId: string;
-  branchId: string;
-  stock?: number;
-  minStock?: number;
-  maxStock?: number;
-  isActive?: boolean;
-  prices: {
-    type: PriceType;
-    price: number;
-  }[];
-};
-
-export type PaginationInfo = {
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  totalCount: number;
-};
+import type { PaginationInfo } from "@/types/pagination";
+export type { PaginationInfo };
 
 /**
  * Crea un nuevo producto (menu item)

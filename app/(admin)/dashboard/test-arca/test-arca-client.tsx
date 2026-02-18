@@ -17,7 +17,7 @@ import {
   getInvoiceType,
   getDocumentType,
   type ArcaCreateVoucherResponse,
-} from "@/lib/types/arca";
+} from "@/types/arca";
 import {
   generateAfipQrData,
   generateAfipQrUrl,

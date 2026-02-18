@@ -3,15 +3,8 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export type DeliveryWindowInput = {
-  name: string;
-  startTime: string; // "HH:mm"
-  deliveryStartTime: string; // "HH:mm"
-  endTime: string; // "HH:mm"
-  daysOfWeek: string[];
-  maxOrders?: number;
-  isActive?: boolean;
-};
+import type { DeliveryWindowInput } from "@/types/delivery";
+export type { DeliveryWindowInput };
 
 type SerializedDeliveryWindow = {
   id: string;

@@ -13,16 +13,9 @@ import { getCurrentArcaEnvironment } from "@/lib/arca-config";
 // TYPES
 // ============================================================================
 
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+import type { ActionResult } from "@/types/action-result";
 
-interface PaginationInfo {
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  totalCount: number;
-}
+import type { PaginationInfo } from "@/types/pagination";
 
 interface CustomerInvoiceData {
   name: string;
@@ -856,12 +849,8 @@ export async function generateInvoicePDF(
 /**
  * Manual invoice line item (VAT-inclusive pricing)
  */
-export interface ManualInvoiceLineItem {
-  description: string;
-  quantity: number;
-  unitPrice: number; // VAT-inclusive
-  vatRate: number; // 0, 10.5, 21, 27
-}
+import type { ManualInvoiceLineItem } from "@/types/invoice";
+export type { ManualInvoiceLineItem };
 
 /**
  * Calculate VAT breakdown from manual invoice line items

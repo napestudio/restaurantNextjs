@@ -38,6 +38,7 @@ const restaurantUpdateSchema = z.object({
   twitterUrl: optionalUrl("URL de Twitter inválida"),
   linkedinUrl: optionalUrl("URL de LinkedIn inválida"),
   tiktokUrl: optionalUrl("URL de TikTok inválida"),
+  whatsappNumber: z.string().optional(),
 });
 
 export type RestaurantUpdateInput = z.infer<typeof restaurantUpdateSchema>;
@@ -65,6 +66,7 @@ export async function getRestaurant(restaurantId: string) {
         twitterUrl: true,
         linkedinUrl: true,
         tiktokUrl: true,
+        whatsappNumber: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -150,6 +152,7 @@ export async function updateRestaurant(
         twitterUrl: validatedData.twitterUrl || null,
         linkedinUrl: validatedData.linkedinUrl || null,
         tiktokUrl: validatedData.tiktokUrl || null,
+        whatsappNumber: validatedData.whatsappNumber || null,
       },
     });
 
@@ -166,5 +169,22 @@ export async function updateRestaurant(
       success: false,
       error: "Error al actualizar la configuración del restaurante",
     };
+  }
+}
+
+export async function getRestaurantByBranchId(branchId: string) {
+  try {
+    const branch = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: {
+        restaurant: {
+          select: { name: true, whatsappNumber: true },
+        },
+      },
+    });
+    return branch?.restaurant ?? null;
+  } catch (error) {
+    console.error("Error fetching restaurant by branch:", error);
+    return null;
   }
 }

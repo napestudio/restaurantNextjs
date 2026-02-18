@@ -1,5 +1,6 @@
 import { getDeliveryConfig, isDeliveryAvailable } from "@/actions/DeliveryConfig";
 import { getAvailableProductsForOrder } from "@/actions/Order";
+import { getRestaurantByBranchId } from "@/actions/Restaurant";
 import { OrderType } from "@/app/generated/prisma";
 import { BRANCH_ID } from "@/lib/constants";
 import { notFound } from "next/navigation";
@@ -44,11 +45,18 @@ export default async function PedidosPage() {
 
   const products = productsResult || [];
 
+  const restaurant = await getRestaurantByBranchId(BRANCH_ID);
+  const whatsappUrl = restaurant?.whatsappNumber
+    ? `https://wa.me/${restaurant.whatsappNumber}`
+    : "";
+
   return (
     <DeliveryPage
       branchId={BRANCH_ID}
       config={config}
       products={products}
+      restaurantName={restaurant?.name ?? ""}
+      whatsappUrl={whatsappUrl}
     />
   );
 }

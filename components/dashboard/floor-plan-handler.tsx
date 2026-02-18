@@ -13,7 +13,8 @@ import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
 import { FloorPlanActions } from "./floor-plan/floor-plan-actions";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
-import { SectorSelector, type Sector } from "./floor-plan/sector-selector";
+import { SectorSelector } from "./floor-plan/sector-selector";
+import type { Sector } from "@/types/tables-client";
 import { TableOrderSidebar } from "./table-order-sidebar";
 import { TableEditSidebar } from "./floor-plan/table-edit-sidebar";
 

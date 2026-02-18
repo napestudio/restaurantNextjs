@@ -46,7 +46,7 @@ export function SalesPointsConfig({
 
     const result = await syncSalesPoints(restaurantId);
 
-    if (result.success && result.data) {
+    if (result.success) {
       setAvailablePoints(result.data);
       toast({
         title: "Sincronización exitosa",

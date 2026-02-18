@@ -26,7 +26,7 @@ export default async function FiscalConfigPage() {
         </div>
 
         <FiscalConfigClient
-          initialConfig={result.data || null}
+          initialConfig={result.success ? result.data : null}
           restaurantId={restaurantId}
         />
       </div>

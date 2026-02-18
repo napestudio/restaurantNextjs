@@ -24,17 +24,13 @@ import { Switch } from "@/components/ui/switch";
 import { Pencil, Wifi, Usb, RefreshCw, Loader2 } from "lucide-react";
 import { updatePrinter } from "@/actions/Printer";
 import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
+import type { DiscoveredPrinter } from "@/lib/printer/gg-ez-print";
 import type {
   Station,
   Printer,
   PrintMode,
   PrinterConnectionType,
 } from "@/app/generated/prisma";
-
-interface DiscoveredPrinter {
-  name: string;
-  type: string;
-}
 
 type PrinterWithStation = Printer & {
   station: { id: string; name: string; color: string } | null;
