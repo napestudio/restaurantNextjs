@@ -1,6 +1,7 @@
 "use client";
 
 import { getOrders } from "@/actions/Order";
+import type { PaginationInfo } from "@/types/pagination";
 import { OrderType } from "@/app/generated/prisma";
 import { OrderDetailsSidebar } from "@/components/dashboard/order-details-sidebar";
 import { Badge } from "@/components/ui/badge";
@@ -84,12 +85,6 @@ type Table = {
   name: string | null;
 };
 
-type PaginationInfo = {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-};
 
 interface OrdersClientProps {
   branchId: string;

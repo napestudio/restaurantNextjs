@@ -25,18 +25,7 @@ import { Label } from "@/components/ui/label";
 import { updateSector, deleteSector } from "@/actions/Sector";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
-
-interface Sector {
-  id: string;
-  name: string;
-  color: string;
-  order: number;
-  width: number;
-  height: number;
-  _count: {
-    tables: number;
-  };
-}
+import type { Sector } from "@/types/tables-client";
 
 interface EditSectorDialogProps {
   open: boolean;

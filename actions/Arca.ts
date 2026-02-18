@@ -8,7 +8,7 @@ import type {
   ArcaInvoiceInput,
   ArcaCreateVoucherResponse,
   ArcaLastVoucherResponse,
-} from "@/lib/types/arca";
+} from "@/types/arca";
 
 /**
  * Server Actions for ARCA/ARCA Integration
@@ -18,15 +18,7 @@ import type {
  * and keep credentials secure on the server.
  */
 
-type ActionResult<T> =
-  | {
-      success: true;
-      data: T;
-    }
-  | {
-      success: false;
-      error: string;
-    };
+import type { ActionResult } from "@/types/action-result";
 
 type ServerStatus = {
   environment: string;

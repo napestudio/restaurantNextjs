@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { InvoiceStatus } from "@/app/generated/prisma";
+import type { PaginationInfo } from "@/types/pagination";
 import { usePrint } from "@/hooks/use-print";
 import { downloadInvoicePDF, cancelInvoiceWithCreditNote } from "@/actions/Invoice";
 import { CreateInvoiceDialog } from "@/components/dashboard/create-invoice-dialog";
@@ -79,12 +80,6 @@ type Invoice = {
   } | null;
 };
 
-type PaginationInfo = {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-};
 
 type Filters = {
   search: string;

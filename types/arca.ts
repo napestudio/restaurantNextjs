@@ -153,6 +153,11 @@ export type ArcaInvoiceType = {
 };
 
 /**
+ * Valid invoice type codes
+ */
+export type InvoiceTypeCode = 1 | 2 | 3 | 6 | 7 | 8 | 11 | 12 | 15;
+
+/**
  * Supported invoice types in Argentina
  *
  * - Factura A: For transactions between registered taxpayers (Responsable Inscripto)
@@ -213,11 +218,6 @@ export const INVOICE_TYPES: ArcaInvoiceType[] = [
     description: "Crédito para Factura C",
   },
 ];
-
-/**
- * Valid invoice type codes
- */
-export type InvoiceTypeCode = 1 | 2 | 3 | 6 | 7 | 8 | 11 | 12 | 15;
 
 // ============================================================================
 // Document Type Definitions

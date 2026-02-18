@@ -9,32 +9,19 @@ import {
   generateFullOrderData,
   type PrinterConfig,
 } from "@/lib/printer/escpos";
+import type {
+  OrderItemForPrint,
+  OrderInfoForPrint,
+  ControlTicketItem,
+  ControlTicketInfo,
+} from "@/types/printer-internal";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export interface PrinterTarget {
-  type: "network" | "usb";
-  systemName: string; // Windows printer name (USB) or IP address (Network)
-  printerName?: string; // Display name
-  copies?: number;
-}
-
-export interface PrintJobData {
-  printerId: string;
-  printerName: string;
-  target: PrinterTarget;
-  escPosData: string; // base64 encoded
-  copies: number;
-}
-
-export interface PreparedPrintResult {
-  success: boolean;
-  error?: string;
-  jobs?: PrintJobData[];
-  printJobIds?: string[];
-}
+import type { PrinterTarget, PrintJobData, PreparedPrintResult, AfipInvoicePrintParams } from "@/types/printer-actions";
+export type { PrinterTarget, PrintJobData, PreparedPrintResult, AfipInvoicePrintParams };
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -151,20 +138,6 @@ export async function prepareTestPrint(
 // PREPARE ORDER ITEMS PRINT (COMANDAS)
 // ============================================================================
 
-interface OrderItemForPrint {
-  productId: string;
-  itemName: string;
-  quantity: number;
-  notes?: string | null;
-  categoryId?: string | null;
-}
-
-interface OrderInfoForPrint {
-  orderId: string;
-  orderCode: string;
-  tableName: string;
-  branchId: string;
-}
 
 /**
  * Prepare print jobs for order items (station comandas)
@@ -310,25 +283,6 @@ export async function prepareOrderItemsPrint(
 // PREPARE CONTROL TICKET PRINT
 // ============================================================================
 
-interface ControlTicketItem {
-  name: string;
-  quantity: number;
-  price: number;
-  notes?: string | null;
-}
-
-interface ControlTicketInfo {
-  orderId: string;
-  orderCode: string;
-  tableName: string;
-  waiterName: string;
-  branchId: string;
-  items: ControlTicketItem[];
-  subtotal: number;
-  discountPercentage?: number;
-  orderType?: string;
-  customerName?: string;
-}
 
 /**
  * Prepare print jobs for control ticket (full order with prices)
@@ -563,49 +517,6 @@ export async function hasBranchControlTicketPrinters(
 /**
  * ARCA Invoice print parameters (for test page)
  */
-export interface AfipInvoicePrintParams {
-  // Invoice header
-  invoiceType: string;
-  invoiceNumber: string;
-  invoiceDate: string;
-
-  // Issuer
-  businessName?: string;
-  cuit: string;
-
-  // Customer
-  customerDoc: string;
-
-  // Items
-  items: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    vatRate: number;
-    total: number;
-  }>;
-
-  // Totals
-  subtotal: number;
-  vatBreakdown: Array<{
-    rate: number;
-    base: number;
-    amount: number;
-  }>;
-  totalVat: number;
-  total: number;
-
-  // ARCA authorization
-  cae: string;
-  caeExpiration: string;
-
-  // QR code URL
-  qrUrl?: string;
-
-  // Printer config
-  printerIp: string;
-  charactersPerLine?: number;
-}
 
 /**
  * Prepare ARCA invoice print job for test page

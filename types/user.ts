@@ -62,3 +62,9 @@ export const USER_ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   EMPLOYEE: "Operaciones básicas",
   WAITER: "Atención de mesas y pedidos",
 };
+
+export type WaiterData = {
+  id: string;
+  name: string | null;
+  username: string;
+};

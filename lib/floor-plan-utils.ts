@@ -1,5 +1,7 @@
 import type { TableShapeType, TableStatus } from "@/types/table";
+import type { TableWithReservations } from "@/types/tables-client";
 import { shapeDefaults } from "@/lib/floor-plan-constants";
+export type { TableWithReservations };
 
 // Re-export shapeDefaults for backwards compatibility
 export { shapeDefaults };
@@ -48,46 +50,6 @@ export interface FloorTable {
   waiterName?: string; // Name of the assigned waiter (first one if multiple orders)
 }
 
-/**
- * TableWithReservations interface - represents a table from the database with reservations
- */
-export interface TableWithReservations {
-  id: string;
-  number: number;
-  capacity: number;
-  positionX: number | null;
-  positionY: number | null;
-  width: number | null;
-  height: number | null;
-  rotation: number | null;
-  shape: string | null;
-  status: string | null;
-  isActive: boolean;
-  isShared: boolean;
-  sectorId: string | null;
-  name?: string | null;
-  reservations: Array<{
-    reservation: {
-      customerName: string;
-      people: number;
-      status: string;
-      date: string;
-      timeSlot: {
-        startTime: string;
-        endTime: string;
-      } | null;
-    };
-  }>;
-  orders?: Array<{
-    id: string;
-    partySize: number | null;
-    status: string;
-    assignedTo: {
-      id: string;
-      name: string | null;
-    } | null;
-  }>;
-}
 
 /**
  * Check if the current time falls within a reservation's time slot

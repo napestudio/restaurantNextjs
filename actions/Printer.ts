@@ -1,15 +1,20 @@
 "use server";
 
-import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import {
+  PrinterConnectionType,
   PrinterStatus,
   PrintJobStatus,
   PrintMode,
-  PrinterConnectionType,
 } from "@/app/generated/prisma";
 import { printTestPage } from "@/lib/printer/escpos";
+import prisma from "@/lib/prisma";
+import type {
+  ControlTicketInfo,
+  OrderInfoForPrint,
+  OrderItemForPrint,
+} from "@/types/printer-internal";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 const printerInputSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -186,7 +191,7 @@ export async function getPrinterById(id: string) {
 
 export async function updatePrinter(
   id: string,
-  data: Partial<z.input<typeof printerSchema>>
+  data: Partial<z.input<typeof printerSchema>>,
 ) {
   try {
     // If updating name, check it doesn't exist
@@ -301,7 +306,7 @@ export async function togglePrinterStatus(id: string, isActive: boolean) {
 
 export async function updatePrinterConnectionStatus(
   id: string,
-  status: PrinterStatus
+  status: PrinterStatus,
 ) {
   try {
     const printer = await prisma.printer.update({
@@ -495,43 +500,6 @@ export async function testPrinter(id: string) {
   }
 }
 
-// Types for auto-printing order items (comandas - no prices)
-interface OrderItemForPrint {
-  productId: string;
-  itemName: string;
-  quantity: number;
-  notes?: string | null;
-  categoryId?: string | null;
-}
-
-interface OrderInfoForPrint {
-  orderId: string;
-  orderCode: string; // publicCode or short identifier
-  tableName: string;
-  branchId: string;
-}
-
-// Types for control ticket printing (with prices)
-interface ControlTicketItem {
-  name: string;
-  quantity: number;
-  price: number;
-  notes?: string | null;
-}
-
-interface ControlTicketInfo {
-  orderId: string;
-  orderCode: string;
-  tableName: string;
-  waiterName: string;
-  branchId: string;
-  items: ControlTicketItem[];
-  subtotal: number;
-  discountPercentage?: number;
-  orderType?: string;
-  customerName?: string;
-}
-
 /**
  * Auto-print newly added order items to station printers (comandas)
  * This prints kitchen/bar tickets WITHOUT prices and WITHOUT waiter name
@@ -542,7 +510,7 @@ interface ControlTicketInfo {
  */
 export async function autoPrintOrderItems(
   orderInfo: OrderInfoForPrint,
-  items: OrderItemForPrint[]
+  items: OrderItemForPrint[],
 ) {
   try {
     // Get all active auto-print printers for this branch that should print station items
@@ -588,7 +556,7 @@ export async function autoPrintOrderItems(
         : [];
 
     const productCategoryMap = new Map(
-      products.map((p) => [p.id, p.categoryId])
+      products.map((p) => [p.id, p.categoryId]),
     );
 
     // Enrich items with category IDs
@@ -625,13 +593,14 @@ export async function autoPrintOrderItems(
 
       if (printer.station) {
         const stationCategoryIds = new Set(
-          printer.station.stationCategories.map((sc) => sc.categoryId)
+          printer.station.stationCategories.map((sc) => sc.categoryId),
         );
 
         // If station has categories, filter items
         if (stationCategoryIds.size > 0) {
           stationItems = enrichedItems.filter(
-            (item) => item.categoryId && stationCategoryIds.has(item.categoryId)
+            (item) =>
+              item.categoryId && stationCategoryIds.has(item.categoryId),
           );
         } else {
           // Station has no categories configured - skip
@@ -639,7 +608,7 @@ export async function autoPrintOrderItems(
         }
       } else {
         console.log(
-          `[autoPrintOrderItems] Printer ${printer.name} has no station, will print all items`
+          `[autoPrintOrderItems] Printer ${printer.name} has no station, will print all items`,
         );
       }
 
@@ -710,7 +679,7 @@ export async function autoPrintOrderItems(
 // Helper to update printer status
 async function updatePrinterStatusFromResult(
   printerId: string,
-  success: boolean
+  success: boolean,
 ) {
   await prisma.printer.update({
     where: { id: printerId },
@@ -857,7 +826,8 @@ export async function discoverUsbPrinters() {
   // This function is deprecated - printer discovery is now done client-side via gg-ez-print WebSocket
   return {
     success: false,
-    error: "La detección de impresoras ahora se realiza desde el navegador con gg-ez-print",
+    error:
+      "La detección de impresoras ahora se realiza desde el navegador con gg-ez-print",
     printers: [],
   };
 }

@@ -14,6 +14,7 @@ export interface TableWithReservations {
   isActive: boolean;
   isShared: boolean;
   sectorId: string | null;
+  name?: string | null;
   reservations: Array<{
     reservation: {
       customerName: string;
@@ -25,6 +26,15 @@ export interface TableWithReservations {
         endTime: string;
       } | null;
     };
+  }>;
+  orders?: Array<{
+    id: string;
+    partySize: number | null;
+    status: string;
+    assignedTo: {
+      id: string;
+      name: string | null;
+    } | null;
   }>;
 }
 

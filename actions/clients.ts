@@ -2,24 +2,10 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { PaymentMethod } from "@/app/generated/prisma";
 import { serializeClient, type ClientData } from "@/lib/serializers";
 
-export type ClientInput = {
-  name: string;
-  phone?: string;
-  email?: string;
-  birthDate?: string;
-  taxId?: string;
-  notes?: string;
-  addressStreet?: string;
-  addressNumber?: string;
-  addressApartment?: string;
-  addressCity?: string;
-  discountPercentage?: number;
-  preferredPaymentMethod?: PaymentMethod;
-  hasCurrentAccount?: boolean;
-};
+import type { ClientInput } from "@/types/clients";
+export type { ClientInput };
 
 export type { ClientData };
 

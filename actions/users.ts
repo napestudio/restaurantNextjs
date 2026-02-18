@@ -454,11 +454,8 @@ export async function deleteUser(userId: string): Promise<{
   }
 }
 
-export type WaiterData = {
-  id: string;
-  name: string | null;
-  username: string;
-};
+import type { WaiterData } from "@/types/user";
+export type { WaiterData };
 
 export async function getWaitersForBranch(branchId: string): Promise<{
   success: boolean;
