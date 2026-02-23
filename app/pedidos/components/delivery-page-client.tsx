@@ -52,6 +52,7 @@ export default function DeliveryPage({
   const [step, setStep] = useState<WizardStep>("menu");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderPublicCode, setOrderPublicCode] = useState<string>("");
+  const [whatsappOrderUrl, setWhatsappOrderUrl] = useState<string>("");
 
   const addToCart = (productId: string, name: string, price: number) => {
     setCart((prev) => {
@@ -89,8 +90,9 @@ export default function DeliveryPage({
 
   const deliveryFee = config.deliveryFee || 0;
 
-  const handleOrderComplete = (publicCode: string) => {
+  const handleOrderComplete = (publicCode: string, whatsappUrl: string) => {
     setOrderPublicCode(publicCode);
+    setWhatsappOrderUrl(whatsappUrl);
     setStep("confirmation");
     clearCart();
   };
@@ -158,6 +160,7 @@ export default function DeliveryPage({
             <div className="max-w-2xl mx-auto">
               <OrderConfirmation
                 publicCode={orderPublicCode}
+                whatsappUrl={whatsappOrderUrl}
                 onStartNewOrder={startNewOrder}
               />
             </div>

@@ -6,11 +6,13 @@ import { Check } from "lucide-react";
 
 interface OrderConfirmationProps {
   publicCode: string;
+  whatsappUrl: string;
   onStartNewOrder: () => void;
 }
 
 export function OrderConfirmation({
   publicCode,
+  whatsappUrl,
   onStartNewOrder,
 }: OrderConfirmationProps) {
   return (
@@ -23,7 +25,7 @@ export function OrderConfirmation({
         <div>
           <h2 className="text-3xl font-bold mb-2">¡Pedido Pendiente!</h2>
           <p className="text-gray-600">
-            Te redigiremos a WhatsApp para que puedas realizar el pago.
+            Abrí WhatsApp para completar tu pedido y realizar el pago.
           </p>
         </div>
 
@@ -33,9 +35,19 @@ export function OrderConfirmation({
         </div>
 
         <div className="text-sm text-gray-600 space-y-1">
-          {/* <p>Te hemos enviado la confirmación por email</p> */}
           <p>Una vez abonado, tu pedido será confirmado.</p>
         </div>
+
+        {whatsappUrl && (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-full rounded-md bg-green-500 hover:bg-green-600 text-white font-semibold text-lg py-3 transition-colors"
+          >
+            Abrir WhatsApp
+          </a>
+        )}
 
         <Button onClick={onStartNewOrder} size="lg" className="w-full">
           Hacer Otro Pedido
