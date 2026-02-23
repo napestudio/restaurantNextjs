@@ -19,7 +19,7 @@ interface CustomerInfoFormProps {
   deliveryFee: number;
   minOrderAmount: number;
   onBack: () => void;
-  onOrderComplete: (publicCode: string) => void;
+  onOrderComplete: (publicCode: string, whatsappUrl: string) => void;
   restaurantName: string;
   whatsappUrl: string;
 }
@@ -125,10 +125,6 @@ export function CustomerInfoForm({
 
     setIsSubmitting(true);
 
-    // Open a blank window synchronously so iOS Safari treats it as user-initiated.
-    // We'll navigate it to WhatsApp after the order is created (when we have the code).
-    const waWindow = whatsappUrl ? window.open("", "_blank") : null;
-
     try {
       // 1. Find or create client
       const clientResult = await getClientByEmail(branchId, formData.email);
@@ -183,6 +179,7 @@ export function CustomerInfoForm({
           description: "Tu pedido ha sido confirmado exitosamente",
         });
 
+        let fullWhatsappUrl = "";
         if (whatsappUrl) {
           const itemLines = cart
             .map((item) => `- ${item.quantity}x ${item.name}`)
@@ -210,20 +207,12 @@ export function CustomerInfoForm({
           ]
             .filter((line) => line !== null)
             .join("\n");
-          const fullUrl = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
-          if (waWindow) {
-            // Redirect the pre-opened window (iOS Safari compatible)
-            waWindow.location.href = fullUrl;
-          } else {
-            // Popup was blocked — open directly (works on desktop browsers)
-            window.open(fullUrl, "_blank");
-          }
+          fullWhatsappUrl = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
         }
 
-        onOrderComplete(orderResult.data.publicCode);
+        onOrderComplete(orderResult.data.publicCode, fullWhatsappUrl);
         // Note: isSubmitting stays true since we're navigating to confirmation
       } else {
-        waWindow?.close();
         toast({
           title: "Error al crear pedido",
           description: orderResult.error || "Error al crear pedido",
