@@ -1,6 +1,11 @@
 {
   "items": [
     {
+      "label": "Inicio",
+      "href": "/dashboard",
+      "minimumRole": "WAITER"
+    },
+    {
       "label": "Mesas",
       "href": "/dashboard/tables",
       "minimumRole": "WAITER"
