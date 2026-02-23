@@ -183,7 +183,7 @@ export function CustomerInfoForm({
           description: "Tu pedido ha sido confirmado exitosamente",
         });
 
-        if (waWindow && whatsappUrl) {
+        if (whatsappUrl) {
           const itemLines = cart
             .map((item) => `- ${item.quantity}x ${item.name}`)
             .join("\n");
@@ -210,7 +210,14 @@ export function CustomerInfoForm({
           ]
             .filter((line) => line !== null)
             .join("\n");
-          waWindow.location.href = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
+          const fullUrl = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
+          if (waWindow) {
+            // Redirect the pre-opened window (iOS Safari compatible)
+            waWindow.location.href = fullUrl;
+          } else {
+            // Popup was blocked — open directly (works on desktop browsers)
+            window.open(fullUrl, "_blank");
+          }
         }
 
         onOrderComplete(orderResult.data.publicCode);
