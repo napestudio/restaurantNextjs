@@ -43,7 +43,10 @@ interface DashboardHomeProps {
   tables: TableWithReservations[];
 }
 
-function reservationStatusBadge(status: string): { variant: BadgeVariant; label: string } {
+function reservationStatusBadge(status: string): {
+  variant: BadgeVariant;
+  label: string;
+} {
   switch (status) {
     case "CONFIRMED":
       return { variant: "default", label: "Confirmada" };
@@ -62,7 +65,10 @@ function reservationStatusBadge(status: string): { variant: BadgeVariant; label:
   }
 }
 
-function orderStatusBadge(status: string): { variant: BadgeVariant; label: string } {
+function orderStatusBadge(status: string): {
+  variant: BadgeVariant;
+  label: string;
+} {
   switch (status) {
     case "PENDING":
       return { variant: "secondary", label: "Pendiente" };
@@ -109,8 +115,11 @@ export function DashboardHome({
   orderCounts,
   tables,
 }: DashboardHomeProps) {
-  const availableTables = tables.filter((t) => t.isActive && t.status === "EMPTY");
-  const totalActiveOrders = orderCounts.DINE_IN + orderCounts.TAKE_AWAY + orderCounts.DELIVERY;
+  const availableTables = tables.filter(
+    (t) => t.isActive && t.status === "EMPTY",
+  );
+  const totalActiveOrders =
+    orderCounts.DINE_IN + orderCounts.TAKE_AWAY + orderCounts.DELIVERY;
 
   const quickLinks = [
     {
@@ -167,7 +176,7 @@ export function DashboardHome({
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-svh bg-neutral-50">
       <main className="px-4 sm:px-6 lg:px-8 py-6 pt-20">
         {/* Quick Access */}
         <section className="mb-8">
@@ -215,7 +224,9 @@ export function DashboardHome({
                     <Icon className={`h-4 w-4 ${stat.color}`} />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-gray-900">{stat.count}</div>
+                    <div className="text-3xl font-bold text-gray-900">
+                      {stat.count}
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -235,13 +246,16 @@ export function DashboardHome({
             </CardHeader>
             <CardContent className="flex-1">
               {recentReservations.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">Sin reservas hoy</p>
+                <p className="text-sm text-gray-400 py-4 text-center">
+                  Sin reservas hoy
+                </p>
               ) : (
                 <ul className="space-y-3">
                   {recentReservations.map((res) => {
                     const badge = reservationStatusBadge(res.status);
-                    const time =
-                      res.timeSlot?.startTime ? formatTime(res.timeSlot.startTime) : "--:--";
+                    const time = res.timeSlot?.startTime
+                      ? formatTime(res.timeSlot.startTime)
+                      : "--:--";
                     return (
                       <li
                         key={res.id}
@@ -256,7 +270,10 @@ export function DashboardHome({
                             {res.people} · {time}
                           </div>
                         </div>
-                        <Badge variant={badge.variant} className="shrink-0 text-xs">
+                        <Badge
+                          variant={badge.variant}
+                          className="shrink-0 text-xs"
+                        >
                           {badge.label}
                         </Badge>
                       </li>
@@ -285,7 +302,9 @@ export function DashboardHome({
             </CardHeader>
             <CardContent className="flex-1">
               {recentOrders.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">Sin pedidos recientes</p>
+                <p className="text-sm text-gray-400 py-4 text-center">
+                  Sin pedidos recientes
+                </p>
               ) : (
                 <ul className="space-y-3">
                   {recentOrders.map((order) => {
@@ -294,7 +313,9 @@ export function DashboardHome({
                       order.type === "DINE_IN" && order.table?.number
                         ? `Mesa ${order.table.number}`
                         : orderTypeLabel(order.type);
-                    const time = order.createdAt ? formatTime(order.createdAt) : "--:--";
+                    const time = order.createdAt
+                      ? formatTime(order.createdAt)
+                      : "--:--";
                     return (
                       <li
                         key={order.id}
@@ -308,7 +329,10 @@ export function DashboardHome({
                             {location} · {time}
                           </div>
                         </div>
-                        <Badge variant={badge.variant} className="shrink-0 text-xs">
+                        <Badge
+                          variant={badge.variant}
+                          className="shrink-0 text-xs"
+                        >
                           {badge.label}
                         </Badge>
                       </li>
@@ -358,7 +382,10 @@ export function DashboardHome({
                         <span
                           className={`text-xs font-semibold shrink-0 ${isOut ? "text-red-600" : "text-orange-500"}`}
                         >
-                          {alert.stock} / {alert.product?.minStockAlert ?? alert.minStock ?? "?"}
+                          {alert.stock} /{" "}
+                          {alert.product?.minStockAlert ??
+                            alert.minStock ??
+                            "?"}
                         </span>
                       </li>
                     );

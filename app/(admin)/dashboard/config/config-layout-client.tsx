@@ -12,7 +12,7 @@ export default function ConfigLayoutClient({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 w-full flex pt-11">
+    <div className="min-h-svh bg-gray-50 w-full flex pt-11">
       {/* Mobile menu button */}
       <button
         onClick={() => setIsSidebarOpen(true)}

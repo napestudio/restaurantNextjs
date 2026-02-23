@@ -12,7 +12,7 @@ export default async function Home() {
 
   if (!restaurantId || !branchId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+      <div className="min-h-svh flex items-center justify-center bg-black text-white">
         <p className="text-lg">El restaurante no está configurado.</p>
       </div>
     );
@@ -50,7 +50,7 @@ export default async function Home() {
   const hasLinks = links.length > 0;
 
   return (
-    <div className="min-h-screen place-content-center bg-black text-white">
+    <div className="min-h-svh place-content-center bg-black text-white">
       <div className="max-w-100 mx-auto px-8 md:px-0 flex justify-center flex-col items-center gap-9">
         <Avatar />
         <div className="flex flex-col items-center justify-center gap-4 w-full">

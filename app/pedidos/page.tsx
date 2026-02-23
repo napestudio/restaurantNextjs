@@ -1,4 +1,7 @@
-import { getDeliveryConfig, isDeliveryAvailable } from "@/actions/DeliveryConfig";
+import {
+  getDeliveryConfig,
+  isDeliveryAvailable,
+} from "@/actions/DeliveryConfig";
 import { getAvailableProductsForOrder } from "@/actions/Order";
 import { getRestaurantByBranchId } from "@/actions/Restaurant";
 import { OrderType } from "@/app/generated/prisma";
@@ -10,7 +13,7 @@ import DeliveryClosedPage from "./components/delivery-closed-page";
 export default async function PedidosPage() {
   if (!BRANCH_ID) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+      <div className="min-h-svh bg-black text-white flex items-center justify-center p-4">
         <p className="text-red-500">Error: Branch ID no configurado</p>
       </div>
     );
@@ -40,7 +43,7 @@ export default async function PedidosPage() {
   // Fetch products with delivery prices
   const productsResult = await getAvailableProductsForOrder(
     BRANCH_ID,
-    OrderType.DELIVERY
+    OrderType.DELIVERY,
   );
 
   const products = productsResult || [];
