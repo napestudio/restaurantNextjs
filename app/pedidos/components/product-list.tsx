@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
@@ -122,8 +123,18 @@ export function ProductList({
                     key={product.id}
                     className="bg-white rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow"
                   >
-                    {/* Product Image Placeholder */}
-                    <div className="w-20 h-20 bg-gray-200 rounded-md shrink-0 flex items-center justify-center"></div>
+                    {/* Product Image */}
+                    <div className="w-20 h-20 bg-gray-200 rounded-md shrink-0 overflow-hidden">
+                      {product.imageUrl && (
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          width={80}
+                          height={80}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
