@@ -11,6 +11,7 @@ export type OrderProduct = {
   id: string;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   categoryId: string | null;
   category: {
     name: string;
