@@ -1088,6 +1088,7 @@ export async function getAvailableProductsForOrder(
         description: true,
         imageUrl: true,
         categoryId: true,
+        tags: true,
         category: {
           select: {
             name: true,
@@ -1142,6 +1143,7 @@ export async function getAvailableProductsForOrder(
         description: product.description,
         imageUrl: product.imageUrl,
         categoryId: product.categoryId,
+        tags: product.tags,
         category: product.category,
         price: Number(priceObj?.price ?? 0),
       };

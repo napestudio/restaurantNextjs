@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
 import { OrderProduct } from "@/types/products";
+import { ProductTagIcons } from "@/components/ui/product-tag-icons";
 
 interface ProductListProps {
   products: OrderProduct[];
@@ -145,6 +146,11 @@ export function ProductList({
                         <p className="text-sm text-gray-600 line-clamp-2 ">
                           {product.description}
                         </p>
+                      )}
+                      {product.tags.length > 0 && (
+                        <div className="mt-1">
+                          <ProductTagIcons tags={product.tags} size={14} />
+                        </div>
                       )}
                       <p className="text-lg font-bold text-neutral-900 mt-1">
                         ${product.price.toLocaleString("es-AR")}

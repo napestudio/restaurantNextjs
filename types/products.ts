@@ -1,4 +1,4 @@
-import type { UnitType, WeightUnit, VolumeUnit, PriceType } from "@/app/generated/prisma";
+import type { UnitType, WeightUnit, VolumeUnit, PriceType, ProductTag } from "@/app/generated/prisma";
 
 /**
  * Product type returned by getAvailableProductsForOrder()
@@ -17,6 +17,7 @@ export type OrderProduct = {
     name: string;
   } | null;
   price: number;
+  tags: ProductTag[];
 };
 
 export type CreateMenuItemInput = {
@@ -32,6 +33,7 @@ export type CreateMenuItemInput = {
   categoryId?: string;
   restaurantId: string;
   isActive?: boolean;
+  tags?: ProductTag[];
 };
 
 export type UpdateMenuItemInput = {
@@ -47,6 +49,7 @@ export type UpdateMenuItemInput = {
   trackStock?: boolean;
   categoryId?: string;
   isActive?: boolean;
+  tags?: ProductTag[];
 };
 
 export type SetProductBranchInput = {

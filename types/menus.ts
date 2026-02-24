@@ -1,4 +1,4 @@
-import type { Menu, MenuItem, MenuSection, MenuItemGroup } from "@/app/generated/prisma";
+import type { Menu, MenuItem, MenuSection, MenuItemGroup, ProductTag } from "@/app/generated/prisma";
 
 export type SerializedMenu = Omit<
   Menu,
@@ -44,6 +44,7 @@ export type SerializedMenuItem = Omit<
     description: string | null;
     imageUrl: string | null;
     categoryId: string | null;
+    tags: ProductTag[];
     basePrice?: number | null; // Price from ProductOnBranch for the menu's branch
   };
 };

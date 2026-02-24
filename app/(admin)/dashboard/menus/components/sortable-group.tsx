@@ -249,6 +249,7 @@ export function SortableGroup({
         description: selectedProduct.description,
         imageUrl: null,
         categoryId: selectedProduct.categoryId,
+        tags: [],
       },
     };
 
@@ -287,6 +288,7 @@ export function SortableGroup({
                 description: mi.product.description,
                 imageUrl: mi.product.imageUrl,
                 categoryId: mi.product.categoryId,
+                tags: mi.product.tags ?? [],
               }
             : undefined,
         };

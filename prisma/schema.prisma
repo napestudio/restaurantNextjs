@@ -119,6 +119,19 @@ enum HomePageLinkType {
   CUSTOM      // Custom URL with custom label
 }
 
+enum ProductTag {
+  SPICY
+  SPICY_MEDIUM
+  SPICY_HIGH
+  VEGAN
+  VEGETARIAN
+  GLUTEN_FREE
+  DAIRY_FREE
+  NUT_FREE
+  NEW
+  POPULAR
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -600,6 +613,7 @@ model Product {
   // Alertas de stock
   minStockAlert Decimal? @db.Decimal(10, 2) // Alerta cuando el stock esté por debajo de este valor
   trackStock    Boolean  @default(true) // Si es false, el producto siempre estará disponible sin importar el stock
+  tags          ProductTag[] // Etiquetas dietéticas/alérgenos (picante, vegano, sin TACC, etc.)
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
