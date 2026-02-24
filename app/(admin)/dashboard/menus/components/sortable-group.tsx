@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -82,6 +82,7 @@ export function SortableGroup({
   const [isMounted, setIsMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isLoading = isPending || parentPending;
+  const isOptimisticPending = useRef(false);
 
   // Only render DndContext on client to avoid hydration mismatch
   useEffect(() => {
@@ -127,8 +128,9 @@ export function SortableGroup({
   const [customPrice, setCustomPrice] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
 
-  // Sync items when group changes
+  // Sync items when group changes (skip during optimistic updates)
   useEffect(() => {
+    if (isOptimisticPending.current) return;
     setItems(group.menuItems || []);
   }, [group.menuItems]);
 
@@ -214,24 +216,88 @@ export function SortableGroup({
   const handleAddItem = async () => {
     if (!selectedProductId) return;
 
+    const selectedProduct = availableProducts.find((p) => p.id === selectedProductId);
+    if (!selectedProduct) return;
+
+    const productId = selectedProductId;
+    const customPriceValue = customPrice ? Number(customPrice) : undefined;
+    const featuredValue = isFeatured;
+
+    // Close dialog immediately
+    setIsAddDialogOpen(false);
+    setSelectedProductId("");
+    setSearchQuery("");
+    setCustomPrice("");
+    setIsFeatured(false);
+
+    // Build optimistic item with temp ID
+    const tempId = `optimistic-${crypto.randomUUID()}`;
+    const optimisticItem: SerializedMenuItem = {
+      id: tempId,
+      order: items.length,
+      productId,
+      menuSectionId: section.id,
+      menuItemGroupId: group.id,
+      customPrice: customPriceValue ?? null,
+      isAvailable: true,
+      isFeatured: featuredValue,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      product: {
+        id: productId,
+        name: selectedProduct.name,
+        description: selectedProduct.description,
+        imageUrl: null,
+        categoryId: selectedProduct.categoryId,
+      },
+    };
+
+    const previousItems = items;
+    isOptimisticPending.current = true;
+    setItems((prev) => [...prev, optimisticItem]);
+
     startTransition(async () => {
       const result = await addMenuItem({
         menuSectionId: section.id,
-        productId: selectedProductId,
+        productId,
         menuItemGroupId: group.id,
-        order: items.length,
+        order: previousItems.length,
         isAvailable: true,
-        isFeatured,
-        customPrice: customPrice ? Number(customPrice) : undefined,
+        isFeatured: featuredValue,
+        customPrice: customPriceValue,
       });
 
-      if (result.success) {
-        setIsAddDialogOpen(false);
-        setSelectedProductId("");
-        setSearchQuery("");
-        setCustomPrice("");
-        setIsFeatured(false);
-        onUpdate();
+      if (result.success && result.menuItem) {
+        const mi = result.menuItem;
+        const confirmedItem: SerializedMenuItem = {
+          id: mi.id,
+          order: mi.order,
+          productId: mi.productId,
+          menuSectionId: mi.menuSectionId,
+          menuItemGroupId: mi.menuItemGroupId ?? null,
+          customPrice: mi.customPrice ?? null,
+          isAvailable: mi.isAvailable,
+          isFeatured: mi.isFeatured,
+          createdAt: String(mi.createdAt),
+          updatedAt: String(mi.updatedAt),
+          product: mi.product
+            ? {
+                id: mi.product.id,
+                name: mi.product.name,
+                description: mi.product.description,
+                imageUrl: mi.product.imageUrl,
+                categoryId: mi.product.categoryId,
+              }
+            : undefined,
+        };
+        setItems((prev) =>
+          prev.map((item) => (item.id === tempId ? confirmedItem : item))
+        );
+        isOptimisticPending.current = false;
+        // No onUpdate() — skip the full refetch
+      } else {
+        setItems(previousItems);
+        isOptimisticPending.current = false;
       }
     });
   };
@@ -517,12 +583,11 @@ export function SortableGroup({
                 setCustomPrice("");
                 setIsFeatured(false);
               }}
-              disabled={isPending}
             >
               Cancelar
             </Button>
-            <Button onClick={handleAddItem} disabled={isPending || !selectedProductId}>
-              {isPending ? "Agregando..." : "Agregar"}
+            <Button onClick={handleAddItem} disabled={!selectedProductId}>
+              Agregar
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -17,7 +17,7 @@ export default async function MenusPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Menús</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Organiza tus productos en menús para presentar a tus clientes
+            Configuración de Cartas y Menús
           </p>
         </div>
 
