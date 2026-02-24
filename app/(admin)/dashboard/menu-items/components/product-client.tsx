@@ -21,6 +21,7 @@ import type {
   WeightUnit,
   VolumeUnit,
   PriceType,
+  ProductTag,
 } from "@/app/generated/prisma";
 import LoadingToast from "@/components/dashboard/loading-toast";
 import {
@@ -95,6 +96,7 @@ type MenuItemWithRelations = {
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
   trackStock: boolean;
+  tags: ProductTag[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -22,6 +22,7 @@ import type {
   WeightUnit,
   VolumeUnit,
   PriceType,
+  ProductTag,
 } from "@/app/generated/prisma";
 import Image from "next/image";
 
@@ -64,6 +65,7 @@ type MenuItemWithRelations = {
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
   trackStock: boolean;
+  tags: ProductTag[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

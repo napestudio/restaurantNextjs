@@ -36,7 +36,7 @@ export function EditMenuItemDialog({
 
   // Form state
   const [customPrice, setCustomPrice] = useState<string>(
-    item.customPrice?.toString() || ""
+    item.customPrice?.toString() || "",
   );
   const [isAvailable, setIsAvailable] = useState(item.isAvailable);
   const [isFeatured, setIsFeatured] = useState(item.isFeatured);
@@ -73,13 +73,11 @@ export function EditMenuItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Editar Producto en Menú</DialogTitle>
-            <DialogDescription>
-              {item.product?.name}
-            </DialogDescription>
+            <DialogDescription>{item.product?.name}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -87,10 +85,12 @@ export function EditMenuItemDialog({
             {basePrice && (
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-600">
-                  <strong>Precio base del producto:</strong> ${basePrice.toFixed(2)}
+                  <strong>Precio base del producto:</strong> $
+                  {basePrice.toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Este es el precio configurado según el tipo de menú. Puedes sobrescribirlo con un precio personalizado.
+                  Este es el precio configurado según el tipo de menú. Puedes
+                  sobrescribirlo con un precio personalizado.
                 </p>
               </div>
             )}
@@ -110,14 +110,16 @@ export function EditMenuItemDialog({
                 placeholder={basePrice?.toString() || "0.00"}
               />
               <p className="text-xs text-gray-500">
-                Deja vacío para usar el precio base ({basePrice ? `$${basePrice.toFixed(2)}` : "no disponible"})
+                Deja vacío para usar el precio base (
+                {basePrice ? `$${basePrice.toFixed(2)}` : "no disponible"})
               </p>
             </div>
 
             {/* Price Preview */}
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-900">
-                <strong>Precio que se mostrará:</strong> ${Number(displayPrice).toFixed(2)}
+                <strong>Precio que se mostrará:</strong> $
+                {Number(displayPrice).toFixed(2)}
               </p>
             </div>
 
@@ -126,7 +128,9 @@ export function EditMenuItemDialog({
               <Checkbox
                 id="isAvailable"
                 checked={isAvailable}
-                onCheckedChange={(checked) => setIsAvailable(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setIsAvailable(checked as boolean)
+                }
               />
               <Label
                 htmlFor="isAvailable"

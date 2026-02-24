@@ -36,12 +36,12 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
   const [name, setName] = useState(initialMenu?.name || "");
   const [slug, setSlug] = useState(initialMenu?.slug || "");
   const [description, setDescription] = useState(
-    initialMenu?.description || ""
+    initialMenu?.description || "",
   );
   const [isActive, setIsActive] = useState(initialMenu?.isActive ?? true);
   const [showPrices, setShowPrices] = useState(initialMenu?.showPrices ?? true);
   const [priceType, setPriceType] = useState<PriceType>(
-    initialMenu?.priceType || PriceType.DINE_IN
+    initialMenu?.priceType || PriceType.DINE_IN,
   );
 
   // Auto-generate slug from name for new menus
@@ -153,7 +153,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
   const menuUrl = menu ? `${SITE_URL}/carta/${menu.slug}` : "";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-svh bg-gray-50">
       {/* Main Content - Dashboard Style */}
       <div className="px-4 sm:px-6 lg:px-8 py-16">
         {/* Main Editor Layout */}
@@ -252,7 +252,8 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500">
-                    Los productos mostrarán los precios configurados para este tipo
+                    Los productos mostrarán los precios configurados para este
+                    tipo
                   </p>
                 </div>
 

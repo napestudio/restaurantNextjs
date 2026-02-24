@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TablesLoading() {
   return (
-    <div className="bg-neutral-50 min-h-screen pt-15 p-4">
+    <div className="bg-neutral-50 min-h-svh pt-15 p-4">
       <div className="space-y-4">
         {/* Sector tabs skeleton */}
         <div className="flex gap-2 mb-4">

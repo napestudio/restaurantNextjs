@@ -34,6 +34,7 @@ export function MenuItemGroup({ group }: MenuItemGroupProps) {
             imageUrl={item.product?.imageUrl}
             price={item.customPrice ?? item.product?.basePrice ?? null}
             isFeatured={item.isFeatured}
+            tags={item.product?.tags ?? []}
           />
         ))}
       </div>

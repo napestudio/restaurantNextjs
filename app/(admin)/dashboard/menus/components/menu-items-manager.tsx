@@ -137,6 +137,7 @@ export function MenuItemsManager({
             description: selectedProduct.description,
             imageUrl: null,
             categoryId: selectedProduct.categoryId,
+            tags: [],
             basePrice: null,
           }
         : undefined,

@@ -18,11 +18,12 @@ export default async function DeliveryConfigPage() {
     getMenusForBranch(branchId),
   ]);
 
-  const config = (configResult.success && configResult.data) ? configResult.data : null;
-  const menus = (menusResult.success && menusResult.data) ? menusResult.data : [];
+  const config =
+    configResult.success && configResult.data ? configResult.data : null;
+  const menus = menusResult.success && menusResult.data ? menusResult.data : [];
 
   return (
-    <div className="bg-gray-50 w-full min-h-screen">
+    <div className="bg-gray-50 w-full min-h-svh">
       <div className="px-4 sm:px-6 lg:px-8 py-16 w-full">
         <DeliveryConfigClient
           branchId={branchId}

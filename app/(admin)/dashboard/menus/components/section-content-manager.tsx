@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -75,6 +75,7 @@ export function SectionContentManager({
 }: SectionContentManagerProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const isOptimisticPending = useRef(false);
 
   // Only render DndContext on client to avoid hydration mismatch
   useEffect(() => {
@@ -102,8 +103,9 @@ export function SectionContentManager({
   const [elements, setElements] = useState<SectionElement[]>(buildSortedElements);
   const [activeElement, setActiveElement] = useState<SectionElement | null>(null);
 
-  // Sync elements when section changes
+  // Sync elements when section changes (skip during optimistic updates)
   useEffect(() => {
+    if (isOptimisticPending.current) return;
     setElements(buildSortedElements());
   }, [buildSortedElements]);
 
@@ -223,24 +225,91 @@ export function SectionContentManager({
       return;
     }
 
+    const selectedProduct = availableProducts.find((p) => p.id === selectedProductId);
+    if (!selectedProduct) return;
+
+    // Close dialog immediately
+    setIsAddItemDialogOpen(false);
+    const productId = selectedProductId;
+    const customPriceValue = customPrice ? Number(customPrice) : undefined;
+    const featuredValue = isFeatured;
+    setSelectedProductId("");
+    setSearchQuery("");
+    setCustomPrice("");
+    setIsFeatured(false);
+
+    // Build optimistic item with temp ID
+    const tempId = `optimistic-${crypto.randomUUID()}`;
+    const optimisticItem: SerializedMenuItem = {
+      id: tempId,
+      order: elements.length,
+      productId,
+      menuSectionId: section.id,
+      menuItemGroupId: null,
+      customPrice: customPriceValue ?? null,
+      isAvailable: true,
+      isFeatured: featuredValue,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      product: {
+        id: productId,
+        name: selectedProduct.name,
+        description: selectedProduct.description,
+        imageUrl: null,
+        categoryId: selectedProduct.categoryId,
+        tags: [],
+      },
+    };
+
+    const previousElements = elements;
+    isOptimisticPending.current = true;
+    setElements((prev) => [...prev, { type: "item", data: optimisticItem }]);
+
     startTransition(async () => {
       const result = await addMenuItem({
         menuSectionId: section.id,
-        productId: selectedProductId,
-        order: elements.length,
+        productId,
+        order: previousElements.length,
         isAvailable: true,
-        isFeatured,
-        customPrice: customPrice ? Number(customPrice) : undefined,
+        isFeatured: featuredValue,
+        customPrice: customPriceValue,
       });
 
-      if (result.success) {
-        setIsAddItemDialogOpen(false);
-        setSelectedProductId("");
-        setSearchQuery("");
-        setCustomPrice("");
-        setIsFeatured(false);
-        onUpdate();
+      if (result.success && result.menuItem) {
+        const mi = result.menuItem;
+        const confirmedItem: SerializedMenuItem = {
+          id: mi.id,
+          order: mi.order,
+          productId: mi.productId,
+          menuSectionId: mi.menuSectionId,
+          menuItemGroupId: mi.menuItemGroupId ?? null,
+          customPrice: mi.customPrice ?? null,
+          isAvailable: mi.isAvailable,
+          isFeatured: mi.isFeatured,
+          createdAt: String(mi.createdAt),
+          updatedAt: String(mi.updatedAt),
+          product: mi.product
+            ? {
+                id: mi.product.id,
+                name: mi.product.name,
+                description: mi.product.description,
+                imageUrl: mi.product.imageUrl,
+                categoryId: mi.product.categoryId,
+                tags: mi.product.tags ?? [],
+              }
+            : undefined,
+        };
+        setElements((prev) =>
+          prev.map((el) =>
+            el.type === "item" && el.data.id === tempId
+              ? { type: "item", data: confirmedItem }
+              : el
+          )
+        );
+        isOptimisticPending.current = false;
       } else {
+        setElements(previousElements);
+        isOptimisticPending.current = false;
         alert(result.error || "Error al agregar el producto");
       }
     });
@@ -253,20 +322,51 @@ export function SectionContentManager({
       return;
     }
 
+    const groupName = newGroupName.trim();
+    const groupDescription = newGroupDescription.trim() || undefined;
+
+    // Close dialog immediately
+    setIsAddGroupDialogOpen(false);
+    setNewGroupName("");
+    setNewGroupDescription("");
+
+    // Build optimistic group with temp ID
+    const tempId = `optimistic-${crypto.randomUUID()}`;
+    const optimisticGroup: SerializedMenuItemGroup = {
+      id: tempId,
+      name: groupName,
+      description: groupDescription ?? null,
+      order: elements.length,
+      menuSectionId: section.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      menuItems: [],
+    };
+
+    const previousElements = elements;
+    isOptimisticPending.current = true;
+    setElements((prev) => [...prev, { type: "group", data: optimisticGroup }]);
+
     startTransition(async () => {
       const result = await createMenuItemGroup({
         menuSectionId: section.id,
-        name: newGroupName.trim(),
-        description: newGroupDescription.trim() || undefined,
-        order: elements.length,
+        name: groupName,
+        description: groupDescription,
+        order: previousElements.length,
       });
 
-      if (result.success) {
-        setIsAddGroupDialogOpen(false);
-        setNewGroupName("");
-        setNewGroupDescription("");
-        onUpdate();
+      if (result.success && result.group) {
+        setElements((prev) =>
+          prev.map((el) =>
+            el.type === "group" && el.data.id === tempId
+              ? { type: "group", data: result.group as SerializedMenuItemGroup }
+              : el
+          )
+        );
+        isOptimisticPending.current = false;
       } else {
+        setElements(previousElements);
+        isOptimisticPending.current = false;
         alert(result.error || "Error al crear el grupo");
       }
     });
@@ -488,12 +588,11 @@ export function SectionContentManager({
                 setCustomPrice("");
                 setIsFeatured(false);
               }}
-              disabled={isPending}
             >
               Cancelar
             </Button>
-            <Button onClick={handleAddItem} disabled={isPending || !selectedProductId}>
-              {isPending ? "Agregando..." : "Agregar"}
+            <Button onClick={handleAddItem} disabled={!selectedProductId}>
+              Agregar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -543,12 +642,11 @@ export function SectionContentManager({
                 setNewGroupName("");
                 setNewGroupDescription("");
               }}
-              disabled={isPending}
             >
               Cancelar
             </Button>
-            <Button onClick={handleAddGroup} disabled={isPending || !newGroupName.trim()}>
-              {isPending ? "Creando..." : "Crear Grupo"}
+            <Button onClick={handleAddGroup} disabled={!newGroupName.trim()}>
+              Crear Grupo
             </Button>
           </DialogFooter>
         </DialogContent>

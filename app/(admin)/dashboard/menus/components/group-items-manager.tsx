@@ -139,6 +139,7 @@ export function GroupItemsManager({
             description: selectedProduct.description,
             imageUrl: null,
             categoryId: selectedProduct.categoryId,
+            tags: [],
             basePrice: null,
           }
         : undefined,

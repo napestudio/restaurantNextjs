@@ -49,6 +49,7 @@ export function MenuSection({ section }: MenuSectionProps) {
                   null
                 }
                 isFeatured={element.data.isFeatured}
+                tags={element.data.product?.tags ?? []}
               />
             ) : (
               <MenuItemGroup key={element.data.id} group={element.data} />

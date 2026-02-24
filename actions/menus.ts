@@ -1,6 +1,6 @@
 "use server";
 
-import type { MenuItem, PriceType } from "@/app/generated/prisma";
+import type { MenuItem, PriceType, ProductTag } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { SerializedMenu, SerializedMenuSection, SerializedMenuItemGroup, SerializedMenuItem } from "@/types/menus";
@@ -17,6 +17,7 @@ type MenuItemWithProduct = MenuItem & {
     description: string | null;
     imageUrl: string | null;
     categoryId: string | null;
+    tags: ProductTag[];
     branches: {
       branchId: string;
       prices: { type: PriceType; price: unknown }[];
@@ -61,6 +62,7 @@ function serializeMenuItem(
       description: item.product.description,
       imageUrl: item.product.imageUrl,
       categoryId: item.product.categoryId,
+      tags: item.product.tags,
       basePrice: basePrice ? Number(basePrice) : null,
     },
   };
@@ -75,6 +77,7 @@ const menuItemInclude = {
       description: true,
       imageUrl: true,
       categoryId: true,
+      tags: true,
       branches: {
         select: {
           branchId: true,
@@ -423,6 +426,7 @@ export async function addMenuItem(data: {
             description: true,
             imageUrl: true,
             categoryId: true,
+            tags: true,
           },
         },
       },

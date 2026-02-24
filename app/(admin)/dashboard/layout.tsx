@@ -51,7 +51,7 @@ export default async function DashboardLayout({
 
   return (
     <ConditionalGgEzPrintProvider hasPrinters={hasPrinters}>
-      <div className="min-h-screen bg-gray-50 w-full">
+      <div className="min-h-svh bg-gray-50 w-full">
         <DashboardNav
           userName={session.user.name || session.user.email || ""}
           userRole={userRole}
