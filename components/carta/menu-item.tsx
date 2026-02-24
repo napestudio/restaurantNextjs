@@ -1,5 +1,6 @@
+import type { ProductTag } from "@/app/generated/prisma";
 import Image from "next/image";
-import StarIcon from "../ui/star-icon";
+import { ProductTagIcons } from "../ui/product-tag-icons";
 
 interface MenuItemProps {
   name: string;
@@ -7,6 +8,7 @@ interface MenuItemProps {
   imageUrl?: string | null;
   price?: number | null;
   isFeatured?: boolean;
+  tags?: ProductTag[];
 }
 
 export function MenuItem({
@@ -15,6 +17,7 @@ export function MenuItem({
   imageUrl,
   price,
   isFeatured = false,
+  tags = [],
 }: MenuItemProps) {
   return (
     <div className="flex gap-4 group py-2 px-4">
@@ -32,12 +35,19 @@ export function MenuItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-lg text-white">
-            {name}
-            {isFeatured && (
+            <div className="flex gap-1 items-center">
+              {name}
+              {tags.length > 0 && (
+                <div className="mt-1.5">
+                  <ProductTagIcons tags={tags} size={20} />
+                </div>
+              )}
+            </div>
+            {/* {isFeatured && (
               <span className="ml-2 text-yellow-400 rounded-full inline-block">
                 <StarIcon />
               </span>
-            )}
+            )} */}
           </h3>
           <div className="flex-1 h-px w-full bg-white/50 mb-1.5 self-end"></div>
           {price !== null && price !== undefined && (

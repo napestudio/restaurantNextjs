@@ -8,10 +8,21 @@ import {
 } from "@/actions/Products";
 import type {
   PriceType,
+  ProductTag,
   UnitType,
   VolumeUnit,
   WeightUnit,
 } from "@/app/generated/prisma";
+import { SpicyIcon } from "@/components/ui/tag-icons/SpicyIcon";
+import { SpicyMediumIcon } from "@/components/ui/tag-icons/SpicyMediumIcon";
+import { SpicyHighIcon } from "@/components/ui/tag-icons/SpicyHighIcon";
+import { VeganIcon } from "@/components/ui/tag-icons/VeganIcon";
+import { VegetarianIcon } from "@/components/ui/tag-icons/VegetarianIcon";
+import { GlutenFreeIcon } from "@/components/ui/tag-icons/GlutenFreeIcon";
+import { DairyFreeIcon } from "@/components/ui/tag-icons/DairyFreeIcon";
+import { NutFreeIcon } from "@/components/ui/tag-icons/NutFreeIcon";
+import { NewIcon } from "@/components/ui/tag-icons/NewIcon";
+import { PopularIcon } from "@/components/ui/tag-icons/PopularIcon";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Loader2, Save, X } from "lucide-react";
 import { useState } from "react";
@@ -61,6 +72,7 @@ type ProductWithRelations = {
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
   trackStock: boolean;
+  tags: ProductTag[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +81,61 @@ type ProductWithRelations = {
   category: SerializedCategory | null;
   branches: SerializedProductOnBranch[];
 };
+
+const TAG_OPTIONS: {
+  value: ProductTag;
+  label: string;
+  icon: React.FC<{ size?: number; className?: string }>;
+  color: string;
+  selectedClass: string;
+}[] = [
+  {
+    value: "SPICY",
+    label: "Picante Leve",
+    icon: SpicyIcon,
+    color: "text-red-400",
+    selectedClass: "bg-red-50 border-red-300",
+  },
+  {
+    value: "SPICY_MEDIUM",
+    label: "Picante Medio",
+    icon: SpicyMediumIcon,
+    color: "text-red-500",
+    selectedClass: "bg-red-50 border-red-400",
+  },
+  {
+    value: "SPICY_HIGH",
+    label: "Muy Picante",
+    icon: SpicyHighIcon,
+    color: "text-red-700",
+    selectedClass: "bg-red-100 border-red-600",
+  },
+  {
+    value: "VEGAN",
+    label: "Vegano",
+    icon: VeganIcon,
+    color: "text-green-600",
+    selectedClass: "bg-green-50 border-green-400",
+  },
+  {
+    value: "VEGETARIAN",
+    label: "Vegetariano",
+    icon: VegetarianIcon,
+    color: "text-emerald-600",
+    selectedClass: "bg-emerald-50 border-emerald-400",
+  },
+  {
+    value: "GLUTEN_FREE",
+    label: "Sin TACC",
+    icon: GlutenFreeIcon,
+    color: "text-amber-600",
+    selectedClass: "bg-amber-50 border-amber-400",
+  },
+  // { value: "DAIRY_FREE", label: "Sin Lácteos", icon: DairyFreeIcon, color: "text-blue-500", selectedClass: "bg-blue-50 border-blue-400" },
+  // { value: "NUT_FREE", label: "Sin Frutos Secos", icon: NutFreeIcon, color: "text-orange-500", selectedClass: "bg-orange-50 border-orange-400" },
+  // { value: "NEW", label: "Nuevo", icon: NewIcon, color: "text-purple-500", selectedClass: "bg-purple-50 border-purple-400" },
+  // { value: "POPULAR", label: "Popular", icon: PopularIcon, color: "text-orange-400", selectedClass: "bg-orange-50 border-orange-300" },
+];
 
 type ProductDialogProps = {
   item: ProductWithRelations | null;
@@ -88,6 +155,7 @@ type FormData = {
   volumeUnit: VolumeUnit | "";
   minStockAlert: string;
   trackStock: boolean;
+  tags: ProductTag[];
   categoryId: string;
   isActive: boolean;
   // Datos de sucursal
@@ -133,6 +201,7 @@ export function ProductDialog({
     volumeUnit: item?.volumeUnit ?? "",
     minStockAlert: item?.minStockAlert ? item.minStockAlert.toString() : "",
     trackStock: item?.trackStock ?? true,
+    tags: item?.tags ?? [],
     categoryId: item?.categoryId ?? "",
     isActive: item?.isActive ?? true,
     stock: branchData?.stock ? branchData.stock.toString() : "0",
@@ -249,6 +318,7 @@ export function ProductDialog({
             ? parseFloat(formData.minStockAlert)
             : undefined,
           trackStock: formData.trackStock,
+          tags: formData.tags,
           categoryId: formData.categoryId || undefined,
           isActive: formData.isActive,
         });
@@ -273,6 +343,7 @@ export function ProductDialog({
             ? parseFloat(formData.minStockAlert)
             : undefined,
           trackStock: formData.trackStock,
+          tags: formData.tags,
           categoryId: formData.categoryId || undefined,
           restaurantId,
           isActive: formData.isActive,
@@ -506,6 +577,44 @@ export function ProductDialog({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Etiquetas / Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Etiquetas
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {TAG_OPTIONS.map((tag) => {
+                      const Icon = tag.icon;
+                      const isSelected = formData.tags.includes(tag.value);
+                      return (
+                        <button
+                          key={tag.value}
+                          type="button"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              tags: isSelected
+                                ? prev.tags.filter((t) => t !== tag.value)
+                                : [...prev.tags, tag.value],
+                            }))
+                          }
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                            isSelected
+                              ? `${tag.selectedClass} font-medium`
+                              : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          <Icon
+                            size={16}
+                            className={isSelected ? tag.color : "text-gray-400"}
+                          />
+                          <span>{tag.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Estado Activo */}

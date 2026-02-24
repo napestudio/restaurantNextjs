@@ -12,9 +12,11 @@ import type {
   WeightUnit,
   VolumeUnit,
   PriceType,
+  ProductTag,
 } from "@/app/generated/prisma";
 import { getUnitLabel } from "../lib/units";
 import Image from "next/image";
+import { ProductTagIcons } from "@/components/ui/product-tag-icons";
 
 // Serialized types for client components
 type SerializedProductPrice = {
@@ -56,6 +58,7 @@ type MenuItemWithRelations = {
   volumeUnit: VolumeUnit | null;
   minStockAlert: number | null;
   trackStock: boolean;
+  tags: ProductTag[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -149,6 +152,11 @@ export function ProductCard({
             <p className="text-sm text-gray-600 mt-1 line-clamp-1">
               {item.description}
             </p>
+          )}
+          {item.tags.length > 0 && (
+            <div className="mt-1.5">
+              <ProductTagIcons tags={item.tags} size={14} showLabel />
+            </div>
           )}
         </div>
 
