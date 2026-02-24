@@ -13,17 +13,13 @@ import type {
   VolumeUnit,
   WeightUnit,
 } from "@/app/generated/prisma";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { GlutenFreeIcon } from "@/components/ui/tag-icons/GlutenFreeIcon";
+import { SpicyHighIcon } from "@/components/ui/tag-icons/SpicyHighIcon";
 import { SpicyIcon } from "@/components/ui/tag-icons/SpicyIcon";
 import { SpicyMediumIcon } from "@/components/ui/tag-icons/SpicyMediumIcon";
-import { SpicyHighIcon } from "@/components/ui/tag-icons/SpicyHighIcon";
 import { VeganIcon } from "@/components/ui/tag-icons/VeganIcon";
 import { VegetarianIcon } from "@/components/ui/tag-icons/VegetarianIcon";
-import { GlutenFreeIcon } from "@/components/ui/tag-icons/GlutenFreeIcon";
-import { DairyFreeIcon } from "@/components/ui/tag-icons/DairyFreeIcon";
-import { NutFreeIcon } from "@/components/ui/tag-icons/NutFreeIcon";
-import { NewIcon } from "@/components/ui/tag-icons/NewIcon";
-import { PopularIcon } from "@/components/ui/tag-icons/PopularIcon";
-import { ImageUpload } from "@/components/ui/image-upload";
 import { Loader2, Save, X } from "lucide-react";
 import { useState } from "react";
 import {

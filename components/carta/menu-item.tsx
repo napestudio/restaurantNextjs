@@ -32,7 +32,7 @@ export function MenuItem({
           />
         </div>
       )}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 flex flex-col min-h-full justify-between py-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-lg text-white">
             <div className="flex gap-1 items-center">
