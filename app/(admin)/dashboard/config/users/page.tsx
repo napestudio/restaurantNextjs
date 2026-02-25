@@ -1,22 +1,10 @@
 import { getUsers } from "@/actions/users";
 import { UsersClient } from "./users-client";
-import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
-import { redirect } from "next/navigation";
 
 export default async function UsersPage() {
-  const { userId } = await requireRole(UserRole.ADMIN);
-
-  // Get the user's branch
-  const userOnBranch = await prisma.userOnBranch.findFirst({
-    where: { userId },
-    select: { branchId: true },
-  });
-
-  if (!userOnBranch) {
-    redirect("/dashboard");
-  }
+  const { userId, userRole, branchId } = await requireRole(UserRole.ADMIN);
 
   const usersResult = await getUsers();
 
@@ -25,7 +13,8 @@ export default async function UsersPage() {
       <UsersClient
         initialUsers={usersResult.data || []}
         currentUserId={userId}
-        branchId={userOnBranch.branchId}
+        branchId={branchId}
+        isSuperAdmin={userRole === UserRole.SUPERADMIN}
       />
     </div>
   );

@@ -206,6 +206,7 @@ export async function getUsers(): Promise<{
       createdAt: user.createdAt,
       userOnBranches: user.userOnBranches.map((ub) => ({
         id: ub.id,
+        branchId: ub.branch.id,
         name: ub.branch.name,
         role: ub.role,
         restaurant: {

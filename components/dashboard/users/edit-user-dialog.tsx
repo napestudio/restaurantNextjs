@@ -23,9 +23,19 @@ import {
 } from "@/components/ui/select";
 import { Pencil } from "lucide-react";
 import { updateUser, getBranches } from "@/actions/users";
+import {
+  getUserGrantsForBranch,
+  grantUserPermission,
+  revokeUserPermission,
+} from "@/actions/permissions";
 import { userUpdateSchema, UserUpdateInput } from "@/lib/validations/user";
-import { UserRole } from "@/app/generated/prisma";
-import { USER_ROLE_LABELS, UserWithBranches } from "@/types/user";
+import { PermissionGrant, UserRole } from "@/app/generated/prisma";
+import {
+  PERMISSION_GRANT_LABELS,
+  USER_ROLE_LABELS,
+  UserWithBranches,
+} from "@/types/user";
+import { hasMinimumRole } from "@/lib/permissions/role-utils";
 
 interface Branch {
   id: string;
@@ -40,17 +50,37 @@ interface EditUserDialogProps {
   onOpenChange: (open: boolean) => void;
   user: UserWithBranches;
   onUpdated: () => void;
+  isSuperAdmin: boolean;
 }
+
+const ALL_GRANTS = Object.keys(PERMISSION_GRANT_LABELS) as PermissionGrant[];
+
+// Minimum role required to access each grant's section (mirrors dashboard-nav.json)
+const GRANT_ROLE_MAP: Partial<Record<PermissionGrant, UserRole>> = {
+  VIEW_STATISTICS: UserRole.MANAGER,
+  VIEW_INVOICES: UserRole.MANAGER,
+  VIEW_CASH_REGISTERS: UserRole.MANAGER,
+  VIEW_STOCK: UserRole.MANAGER,
+  MANAGE_MENU: UserRole.ADMIN,
+  MANAGE_PRODUCTS: UserRole.ADMIN,
+  MANAGE_CONFIG: UserRole.ADMIN,
+};
 
 export function EditUserDialog({
   open,
   onOpenChange,
   user,
   onUpdated,
+  isSuperAdmin,
 }: EditUserDialogProps) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resolvedBranchId, setResolvedBranchId] = useState<string>("");
+  const [activeGrants, setActiveGrants] = useState<PermissionGrant[]>([]);
+  const [grantsPending, setGrantsPending] = useState<PermissionGrant | null>(
+    null
+  );
 
   const primaryBranch = user.userOnBranches[0];
 
@@ -74,7 +104,6 @@ export function EditUserDialog({
   });
 
   const selectedRole = watch("role");
-  // const selectedBranchId = watch("branchId");
 
   useEffect(() => {
     async function loadBranches() {
@@ -91,13 +120,18 @@ export function EditUserDialog({
   useEffect(() => {
     if (user && branches.length > 0) {
       const userBranch = user.userOnBranches[0];
+
+      // Prefer the branchId stored on the object; fall back to name lookup
       const branchId =
+        userBranch?.branchId ||
         branches.find(
           (b) =>
             b.name === userBranch?.name &&
             b.restaurant.name === userBranch?.restaurant.name
-        )?.id || "";
+        )?.id ||
+        "";
 
+      setResolvedBranchId(branchId);
       reset({
         username: user.username,
         name: user.name || "",
@@ -108,6 +142,27 @@ export function EditUserDialog({
       });
     }
   }, [user, branches, reset]);
+
+  // Load existing grants when branchId is resolved and user is SUPERADMIN
+  useEffect(() => {
+    if (!open || !resolvedBranchId || !isSuperAdmin) return;
+
+    async function loadGrants() {
+      const result = await getUserGrantsForBranch(user.id, resolvedBranchId);
+      if (result.success && result.data) {
+        setActiveGrants(result.data);
+      }
+    }
+    loadGrants();
+  }, [open, resolvedBranchId, isSuperAdmin, user.id]);
+
+  // Reset grant state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setActiveGrants([]);
+      setResolvedBranchId("");
+    }
+  }, [open]);
 
   const onSubmit = async (data: UserUpdateInput) => {
     setIsPending(true);
@@ -132,9 +187,44 @@ export function EditUserDialog({
     onOpenChange(open);
   };
 
+  const handleGrantToggle = async (permission: PermissionGrant) => {
+    if (!resolvedBranchId || grantsPending) return;
+    setGrantsPending(permission);
+
+    const isActive = activeGrants.includes(permission);
+
+    if (isActive) {
+      const result = await revokeUserPermission(
+        user.id,
+        resolvedBranchId,
+        permission
+      );
+      if (result.success) {
+        setActiveGrants((prev) => prev.filter((g) => g !== permission));
+      }
+    } else {
+      const result = await grantUserPermission(
+        user.id,
+        resolvedBranchId,
+        permission
+      );
+      if (result.success) {
+        setActiveGrants((prev) => [...prev, permission]);
+      }
+    }
+
+    setGrantsPending(null);
+  };
+
+  const isGrantCoveredByRole = (permission: PermissionGrant): boolean => {
+    const requiredRole = GRANT_ROLE_MAP[permission];
+    if (!requiredRole) return false;
+    return hasMinimumRole(selectedRole as UserRole, requiredRole);
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-5 w-5" />
@@ -242,28 +332,55 @@ export function EditUserDialog({
               )}
             </div>
 
-            {/* <div className="space-y-2">
-              <Label htmlFor="edit-branchId">Sucursal *</Label>
-              <Select
-                value={selectedBranchId}
-                onValueChange={(value) => setValue("branchId", value)}
-                disabled={isPending}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar sucursal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.restaurant.name} - {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.branchId && (
-                <p className="text-sm text-red-600">{errors.branchId.message}</p>
-              )}
-            </div> */}
+            {/* Extra permissions — only visible to SUPERADMIN */}
+            {isSuperAdmin && resolvedBranchId && (
+              <div className="space-y-2 pt-2 border-t">
+                <Label>Permisos extra</Label>
+                <p className="text-xs text-muted-foreground">
+                  Otorga acceso a secciones más allá del rol asignado.
+                </p>
+                <div className="rounded-lg border divide-y">
+                  {ALL_GRANTS.map((permission) => {
+                    const coveredByRole = isGrantCoveredByRole(permission);
+                    const isChecked =
+                      coveredByRole || activeGrants.includes(permission);
+                    const isPendingThis = grantsPending === permission;
+
+                    return (
+                      <label
+                        key={permission}
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm select-none transition-colors hover:bg-gray-50 ${
+                          coveredByRole
+                            ? "opacity-50 cursor-default"
+                            : "cursor-pointer"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={coveredByRole || isPendingThis}
+                          onChange={() => handleGrantToggle(permission)}
+                          className="h-4 w-4 rounded border-gray-300 accent-red-500"
+                        />
+                        <span className="flex-1">
+                          {PERMISSION_GRANT_LABELS[permission]}
+                        </span>
+                        {coveredByRole && (
+                          <span className="text-xs text-muted-foreground">
+                            incluido en rol
+                          </span>
+                        )}
+                        {isPendingThis && (
+                          <span className="text-xs text-muted-foreground">
+                            guardando...
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

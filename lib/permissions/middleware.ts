@@ -1,15 +1,30 @@
 import { auth } from "@/lib/auth";
-import { getUserRole } from "./roles";
-import { UserRole } from "@/app/generated/prisma";
+import { getUserRoleAndBranchId } from "./roles";
+import { PermissionGrant, UserRole } from "@/app/generated/prisma";
 import { redirect } from "next/navigation";
+import { hasPermissionGrant } from "./grant-utils";
+
+const hierarchy: Record<UserRole, number> = {
+  SUPERADMIN: 4,
+  ADMIN: 3,
+  MANAGER: 2,
+  WAITER: 1,
+  EMPLOYEE: 1, // Backward compatibility
+};
 
 /**
- * Require minimum role for page access
- * Usage: await requireRole(UserRole.MANAGER);
+ * Require minimum role for page access.
+ * If the role check fails and a permissionGrant is provided, falls back to
+ * checking whether the user has that specific grant in their primary branch.
+ * Usage: await requireRole(UserRole.MANAGER, PermissionGrant.VIEW_STATISTICS);
  */
-export async function requireRole(minimumRole: UserRole): Promise<{
+export async function requireRole(
+  minimumRole: UserRole,
+  permissionGrant?: PermissionGrant
+): Promise<{
   userId: string;
   userRole: UserRole;
+  branchId: string;
 }> {
   const session = await auth();
 
@@ -17,58 +32,73 @@ export async function requireRole(minimumRole: UserRole): Promise<{
     redirect("/login");
   }
 
-  const userRole = await getUserRole(session.user.id);
+  const userInfo = await getUserRoleAndBranchId(session.user.id);
 
-  if (!userRole) {
+  if (!userInfo) {
     redirect("/dashboard"); // No role assigned
   }
 
-  const hierarchy = {
-    SUPERADMIN: 4,
-    ADMIN: 3,
-    MANAGER: 2,
-    WAITER: 1,
-    EMPLOYEE: 1, // Backward compatibility
-  };
+  const { role: userRole, branchId } = userInfo;
 
-  if (hierarchy[userRole] < hierarchy[minimumRole]) {
-    redirect("/dashboard"); // Insufficient permissions
+  if (hierarchy[userRole] >= hierarchy[minimumRole]) {
+    return { userId: session.user.id, userRole, branchId };
   }
 
-  return { userId: session.user.id, userRole };
+  // Role check failed — try permission grant fallback
+  if (permissionGrant) {
+    const granted = await hasPermissionGrant(
+      session.user.id,
+      branchId,
+      permissionGrant
+    );
+    if (granted) {
+      return { userId: session.user.id, userRole, branchId };
+    }
+  }
+
+  redirect("/dashboard"); // Insufficient permissions
 }
 
 /**
- * Require minimum role for action
- * Simpler version - just checks role, throws error if unauthorized
+ * Require minimum role for a server action.
+ * If the role check fails and a permissionGrant is provided, falls back to
+ * checking whether the user has that specific grant.
+ * Throws an error if unauthorized (instead of redirecting).
  */
 export async function authorizeAction(
   minimumRole: UserRole,
-  errorMessage?: string
-): Promise<{ userId: string; userRole: UserRole }> {
+  errorMessage?: string,
+  permissionGrant?: PermissionGrant
+): Promise<{ userId: string; userRole: UserRole; branchId: string }> {
   const session = await auth();
 
   if (!session?.user?.id) {
     throw new Error("Unauthorized: Not logged in");
   }
 
-  const userRole = await getUserRole(session.user.id);
+  const userInfo = await getUserRoleAndBranchId(session.user.id);
 
-  if (!userRole) {
+  if (!userInfo) {
     throw new Error("Unauthorized: No role assigned");
   }
 
-  const hierarchy = {
-    SUPERADMIN: 4,
-    ADMIN: 3,
-    MANAGER: 2,
-    WAITER: 1,
-    EMPLOYEE: 1, // Backward compatibility
-  };
+  const { role: userRole, branchId } = userInfo;
 
-  if (hierarchy[userRole] < hierarchy[minimumRole]) {
-    throw new Error(errorMessage ?? "Forbidden: Insufficient permissions");
+  if (hierarchy[userRole] >= hierarchy[minimumRole]) {
+    return { userId: session.user.id, userRole, branchId };
   }
 
-  return { userId: session.user.id, userRole };
+  // Role check failed — try permission grant fallback
+  if (permissionGrant) {
+    const granted = await hasPermissionGrant(
+      session.user.id,
+      branchId,
+      permissionGrant
+    );
+    if (granted) {
+      return { userId: session.user.id, userRole, branchId };
+    }
+  }
+
+  throw new Error(errorMessage ?? "Forbidden: Insufficient permissions");
 }

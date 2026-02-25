@@ -132,6 +132,16 @@ enum ProductTag {
   POPULAR
 }
 
+enum PermissionGrant {
+  VIEW_STATISTICS
+  VIEW_INVOICES
+  VIEW_CASH_REGISTERS
+  VIEW_STOCK
+  MANAGE_MENU
+  MANAGE_PRODUCTS
+  MANAGE_CONFIG
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -146,8 +156,9 @@ model User {
   sessions  Session[]
   createdAt DateTime  @default(now())
 
-  userOnBranches UserOnBranch[]
-  assignedOrders Order[]        @relation("StaffAssignment")
+  userOnBranches   UserOnBranch[]
+  assignedOrders   Order[]             @relation("StaffAssignment")
+  permissionGrants UserPermissionGrant[]
 }
 
 model Account {
@@ -245,7 +256,8 @@ model Branch {
   stations       Station[]
   printers       Printer[]
   deliveryConfig DeliveryConfig?
-  homePageLinks  HomePageLink[]
+  homePageLinks    HomePageLink[]
+  permissionGrants UserPermissionGrant[]
 
   /**
    * Evita duplicar nombres de sucursal dentro del mismo restaurante
@@ -267,6 +279,20 @@ model UserOnBranch {
   createdAt DateTime @default(now())
 
   @@unique([userId, branchId])
+}
+
+model UserPermissionGrant {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  branch     Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId   String
+  permission PermissionGrant
+  grantedAt  DateTime        @default(now())
+  grantedBy  String?
+
+  @@unique([userId, branchId, permission])
+  @@index([userId])
 }
 
 //
