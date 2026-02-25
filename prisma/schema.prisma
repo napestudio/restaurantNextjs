@@ -230,6 +230,8 @@ model Branch {
    */
   slug String? @db.Citext
 
+  notificationEmail String? // Email address to receive reservation notifications
+
   reservations   Reservation[]
   orders         Order[]
   sectors        Sector[]
