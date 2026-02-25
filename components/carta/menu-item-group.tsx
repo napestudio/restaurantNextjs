@@ -15,7 +15,7 @@ export function MenuItemGroup({ group }: MenuItemGroupProps) {
   return (
     <div className="space-y-2 py-2 mt-4">
       {/* Group header */}
-      <div className="pl-4">
+      <div className="md:pl-4">
         <h3 className="text-2xl font-bold text-neutral-200 font-serif">
           {group.name}
         </h3>
@@ -25,7 +25,7 @@ export function MenuItemGroup({ group }: MenuItemGroupProps) {
       </div>
 
       {/* Group items */}
-      <div className="pl-4">
+      <div className="md:pl-4">
         {items.map((item) => (
           <MenuItem
             key={item.id}

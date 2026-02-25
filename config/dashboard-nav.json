@@ -26,6 +26,11 @@
       "minimumRole": "MANAGER"
     },
     {
+      "label": "Estadísticas",
+      "href": "/dashboard/estadisticas",
+      "minimumRole": "MANAGER"
+    },
+    {
       "label": "Cartas",
       "href": "/dashboard/menus",
       "minimumRole": "ADMIN"

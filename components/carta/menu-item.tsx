@@ -20,7 +20,7 @@ export function MenuItem({
   tags = [],
 }: MenuItemProps) {
   return (
-    <div className="flex gap-4 group py-2 px-4">
+    <div className="flex gap-4 group py-2 md:px-4">
       {imageUrl && (
         <div className="shrink-0">
           <Image
@@ -33,16 +33,17 @@ export function MenuItem({
         </div>
       )}
       <div className="flex-1 flex flex-col min-h-full justify-between py-3">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex  items-start justify-between gap-2">
           <h3 className="font-semibold text-lg text-white">
-            <div className="flex gap-1 items-center">
+            <div className="flex md:flex-row flex-col gap-1 items-center">
               {name}
               {tags.length > 0 && (
-                <div className="mt-1.5">
+                <div className="mt-1.5 hidden md:block">
                   <ProductTagIcons tags={tags} size={20} />
                 </div>
               )}
             </div>
+
             {/* {isFeatured && (
               <span className="ml-2 text-yellow-400 rounded-full inline-block">
                 <StarIcon />
@@ -60,6 +61,11 @@ export function MenuItem({
           <p className="text-neutral-400 text-sm mt-1 line-clamp-2">
             {description}
           </p>
+        )}
+        {tags.length > 0 && (
+          <div className="mt-1.5 block md:hidden">
+            <ProductTagIcons tags={tags} size={20} />
+          </div>
         )}
       </div>
     </div>
