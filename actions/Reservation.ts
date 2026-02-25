@@ -188,6 +188,7 @@ export async function createReservation(data: {
           time: data.time,
           guests: finalReservation.people,
           branchName: finalReservation.branch.name,
+          notificationEmail: finalReservation.branch.notificationEmail,
           timeSlotName: finalReservation.timeSlot?.name,
           exactTime: finalReservation.exactTime || undefined,
           dietaryRestrictions:

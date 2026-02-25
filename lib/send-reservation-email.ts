@@ -11,6 +11,7 @@ interface SendReservationEmailParams {
   time: string;
   guests: number;
   branchName: string;
+  notificationEmail?: string | null;
   timeSlotName?: string;
   exactTime?: Date;
   dietaryRestrictions?: string;
@@ -32,6 +33,14 @@ export async function sendReservationNotificationEmail(
       return {
         success: false,
         error: "Email configuration not set up",
+      };
+    }
+
+    if (!params.notificationEmail) {
+      console.warn("Branch notification email not configured. Skipping email notification.");
+      return {
+        success: false,
+        error: "Branch notification email not configured",
       };
     }
 
@@ -65,7 +74,7 @@ export async function sendReservationNotificationEmail(
     // Send the email
     const info = await transporter.sendMail({
       from: `"${params.branchName}" <${process.env.EMAIL_USER}>`,
-      to: "renzo.costarelli@gmail.com",
+      to: params.notificationEmail,
       subject: `🍽️ Nueva Reserva - ${params.customerName} (${formattedDate})`,
       html: emailHtml,
     });
