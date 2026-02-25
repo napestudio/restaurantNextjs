@@ -11,34 +11,33 @@ export interface NavItem {
 }
 
 /**
- * Returns nav items visible to the user based on their role and any extra
- * permission grants assigned to them for their primary branch.
+ * Returns nav items visible to the user.
+ * Explicit grants take full precedence over role:
+ *   - Explicit ALLOW → show item (even if role wouldn't)
+ *   - Explicit DENY  → hide item (even if role would show it)
+ *   - No override    → role decides
  */
 export async function getNavItems(
   userRole: UserRole | null,
   userId: string,
   branchId: string
 ): Promise<NavItem[]> {
-  // Fetch all grants once (cached) to avoid N+1 per item
   const grants =
     userId && branchId
       ? await getUserPermissionGrants(userId, branchId)
-      : ([] as PermissionGrant[]);
+      : [];
+
+  const grantMap = new Map(grants.map((g) => [g.permission, g.granted]));
 
   return navConfig.items.filter((item) => {
     if (!item.minimumRole) return true;
 
-    // Role hierarchy check passes
-    if (hasMinimumRole(userRole, item.minimumRole as UserRole)) return true;
-
-    // Fall back to explicit permission grant
-    if (
-      item.permissionGrant &&
-      grants.includes(item.permissionGrant as PermissionGrant)
-    ) {
-      return true;
+    if (item.permissionGrant) {
+      const explicit = grantMap.get(item.permissionGrant as PermissionGrant);
+      if (explicit !== undefined) return explicit; // override takes full precedence
     }
 
-    return false;
+    // No explicit override — use role hierarchy
+    return hasMinimumRole(userRole, item.minimumRole as UserRole);
   });
 }

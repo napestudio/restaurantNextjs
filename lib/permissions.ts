@@ -11,7 +11,7 @@ export const isUserAdmin = unstable_cache(
     const adminAccess = await prisma.userOnBranch.findFirst({
       where: {
         userId,
-        role: { in: [UserRole.ADMIN, UserRole.MANAGER] },
+        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER] },
       },
     });
 
@@ -35,7 +35,7 @@ export async function isUserAdminInBranch(
     where: {
       userId,
       branchId,
-      role: { in: [UserRole.ADMIN, UserRole.MANAGER] },
+      role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER] },
     },
   });
 
@@ -54,7 +54,7 @@ export async function isUserManagerOrAdmin(
       userId,
       branchId,
       role: {
-        in: [UserRole.ADMIN, UserRole.MANAGER],
+        in: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER],
       },
     },
   });

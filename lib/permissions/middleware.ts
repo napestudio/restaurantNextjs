@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { getUserRoleAndBranchId } from "./roles";
 import { PermissionGrant, UserRole } from "@/app/generated/prisma";
 import { redirect } from "next/navigation";
-import { hasPermissionGrant } from "./grant-utils";
+import { getExplicitGrant } from "./grant-utils";
 
 const hierarchy: Record<UserRole, number> = {
   SUPERADMIN: 4,
@@ -14,9 +14,10 @@ const hierarchy: Record<UserRole, number> = {
 
 /**
  * Require minimum role for page access.
- * If the role check fails and a permissionGrant is provided, falls back to
- * checking whether the user has that specific grant in their primary branch.
- * Usage: await requireRole(UserRole.MANAGER, PermissionGrant.VIEW_STATISTICS);
+ * If a permissionGrant is provided, an explicit override takes full precedence over role:
+ *   - Explicit ALLOW → access granted (even if role wouldn't allow)
+ *   - Explicit DENY  → access denied (even if role would allow)
+ *   - No override    → role hierarchy decides
  */
 export async function requireRole(
   minimumRole: UserRole,
@@ -40,30 +41,30 @@ export async function requireRole(
 
   const { role: userRole, branchId } = userInfo;
 
-  if (hierarchy[userRole] >= hierarchy[minimumRole]) {
-    return { userId: session.user.id, userRole, branchId };
-  }
-
-  // Role check failed — try permission grant fallback
   if (permissionGrant) {
-    const granted = await hasPermissionGrant(
+    const explicit = await getExplicitGrant(
       session.user.id,
       branchId,
       permissionGrant
     );
-    if (granted) {
-      return { userId: session.user.id, userRole, branchId };
+    if (explicit !== null) {
+      // Explicit override takes full precedence
+      if (explicit) return { userId: session.user.id, userRole, branchId };
+      redirect("/dashboard"); // Explicit deny
     }
   }
 
-  redirect("/dashboard"); // Insufficient permissions
+  // No explicit override — use role hierarchy
+  if (hierarchy[userRole] >= hierarchy[minimumRole]) {
+    return { userId: session.user.id, userRole, branchId };
+  }
+
+  redirect("/dashboard"); // Insufficient role
 }
 
 /**
  * Require minimum role for a server action.
- * If the role check fails and a permissionGrant is provided, falls back to
- * checking whether the user has that specific grant.
- * Throws an error if unauthorized (instead of redirecting).
+ * Same override logic as requireRole but throws instead of redirecting.
  */
 export async function authorizeAction(
   minimumRole: UserRole,
@@ -84,20 +85,21 @@ export async function authorizeAction(
 
   const { role: userRole, branchId } = userInfo;
 
-  if (hierarchy[userRole] >= hierarchy[minimumRole]) {
-    return { userId: session.user.id, userRole, branchId };
-  }
-
-  // Role check failed — try permission grant fallback
   if (permissionGrant) {
-    const granted = await hasPermissionGrant(
+    const explicit = await getExplicitGrant(
       session.user.id,
       branchId,
       permissionGrant
     );
-    if (granted) {
-      return { userId: session.user.id, userRole, branchId };
+    if (explicit !== null) {
+      if (explicit) return { userId: session.user.id, userRole, branchId };
+      throw new Error(errorMessage ?? "Forbidden: Permission explicitly denied");
     }
+  }
+
+  // No explicit override — use role hierarchy
+  if (hierarchy[userRole] >= hierarchy[minimumRole]) {
+    return { userId: session.user.id, userRole, branchId };
   }
 
   throw new Error(errorMessage ?? "Forbidden: Insufficient permissions");

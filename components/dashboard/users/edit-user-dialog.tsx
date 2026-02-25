@@ -25,11 +25,11 @@ import { Pencil } from "lucide-react";
 import { updateUser, getBranches } from "@/actions/users";
 import {
   getUserGrantsForBranch,
-  grantUserPermission,
-  revokeUserPermission,
+  setUserPermission,
 } from "@/actions/permissions";
 import { userUpdateSchema, UserUpdateInput } from "@/lib/validations/user";
 import { PermissionGrant, UserRole } from "@/app/generated/prisma";
+import type { GrantRecord } from "@/lib/permissions/grant-utils";
 import {
   PERMISSION_GRANT_LABELS,
   USER_ROLE_LABELS,
@@ -77,7 +77,10 @@ export function EditUserDialog({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedBranchId, setResolvedBranchId] = useState<string>("");
-  const [activeGrants, setActiveGrants] = useState<PermissionGrant[]>([]);
+  // Map of permission → explicit override (true=allow, false=deny, undefined=no override)
+  const [grantMap, setGrantMap] = useState<Map<PermissionGrant, boolean>>(
+    new Map()
+  );
   const [grantsPending, setGrantsPending] = useState<PermissionGrant | null>(
     null
   );
@@ -121,7 +124,6 @@ export function EditUserDialog({
     if (user && branches.length > 0) {
       const userBranch = user.userOnBranches[0];
 
-      // Prefer the branchId stored on the object; fall back to name lookup
       const branchId =
         userBranch?.branchId ||
         branches.find(
@@ -150,16 +152,20 @@ export function EditUserDialog({
     async function loadGrants() {
       const result = await getUserGrantsForBranch(user.id, resolvedBranchId);
       if (result.success && result.data) {
-        setActiveGrants(result.data);
+        setGrantMap(
+          new Map(
+            (result.data as GrantRecord[]).map((g) => [g.permission, g.granted])
+          )
+        );
       }
     }
     loadGrants();
   }, [open, resolvedBranchId, isSuperAdmin, user.id]);
 
-  // Reset grant state when dialog closes
+  // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
-      setActiveGrants([]);
+      setGrantMap(new Map());
       setResolvedBranchId("");
     }
   }, [open]);
@@ -181,9 +187,7 @@ export function EditUserDialog({
   };
 
   const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setError(null);
-    }
+    if (!open) setError(null);
     onOpenChange(open);
   };
 
@@ -191,35 +195,50 @@ export function EditUserDialog({
     if (!resolvedBranchId || grantsPending) return;
     setGrantsPending(permission);
 
-    const isActive = activeGrants.includes(permission);
+    const roleCoversIt =
+      hasMinimumRole(
+        selectedRole as UserRole,
+        GRANT_ROLE_MAP[permission] ?? UserRole.SUPERADMIN
+      ) ?? false;
 
-    if (isActive) {
-      const result = await revokeUserPermission(
-        user.id,
-        resolvedBranchId,
-        permission
-      );
-      if (result.success) {
-        setActiveGrants((prev) => prev.filter((g) => g !== permission));
-      }
-    } else {
-      const result = await grantUserPermission(
-        user.id,
-        resolvedBranchId,
-        permission
-      );
-      if (result.success) {
-        setActiveGrants((prev) => [...prev, permission]);
-      }
+    const explicit = grantMap.get(permission);
+    // Effective access = explicit override if set, otherwise role
+    const currentAccess = explicit !== undefined ? explicit : roleCoversIt;
+    const newAccess = !currentAccess;
+
+    const result = await setUserPermission(
+      user.id,
+      resolvedBranchId,
+      permission,
+      newAccess
+    );
+
+    if (result.success) {
+      setGrantMap((prev) => new Map(prev).set(permission, newAccess));
     }
 
     setGrantsPending(null);
   };
 
-  const isGrantCoveredByRole = (permission: PermissionGrant): boolean => {
-    const requiredRole = GRANT_ROLE_MAP[permission];
-    if (!requiredRole) return false;
-    return hasMinimumRole(selectedRole as UserRole, requiredRole);
+  const getPermissionState = (permission: PermissionGrant) => {
+    const roleCoversIt =
+      hasMinimumRole(
+        selectedRole as UserRole,
+        GRANT_ROLE_MAP[permission] ?? UserRole.SUPERADMIN
+      ) ?? false;
+
+    const explicit = grantMap.get(permission);
+    const effectiveAccess =
+      explicit !== undefined ? explicit : roleCoversIt;
+
+    // Label shown next to checkbox
+    let hint: string | null = null;
+    if (explicit === true && roleCoversIt) hint = "grant + rol";
+    else if (explicit === true && !roleCoversIt) hint = "permiso extra";
+    else if (explicit === false) hint = "revocado";
+    else if (roleCoversIt) hint = "incluido en rol";
+
+    return { checked: effectiveAccess, hint, hasOverride: explicit !== undefined };
   };
 
   return (
@@ -332,49 +351,52 @@ export function EditUserDialog({
               )}
             </div>
 
-            {/* Extra permissions — only visible to SUPERADMIN */}
+            {/* Permisos extra — SUPERADMIN only, fully interactive */}
             {isSuperAdmin && resolvedBranchId && (
               <div className="space-y-2 pt-2 border-t">
                 <Label>Permisos extra</Label>
                 <p className="text-xs text-muted-foreground">
-                  Otorga acceso a secciones más allá del rol asignado.
+                  Anula el acceso del rol. Activa para otorgar, desactiva para
+                  revocar.
                 </p>
                 <div className="rounded-lg border divide-y">
                   {ALL_GRANTS.map((permission) => {
-                    const coveredByRole = isGrantCoveredByRole(permission);
-                    const isChecked =
-                      coveredByRole || activeGrants.includes(permission);
+                    const { checked, hint, hasOverride } =
+                      getPermissionState(permission);
                     const isPendingThis = grantsPending === permission;
 
                     return (
                       <label
                         key={permission}
-                        className={`flex items-center gap-3 px-3 py-2.5 text-sm select-none transition-colors hover:bg-gray-50 ${
-                          coveredByRole
-                            ? "opacity-50 cursor-default"
-                            : "cursor-pointer"
-                        }`}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm cursor-pointer select-none transition-colors hover:bg-gray-50"
                       >
                         <input
                           type="checkbox"
-                          checked={isChecked}
-                          disabled={coveredByRole || isPendingThis}
+                          checked={checked}
+                          disabled={isPendingThis}
                           onChange={() => handleGrantToggle(permission)}
                           className="h-4 w-4 rounded border-gray-300 accent-red-500"
                         />
                         <span className="flex-1">
                           {PERMISSION_GRANT_LABELS[permission]}
                         </span>
-                        {coveredByRole && (
-                          <span className="text-xs text-muted-foreground">
-                            incluido en rol
-                          </span>
-                        )}
-                        {isPendingThis && (
+                        {isPendingThis ? (
                           <span className="text-xs text-muted-foreground">
                             guardando...
                           </span>
-                        )}
+                        ) : hint ? (
+                          <span
+                            className={`text-xs ${
+                              hasOverride && !checked
+                                ? "text-red-500"
+                                : hasOverride && checked
+                                ? "text-green-600"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {hint}
+                          </span>
+                        ) : null}
                       </label>
                     );
                   })}
