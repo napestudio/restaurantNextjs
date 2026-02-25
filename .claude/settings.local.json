@@ -20,7 +20,8 @@
       "Bash(echo:*)",
       "Bash(grep -l \"branch\" /c/dev/RestaurantesNextjs/restaurantNextjs/app/\\\\\\(admin\\\\\\)/dashboard/config/*.tsx)",
       "Bash(grep -r \"Branch\" /c/dev/RestaurantesNextjs/restaurantNextjs/actions/*.ts)",
-      "Bash(xargs grep -l \"getBranch\\\\|export.*Branch\")"
+      "Bash(xargs grep -l \"getBranch\\\\|export.*Branch\")",
+      "Bash(node -e \"require\\(''recharts''\\); console.log\\(''recharts OK''\\)\")"
     ],
     "deny": [],
     "ask": []
