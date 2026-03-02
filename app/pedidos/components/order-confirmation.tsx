@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import Link from "next/link";
 
 interface OrderConfirmationProps {
   publicCode: string;
@@ -25,7 +26,8 @@ export function OrderConfirmation({
         <div>
           <h2 className="text-3xl font-bold mb-2">¡Pedido Pendiente!</h2>
           <p className="text-gray-600">
-            Abrí WhatsApp para completar tu pedido y realizar el pago.
+            Te redirigiremos a WhatsApp para completar tu pedido y realizar el
+            pago.
           </p>
         </div>
 
@@ -39,14 +41,19 @@ export function OrderConfirmation({
         </div>
 
         {whatsappUrl && (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-full rounded-md bg-green-500 hover:bg-green-600 text-white font-semibold text-lg py-3 transition-colors"
-          >
-            Abrir WhatsApp
-          </a>
+          <>
+            <p className="mb-0 text-sm text-gray-500 italic">
+              Si la redirección no funciona haga click aqui
+            </p>
+            <Link
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-full rounded-md bg-green-500 hover:bg-green-600 text-white font-semibold text-lg py-1 transition-colors"
+            >
+              Abrir WhatsApp
+            </Link>
+          </>
         )}
 
         <Button onClick={onStartNewOrder} size="lg" className="w-full">

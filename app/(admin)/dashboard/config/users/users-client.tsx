@@ -19,12 +19,14 @@ interface UsersClientProps {
   initialUsers: UserWithBranches[];
   currentUserId: string;
   branchId: string;
+  isSuperAdmin: boolean;
 }
 
 export function UsersClient({
   initialUsers,
   currentUserId,
   branchId,
+  isSuperAdmin,
 }: UsersClientProps) {
   const [users, setUsers] = useState<UserWithBranches[]>(initialUsers);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -63,6 +65,7 @@ export function UsersClient({
       userOnBranches: [
         {
           id: userData.tempId,
+          branchId: "",
           name: "",
           role: userData.role,
           restaurant: { id: "", name: "" },
@@ -373,6 +376,7 @@ export function UsersClient({
             onOpenChange={setEditDialogOpen}
             user={selectedUser}
             onUpdated={refreshUsers}
+            isSuperAdmin={isSuperAdmin}
           />
 
           <DeleteUserDialog

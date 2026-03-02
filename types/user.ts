@@ -1,11 +1,12 @@
-import type { UserRole } from "@/app/generated/prisma";
+import type { PermissionGrant, UserRole } from "@/app/generated/prisma";
 
-// Re-export UserRole for convenience
-export type { UserRole };
+// Re-export UserRole and PermissionGrant for convenience
+export type { PermissionGrant, UserRole };
 
 // Branch info for user display
 export interface UserBranchInfo {
-  id: string;
+  id: string;       // UserOnBranch.id (junction record id)
+  branchId: string; // Branch.id (actual branch id)
   name: string;
   role: UserRole;
   restaurant: {
@@ -13,6 +14,17 @@ export interface UserBranchInfo {
     name: string;
   };
 }
+
+// Spanish labels for PermissionGrant values
+export const PERMISSION_GRANT_LABELS: Record<PermissionGrant, string> = {
+  VIEW_STATISTICS: "Ver Estadísticas",
+  VIEW_INVOICES: "Ver Facturas",
+  VIEW_CASH_REGISTERS: "Ver Arqueos",
+  VIEW_STOCK: "Ver Stock",
+  MANAGE_MENU: "Gestionar Cartas",
+  MANAGE_PRODUCTS: "Gestionar Productos",
+  MANAGE_CONFIG: "Ver Configuración",
+};
 
 // User with branch relations for display
 export interface UserWithBranches {

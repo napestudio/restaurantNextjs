@@ -201,10 +201,6 @@ export async function createReservation(data: {
           pricePerPerson:
             finalReservation.timeSlot?.pricePerPerson?.toNumber() || 0,
         });
-        console
-          .log
-          // `📧 Email notification sent for reservation ${reservation.id}`
-          ();
       } catch (emailError) {
         // Log the error but don't fail the reservation
         console.error("Failed to send email notification:", emailError);

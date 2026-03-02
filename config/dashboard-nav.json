@@ -23,37 +23,44 @@
     {
       "label": "Arqueos",
       "href": "/dashboard/cash-registers",
-      "minimumRole": "MANAGER"
+      "minimumRole": "MANAGER",
+      "permissionGrant": "VIEW_CASH_REGISTERS"
     },
     {
       "label": "Estadísticas",
-      "href": "/dashboard/estadisticas",
-      "minimumRole": "MANAGER"
+      "href": "/dashboard/stats",
+      "minimumRole": "MANAGER",
+      "permissionGrant": "VIEW_STATISTICS"
     },
     {
       "label": "Cartas",
       "href": "/dashboard/menus",
-      "minimumRole": "ADMIN"
+      "minimumRole": "ADMIN",
+      "permissionGrant": "MANAGE_MENU"
     },
     {
       "label": "Productos",
       "href": "/dashboard/menu-items",
-      "minimumRole": "ADMIN"
+      "minimumRole": "ADMIN",
+      "permissionGrant": "MANAGE_PRODUCTS"
     },
     {
       "label": "Stock",
       "href": "/dashboard/stock",
-      "minimumRole": "MANAGER"
+      "minimumRole": "MANAGER",
+      "permissionGrant": "VIEW_STOCK"
     },
     {
       "label": "Facturas",
       "href": "/dashboard/invoices",
-      "minimumRole": "MANAGER"
+      "minimumRole": "MANAGER",
+      "permissionGrant": "VIEW_INVOICES"
     },
     {
       "label": "Configuración",
       "href": "/dashboard/config/restaurant",
-      "minimumRole": "ADMIN"
+      "minimumRole": "ADMIN",
+      "permissionGrant": "MANAGE_CONFIG"
     }
   ]
 }

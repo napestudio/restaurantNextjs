@@ -276,7 +276,7 @@ export default function DeliveryConfigClient({
             <div>
               <CardTitle>Horarios de Delivery</CardTitle>
               <CardDescription>
-                Configura las ventanas horarias en las que se aceptan pedidos.
+                Configura los horarios en los que se aceptan pedidos.
               </CardDescription>
             </div>
             <Button onClick={() => setIsDialogOpen(true)}>
