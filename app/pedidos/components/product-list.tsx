@@ -4,11 +4,12 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
-import { OrderProduct } from "@/types/products";
+import { OrderProduct, DeliverySection, DeliveryProduct } from "@/types/products";
 import { ProductTagIcons } from "@/components/ui/product-tag-icons";
 
 interface ProductListProps {
   products: OrderProduct[];
+  sections?: DeliverySection[];
   onAddToCart: (productId: string, name: string, price: number) => void;
   onUpdateQuantity: (productId: string, quantity: number) => void;
   cart: CartItem[];
@@ -16,33 +17,11 @@ interface ProductListProps {
 
 export function ProductList({
   products,
+  sections,
   onAddToCart,
   onUpdateQuantity,
   cart,
 }: ProductListProps) {
-  if (products.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <p className="text-gray-400 text-lg">
-          No hay productos disponibles para delivery
-        </p>
-      </div>
-    );
-  }
-
-  // Group products by category
-  const productsByCategory = products.reduce(
-    (acc, product) => {
-      const categoryName = product.category?.name || "Sin categoría";
-      if (!acc[categoryName]) {
-        acc[categoryName] = [];
-      }
-      acc[categoryName].push(product);
-      return acc;
-    },
-    {} as Record<string, OrderProduct[]>,
-  );
-
   const getQuantityInCart = (productId: string): number => {
     const item = cart.find((item) => item.productId === productId);
     return item ? item.quantity : 0;
@@ -116,73 +95,128 @@ export function ProductList({
     );
   };
 
-  return (
-    <div className="space-y-8">
-      {Object.entries(productsByCategory).map(
-        ([categoryName, categoryProducts]) => (
-          <div key={categoryName}>
-            <h2 className="text-2xl font-bold mb-4 text-neutral-900 sticky top-0 px-4 py-2 z-10">
-              {categoryName}
+  const ProductCard = ({ product }: { product: DeliveryProduct | OrderProduct }) => {
+    const productId = "productId" in product ? product.productId : product.id;
+    const quantity = getQuantityInCart(productId);
+    return (
+      <div className="bg-white rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="w-20 h-20 bg-gray-200 rounded-md shrink-0 overflow-hidden">
+          {product.imageUrl && (
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              width={80}
+              height={80}
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-black text-lg truncate">{product.name}</h3>
+          {product.description && (
+            <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
+          )}
+          {product.tags.length > 0 && (
+            <div className="mt-1">
+              <ProductTagIcons tags={product.tags} size={14} />
+            </div>
+          )}
+          <p className="text-lg font-bold text-neutral-900 mt-1">
+            ${product.price.toLocaleString("es-AR")}
+          </p>
+        </div>
+        <div className="shrink-0">
+          <QuantityControl
+            productId={productId}
+            name={product.name}
+            price={product.price}
+            currentQuantity={quantity}
+            trackStock={product.trackStock}
+            stock={product.stock}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  // ── Section-based layout (when a delivery menu is configured) ────────────────
+  if (sections && sections.length > 0) {
+    return (
+      <div className="space-y-8">
+        {sections.map((section) => (
+          <div key={section.id}>
+            <h2 className="text-2xl font-bold mb-1 text-neutral-900 sticky top-0 px-4 py-2 z-10">
+              {section.name}
             </h2>
+            {section.description && (
+              <p className="text-sm text-gray-500 px-4 mb-3">{section.description}</p>
+            )}
             <div className="space-y-3">
-              {categoryProducts.map((product) => {
-                const quantity = getQuantityInCart(product.id);
-                return (
-                  <div
-                    key={product.id}
-                    className="bg-white rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow"
-                  >
-                    {/* Product Image */}
-                    <div className="w-20 h-20 bg-gray-200 rounded-md shrink-0 overflow-hidden">
-                      {product.imageUrl && (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          width={80}
-                          height={80}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-black text-lg truncate">
-                        {product.name}
-                      </h3>
-                      {product.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2 ">
-                          {product.description}
-                        </p>
-                      )}
-                      {product.tags.length > 0 && (
-                        <div className="mt-1">
-                          <ProductTagIcons tags={product.tags} size={14} />
-                        </div>
-                      )}
-                      <p className="text-lg font-bold text-neutral-900 mt-1">
-                        ${product.price.toLocaleString("es-AR")}
+              {section.elements.map((element) =>
+                element.type === "item" ? (
+                  <ProductCard key={element.data.productId} product={element.data} />
+                ) : (
+                  <div key={element.data.id}>
+                    <h3 className="text-lg font-semibold text-neutral-700 px-2 pt-3 pb-1">
+                      {element.data.name}
+                    </h3>
+                    {element.data.description && (
+                      <p className="text-xs text-gray-500 px-2 mb-2">
+                        {element.data.description}
                       </p>
-                    </div>
-
-                    {/* Quantity Control */}
-                    <div className="shrink-0">
-                      <QuantityControl
-                        productId={product.id}
-                        name={product.name}
-                        price={product.price}
-                        currentQuantity={quantity}
-                        trackStock={product.trackStock}
-                        stock={product.stock}
-                      />
+                    )}
+                    <div className="space-y-3">
+                      {element.data.items.map((item) => (
+                        <ProductCard key={item.productId} product={item} />
+                      ))}
                     </div>
                   </div>
-                );
-              })}
+                ),
+              )}
             </div>
           </div>
-        ),
-      )}
+        ))}
+      </div>
+    );
+  }
+
+  // ── Category-based fallback (no menu configured) ─────────────────────────────
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-gray-400 text-lg">
+          No hay productos disponibles para delivery
+        </p>
+      </div>
+    );
+  }
+
+  const productsByCategory = products.reduce(
+    (acc, product) => {
+      const categoryName = product.category?.name || "Sin categoría";
+      if (!acc[categoryName]) {
+        acc[categoryName] = [];
+      }
+      acc[categoryName].push(product);
+      return acc;
+    },
+    {} as Record<string, OrderProduct[]>,
+  );
+
+  return (
+    <div className="space-y-8">
+      {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
+        <div key={categoryName}>
+          <h2 className="text-2xl font-bold mb-4 text-neutral-900 sticky top-0 px-4 py-2 z-10">
+            {categoryName}
+          </h2>
+          <div className="space-y-3">
+            {categoryProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

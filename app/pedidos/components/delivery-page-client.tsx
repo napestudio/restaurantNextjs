@@ -8,7 +8,7 @@ import { ProductList } from "./product-list";
 import { ShoppingCart } from "./shopping-cart";
 import { CustomerInfoForm } from "./customer-info-form";
 import { OrderConfirmation } from "./order-confirmation";
-import { OrderProduct } from "@/types/products";
+import { OrderProduct, DeliverySection } from "@/types/products";
 
 export type CartItem = {
   productId: string;
@@ -38,6 +38,7 @@ interface DeliveryPageProps {
   branchId: string;
   config: DeliveryConfig;
   products: OrderProduct[];
+  sections?: DeliverySection[];
   restaurantName: string;
   whatsappUrl: string;
 }
@@ -46,6 +47,7 @@ export default function DeliveryPage({
   branchId,
   config,
   products,
+  sections,
   restaurantName,
   whatsappUrl,
 }: DeliveryPageProps) {
@@ -123,6 +125,7 @@ export default function DeliveryPage({
           {step === "menu" && (
             <ProductList
               products={products}
+              sections={sections}
               onAddToCart={addToCart}
               onUpdateQuantity={updateQuantity}
               cart={cart}
