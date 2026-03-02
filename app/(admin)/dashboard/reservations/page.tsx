@@ -35,7 +35,6 @@ export default async function ReservationsPage() {
           totalCount: reservationsResult.data.totalCount,
         }
       : { nextCursor: null, hasMore: false, totalCount: 0 };
-
   return (
     <div className="min-h-svh bg-gray-50">
       <main className="px-4 sm:px-6 lg:px-8 py-16">

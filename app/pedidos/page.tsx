@@ -2,10 +2,7 @@ import {
   getDeliveryConfig,
   isDeliveryAvailable,
 } from "@/actions/DeliveryConfig";
-import {
-  getAvailableProductsForOrder,
-  getProductsForDeliveryMenu,
-} from "@/actions/Order";
+import { getProductsForDeliveryMenu } from "@/actions/Order";
 import { getRestaurantByBranchId } from "@/actions/Restaurant";
 import { OrderType } from "@/app/generated/prisma";
 import { BRANCH_ID } from "@/lib/constants";
@@ -45,21 +42,13 @@ export default async function PedidosPage() {
     );
   }
 
-  // Fetch products: if a delivery menu is configured, use only its items
-  // (organised by menu sections); otherwise fall back to all active branch products.
-  let products;
-  let sections;
-  if (config.menuId) {
-    const menuResult = await getProductsForDeliveryMenu(
-      BRANCH_ID,
-      config.menuId,
-      OrderType.DELIVERY,
-    );
-    products = menuResult.products;
-    sections = menuResult.sections;
-  } else {
-    products = await getAvailableProductsForOrder(BRANCH_ID, OrderType.DELIVERY);
-  }
+  // Only show products the admin has explicitly added to the delivery menu.
+  // If no menu is configured, products and sections remain empty.
+  const menuResult = config.menuId
+    ? await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY)
+    : { products: [], sections: [] };
+
+  const { products, sections } = menuResult;
 
   const restaurant = await getRestaurantByBranchId(BRANCH_ID);
   const phoneNumber = restaurant?.whatsappNumber || restaurant?.phone;

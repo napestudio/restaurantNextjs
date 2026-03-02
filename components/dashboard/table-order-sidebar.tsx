@@ -82,7 +82,7 @@ export function TableOrderSidebar({
   // Use cached products from context
   const { products } = useProducts();
 
-  // QZ Tray printing
+  // gg-ez-print printing
   const { printOrderItems, printControlTicket, printStatus } = usePrint();
   const { toast } = useToast();
 
@@ -239,10 +239,10 @@ export function TableOrderSidebar({
       return;
     }
 
-    // Auto-print the newly added items via QZ Tray (station comandas - no prices, no waiter)
+    // Auto-print the newly added items via gg-ez-print (station comandas - no prices, no waiter)
     const tableName = tableNumber?.toString() || "—";
 
-    // Fire and forget - printing happens in background via QZ Tray
+    // Fire and forget - printing happens in background via gg-ez-print
     printOrderItems(
       {
         orderId: order.id,
@@ -355,7 +355,7 @@ export function TableOrderSidebar({
       order.assignedTo?.name || order.assignedTo?.username || "—";
     const tableName = tableNumber?.toString() || "—";
 
-    // Print via QZ Tray - optimistic updates handled by usePrint hook
+    // Print via gg-ez-print - optimistic updates handled by usePrint hook
     const success = await printControlTicket({
       orderId: order.id,
       orderCode: order.publicCode,
@@ -381,7 +381,7 @@ export function TableOrderSidebar({
         variant: "destructive",
         title: "Error de impresión",
         description:
-          "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+          "No se pudo imprimir el ticket. Verifica que gg-ez-print esté ejecutándose y que haya impresoras configuradas.",
       });
     }
   };

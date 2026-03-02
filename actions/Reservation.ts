@@ -548,8 +548,9 @@ export async function getFilteredReservations(
   try {
     const limit = filters.limit || 10;
     const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
 
     // Build the where clause based on filter type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -571,12 +572,12 @@ export async function getFilteredReservations(
         if (filters.dateFrom || filters.dateTo) {
           whereClause.date = {};
           if (filters.dateFrom) {
-            const [fy, fm, fd] = filters.dateFrom.split("-").map(Number);
-            whereClause.date.gte = new Date(Date.UTC(fy, fm - 1, fd));
+            whereClause.date.gte = new Date(filters.dateFrom);
           }
           if (filters.dateTo) {
-            const [ty, tm, td] = filters.dateTo.split("-").map(Number);
-            whereClause.date.lt = new Date(Date.UTC(ty, tm - 1, td + 1));
+            const endDate = new Date(filters.dateTo);
+            endDate.setDate(endDate.getDate() + 1);
+            whereClause.date.lt = endDate;
           }
         }
         break;

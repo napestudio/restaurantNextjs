@@ -85,7 +85,7 @@ export function PrinterDetailsSidebar({
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // QZ Tray printing
+  // gg-ez-print printing
   const { printTest, isPrinting: isTesting, printStatus } = usePrint();
 
   if (!printer) return null;
