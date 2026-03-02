@@ -133,6 +133,7 @@ export default function DeliveryPage({
             <div className="max-w-2xl mx-auto">
               <ShoppingCart
                 cart={cart}
+                products={products}
                 onUpdateQuantity={updateQuantity}
                 onRemove={removeFromCart}
                 deliveryFee={deliveryFee}

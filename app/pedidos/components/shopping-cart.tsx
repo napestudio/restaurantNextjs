@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
+import { OrderProduct } from "@/types/products";
 
 interface ShoppingCartProps {
   cart: CartItem[];
+  products: OrderProduct[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemove: (productId: string) => void;
   deliveryFee: number;
@@ -16,6 +18,7 @@ interface ShoppingCartProps {
 
 export function ShoppingCart({
   cart,
+  products,
   onUpdateQuantity,
   onRemove,
   deliveryFee,
@@ -50,16 +53,35 @@ export function ShoppingCart({
           <CardTitle>Productos</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {cart.map((item) => (
+          {cart.map((item) => {
+            const product = products.find((p) => p.id === item.productId);
+            const isAtLimit = product
+              ? product.trackStock && item.quantity >= product.stock
+              : false;
+            return (
             <div
               key={item.productId}
-              className="flex items-center gap-4 pb-4 border-b last:border-0"
+              className="flex md:items-center md:flex-row flex-col gap-4 pb-4 border-b last:border-0"
             >
-              <div className="flex-1">
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-gray-600">
-                  ${item.price.toFixed(2)} c/u
-                </p>
+              <div className="flex justify-between">
+                <div className="flex-1">
+                  <h3 className="font-semibold">{item.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    ${" "}
+                    {item.price.toLocaleString("es-Ar", {
+                      currency: "ARS",
+                    })}{" "}
+                    c/u
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemove(item.productId)}
+                  className="text-red-500 hover:text-red-700 block md:hidden text-center"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
 
               <div className="flex items-center gap-2">
@@ -82,25 +104,30 @@ export function ShoppingCart({
                   onClick={() =>
                     onUpdateQuantity(item.productId, item.quantity + 1)
                   }
+                  disabled={isAtLimit}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
 
               <div className="w-24 text-right font-semibold">
-                ${(item.price * item.quantity).toFixed(2)}
+                ${" "}
+                {(item.price * item.quantity).toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
               </div>
 
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => onRemove(item.productId)}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500 hover:text-red-700 hidden md:block text-center"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 mx-auto" />
               </Button>
             </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 

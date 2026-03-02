@@ -102,4 +102,4 @@ TypeScript is configured with `@/*` mapping to the root directory. Use `@/lib/pr
 - **NEVER** add usage examples in the main `app/` codebase
 - Create usage examples in `/demo` or `/showcase` folders to demonstrate how to use the new features
 - This keeps the main application clean and separates reusable code from example implementations
-- Use :any to type
+- **NEVER** Use :any to type
