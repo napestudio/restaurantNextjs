@@ -78,7 +78,7 @@ export function CustomerInfoForm({
           description: "Los datos del cliente se han cargado automáticamente",
         });
       }
-    } catch (error) {
+    } catch {
       // Silent fail - client doesn't exist yet
     }
   };
@@ -122,6 +122,10 @@ export function CustomerInfoForm({
       });
       return;
     }
+
+    // Open a blank window now (within the user gesture) to avoid popup blocking.
+    // We'll redirect it to WhatsApp once the order is confirmed.
+    const whatsappWindow = whatsappUrl ? window.open("about:blank", "_blank") : null;
 
     setIsSubmitting(true);
 
@@ -207,12 +211,17 @@ export function CustomerInfoForm({
           ]
             .filter((line) => line !== null)
             .join("\n");
-          fullWhatsappUrl = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
+          fullWhatsappUrl = `${whatsappUrl}&text=${encodeURIComponent(message)}`;
+        }
+
+        if (whatsappWindow && fullWhatsappUrl) {
+          whatsappWindow.location.href = fullWhatsappUrl;
         }
 
         onOrderComplete(orderResult.data.publicCode, fullWhatsappUrl);
         // Note: isSubmitting stays true since we're navigating to confirmation
       } else {
+        if (whatsappWindow) whatsappWindow.close();
         toast({
           title: "Error al crear pedido",
           description: orderResult.error || "Error al crear pedido",
@@ -221,6 +230,7 @@ export function CustomerInfoForm({
         setIsSubmitting(false);
       }
     } catch (error) {
+      if (whatsappWindow) whatsappWindow.close();
       console.error("Error creating order:", error);
       toast({
         title: "Error",

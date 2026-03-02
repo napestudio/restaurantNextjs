@@ -3,7 +3,7 @@
 import type { SerializedMenu } from "@/actions/menus";
 import { createMenu, getMenu, updateMenu } from "@/actions/menus";
 import { PriceType } from "@/app/generated/prisma";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { SITE_URL } from "@/lib/constants";
 import { ArrowLeft, Eye, Layers, Loader2, Save } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MenuSectionsEditor } from "../../components/menu-sections-editor";
@@ -150,7 +150,6 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
     }
   };
 
-  const menuUrl = menu ? `${SITE_URL}/carta/${menu.slug}` : "";
 
   return (
     <div className="min-h-svh bg-gray-50">
@@ -310,15 +309,14 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     Volver a Menús
                   </Button>
                   {menu && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(menuUrl, "_blank")}
-                      className="w-full justify-start"
+                    <Link
+                      href={`/carta/${menu.slug}`}
+                      target="_blank"
+                      className={buttonVariants({ variant: "outline", size: "sm" }) + " w-full justify-start"}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Vista Previa
-                    </Button>
+                    </Link>
                   )}
                   <Button
                     size="sm"

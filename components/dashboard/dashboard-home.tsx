@@ -297,7 +297,7 @@ export function DashboardHome({
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <ShoppingBag className="h-4 w-4 text-blue-600" />
-                Pedidos Recientes
+                Órdenes Recientes
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1">

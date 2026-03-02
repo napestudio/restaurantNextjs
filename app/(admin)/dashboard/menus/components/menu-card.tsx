@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -49,6 +49,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import QRCodeLib from "qrcode";
 import { useState } from "react";
 
@@ -192,10 +193,6 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
     }
   };
 
-  const handleOpenMenu = () => {
-    window.open(menuUrl, "_blank");
-  };
-
   return (
     <>
       <Card className={!menu.isActive ? "opacity-60" : ""}>
@@ -278,15 +275,14 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
               <QrCode className="h-4 w-4 mr-2" />
               QR
             </Button>
-            <Button
-              onClick={handleOpenMenu}
-              variant="outline"
-              size="sm"
-              className="flex-1"
+            <Link
+              href={`/carta/${menu.slug}`}
+              target="_blank"
+              className={buttonVariants({ variant: "outline", size: "sm" }) + " flex-1"}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Ver
-            </Button>
+            </Link>
           </div>
           <Button onClick={onEdit} variant="default" className="w-full">
             <Pencil className="h-4 w-4 mr-2" />
@@ -355,14 +351,14 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
                 <Download className="h-4 w-4 mr-2" />
                 Descargar QR
               </Button>
-              <Button
-                onClick={handleOpenMenu}
-                variant="outline"
-                className="flex-1"
+              <Link
+                href={`/carta/${menu.slug}`}
+                target="_blank"
+                className={buttonVariants({ variant: "outline" }) + " flex-1"}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Abrir Menú
-              </Button>
+              </Link>
             </div>
           </div>
         </DialogContent>

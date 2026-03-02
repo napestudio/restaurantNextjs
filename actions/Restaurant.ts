@@ -178,7 +178,7 @@ export async function getRestaurantByBranchId(branchId: string) {
       where: { id: branchId },
       select: {
         restaurant: {
-          select: { name: true, whatsappNumber: true },
+          select: { name: true, whatsappNumber: true, phone: true },
         },
       },
     });

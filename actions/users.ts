@@ -17,8 +17,8 @@ import { authorizeAction } from "@/lib/permissions/middleware";
 
 export async function createUser(data: UserRegistrationInput) {
   try {
-    // Authorization check - only SUPERADMIN can create users
-    await authorizeAction(UserRole.SUPERADMIN);
+    // Authorization check - ADMIN and above can create users
+    await authorizeAction(UserRole.ADMIN);
 
     // Validate input
     const validation = userRegistrationSchema.safeParse(data);
@@ -206,6 +206,7 @@ export async function getUsers(): Promise<{
       createdAt: user.createdAt,
       userOnBranches: user.userOnBranches.map((ub) => ({
         id: ub.id,
+        branchId: ub.branch.id,
         name: ub.branch.name,
         role: ub.role,
         restaurant: {
@@ -238,8 +239,8 @@ export async function updateUser(
   message?: string;
 }> {
   try {
-    // Authorization check - only SUPERADMIN can update users
-    await authorizeAction(UserRole.SUPERADMIN);
+    // Authorization check - ADMIN and above can update users
+    await authorizeAction(UserRole.ADMIN);
 
     const validation = userUpdateSchema.safeParse(data);
 
@@ -381,8 +382,8 @@ export async function deleteUser(userId: string): Promise<{
   message?: string;
 }> {
   try {
-    // Authorization check - only SUPERADMIN can delete users
-    const { userId: sessionUserId } = await authorizeAction(UserRole.SUPERADMIN);
+    // Authorization check - ADMIN and above can delete users
+    const { userId: sessionUserId } = await authorizeAction(UserRole.ADMIN);
 
     // Prevent self-deletion
     if (sessionUserId === userId) {

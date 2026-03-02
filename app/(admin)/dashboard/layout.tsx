@@ -39,14 +39,16 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Get user's role to pass to nav
-  const userRole = await getUserRole(session.user.id);
+  // Get user's role and branch in parallel
+  const [userRole, branchId] = await Promise.all([
+    getUserRole(session.user.id),
+    getCurrentUserBranchId(),
+  ]);
 
-  // Get filtered nav items on server
-  const navItems = getNavItems(userRole);
+  // Get filtered nav items on server (includes grant-based overrides)
+  const navItems = await getNavItems(userRole, session.user.id, branchId ?? "");
 
   // Check if branch has printers (for conditional loading of gg-ez-print)
-  const branchId = await getCurrentUserBranchId();
   const hasPrinters = branchId ? await hasBranchPrinters(branchId) : false;
 
   return (
