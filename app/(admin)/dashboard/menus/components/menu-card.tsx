@@ -201,7 +201,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             <div className="flex-1">
               <CardTitle className="text-lg">{menu.name}</CardTitle>
               <CardDescription className="mt-1">
-                {menu.description?.slice(12) || "Sin descripción"}
+                {menu.description?.slice(0, 12) || "Sin descripción"}
               </CardDescription>
             </div>
             <DropdownMenu>
