@@ -65,7 +65,7 @@ export function StepCustomerInfo({ data, onChange }: StepCustomerInfoProps) {
               id="name"
               value={data.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              placeholder="Jerry Seinfeld"
+              placeholder="Nombre Completo"
               required
             />
           </div>
