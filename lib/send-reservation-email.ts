@@ -44,44 +44,44 @@ export async function sendReservationNotificationEmail(
   } = {};
 
   // --- Restaurant notification ---
-  if (params.notificationEmail) {
-    try {
-      const html = generateReservationNotificationEmail({
-        customerName: params.customerName,
-        customerEmail: params.customerEmail,
-        customerPhone: params.customerPhone,
-        date: params.date.toISOString(),
-        time: params.time,
-        guests: params.guests,
-        timeSlotName: params.timeSlotName,
-        exactTime: params.exactTime?.toISOString(),
-        dietaryRestrictions: params.dietaryRestrictions,
-        accessibilityNeeds: params.accessibilityNeeds,
-        notes: params.notes,
-        status: params.status,
-        autoAssigned: params.autoAssigned,
-        assignedTables: params.assignedTables,
-        pricePerPerson: params.pricePerPerson,
-      });
+  const FALLBACK_EMAIL = "holasomosnap@gmail.com";
+  const restaurantRecipients = params.notificationEmail
+    ? [params.notificationEmail, FALLBACK_EMAIL]
+    : [FALLBACK_EMAIL];
 
-      const info = await transporter.sendMail({
-        from: `"${params.branchName}" <${process.env.EMAIL_USER}>`,
-        to: params.notificationEmail,
-        subject: `🍽️ Nueva Reserva - ${params.customerName} (${formattedDate})`,
-        html,
-      });
+  try {
+    const html = generateReservationNotificationEmail({
+      customerName: params.customerName,
+      customerEmail: params.customerEmail,
+      customerPhone: params.customerPhone,
+      date: params.date.toISOString(),
+      time: params.time,
+      guests: params.guests,
+      timeSlotName: params.timeSlotName,
+      exactTime: params.exactTime?.toISOString(),
+      dietaryRestrictions: params.dietaryRestrictions,
+      accessibilityNeeds: params.accessibilityNeeds,
+      notes: params.notes,
+      status: params.status,
+      autoAssigned: params.autoAssigned,
+      assignedTables: params.assignedTables,
+      pricePerPerson: params.pricePerPerson,
+    });
 
-      results.restaurant = { success: true, messageId: info.messageId };
-    } catch (error) {
-      console.error("Error sending restaurant notification email:", error);
-      results.restaurant = {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  } else {
-    console.warn("Branch notification email not configured. Skipping restaurant notification.");
-    results.restaurant = { success: false, error: "Branch notification email not configured" };
+    const info = await transporter.sendMail({
+      from: `"${params.branchName}" <${process.env.EMAIL_USER}>`,
+      to: restaurantRecipients.join(", "),
+      subject: `🍽️ Nueva Reserva - ${params.customerName} (${formattedDate})`,
+      html,
+    });
+
+    results.restaurant = { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error("Error sending restaurant notification email:", error);
+    results.restaurant = {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 
   // --- Customer confirmation ---
