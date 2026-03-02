@@ -1,6 +1,6 @@
 "use server";
 
-import { transporter } from "./email";
+import { getTransporter } from "./email";
 import { generateReservationNotificationEmail } from "./email-templates/reservation-notification";
 import { generateReservationConfirmationEmail } from "./email-templates/reservation-confirmation";
 
@@ -68,7 +68,7 @@ export async function sendReservationNotificationEmail(
       pricePerPerson: params.pricePerPerson,
     });
 
-    const info = await transporter.sendMail({
+    const info = await getTransporter().sendMail({
       from: `"${params.branchName}" <${process.env.EMAIL_USER}>`,
       to: restaurantRecipients.join(", "),
       subject: `🍽️ Nueva Reserva - ${params.customerName} (${formattedDate})`,
@@ -101,7 +101,7 @@ export async function sendReservationNotificationEmail(
       pricePerPerson: params.pricePerPerson,
     });
 
-    const info = await transporter.sendMail({
+    const info = await getTransporter().sendMail({
       from: `"${params.branchName}" <${process.env.EMAIL_USER}>`,
       to: params.customerEmail,
       subject: `✅ Reserva recibida en ${params.branchName} (${formattedDate})`,
