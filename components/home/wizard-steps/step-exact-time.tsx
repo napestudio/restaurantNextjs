@@ -34,11 +34,13 @@ function generateFifteenMinuteIntervals(
   const selectedDate = new Date(year, month - 1, day);
   const now = new Date();
 
-  // Extract hours and minutes from slot times using local time
-  const startHour = startTime.getHours();
-  const startMin = startTime.getMinutes();
-  const endHour = endTime.getHours();
-  const endMin = endTime.getMinutes();
+  // Extract hours and minutes from slot times using UTC (DB stores times as UTC)
+  const startHour = startTime.getUTCHours();
+  const startMin = startTime.getUTCMinutes();
+  // Treat midnight (0:00) as 24:00 when end is before or equal to start (spans to end of day)
+  const rawEndHour = endTime.getUTCHours();
+  const endMin = endTime.getUTCMinutes();
+  const endHour = rawEndHour === 0 && endMin === 0 ? 24 : rawEndHour;
 
   // Generate 15-min intervals
   let currentHour = startHour;

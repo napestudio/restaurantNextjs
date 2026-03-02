@@ -18,6 +18,8 @@ export type OrderProduct = {
   } | null;
   price: number;
   tags: ProductTag[];
+  trackStock: boolean;
+  stock: number;
 };
 
 export type CreateMenuItemInput = {

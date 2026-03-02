@@ -1089,6 +1089,7 @@ export async function getAvailableProductsForOrder(
         imageUrl: true,
         categoryId: true,
         tags: true,
+        trackStock: true,
         category: {
           select: {
             name: true,
@@ -1099,6 +1100,7 @@ export async function getAvailableProductsForOrder(
             branchId,
           },
           select: {
+            stock: true,
             prices: {
               where: {
                 type: {
@@ -1146,8 +1148,10 @@ export async function getAvailableProductsForOrder(
         tags: product.tags,
         category: product.category,
         price: Number(priceObj?.price ?? 0),
+        trackStock: product.trackStock,
+        stock: Number(product.branches[0]?.stock ?? 0),
       };
-    });
+    }).filter((p) => !p.trackStock || p.stock > 0);
 
     return productsWithPrice;
   } catch (error) {
