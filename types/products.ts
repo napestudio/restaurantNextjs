@@ -1,5 +1,39 @@
 import type { UnitType, WeightUnit, VolumeUnit, PriceType, ProductTag } from "@/app/generated/prisma";
 
+// ─── Delivery menu section types ─────────────────────────────────────────────
+
+export type DeliveryProduct = {
+  productId: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  price: number;
+  tags: ProductTag[];
+  trackStock: boolean;
+  stock: number;
+  isFeatured: boolean;
+};
+
+export type DeliveryGroup = {
+  id: string;
+  name: string;
+  description: string | null;
+  order: number;
+  items: DeliveryProduct[];
+};
+
+export type DeliveryElement =
+  | { type: "item"; order: number; data: DeliveryProduct }
+  | { type: "group"; order: number; data: DeliveryGroup };
+
+export type DeliverySection = {
+  id: string;
+  name: string;
+  description: string | null;
+  order: number;
+  elements: DeliveryElement[];
+};
+
 /**
  * Product type returned by getAvailableProductsForOrder()
  * Used across dashboard and delivery ordering

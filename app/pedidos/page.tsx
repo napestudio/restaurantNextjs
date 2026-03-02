@@ -45,13 +45,21 @@ export default async function PedidosPage() {
     );
   }
 
-  // Fetch products: if a delivery menu is configured, use only its items;
-  // otherwise fall back to all active branch products with delivery pricing.
-  const productsResult = config.menuId
-    ? await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY)
-    : await getAvailableProductsForOrder(BRANCH_ID, OrderType.DELIVERY);
-
-  const products = productsResult || [];
+  // Fetch products: if a delivery menu is configured, use only its items
+  // (organised by menu sections); otherwise fall back to all active branch products.
+  let products;
+  let sections;
+  if (config.menuId) {
+    const menuResult = await getProductsForDeliveryMenu(
+      BRANCH_ID,
+      config.menuId,
+      OrderType.DELIVERY,
+    );
+    products = menuResult.products;
+    sections = menuResult.sections;
+  } else {
+    products = await getAvailableProductsForOrder(BRANCH_ID, OrderType.DELIVERY);
+  }
 
   const restaurant = await getRestaurantByBranchId(BRANCH_ID);
   const phoneNumber = restaurant?.whatsappNumber || restaurant?.phone;
@@ -64,6 +72,7 @@ export default async function PedidosPage() {
       branchId={BRANCH_ID}
       config={config}
       products={products}
+      sections={sections}
       restaurantName={restaurant?.name ?? ""}
       whatsappUrl={whatsappUrl}
     />

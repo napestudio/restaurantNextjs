@@ -11,6 +11,12 @@ import {
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
 import { authorizeAction } from "@/lib/permissions/middleware";
+import type {
+  DeliverySection,
+  DeliveryElement,
+  DeliveryProduct,
+  OrderProduct,
+} from "@/types/products";
 
 // ============================================================================
 // Helper Functions (internal, not exported)
@@ -1160,13 +1166,14 @@ export async function getAvailableProductsForOrder(
   }
 }
 
-// Get products for a specific delivery menu, respecting the menu hierarchy
-// Menu → MenuSection → MenuItem → Product (only isAvailable items)
+// Get products for a specific delivery menu, organised by menu sections and groups.
+// Returns both the section structure (for display) and a flat deduped product list
+// (for cart stock lookups).
 export async function getProductsForDeliveryMenu(
   branchId: string,
   menuId: string,
   orderType: OrderType = OrderType.DELIVERY,
-) {
+): Promise<{ sections: DeliverySection[]; products: OrderProduct[] }> {
   try {
     const priceTypes =
       orderType === OrderType.DINE_IN
@@ -1181,11 +1188,7 @@ export async function getProductsForDeliveryMenu(
       categoryId: true,
       tags: true,
       trackStock: true,
-      category: {
-        select: {
-          name: true,
-        },
-      },
+      category: { select: { name: true } },
       branches: {
         where: { branchId },
         select: {
@@ -1224,54 +1227,113 @@ export async function getProductsForDeliveryMenu(
       },
     });
 
-    if (!menu) return [];
+    if (!menu) return { sections: [], products: [] };
 
-    // Flatten products from all sections and groups, preserving menu order
-    const seen = new Set<string>();
-    const rawProducts: (typeof menu.menuSections)[0]["menuItems"][0]["product"][] =
-      [];
+    const resolvePrice = (
+      rawProduct: (typeof menu.menuSections)[0]["menuItems"][0]["product"],
+    ): DeliveryProduct => {
+      const branchPrices = rawProduct.branches[0]?.prices || [];
+      let priceObj = branchPrices.find((p) => p.type === orderType);
+      if (!priceObj && orderType !== OrderType.DINE_IN) {
+        priceObj = branchPrices.find((p) => p.type === OrderType.DINE_IN);
+      }
+      return {
+        productId: rawProduct.id,
+        name: rawProduct.name,
+        description: rawProduct.description,
+        imageUrl: rawProduct.imageUrl,
+        price: Number(priceObj?.price ?? 0),
+        tags: rawProduct.tags,
+        trackStock: rawProduct.trackStock,
+        stock: Number(rawProduct.branches[0]?.stock ?? 0),
+        isFeatured: false, // overridden per-item below
+      };
+    };
 
-    for (const section of menu.menuSections) {
-      for (const item of section.menuItems) {
-        if (!seen.has(item.product.id)) {
-          seen.add(item.product.id);
-          rawProducts.push(item.product);
+    // Build section structure
+    const sections: DeliverySection[] = menu.menuSections.map((section) => {
+      const elements: DeliveryElement[] = [];
+
+      // Direct (ungrouped) items — filter by menuItemGroupId is null at DB level
+      // but Prisma returns all menuItems; group items are excluded via menuItemGroupId
+      for (const item of section.menuItems.filter(
+        (i) => i.menuItemGroupId === null,
+      )) {
+        const dp: DeliveryProduct = {
+          ...resolvePrice(item.product),
+          isFeatured: item.isFeatured,
+        };
+        if (!item.product.trackStock || dp.stock > 0) {
+          elements.push({ type: "item", order: item.order, data: dp });
         }
       }
+
+      // Groups
       for (const group of section.menuItemGroups) {
-        for (const item of group.menuItems) {
-          if (!seen.has(item.product.id)) {
-            seen.add(item.product.id);
-            rawProducts.push(item.product);
+        const groupItems: DeliveryProduct[] = group.menuItems
+          .map((item) => ({
+            ...resolvePrice(item.product),
+            isFeatured: item.isFeatured,
+          }))
+          .filter((dp) => !dp.trackStock || dp.stock > 0);
+
+        if (groupItems.length > 0) {
+          elements.push({
+            type: "group",
+            order: group.order,
+            data: {
+              id: group.id,
+              name: group.name,
+              description: group.description,
+              order: group.order,
+              items: groupItems,
+            },
+          });
+        }
+      }
+
+      elements.sort((a, b) => a.order - b.order);
+
+      return {
+        id: section.id,
+        name: section.name,
+        description: section.description,
+        order: section.order,
+        elements,
+      };
+    });
+
+    // Derive a flat, deduped OrderProduct list for cart stock lookups
+    const seen = new Set<string>();
+    const products: OrderProduct[] = [];
+    for (const section of sections) {
+      for (const element of section.elements) {
+        const items =
+          element.type === "item" ? [element.data] : element.data.items;
+        for (const dp of items) {
+          if (!seen.has(dp.productId)) {
+            seen.add(dp.productId);
+            products.push({
+              id: dp.productId,
+              name: dp.name,
+              description: dp.description,
+              imageUrl: dp.imageUrl,
+              categoryId: null,
+              category: null,
+              price: dp.price,
+              tags: dp.tags,
+              trackStock: dp.trackStock,
+              stock: dp.stock,
+            });
           }
         }
       }
     }
 
-    return rawProducts
-      .map((product) => {
-        const branchPrices = product.branches[0]?.prices || [];
-        let priceObj = branchPrices.find((p) => p.type === orderType);
-        if (!priceObj && orderType !== OrderType.DINE_IN) {
-          priceObj = branchPrices.find((p) => p.type === OrderType.DINE_IN);
-        }
-        return {
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          imageUrl: product.imageUrl,
-          categoryId: product.categoryId,
-          tags: product.tags,
-          category: product.category,
-          price: Number(priceObj?.price ?? 0),
-          trackStock: product.trackStock,
-          stock: Number(product.branches[0]?.stock ?? 0),
-        };
-      })
-      .filter((p) => !p.trackStock || p.stock > 0);
+    return { sections, products };
   } catch (error) {
     console.error("Error getting delivery menu products:", error);
-    return [];
+    return { sections: [], products: [] };
   }
 }
 
