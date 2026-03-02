@@ -20,6 +20,7 @@ export default async function CartaPage({ params }: CartaPageProps) {
   }
 
   const { menu, restaurant } = data;
+  console.log(menu);
 
   return (
     <div className="min-h-svh bg-black text-white py-16">
