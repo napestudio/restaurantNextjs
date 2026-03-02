@@ -38,7 +38,10 @@ export async function sendReservationNotificationEmail(
     year: "numeric",
   }).format(params.date);
 
-  const results: { restaurant?: any; customer?: any } = {};
+  const results: {
+    restaurant?: { success: boolean; messageId?: string; error?: string };
+    customer?: { success: boolean; messageId?: string; error?: string };
+  } = {};
 
   // --- Restaurant notification ---
   if (params.notificationEmail) {
