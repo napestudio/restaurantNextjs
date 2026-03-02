@@ -275,16 +275,26 @@ export async function isDeliveryAvailable(
       };
     }
 
-    const dayOfWeek = requestedTime
+    // Convert current time to restaurant's local timezone (Argentina).
+    // Times are stored as UTC values equal to what the admin entered (e.g. "22:00" UTC
+    // means the admin typed "22:00"), so we compare against the local clock reading.
+    const TZ = "America/Argentina/Buenos_Aires";
+    const localDate = new Date(
+      requestedTime.toLocaleString("en-US", { timeZone: TZ }),
+    );
+    const dayOfWeek = localDate
       .toLocaleDateString("en-US", { weekday: "long" })
       .toLowerCase();
-    const timeString = requestedTime.toTimeString().slice(0, 5); // "HH:mm"
+    const hh = String(localDate.getHours()).padStart(2, "0");
+    const mm = String(localDate.getMinutes()).padStart(2, "0");
+    const timeString = `${hh}:${mm}`;
 
     const matchingWindow = config.deliveryWindows.find((window) => {
       if (!window.daysOfWeek.includes(dayOfWeek)) return false;
 
-      const start = window.startTime.toTimeString().slice(0, 5);
-      const end = window.endTime.toTimeString().slice(0, 5);
+      // Extract the "as-entered" HH:mm from the stored UTC DateTime
+      const start = window.startTime.toISOString().slice(11, 16);
+      const end = window.endTime.toISOString().slice(11, 16);
 
       return timeString >= start && timeString <= end;
     });

@@ -38,17 +38,14 @@ function getDateRange(period: Period): { from: Date; to: Date } {
   }
 }
 
-interface EstadisticasClientProps {
+interface StatsClientProps {
   branchId: string;
   initialStats: AllStats;
   initialFrom: string;
   initialTo: string;
 }
 
-export function EstadisticasClient({
-  branchId,
-  initialStats,
-}: EstadisticasClientProps) {
+export function StatsClient({ branchId, initialStats }: StatsClientProps) {
   const [period, setPeriod] = useState<Period>("30d");
   const [stats, setStats] = useState<AllStats>(initialStats);
   const [isPending, startTransition] = useTransition();
@@ -94,7 +91,9 @@ export function EstadisticasClient({
       </div>
 
       {/* Loading overlay */}
-      <div className={`transition-opacity ${isPending ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+      <div
+        className={`transition-opacity ${isPending ? "opacity-50 pointer-events-none" : "opacity-100"}`}
+      >
         {/* KPI Cards */}
         <KpiCards kpi={stats.kpi} />
 

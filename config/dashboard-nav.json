@@ -28,7 +28,7 @@
     },
     {
       "label": "Estadísticas",
-      "href": "/dashboard/estadisticas",
+      "href": "/dashboard/stats",
       "minimumRole": "MANAGER",
       "permissionGrant": "VIEW_STATISTICS"
     },

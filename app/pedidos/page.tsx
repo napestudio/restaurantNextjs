@@ -10,6 +10,8 @@ import { notFound } from "next/navigation";
 import DeliveryPage from "./components/delivery-page-client";
 import DeliveryClosedPage from "./components/delivery-closed-page";
 
+export const dynamic = "force-dynamic";
+
 export default async function PedidosPage() {
   if (!BRANCH_ID) {
     return (
