@@ -23,7 +23,8 @@
       "Bash(xargs grep -l \"getBranch\\\\|export.*Branch\")",
       "Bash(node -e \"require\\(''recharts''\\); console.log\\(''recharts OK''\\)\")",
       "Bash(xargs grep -l \"twilio\\\\|whatsapp\\\\|sms\\\\|notify\\\\|notification\")",
-      "Bash(grep -n \"getUTCHours\\\\|getHours\" /c/dev/RestaurantesNextjs/restaurantNextjs/components/home/wizard-steps/*.tsx)"
+      "Bash(grep -n \"getUTCHours\\\\|getHours\" /c/dev/RestaurantesNextjs/restaurantNextjs/components/home/wizard-steps/*.tsx)",
+      "Bash(grep -n \"getProducts.*Menu\\\\|getMenuProducts\" actions/*.ts)"
     ],
     "deny": [],
     "ask": []
