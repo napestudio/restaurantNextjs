@@ -135,7 +135,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
   const itemCount =
     menu.menuSections?.reduce(
       (acc, section) => acc + (section.menuItems?.length || 0),
-      0
+      0,
     ) || 0;
 
   const menuUrl = `${SITE_URL}/carta/${menu.slug}`;
@@ -201,7 +201,7 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             <div className="flex-1">
               <CardTitle className="text-lg">{menu.name}</CardTitle>
               <CardDescription className="mt-1">
-                {menu.description || "Sin descripción"}
+                {menu.description?.slice(12) || "Sin descripción"}
               </CardDescription>
             </div>
             <DropdownMenu>
@@ -278,7 +278,9 @@ export function MenuCard({ menu, onEdit, onDelete, onUpdate }: MenuCardProps) {
             <Link
               href={`/carta/${menu.slug}`}
               target="_blank"
-              className={buttonVariants({ variant: "outline", size: "sm" }) + " flex-1"}
+              className={
+                buttonVariants({ variant: "outline", size: "sm" }) + " flex-1"
+              }
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Ver
