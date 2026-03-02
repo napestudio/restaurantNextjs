@@ -51,8 +51,9 @@ export default async function PedidosPage() {
   const products = productsResult || [];
 
   const restaurant = await getRestaurantByBranchId(BRANCH_ID);
-  const whatsappUrl = restaurant?.whatsappNumber
-    ? `https://wa.me/${restaurant.whatsappNumber}`
+  const phoneNumber = restaurant?.whatsappNumber || restaurant?.phone;
+  const whatsappUrl = phoneNumber
+    ? `https://api.whatsapp.com/send/?phone=${phoneNumber}&app_absent=0`
     : "";
 
   return (

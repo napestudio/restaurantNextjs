@@ -78,7 +78,7 @@ export function CustomerInfoForm({
           description: "Los datos del cliente se han cargado automáticamente",
         });
       }
-    } catch (error) {
+    } catch {
       // Silent fail - client doesn't exist yet
     }
   };
@@ -211,7 +211,7 @@ export function CustomerInfoForm({
           ]
             .filter((line) => line !== null)
             .join("\n");
-          fullWhatsappUrl = `${whatsappUrl}?text=${encodeURIComponent(message)}`;
+          fullWhatsappUrl = `${whatsappUrl}&text=${encodeURIComponent(message)}`;
         }
 
         if (whatsappWindow && fullWhatsappUrl) {
