@@ -53,12 +53,18 @@ export function ProductList({
     name,
     price,
     currentQuantity,
+    trackStock,
+    stock,
   }: {
     productId: string;
     name: string;
     price: number;
     currentQuantity: number;
+    trackStock: boolean;
+    stock: number;
   }) => {
+    const isAtLimit = trackStock && currentQuantity >= stock;
+
     const handleIncrease = () => {
       if (currentQuantity === 0) {
         onAddToCart(productId, name, price);
@@ -75,6 +81,7 @@ export function ProductList({
       return (
         <Button
           onClick={handleIncrease}
+          disabled={isAtLimit}
           size="sm"
           className="bg-red-500 hover:bg-red-600 text-white font-semibold text-xl px-3"
         >
@@ -98,6 +105,7 @@ export function ProductList({
         </span>
         <Button
           onClick={handleIncrease}
+          disabled={isAtLimit}
           size="icon"
           variant="ghost"
           className="h-9 w-9 text-white hover:bg-red-600"
@@ -164,6 +172,8 @@ export function ProductList({
                         name={product.name}
                         price={product.price}
                         currentQuantity={quantity}
+                        trackStock={product.trackStock}
+                        stock={product.stock}
                       />
                     </div>
                   </div>
