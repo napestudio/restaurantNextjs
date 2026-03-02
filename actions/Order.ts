@@ -1160,6 +1160,121 @@ export async function getAvailableProductsForOrder(
   }
 }
 
+// Get products for a specific delivery menu, respecting the menu hierarchy
+// Menu → MenuSection → MenuItem → Product (only isAvailable items)
+export async function getProductsForDeliveryMenu(
+  branchId: string,
+  menuId: string,
+  orderType: OrderType = OrderType.DELIVERY,
+) {
+  try {
+    const priceTypes =
+      orderType === OrderType.DINE_IN
+        ? [OrderType.DINE_IN]
+        : [orderType, OrderType.DINE_IN];
+
+    const productSelect = {
+      id: true,
+      name: true,
+      description: true,
+      imageUrl: true,
+      categoryId: true,
+      tags: true,
+      trackStock: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
+      branches: {
+        where: { branchId },
+        select: {
+          stock: true,
+          prices: {
+            where: { type: { in: priceTypes } },
+            select: { price: true, type: true },
+          },
+        },
+      },
+    };
+
+    const menu = await prisma.menu.findUnique({
+      where: { id: menuId },
+      include: {
+        menuSections: {
+          orderBy: { order: "asc" },
+          include: {
+            menuItems: {
+              where: { isAvailable: true },
+              orderBy: { order: "asc" },
+              include: { product: { select: productSelect } },
+            },
+            menuItemGroups: {
+              orderBy: { order: "asc" },
+              include: {
+                menuItems: {
+                  where: { isAvailable: true },
+                  orderBy: { order: "asc" },
+                  include: { product: { select: productSelect } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!menu) return [];
+
+    // Flatten products from all sections and groups, preserving menu order
+    const seen = new Set<string>();
+    const rawProducts: (typeof menu.menuSections)[0]["menuItems"][0]["product"][] =
+      [];
+
+    for (const section of menu.menuSections) {
+      for (const item of section.menuItems) {
+        if (!seen.has(item.product.id)) {
+          seen.add(item.product.id);
+          rawProducts.push(item.product);
+        }
+      }
+      for (const group of section.menuItemGroups) {
+        for (const item of group.menuItems) {
+          if (!seen.has(item.product.id)) {
+            seen.add(item.product.id);
+            rawProducts.push(item.product);
+          }
+        }
+      }
+    }
+
+    return rawProducts
+      .map((product) => {
+        const branchPrices = product.branches[0]?.prices || [];
+        let priceObj = branchPrices.find((p) => p.type === orderType);
+        if (!priceObj && orderType !== OrderType.DINE_IN) {
+          priceObj = branchPrices.find((p) => p.type === OrderType.DINE_IN);
+        }
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          imageUrl: product.imageUrl,
+          categoryId: product.categoryId,
+          tags: product.tags,
+          category: product.category,
+          price: Number(priceObj?.price ?? 0),
+          trackStock: product.trackStock,
+          stock: Number(product.branches[0]?.stock ?? 0),
+        };
+      })
+      .filter((p) => !p.trackStock || p.stock > 0);
+  } catch (error) {
+    console.error("Error getting delivery menu products:", error);
+    return [];
+  }
+}
+
 // Get available tables to move an order to
 // Only returns tables that are free (EMPTY status) and not reserved
 export async function getAvailableTablesForMove(branchId: string) {

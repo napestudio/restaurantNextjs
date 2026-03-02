@@ -2,7 +2,10 @@ import {
   getDeliveryConfig,
   isDeliveryAvailable,
 } from "@/actions/DeliveryConfig";
-import { getAvailableProductsForOrder } from "@/actions/Order";
+import {
+  getAvailableProductsForOrder,
+  getProductsForDeliveryMenu,
+} from "@/actions/Order";
 import { getRestaurantByBranchId } from "@/actions/Restaurant";
 import { OrderType } from "@/app/generated/prisma";
 import { BRANCH_ID } from "@/lib/constants";
@@ -42,11 +45,11 @@ export default async function PedidosPage() {
     );
   }
 
-  // Fetch products with delivery prices
-  const productsResult = await getAvailableProductsForOrder(
-    BRANCH_ID,
-    OrderType.DELIVERY,
-  );
+  // Fetch products: if a delivery menu is configured, use only its items;
+  // otherwise fall back to all active branch products with delivery pricing.
+  const productsResult = config.menuId
+    ? await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY)
+    : await getAvailableProductsForOrder(BRANCH_ID, OrderType.DELIVERY);
 
   const products = productsResult || [];
 
