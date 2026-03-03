@@ -75,6 +75,7 @@ export class GgEzPrintClient {
   private connectionHandlers: ((connection: GgEzPrintConnection) => void)[] = [];
   private keepaliveIntervalId: ReturnType<typeof setInterval> | null = null;
   private readonly KEEPALIVE_INTERVAL_MS = 25000;
+  private hadSuccessfulConnection = false;
 
   constructor(
     url: string = WS_URL,
@@ -106,14 +107,18 @@ export class GgEzPrintClient {
   public connect(): void {
     this.userDisconnected = false; // Reset flag when manually connecting
 
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      return; // Already connected
+    if (
+      this.ws?.readyState === WebSocket.OPEN ||
+      this.ws?.readyState === WebSocket.CONNECTING
+    ) {
+      return; // Already connected or connection in flight
     }
 
     try {
       this.ws = new WebSocket(WS_URL);
 
       this.ws.onopen = () => {
+        this.hadSuccessfulConnection = true;
         this.connection = {
           isConnected: true,
           error: null,
@@ -127,7 +132,9 @@ export class GgEzPrintClient {
       this.ws.onmessage = (event) => {
         try {
           const response: GgEzPrintResponse = JSON.parse(event.data);
-          this.messageHandlers.forEach(handler => handler(response));
+          // Snapshot before iterating — handlers call splice() during cleanup,
+          // which would shift indices and cause subsequent handlers to be skipped.
+          [...this.messageHandlers].forEach(handler => handler(response));
         } catch (error) {
           console.error("Failed to parse gg-ez-print response:", error);
         }
@@ -165,7 +172,7 @@ export class GgEzPrintClient {
         if (
           this.reconnectionConfig.enabled &&
           !this.userDisconnected &&
-          wasConnected &&
+          this.hadSuccessfulConnection &&
           this.connection.reconnectAttempts < this.reconnectionConfig.maxAttempts
         ) {
           this.scheduleReconnect();
@@ -282,16 +289,14 @@ export class GgEzPrintClient {
   }
 
   /**
-   * Start periodic keepalive to prevent idle connection drops.
-   * Sends a "list" action every KEEPALIVE_INTERVAL_MS; the printer_list
-   * response is harmlessly ignored when no listPrinters() call is pending.
+   * Start periodic keepalive. Every KEEPALIVE_INTERVAL_MS, sends a verified
+   * ping (list request + response check). If no response arrives within 3s,
+   * the connection is silently dead and forceReconnect() is triggered.
    */
   private startKeepalive(): void {
     this.stopKeepalive();
     this.keepaliveIntervalId = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.send({ action: "list" });
-      }
+      this.checkConnectionAlive();
     }, this.KEEPALIVE_INTERVAL_MS);
   }
 
@@ -303,6 +308,71 @@ export class GgEzPrintClient {
       clearInterval(this.keepaliveIntervalId);
       this.keepaliveIntervalId = null;
     }
+  }
+
+  /**
+   * Send a ping (list request) and verify the server responds within 3s.
+   * If no response, the TCP connection is silently dead — force a reconnect.
+   */
+  private checkConnectionAlive(): void {
+    if (this.userDisconnected || this.ws?.readyState !== WebSocket.OPEN) return;
+
+    let cleaned = false;
+    const pingTimeout = setTimeout(() => {
+      if (cleaned) return;
+      cleanup();
+      if (!this.userDisconnected) {
+        console.warn("[GgEzPrint] Keepalive timeout — conexión muerta, reconectando...");
+        this.forceReconnect();
+      }
+    }, 3000);
+
+    const handler = (response: GgEzPrintResponse) => {
+      if ("type" in response && response.type === "printer_list") {
+        cleanup(); // Server responded — connection is alive
+      }
+    };
+
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      clearTimeout(pingTimeout);
+      const i = this.messageHandlers.indexOf(handler);
+      if (i > -1) this.messageHandlers.splice(i, 1);
+    };
+
+    if (!this.send({ action: "list" })) {
+      clearTimeout(pingTimeout);
+      return;
+    }
+    this.messageHandlers.push(handler);
+  }
+
+  /**
+   * Immediately close a dead/stale WebSocket and reconnect.
+   * Bypasses exponential backoff — used when we've confirmed the connection
+   * is dead (keepalive timeout) and want to recover ASAP.
+   */
+  public forceReconnect(): void {
+    this.stopKeepalive();
+    const dead = this.ws;
+    this.ws = null;
+    if (dead) {
+      dead.onopen = null;
+      dead.onclose = null;
+      dead.onerror = null;
+      dead.onmessage = null;
+      try { dead.close(); } catch { /* ignore errors on dead socket */ }
+    }
+    this.isReconnecting = false;
+    this.connection = {
+      isConnected: false,
+      error: "Reconectando...",
+      reconnectAttempts: this.connection.reconnectAttempts,
+      isReconnecting: false,
+    };
+    this.notifyConnectionChange(this.connection);
+    this.connect();
   }
 
   /**
@@ -384,7 +454,7 @@ export class GgEzPrintClient {
       const timeout = setTimeout(() => {
         cleanup();
         reject(new Error("Timeout esperando respuesta de impresión"));
-      }, 30000); // 30 second timeout for printing
+      }, 8000); // 8s — gg-ez-print responds once job is queued, not after paper finishes
 
       const handler = (response: GgEzPrintResponse) => {
         if ("status" in response) {
