@@ -73,6 +73,8 @@ export class GgEzPrintClient {
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private messageHandlers: ((response: GgEzPrintResponse) => void)[] = [];
   private connectionHandlers: ((connection: GgEzPrintConnection) => void)[] = [];
+  private keepaliveIntervalId: ReturnType<typeof setInterval> | null = null;
+  private readonly KEEPALIVE_INTERVAL_MS = 25000;
 
   constructor(
     url: string = WS_URL,
@@ -119,6 +121,7 @@ export class GgEzPrintClient {
           isReconnecting: false,
         };
         this.notifyConnectionChange(this.connection);
+        this.startKeepalive();
       };
 
       this.ws.onmessage = (event) => {
@@ -142,6 +145,7 @@ export class GgEzPrintClient {
       };
 
       this.ws.onclose = () => {
+        this.stopKeepalive();
         const wasConnected = this.connection.isConnected;
 
         this.connection = {
@@ -184,6 +188,7 @@ export class GgEzPrintClient {
    */
   public disconnect(): void {
     this.userDisconnected = true; // Prevent auto-reconnect
+    this.stopKeepalive();
     this.cancelReconnection();
 
     if (this.ws) {
@@ -274,6 +279,62 @@ export class GgEzPrintClient {
       console.error("Failed to send message to gg-ez-print:", error);
       return false;
     }
+  }
+
+  /**
+   * Start periodic keepalive to prevent idle connection drops.
+   * Sends a "list" action every KEEPALIVE_INTERVAL_MS; the printer_list
+   * response is harmlessly ignored when no listPrinters() call is pending.
+   */
+  private startKeepalive(): void {
+    this.stopKeepalive();
+    this.keepaliveIntervalId = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.send({ action: "list" });
+      }
+    }, this.KEEPALIVE_INTERVAL_MS);
+  }
+
+  /**
+   * Stop the keepalive interval
+   */
+  private stopKeepalive(): void {
+    if (this.keepaliveIntervalId) {
+      clearInterval(this.keepaliveIntervalId);
+      this.keepaliveIntervalId = null;
+    }
+  }
+
+  /**
+   * Wait until the WebSocket is connected, up to timeoutMs.
+   * Triggers a reconnect attempt if not already in progress.
+   * Resolves true when connected, false on timeout.
+   */
+  public waitForConnection(timeoutMs: number = 5000): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.isConnected) {
+        resolve(true);
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        unsubscribe();
+        resolve(false);
+      }, timeoutMs);
+
+      const unsubscribe = this.onConnectionChange((connection) => {
+        if (connection.isConnected) {
+          clearTimeout(timer);
+          unsubscribe();
+          resolve(true);
+        }
+      });
+
+      // Trigger reconnect if not already in progress
+      if (!this.isReconnecting) {
+        this.connect();
+      }
+    });
   }
 
   /**
