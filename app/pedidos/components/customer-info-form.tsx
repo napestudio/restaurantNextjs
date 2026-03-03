@@ -189,8 +189,10 @@ export function CustomerInfoForm({
         let fullWhatsappUrl = "";
         if (whatsappUrl) {
           const itemLines = cart
-            .map((item) => `- ${item.quantity}x ${item.name}`)
+            .map((item) => `- ${item.quantity}x ${item.name} ($${(item.price * item.quantity).toFixed(2)})`)
             .join("\n");
+
+          const orderTotal = subtotal + (isDelivery ? deliveryFee : 0);
 
           let message: string;
           if (isDelivery) {
@@ -207,6 +209,12 @@ export function CustomerInfoForm({
               ``,
               itemLines,
               ``,
+              `Subtotal: $${subtotal.toFixed(2)}`,
+              `Envío: $${deliveryFee.toFixed(2)}`,
+              `*Total: $${orderTotal.toFixed(2)}*`,
+              ``,
+              `*Tipo de pedido: Delivery*`,
+              ``,
               `*Datos de entrega:*`,
               `Nombre: ${formData.name}`,
               `Teléfono: ${formData.phone}`,
@@ -222,6 +230,10 @@ export function CustomerInfoForm({
               `Hola ${restaurantName}, quiero hacer un pedido para RETIRAR:`,
               ``,
               itemLines,
+              ``,
+              `*Total: $${orderTotal.toFixed(2)}*`,
+              ``,
+              `*Tipo de pedido: Retiro en local*`,
               ``,
               `*Datos de contacto:*`,
               `Nombre: ${formData.name}`,
