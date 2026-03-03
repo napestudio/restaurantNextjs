@@ -281,6 +281,8 @@ export function OrderDetailsSidebar({
       order.assignedTo?.name || order.assignedTo?.username || undefined;
     const tableName = order.table?.number?.toString() || "—";
     const isDelivery = order.type === OrderType.DELIVERY;
+    const showPaymentMethod =
+      order.type === OrderType.DELIVERY || order.type === OrderType.TAKE_AWAY;
 
     let deliveryAddress: string | undefined;
     if (isDelivery && order.client) {
@@ -314,6 +316,9 @@ export function OrderDetailsSidebar({
       deliveryAddress: isDelivery ? deliveryAddress : undefined,
       deliveryCity: isDelivery ? (order.client?.addressCity ?? undefined) : undefined,
       deliveryNotes: isDelivery ? (order.client?.notes ?? undefined) : undefined,
+      paymentMethod: showPaymentMethod
+        ? (paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod)
+        : undefined,
     });
 
     if (!success) {

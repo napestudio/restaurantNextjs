@@ -37,4 +37,5 @@ export interface ControlTicketInfo {
   deliveryAddress?: string | null;
   deliveryCity?: string | null;
   deliveryNotes?: string | null;
+  paymentMethod?: string;
 }
