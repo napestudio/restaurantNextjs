@@ -146,7 +146,7 @@ export function OrderDetailsSidebar({
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
 
   // GG EZ Print printing
-  const { printControlTicket, isPrinting } = usePrint();
+  const { printControlTicket, printPreOrderTicket, isPrinting } = usePrint();
   const { toast } = useToast();
 
   if (!order) return null;
@@ -307,6 +307,30 @@ export function OrderDetailsSidebar({
         title: "Error de impresión",
         description:
           "No se pudo imprimir el ticket. Verifica que gg-ez-print esté ejecutándose y que haya impresoras configuradas.",
+      });
+    }
+  };
+
+  const handlePrintPreOrderTicket = async () => {
+    if (!order) return;
+    const tableName = order.table?.number?.toString() || "—";
+    const success = await printPreOrderTicket({
+      orderId: order.id,
+      orderCode: order.publicCode,
+      tableName,
+      branchId,
+      items: order.items.map((item) => ({
+        itemName: item.itemName,
+        quantity: item.quantity,
+        notes: null,
+      })),
+    });
+    if (!success) {
+      toast({
+        variant: "destructive",
+        title: "Error de impresión",
+        description:
+          "No se pudo imprimir la comanda. Verifica que gg-ez-print esté ejecutándose y que haya impresoras configuradas.",
       });
     }
   };
@@ -730,6 +754,15 @@ export function OrderDetailsSidebar({
           >
             <Printer className="h-4 w-4 mr-2" />
             {isPrinting ? "Imprimiendo..." : "Imprimir Ticket de Control"}
+          </Button>
+          <Button
+            onClick={handlePrintPreOrderTicket}
+            disabled={isPrinting || order.items.length === 0}
+            variant="outline"
+            className="w-full"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrinting ? "Imprimiendo..." : "Imprimir Comanda"}
           </Button>
         </div>
       </div>

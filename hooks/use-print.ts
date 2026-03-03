@@ -6,6 +6,7 @@ import {
   prepareTestPrint,
   prepareOrderItemsPrint,
   prepareControlTicketPrint,
+  preparePreOrderTicketPrint,
   prepareInvoicePrint,
   updatePrintJobStatuses,
   hasBranchControlTicketPrinters,
@@ -62,6 +63,18 @@ export interface UsePrintReturn {
     discountPercentage?: number;
     orderType?: string;
     customerName?: string;
+  }) => Promise<boolean>;
+  printPreOrderTicket: (orderInfo: {
+    orderId: string;
+    orderCode: string;
+    tableName: string;
+    branchId: string;
+    items: Array<{
+      itemName: string;
+      quantity: number;
+      notes?: string | null;
+      categoryId?: string | null;
+    }>;
   }) => Promise<boolean>;
   printInvoice: (invoiceId: string) => Promise<boolean>;
 
@@ -457,6 +470,75 @@ export function usePrint(): UsePrintReturn {
   );
 
   /**
+   * Print pre-order/comanda ticket (no prices) to FULL_ORDER/BOTH printers
+   */
+  const printPreOrderTicket = useCallback(
+    async (orderInfo: {
+      orderId: string;
+      orderCode: string;
+      tableName: string;
+      branchId: string;
+      items: Array<{
+        itemName: string;
+        quantity: number;
+        notes?: string | null;
+        categoryId?: string | null;
+      }>;
+    }): Promise<boolean> => {
+      setPrintStatus({
+        status: "preparing",
+        message: "Preparando comanda...",
+      });
+
+      try {
+        const result = await preparePreOrderTicketPrint(orderInfo, orderInfo.items);
+
+        if (!result.success) {
+          setPrintStatus({
+            status: "error",
+            message: result.error || "Error al preparar la impresión",
+          });
+          return false;
+        }
+
+        if (!result.jobs || result.jobs.length === 0) {
+          setPrintStatus({ status: "idle" });
+          return true;
+        }
+
+        const printResult = await executePrintJobs(
+          result.jobs,
+          result.printJobIds || [],
+        );
+
+        if (printResult.success) {
+          setPrintStatus({
+            status: "success",
+            message: `Comanda impresa (${printResult.successCount})`,
+            successCount: printResult.successCount,
+          });
+        } else {
+          setPrintStatus({
+            status: "error",
+            message: `Error al imprimir (${printResult.failCount} fallido(s))`,
+            failCount: printResult.failCount,
+          });
+        }
+
+        setTimeout(resetStatus, 3000);
+
+        return printResult.success;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Error desconocido";
+        setPrintStatus({ status: "error", message });
+        return false;
+      }
+    },
+    [executePrintJobs, resetStatus],
+  );
+
+  /**
    * Check if a branch has control ticket printers configured
    * Use this to conditionally show/hide print buttons
    */
@@ -536,6 +618,7 @@ export function usePrint(): UsePrintReturn {
     printTest,
     printOrderItems,
     printControlTicket,
+    printPreOrderTicket,
     printInvoice,
     checkHasControlTicketPrinters,
     resetStatus,

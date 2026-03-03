@@ -379,6 +379,80 @@ export async function prepareControlTicketPrint(
 }
 
 // ============================================================================
+// PREPARE PRE-ORDER TICKET PRINT (comanda style, no prices, manual)
+// ============================================================================
+
+/**
+ * Prepare print jobs for a pre-order/comanda ticket (no prices)
+ * Sends to FULL_ORDER/BOTH printers (same as control ticket) but without price data
+ */
+export async function preparePreOrderTicketPrint(
+  orderInfo: OrderInfoForPrint,
+  items: OrderItemForPrint[],
+): Promise<PreparedPrintResult> {
+  try {
+    const printers = await prisma.printer.findMany({
+      where: {
+        branchId: orderInfo.branchId,
+        isActive: true,
+        printMode: { in: ["FULL_ORDER", "BOTH"] },
+      },
+    });
+
+    if (printers.length === 0) {
+      return { success: true, jobs: [], printJobIds: [] };
+    }
+
+    const jobs: PrintJobData[] = [];
+    const printJobIds: string[] = [];
+
+    for (const printer of printers) {
+      const config = buildPrinterConfig(printer);
+      const orderData = {
+        orderNumber: orderInfo.orderCode,
+        tableName: orderInfo.tableName,
+        items: items.map((item) => ({
+          name: item.itemName,
+          quantity: item.quantity,
+          notes: item.notes || undefined,
+        })),
+      };
+
+      const escPosData = generateOrderData(config, orderData);
+
+      const printJob = await prisma.printJob.create({
+        data: {
+          printerId: printer.id,
+          orderId: orderInfo.orderId,
+          content: JSON.stringify(orderData),
+          jobType: "STATION_ORDER",
+          status: PrintJobStatus.PENDING,
+        },
+      });
+
+      const target = buildPrinterTarget(printer);
+
+      for (let i = 0; i < printer.printCopies; i++) {
+        jobs.push({
+          printerId: printer.id,
+          printerName: printer.name,
+          target,
+          escPosData,
+          copies: 1,
+        });
+      }
+
+      printJobIds.push(printJob.id);
+    }
+
+    return { success: true, jobs, printJobIds };
+  } catch (error) {
+    console.error("Error preparing pre-order ticket print:", error);
+    return { success: false, error: "Error al preparar la impresión de comanda" };
+  }
+}
+
+// ============================================================================
 // UPDATE PRINT JOB STATUS (called by client after printing)
 // ============================================================================
 
