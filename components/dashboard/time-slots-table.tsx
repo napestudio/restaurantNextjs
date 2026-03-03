@@ -68,7 +68,11 @@ export function TimeSlotsTable({
 
                   {slot.pricePerPerson && slot.pricePerPerson > 0 ? (
                     <Badge variant="default" className="bg-green-600">
-                      ${slot.pricePerPerson}/<Users />
+                      ${" "}
+                      {slot.pricePerPerson.toLocaleString("es-Ar", {
+                        currency: "ARS",
+                      })}{" "}
+                      /<Users />
                     </Badge>
                   ) : (
                     <Badge variant="secondary">Gratis</Badge>

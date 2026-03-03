@@ -98,10 +98,26 @@ export async function createReservation(data: {
       },
     });
 
-    // Step 2: Try to auto-assign tables (default behavior unless explicitly disabled)
+    // Step 2: Determine status based on payment — free reservations confirm immediately.
+    // Capacity was already validated upstream in getAvailableTimeSlotsForDate(),
+    // so table assignment success/failure does not gate confirmation for free slots.
+    const isPaidReservation =
+      reservation.timeSlot &&
+      (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
+
+    let finalStatus: ReservationStatus = ReservationStatus.PENDING;
+
+    if (!isPaidReservation) {
+      await prisma.reservation.update({
+        where: { id: reservation.id },
+        data: { status: ReservationStatus.CONFIRMED },
+      });
+      finalStatus = ReservationStatus.CONFIRMED;
+    }
+
+    // Step 3: Try to auto-assign tables (independent of confirmation status)
     const shouldAutoAssign = data.autoAssignTables !== false;
     let assignmentResult = null;
-    let finalStatus: ReservationStatus = ReservationStatus.PENDING;
 
     if (shouldAutoAssign) {
       assignmentResult = await findAvailableTables(
@@ -112,7 +128,6 @@ export async function createReservation(data: {
       );
 
       if (assignmentResult.success && assignmentResult.data) {
-        // Assign the tables
         try {
           await prisma.reservationTable.createMany({
             data: assignmentResult.data.tableIds.map((tableId) => ({
@@ -121,40 +136,14 @@ export async function createReservation(data: {
             })),
           });
 
-          // Check if this is a paid reservation (pricePerPerson > 0)
-          const isPaidReservation =
-            reservation.timeSlot &&
-            (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
-
-          // Only confirm reservation if it's not a paid reservation
-          // Paid reservations must remain PENDING until payment is coordinated
+          // Mark tables as RESERVED only for confirmed (free) reservations
           if (!isPaidReservation) {
-            await prisma.reservation.update({
-              where: { id: reservation.id },
-              data: { status: ReservationStatus.CONFIRMED },
-            });
-
-            // Automatically set table status to RESERVED
             await setTablesReserved(assignmentResult.data.tableIds);
-
-            finalStatus = ReservationStatus.CONFIRMED;
-
-            // console.log(
-            //   `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} and CONFIRMED`
-            // );
-          } else {
-            // console.log(
-            //   `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} but keeping as PENDING (paid reservation)`
-            // );
           }
         } catch (assignError) {
-          // console.error("Error assigning tables:", assignError);
-          // Keep as PENDING if assignment fails
+          // Table assignment failure is non-blocking — reservation status is already set
+          console.error("Error assigning tables:", assignError);
         }
-      } else {
-        // console.log(
-        //   `⚠️  No tables available for reservation ${reservation.id}. Keeping as PENDING for manual assignment.`
-        // );
       }
     }
 

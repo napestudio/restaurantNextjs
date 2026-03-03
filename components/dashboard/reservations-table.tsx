@@ -248,6 +248,8 @@ export function ReservationsTable({
               <TableHead>Contacto</TableHead>
               <TableHead>Fecha y hora</TableHead>
               <TableHead>Personas</TableHead>
+              <TableHead>Mesas</TableHead>
+              <TableHead>Creada</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
@@ -255,7 +257,7 @@ export function ReservationsTable({
           <TableBody>
             {reservations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <CalendarDays className="h-12 w-12 text-muted-foreground/50" />
                     <p className="text-muted-foreground font-medium">
@@ -309,6 +311,29 @@ export function ReservationsTable({
                     <Badge variant="outline" className="font-bold">
                       {reservation.people}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {reservation.tables && reservation.tables.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {reservation.tables.map((rt) => (
+                          <Badge
+                            key={rt.tableId}
+                            variant="outline"
+                            className="text-xs font-semibold"
+                          >
+                            {rt.table.name ?? `Mesa ${rt.table.number}`}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">
+                        Sin asignar
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    <div>{format(parseISO(reservation.createdAt), "dd MMM yyyy", { locale: es })}</div>
+                    <div>{format(parseISO(reservation.createdAt), "HH:mm")}</div>
                   </TableCell>
                   <TableCell>
                     <Select

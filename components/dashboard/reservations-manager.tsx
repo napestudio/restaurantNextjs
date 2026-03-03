@@ -15,6 +15,7 @@ import type {
 import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { DeleteReservationDialog } from "./delete-reservation-dialog";
 import { CreateReservationSidebar } from "./create-reservation-sidebar";
@@ -39,6 +40,8 @@ export function ReservationsManager({
   timeSlots,
   branchId,
 }: ReservationsManagerProps) {
+  const router = useRouter();
+
   // Reservations state
   const [reservations, setReservations] = useState(initialReservations);
   const [pagination, setPagination] = useState(initialPagination);
@@ -174,8 +177,18 @@ export function ReservationsManager({
       // Rollback on failure
       setReservations(previousReservations);
       console.error("Failed to update reservation status:", result.error);
+      return;
     }
-    // No need to refetch on success - optimistic update already applied
+
+    // After seating: navigate to floor plan with the table pre-selected so
+    // staff can immediately start taking the order.
+    if (newStatus === ReservationStatus.SEATED) {
+      const reservation = reservations.find((r) => r.id === id);
+      const tableId = reservation?.tables[0]?.table.id;
+      if (tableId) {
+        router.push(`/dashboard/tables?tableId=${tableId}`);
+      }
+    }
   };
 
   const handleView = (reservation: SerializedReservation) => {

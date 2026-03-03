@@ -12,6 +12,7 @@ import { useFloorPlanActions } from "@/hooks/use-floor-plan-actions";
 import { AddTableDialog } from "./floor-plan/add-table-dialog";
 import { FloorPlanCanvas } from "./floor-plan/floor-plan-canvas";
 import { FloorPlanActions } from "./floor-plan/floor-plan-actions";
+import { FloorPlanStats } from "./floor-plan/floor-plan-stats";
 import { TablePropertiesPanel } from "./floor-plan/table-properties-panel";
 import { SectorSelector } from "./floor-plan/sector-selector";
 import type { Sector } from "@/types/tables-client";
@@ -35,6 +36,7 @@ interface FloorPlanPageProps {
   onRefreshSingleTable?: (tableId: string) => Promise<void>;
   editModeOnly?: boolean;
   isLoading?: boolean;
+  initialTableId?: string;
 }
 
 export default function FloorPlanHandler({
@@ -50,6 +52,7 @@ export default function FloorPlanHandler({
   onRefreshSingleTable,
   editModeOnly = false,
   isLoading = false,
+  initialTableId,
 }: FloorPlanPageProps) {
   // 1. Derived values from props (no hooks) - needed by useState initialization
   const sectors = externalSectors;
@@ -68,7 +71,7 @@ export default function FloorPlanHandler({
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<
     string | null
-  >(null);
+  >(initialTableId ?? null);
   const [selectedTableHasOrders, setSelectedTableHasOrders] = useState(false);
   const [tableEditSidebarOpen, setTableEditSidebarOpen] = useState(false);
   const [selectedTableForEdit, setSelectedTableForEdit] = useState<
@@ -117,6 +120,7 @@ export default function FloorPlanHandler({
     canvasWidth,
     canvasHeight,
     zoom,
+    initialSelectedTable: editModeOnly ? undefined : initialTableId,
   });
 
   const {
@@ -489,6 +493,9 @@ export default function FloorPlanHandler({
           onAddSector={editModeOnly ? onAddSector : undefined}
           onEditSector={editModeOnly ? onEditSector : undefined}
         />
+
+        {/* Live status legend — only in operational view */}
+        {!editModeOnly && <FloorPlanStats tables={filteredTables} />}
 
         {/* Only show FloorPlanActions in editModeOnly (config page) */}
         {editModeOnly && (

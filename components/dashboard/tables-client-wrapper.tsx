@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { TablesTabs } from "./tables-tabs";
 import { TablesSimpleView } from "./tables-simple-view";
 import FloorPlanHandler from "./floor-plan-handler";
@@ -23,6 +23,7 @@ interface TablesClientWrapperProps {
   initialTables: TableWithReservations[];
   initialSectors: Sector[];
   editModeOnly?: boolean;
+  initialTableId?: string;
 }
 
 export function TablesClientWrapper({
@@ -30,6 +31,7 @@ export function TablesClientWrapper({
   initialTables,
   initialSectors,
   editModeOnly = false,
+  initialTableId,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
 
@@ -52,6 +54,13 @@ export function TablesClientWrapper({
   } = useDialogs();
 
   const { formState, updateField, submitTable } = useTableForm(branchId);
+
+  // Pre-select the sector for the initial table (when navigating from reservations)
+  useEffect(() => {
+    if (!initialTableId) return;
+    const table = initialTables.find((t) => t.id === initialTableId);
+    if (table?.sectorId) setSelectedSector(table.sectorId);
+  }, []); // mount only — eslint-disable-line react-hooks/exhaustive-deps
 
   // Memoized filtered tables calculation
   useMemo(
@@ -146,6 +155,7 @@ export function TablesClientWrapper({
           onRefreshSingleTable={refreshSingleTable}
           editModeOnly={editModeOnly}
           isLoading={!sectorsLoaded}
+          initialTableId={initialTableId}
         />
         <TablesSimpleView tables={tables} sectors={sectors} />
       </TablesTabs>

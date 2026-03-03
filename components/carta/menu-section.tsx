@@ -8,6 +8,7 @@ import type {
 
 interface MenuSectionProps {
   section: SerializedMenuSection;
+  showPrices?: boolean;
 }
 
 // Union type for mixed content
@@ -15,7 +16,7 @@ type SectionElement =
   | { type: "item"; data: SerializedMenuItem }
   | { type: "group"; data: SerializedMenuItemGroup };
 
-export function MenuSection({ section }: MenuSectionProps) {
+export function MenuSection({ section, showPrices = true }: MenuSectionProps) {
   const ungroupedItems = section.menuItems || [];
   const groups = section.menuItemGroups || [];
 
@@ -31,11 +32,11 @@ export function MenuSection({ section }: MenuSectionProps) {
     <div className="text-white not-first:mt-12 bg-neutral-950 rounded-xl md:p-6 px-0 py-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold font-serif">{section.name}</h2>
-        {section.description && <p className="mt-2">{section.description}</p>}
+        {section.description && <p className="mt-2 whitespace-pre-wrap">{section.description}</p>}
       </div>
 
       <div>
-        {hasContent ? (
+        {hasContent &&
           elements.map((element) =>
             element.type === "item" ? (
               <MenuItem
@@ -50,16 +51,12 @@ export function MenuSection({ section }: MenuSectionProps) {
                 }
                 isFeatured={element.data.isFeatured}
                 tags={element.data.product?.tags ?? []}
+                showPrice={showPrices}
               />
             ) : (
               <MenuItemGroup key={element.data.id} group={element.data} />
             ),
-          )
-        ) : (
-          <p className="text-neutral-500 text-center py-4">
-            No hay productos disponibles en esta seccion
-          </p>
-        )}
+          )}
       </div>
     </div>
   );

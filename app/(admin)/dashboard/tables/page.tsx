@@ -5,8 +5,14 @@ import { BRANCH_ID } from "@/lib/constants";
 import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
 
-export default async function TablesPage() {
+export default async function TablesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tableId?: string }>;
+}) {
   await requireRole(UserRole.WAITER);
+
+  const { tableId } = await searchParams;
 
   // TODO: Get branchId from user session/context
   const branchId = BRANCH_ID || "";
@@ -58,6 +64,7 @@ export default async function TablesPage() {
         branchId={branchId}
         initialTables={serializedTables}
         initialSectors={sectorsResult.data}
+        initialTableId={tableId}
       />
     </div>
   );

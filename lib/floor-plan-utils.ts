@@ -1,4 +1,4 @@
-import type { TableShapeType, TableStatus } from "@/types/table";
+import type { TableShapeType, TableStatus, FloorTableStatus } from "@/types/table";
 import type { TableWithReservations } from "@/types/tables-client";
 import { shapeDefaults } from "@/lib/floor-plan-constants";
 export type { TableWithReservations };
@@ -17,7 +17,7 @@ export const statusMap: Record<string, TableStatus> = {
 };
 
 /**
- * Map frontend status to Prisma enum
+ * Map frontend DB status to Prisma enum (only covers manually-settable statuses)
  */
 export const reverseStatusMap: Record<
   TableStatus,
@@ -43,73 +43,169 @@ export interface FloorTable {
   rotation: number;
   shape: TableShapeType;
   capacity: number;
-  status: TableStatus;
+  status: FloorTableStatus;
   currentGuests: number;
   isShared: boolean;
   hasWaiter?: boolean; // True if any order has an assigned waiter
   waiterName?: string; // Name of the assigned waiter (first one if multiple orders)
+  reservationInfo?: {
+    customerName: string;
+    people: number;
+    minutesUntil: number; // negative = overdue
+  };
 }
 
-
 /**
- * Check if the current time falls within a reservation's time slot
+ * Extract the time-of-day in minutes from a DB Time field (stored as 1970-01-01T{time}Z)
+ * and build a comparable Date for today at that time using local hours/minutes.
  */
-function isWithinTimeSlot(
-  timeSlot: { startTime: string; endTime: string } | null,
-  now: Date = new Date()
-): boolean {
-  if (!timeSlot) {
-    // If no time slot is assigned, treat as all-day reservation
-    return true;
-  }
-
-  const startTime = new Date(timeSlot.startTime);
-  const endTime = new Date(timeSlot.endTime);
-
-  return now >= startTime && now <= endTime;
+function toTodayLocalTime(timeString: string): Date {
+  const t = new Date(timeString);
+  const today = new Date();
+  today.setHours(t.getUTCHours(), t.getUTCMinutes(), 0, 0);
+  return today;
 }
 
 /**
- * Calculate table status based on reservations, orders, and manual status
+ * Get minutes from now until a reservation reference time.
+ * Positive = reservation is in the future. Negative = reservation is in the past.
+ * Uses exactTime when available; falls back to timeSlot.startTime.
+ */
+function minutesUntilReservation(
+  exactTime: Date | string | null,
+  timeSlot: { startTime: string; endTime: string } | null,
+  now: Date
+): number | null {
+  if (exactTime) {
+    const refTime = exactTime instanceof Date ? exactTime : new Date(exactTime);
+    return (refTime.getTime() - now.getTime()) / 60000;
+  }
+  if (timeSlot) {
+    const refTime = toTodayLocalTime(timeSlot.startTime);
+    return (refTime.getTime() - now.getTime()) / 60000;
+  }
+  return null;
+}
+
+/**
+ * Calculate table status based on active orders, today's reservations (time-aware),
+ * and the manual DB status override. Priority order:
+ *  1. Active orders → "occupied"
+ *  2. SEATED reservation → "occupied"
+ *  3. PENDING reservation today → "pending_payment"
+ *  4. CONFIRMED reservation: overdue (>30 min past) → "late"
+ *  5. CONFIRMED reservation: window now (≤30 min past or ≤5 min away) → "reserved"
+ *  6. CONFIRMED reservation: arriving soon (5–60 min away) → "upcoming"
+ *  7. Manual DB status CLEANING → "cleaning"
+ *  8. Default → "empty"
  */
 export function calculateTableStatus(dbTable: TableWithReservations): {
-  status: TableStatus;
+  status: FloorTableStatus;
   currentGuests: number;
   hasWaiter: boolean;
   waiterName?: string;
+  reservationInfo?: FloorTable["reservationInfo"];
 } {
-  let status: TableStatus = "empty";
+  let status: FloorTableStatus = "empty";
   let currentGuests = 0;
   let hasWaiter = false;
   let waiterName: string | undefined;
+  let reservationInfo: FloorTable["reservationInfo"] = undefined;
 
-  // First, check if there are active orders (highest priority for current guests)
+  // Priority 1: Active orders (highest priority — customer is already there)
   if (dbTable.orders && dbTable.orders.length > 0) {
-    // Sum up party sizes from all active orders (for shared tables)
     currentGuests = dbTable.orders.reduce(
       (sum, order) => sum + (order.partySize || 0),
       0
     );
-    // If there are active orders, table is occupied
     status = "occupied";
-
-    // Check if any order has a waiter assigned
     const orderWithWaiter = dbTable.orders.find((order) => order.assignedTo);
     if (orderWithWaiter?.assignedTo) {
       hasWaiter = true;
       waiterName = orderWithWaiter.assignedTo.name || undefined;
     }
-  } else if (dbTable.status) {
-    // Use manual status from database
-    status = statusMap[dbTable.status] || "empty";
+    return { status, currentGuests, hasWaiter, waiterName };
   }
 
-  // Fallback: Set currentGuests from reservations if no orders and reservations exist
-  // if (currentGuests === 0 && dbTable.reservations.length > 0) {
-  //   currentGuests = dbTable.reservations[0].reservation.people;
-  // }
+  // Priority 2–6: Check today's reservations (already filtered to today in the query)
+  if (dbTable.reservations.length > 0) {
+    const now = new Date();
 
-  return { status, currentGuests, hasWaiter, waiterName };
+    // SEATED reservation → occupied (manual, no active order)
+    const seatedRes = dbTable.reservations.find(
+      (rt) => rt.reservation.status === "SEATED"
+    );
+    if (seatedRes) {
+      currentGuests = seatedRes.reservation.people;
+      return { status: "occupied", currentGuests, hasWaiter, waiterName };
+    }
+
+    // PENDING reservation today → paid reservation awaiting payment
+    const pendingRes = dbTable.reservations.find(
+      (rt) => rt.reservation.status === "PENDING"
+    );
+    if (pendingRes) {
+      reservationInfo = {
+        customerName: pendingRes.reservation.customerName,
+        people: pendingRes.reservation.people,
+        minutesUntil:
+          minutesUntilReservation(
+            pendingRes.reservation.exactTime,
+            pendingRes.reservation.timeSlot,
+            now
+          ) ?? 0,
+      };
+      return { status: "pending_payment", currentGuests, hasWaiter, waiterName, reservationInfo };
+    }
+
+    // CONFIRMED reservations: find the most relevant one by time proximity
+    const confirmedReservations = dbTable.reservations
+      .filter((rt) => rt.reservation.status === "CONFIRMED")
+      .map((rt) => ({
+        rt,
+        mins: minutesUntilReservation(
+          rt.reservation.exactTime,
+          rt.reservation.timeSlot,
+          now
+        ),
+      }))
+      .filter((r) => r.mins !== null) as {
+        rt: (typeof dbTable.reservations)[0];
+        mins: number;
+      }[];
+
+    if (confirmedReservations.length > 0) {
+      // Pick the one closest to now (smallest absolute distance)
+      const closest = confirmedReservations.reduce((a, b) =>
+        Math.abs(a.mins) <= Math.abs(b.mins) ? a : b
+      );
+
+      reservationInfo = {
+        customerName: closest.rt.reservation.customerName,
+        people: closest.rt.reservation.people,
+        minutesUntil: closest.mins,
+      };
+
+      if (closest.mins < -30) {
+        // More than 30 min past the reservation time — customer hasn't shown up
+        status = "late";
+      } else if (closest.mins <= 5) {
+        // Arriving imminently (≤5 min away) or just past the start (≤30 min ago)
+        status = "reserved";
+      } else if (closest.mins <= 60) {
+        // Arriving in the next 5–60 minutes
+        status = "upcoming";
+      }
+      // > 60 min away: leave as "empty" (too far in the future to block the table visually)
+    }
+  }
+
+  // Priority 7: Manual CLEANING override (only if no reservations drove the status)
+  if (status === "empty" && dbTable.status === "CLEANING") {
+    status = "cleaning";
+  }
+
+  return { status, currentGuests, hasWaiter, waiterName, reservationInfo };
 }
 
 /**
@@ -119,7 +215,7 @@ export function calculateTableStatus(dbTable: TableWithReservations): {
 export function transformTableToFloorTable(
   dbTable: TableWithReservations
 ): FloorTable {
-  const { status, currentGuests, hasWaiter, waiterName } =
+  const { status, currentGuests, hasWaiter, waiterName, reservationInfo } =
     calculateTableStatus(dbTable);
 
   const width = dbTable.width ?? 80;
@@ -143,6 +239,7 @@ export function transformTableToFloorTable(
     isShared: dbTable.isShared,
     hasWaiter,
     waiterName,
+    reservationInfo,
   };
 }
 

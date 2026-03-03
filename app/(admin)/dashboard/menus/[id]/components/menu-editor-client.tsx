@@ -150,7 +150,6 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
     }
   };
 
-
   return (
     <div className="min-h-svh bg-gray-50">
       {/* Main Content - Dashboard Style */}
@@ -222,7 +221,8 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Descripción del menú"
-                    rows={3}
+                    rows={1}
+                    className="h-20"
                   />
                 </div>
 
@@ -240,10 +240,10 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={PriceType.DINE_IN}>
-                        Comer Aquí (Dine-In)
+                        Comer Aquí
                       </SelectItem>
                       <SelectItem value={PriceType.TAKE_AWAY}>
-                        Para Llevar (Take-Away)
+                        Para Llevar
                       </SelectItem>
                       <SelectItem value={PriceType.DELIVERY}>
                         Delivery
@@ -252,7 +252,7 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                   </Select>
                   <p className="text-xs text-gray-500">
                     Los productos mostrarán los precios configurados para este
-                    tipo
+                    tipo.
                   </p>
                 </div>
 
@@ -312,7 +312,10 @@ export function MenuEditorClient({ menu: initialMenu }: MenuEditorClientProps) {
                     <Link
                       href={`/carta/${menu.slug}`}
                       target="_blank"
-                      className={buttonVariants({ variant: "outline", size: "sm" }) + " w-full justify-start"}
+                      className={
+                        buttonVariants({ variant: "outline", size: "sm" }) +
+                        " w-full justify-start"
+                      }
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Vista Previa
