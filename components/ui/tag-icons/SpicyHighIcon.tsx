@@ -14,6 +14,7 @@ export function SpicyHighIcon({ size = 16, className }: SpicyHighIconProps) {
       height={size}
       viewBox="0 0 192 64"
       fill="currentColor"
+      stroke="currentColor"
       className={className}
       aria-hidden="true"
     >

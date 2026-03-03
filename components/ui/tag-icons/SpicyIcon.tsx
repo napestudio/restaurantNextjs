@@ -12,6 +12,7 @@ export function SpicyIcon({ size = 16, className }: SpicyIconProps) {
       viewBox="0 0 64 64"
       fill="currentColor"
       className={className}
+      stroke="currentColor"
       aria-hidden="true"
     >
       <ChiliPath />
