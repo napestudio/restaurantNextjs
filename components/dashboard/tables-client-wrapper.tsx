@@ -24,6 +24,8 @@ interface TablesClientWrapperProps {
   initialSectors: Sector[];
   editModeOnly?: boolean;
   initialTableId?: string;
+  initialPartySize?: number;
+  initialCustomerEmail?: string;
 }
 
 export function TablesClientWrapper({
@@ -32,6 +34,8 @@ export function TablesClientWrapper({
   initialSectors,
   editModeOnly = false,
   initialTableId,
+  initialPartySize,
+  initialCustomerEmail,
 }: TablesClientWrapperProps) {
   const [tables, setTables] = useState<TableWithReservations[]>(initialTables);
 
@@ -156,6 +160,8 @@ export function TablesClientWrapper({
           editModeOnly={editModeOnly}
           isLoading={!sectorsLoaded}
           initialTableId={initialTableId}
+          initialPartySize={initialPartySize}
+          initialCustomerEmail={initialCustomerEmail}
         />
         <TablesSimpleView tables={tables} sectors={sectors} />
       </TablesTabs>

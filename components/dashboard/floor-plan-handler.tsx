@@ -37,6 +37,8 @@ interface FloorPlanPageProps {
   editModeOnly?: boolean;
   isLoading?: boolean;
   initialTableId?: string;
+  initialPartySize?: number;
+  initialCustomerEmail?: string;
 }
 
 export default function FloorPlanHandler({
@@ -53,6 +55,8 @@ export default function FloorPlanHandler({
   editModeOnly = false,
   isLoading = false,
   initialTableId,
+  initialPartySize,
+  initialCustomerEmail,
 }: FloorPlanPageProps) {
   // 1. Derived values from props (no hooks) - needed by useState initialization
   const sectors = externalSectors;
@@ -552,6 +556,8 @@ export default function FloorPlanHandler({
                 onClose={handleCloseSidebar}
                 onTableChange={handleTableChange}
                 onOrderUpdated={handleOrderUpdated}
+                initialPartySize={initialPartySize}
+                initialCustomerEmail={initialCustomerEmail}
               />
             ) : (
               <TablePropertiesPanel

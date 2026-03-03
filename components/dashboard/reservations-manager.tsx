@@ -181,12 +181,16 @@ export function ReservationsManager({
     }
 
     // After seating: navigate to floor plan with the table pre-selected so
-    // staff can immediately start taking the order.
+    // staff can immediately start taking the order, with party size and client
+    // pre-filled from the reservation data.
     if (newStatus === ReservationStatus.SEATED) {
       const reservation = reservations.find((r) => r.id === id);
       const tableId = reservation?.tables[0]?.table.id;
       if (tableId) {
-        router.push(`/dashboard/tables?tableId=${tableId}`);
+        const params = new URLSearchParams({ tableId });
+        if (reservation?.people) params.set("partySize", String(reservation.people));
+        if (reservation?.customerEmail) params.set("customerEmail", reservation.customerEmail);
+        router.push(`/dashboard/tables?${params.toString()}`);
       }
     }
   };

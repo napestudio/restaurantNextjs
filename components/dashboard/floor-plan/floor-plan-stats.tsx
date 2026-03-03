@@ -10,13 +10,13 @@ const statusConfig: Array<{
   label: string;
   color: string;
 }> = [
-  { key: "empty",           label: "Libre",        color: "#22c55e" },
-  { key: "upcoming",        label: "Próxima",       color: "#f59e0b" },
-  { key: "reserved",        label: "Llegando",      color: "#8b5cf6" },
-  { key: "late",            label: "Demorada",      color: "#f97316" },
-  { key: "occupied",        label: "Ocupada",       color: "#ef4444" },
-  { key: "pending_payment", label: "Pago pendiente",color: "#06b6d4" },
-  { key: "cleaning",        label: "Limpieza",      color: "#eab308" },
+  { key: "empty", label: "Libres", color: "#22c55e" },
+  { key: "upcoming", label: "Próxima", color: "#f59e0b" },
+  { key: "reserved", label: "Llegando", color: "#8b5cf6" },
+  { key: "late", label: "Demorada", color: "#f97316" },
+  { key: "occupied", label: "Ocupadas", color: "#ef4444" },
+  { key: "pending_payment", label: "Pago pendiente", color: "#06b6d4" },
+  { key: "cleaning", label: "Limpieza", color: "#eab308" },
 ];
 
 export function FloorPlanStats({ tables }: FloorPlanStatsProps) {
@@ -25,7 +25,7 @@ export function FloorPlanStats({ tables }: FloorPlanStatsProps) {
       acc[t.status] = (acc[t.status] ?? 0) + 1;
       return acc;
     },
-    {}
+    {},
   );
 
   const active = statusConfig.filter(({ key }) => (counts[key] ?? 0) > 0);

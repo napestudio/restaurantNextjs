@@ -8,11 +8,11 @@ import { UserRole } from "@/app/generated/prisma";
 export default async function TablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tableId?: string }>;
+  searchParams: Promise<{ tableId?: string; partySize?: string; customerEmail?: string }>;
 }) {
   await requireRole(UserRole.WAITER);
 
-  const { tableId } = await searchParams;
+  const { tableId, partySize, customerEmail } = await searchParams;
 
   // TODO: Get branchId from user session/context
   const branchId = BRANCH_ID || "";
@@ -65,6 +65,8 @@ export default async function TablesPage({
         initialTables={serializedTables}
         initialSectors={sectorsResult.data}
         initialTableId={tableId}
+        initialPartySize={partySize ? Number(partySize) : undefined}
+        initialCustomerEmail={customerEmail}
       />
     </div>
   );
