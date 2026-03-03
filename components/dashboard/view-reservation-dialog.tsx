@@ -124,7 +124,7 @@ export function ViewReservationDialog({
               </div>
             </div>
 
-            {/* <div>
+            <div>
               <h3 className="text-sm font-medium text-gray-500 mb-1">
                 Mesas Asignadas
               </h3>
@@ -136,7 +136,8 @@ export function ViewReservationDialog({
                       variant="outline"
                       className="text-sm font-semibold bg-blue-50 border-blue-300"
                     >
-                      Mesa {rt.table.number} (Capacidad: {rt.table.capacity})
+                      {rt.table.name ?? `Mesa ${rt.table.number}`}
+                      {" "}(cap. {rt.table.capacity})
                     </Badge>
                   ))}
                 </div>
@@ -145,7 +146,7 @@ export function ViewReservationDialog({
                   Sin mesas asignadas
                 </p>
               )}
-            </div> */}
+            </div>
 
             <div className="grid grid-cols-2 gap-6">
               <div>

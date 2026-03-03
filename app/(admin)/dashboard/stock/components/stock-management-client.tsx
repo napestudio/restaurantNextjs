@@ -162,7 +162,7 @@ export function StockManagementClient({
   const endIndex = startIndex + itemsPerPage;
   const paginatedProducts = useMemo(
     () => filteredProducts.slice(startIndex, endIndex),
-    [filteredProducts, startIndex, endIndex]
+    [filteredProducts, startIndex, endIndex],
   );
 
   // Reset to page 1 when filters change
@@ -577,7 +577,11 @@ export function StockManagementClient({
                           : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                      {dineInPrice ? `$${dineInPrice.price.toFixed(2)}` : "-"}
+                      {dineInPrice
+                        ? `$${dineInPrice.price.toLocaleString("es-Ar", {
+                            currency: "ARS",
+                          })}`
+                        : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                       {trackStock ? (
@@ -620,7 +624,9 @@ export function StockManagementClient({
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
                   disabled={currentPage === 1}
                   className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >

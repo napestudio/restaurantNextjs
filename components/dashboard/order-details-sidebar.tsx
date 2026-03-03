@@ -281,7 +281,7 @@ export function OrderDetailsSidebar({
       order.assignedTo?.name || order.assignedTo?.username || "—";
     const tableName = order.table?.number?.toString() || "—";
 
-    // Print via QZ Tray - optimistic updates handled by usePrint hook
+    // Print via gg-ez-print - optimistic updates handled by usePrint hook
     const success = await printControlTicket({
       orderId: order.id,
       orderCode: order.publicCode,
@@ -306,7 +306,7 @@ export function OrderDetailsSidebar({
         variant: "destructive",
         title: "Error de impresión",
         description:
-          "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+          "No se pudo imprimir el ticket. Verifica que gg-ez-print esté ejecutándose y que haya impresoras configuradas.",
       });
     }
   };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Car, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import Avatar from "@/components/avatar";
 import { ProductList } from "./product-list";
@@ -18,7 +18,9 @@ export type CartItem = {
   notes?: string;
 };
 
-type WizardStep = "menu" | "cart" | "info" | "confirmation";
+export type SelectedOrderType = "DELIVERY" | "TAKE_AWAY";
+
+type WizardStep = "orderType" | "menu" | "cart" | "info" | "confirmation";
 
 type DeliveryConfig = {
   id: string;
@@ -39,6 +41,10 @@ interface DeliveryPageProps {
   config: DeliveryConfig;
   products: OrderProduct[];
   sections?: DeliverySection[];
+  takeawayProducts: OrderProduct[];
+  takeawaySections: DeliverySection[];
+  allowDelivery: boolean;
+  allowTakeAway: boolean;
   restaurantName: string;
   whatsappUrl: string;
 }
@@ -48,13 +54,29 @@ export default function DeliveryPage({
   config,
   products,
   sections,
+  takeawayProducts,
+  takeawaySections,
+  allowDelivery,
+  allowTakeAway,
   restaurantName,
   whatsappUrl,
 }: DeliveryPageProps) {
-  const [step, setStep] = useState<WizardStep>("menu");
+  const bothEnabled = allowDelivery && allowTakeAway;
+
+  const [step, setStep] = useState<WizardStep>(bothEnabled ? "orderType" : "menu");
+  const [selectedOrderType, setSelectedOrderType] = useState<SelectedOrderType>(
+    allowDelivery ? "DELIVERY" : "TAKE_AWAY"
+  );
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderPublicCode, setOrderPublicCode] = useState<string>("");
   const [whatsappOrderUrl, setWhatsappOrderUrl] = useState<string>("");
+
+  // Pick the active product set based on the selected order type
+  const activeProducts = selectedOrderType === "TAKE_AWAY" ? takeawayProducts : products;
+  const activeSections = selectedOrderType === "TAKE_AWAY" ? takeawaySections : (sections ?? []);
+
+  // Delivery fee only applies to DELIVERY orders
+  const effectiveDeliveryFee = selectedOrderType === "TAKE_AWAY" ? 0 : (config.deliveryFee || 0);
 
   const addToCart = (productId: string, name: string, price: number) => {
     setCart((prev) => {
@@ -90,18 +112,26 @@ export default function DeliveryPage({
     setCart([]);
   };
 
-  const deliveryFee = config.deliveryFee || 0;
-
-  const handleOrderComplete = (publicCode: string, whatsappUrl: string) => {
+  const handleOrderComplete = (publicCode: string, url: string) => {
     setOrderPublicCode(publicCode);
-    setWhatsappOrderUrl(whatsappUrl);
+    setWhatsappOrderUrl(url);
     setStep("confirmation");
     clearCart();
   };
 
   const startNewOrder = () => {
-    setStep("menu");
+    setStep(bothEnabled ? "orderType" : "menu");
     setOrderPublicCode("");
+    if (bothEnabled) {
+      setSelectedOrderType(allowDelivery ? "DELIVERY" : "TAKE_AWAY");
+    }
+  };
+
+  const selectOrderType = (type: SelectedOrderType) => {
+    setSelectedOrderType(type);
+    // Clear cart when switching type to avoid price mismatches
+    setCart([]);
+    setStep("menu");
   };
 
   return (
@@ -113,19 +143,63 @@ export default function DeliveryPage({
             <Avatar />
           </div>
           <h1 className="text-4xl font-bold mb-2">Pedidos</h1>
-          {config.estimatedMinutes && (
+          {config.estimatedMinutes && step !== "orderType" && (
             <p className="text-sm text-gray-500 mt-1">
-              Tiempo estimado de entrega: {config.estimatedMinutes} minutos
+              {selectedOrderType === "TAKE_AWAY"
+                ? `Tiempo estimado de preparación: ${config.estimatedMinutes} minutos`
+                : `Tiempo estimado de entrega: ${config.estimatedMinutes} minutos`}
             </p>
           )}
         </div>
 
         {/* Step Content */}
         <div className="bg-white p-2 rounded-xl">
+          {/* Order type selection step */}
+          {step === "orderType" && (
+            <div className="max-w-lg mx-auto py-8 px-4 space-y-6">
+              <h2 className="text-2xl font-bold text-neutral-900 text-center">
+                ¿Cómo querés recibir tu pedido?
+              </h2>
+              <div className="grid gap-4">
+                <button
+                  onClick={() => selectOrderType("DELIVERY")}
+                  className="flex items-center gap-4 p-6 rounded-xl border-2 border-gray-200 hover:border-purple-700 hover:bg-purple-50 transition-all text-left group"
+                >
+                  <div className="p-3 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors">
+                    <Car className="h-7 w-7 text-purple-700" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-neutral-900">Delivery</p>
+                    <p className="text-sm text-gray-500">Lo enviamos a tu domicilio</p>
+                    {config.deliveryFee > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Costo de envío: ${config.deliveryFee.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => selectOrderType("TAKE_AWAY")}
+                  className="flex items-center gap-4 p-6 rounded-xl border-2 border-gray-200 hover:border-purple-700 hover:bg-purple-50 transition-all text-left group"
+                >
+                  <div className="p-3 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors">
+                    <ShoppingBag className="h-7 w-7 text-purple-700" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-neutral-900">Retiro en local</p>
+                    <p className="text-sm text-gray-500">Pasás a buscarlo al local</p>
+                    <p className="text-xs text-gray-400 mt-1">Sin costo de envío</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {step === "menu" && (
             <ProductList
-              products={products}
-              sections={sections}
+              products={activeProducts}
+              sections={activeSections}
               onAddToCart={addToCart}
               onUpdateQuantity={updateQuantity}
               cart={cart}
@@ -136,10 +210,11 @@ export default function DeliveryPage({
             <div className="max-w-2xl mx-auto">
               <ShoppingCart
                 cart={cart}
-                products={products}
+                products={activeProducts}
                 onUpdateQuantity={updateQuantity}
                 onRemove={removeFromCart}
-                deliveryFee={deliveryFee}
+                deliveryFee={effectiveDeliveryFee}
+                orderType={selectedOrderType}
                 onBack={() => setStep("menu")}
                 onCheckout={() => setStep("info")}
               />
@@ -151,8 +226,9 @@ export default function DeliveryPage({
               <CustomerInfoForm
                 branchId={branchId}
                 cart={cart}
-                deliveryFee={deliveryFee}
+                deliveryFee={effectiveDeliveryFee}
                 minOrderAmount={config.minOrderAmount || 0}
+                orderType={selectedOrderType}
                 onBack={() => setStep("cart")}
                 onOrderComplete={handleOrderComplete}
                 restaurantName={restaurantName}

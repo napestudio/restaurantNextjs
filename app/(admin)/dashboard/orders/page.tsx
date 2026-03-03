@@ -1,6 +1,5 @@
 import {
   getOrders,
-  getAvailableProductsForOrder,
   getActiveOrderCounts,
 } from "@/actions/Order";
 import { OrdersClient } from "./orders-client";
@@ -44,8 +43,9 @@ export default async function OrdersPage({
   const page = pageParam ? Math.max(1, parseInt(pageParam) || 1) : 1;
   const pageSize = 15; // Match client-side pagination expectations
 
-  // Fetch orders, tables, products, and order counts in parallel for faster loading
-  const [ordersResult, tables, products, orderCounts] = await Promise.all([
+  // Fetch orders, tables, and order counts in parallel
+  // Products are NOT fetched here — they load lazily when the Create Order sidebar is opened
+  const [ordersResult, tables, orderCounts] = await Promise.all([
     getOrders({
       branchId,
       type: orderType,
@@ -67,7 +67,6 @@ export default async function OrdersPage({
         number: "asc",
       },
     }),
-    getAvailableProductsForOrder(branchId, orderType ?? OrderType.DINE_IN),
     getActiveOrderCounts(branchId),
   ]);
 
@@ -101,7 +100,6 @@ export default async function OrdersPage({
         <ProductsProvider
           branchId={branchId}
           orderType={orderType ?? OrderType.DINE_IN}
-          initialProducts={products}
         >
           <OrdersClient
             branchId={branchId}

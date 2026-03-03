@@ -9,6 +9,7 @@ interface MenuItemProps {
   price?: number | null;
   isFeatured?: boolean;
   tags?: ProductTag[];
+  showPrice?: boolean;
 }
 
 export function MenuItem({
@@ -16,6 +17,7 @@ export function MenuItem({
   description,
   imageUrl,
   price,
+  showPrice = true,
   isFeatured = false,
   tags = [],
 }: MenuItemProps) {
@@ -51,11 +53,14 @@ export function MenuItem({
             )} */}
           </h3>
           <div className="flex-1 h-px w-full bg-white/50 mb-1.5 self-end"></div>
-          {price !== null && price !== undefined && (
-            <span className="font-bold text-lg text-white shrink-0">
-              ${price}
-            </span>
-          )}
+          {price !== null &&
+            price !== undefined &&
+            price !== 0 &&
+            showPrice && (
+              <span className="font-bold text-lg text-white shrink-0">
+                ${price}
+              </span>
+            )}
         </div>
         {description && (
           <p className="text-neutral-400 text-sm mt-1 line-clamp-2">

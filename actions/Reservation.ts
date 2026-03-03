@@ -98,10 +98,26 @@ export async function createReservation(data: {
       },
     });
 
-    // Step 2: Try to auto-assign tables (default behavior unless explicitly disabled)
+    // Step 2: Determine status based on payment — free reservations confirm immediately.
+    // Capacity was already validated upstream in getAvailableTimeSlotsForDate(),
+    // so table assignment success/failure does not gate confirmation for free slots.
+    const isPaidReservation =
+      reservation.timeSlot &&
+      (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
+
+    let finalStatus: ReservationStatus = ReservationStatus.PENDING;
+
+    if (!isPaidReservation) {
+      await prisma.reservation.update({
+        where: { id: reservation.id },
+        data: { status: ReservationStatus.CONFIRMED },
+      });
+      finalStatus = ReservationStatus.CONFIRMED;
+    }
+
+    // Step 3: Try to auto-assign tables (independent of confirmation status)
     const shouldAutoAssign = data.autoAssignTables !== false;
     let assignmentResult = null;
-    let finalStatus: ReservationStatus = ReservationStatus.PENDING;
 
     if (shouldAutoAssign) {
       assignmentResult = await findAvailableTables(
@@ -112,7 +128,6 @@ export async function createReservation(data: {
       );
 
       if (assignmentResult.success && assignmentResult.data) {
-        // Assign the tables
         try {
           await prisma.reservationTable.createMany({
             data: assignmentResult.data.tableIds.map((tableId) => ({
@@ -121,40 +136,14 @@ export async function createReservation(data: {
             })),
           });
 
-          // Check if this is a paid reservation (pricePerPerson > 0)
-          const isPaidReservation =
-            reservation.timeSlot &&
-            (reservation.timeSlot.pricePerPerson?.toNumber() ?? 0) > 0;
-
-          // Only confirm reservation if it's not a paid reservation
-          // Paid reservations must remain PENDING until payment is coordinated
+          // Mark tables as RESERVED only for confirmed (free) reservations
           if (!isPaidReservation) {
-            await prisma.reservation.update({
-              where: { id: reservation.id },
-              data: { status: ReservationStatus.CONFIRMED },
-            });
-
-            // Automatically set table status to RESERVED
             await setTablesReserved(assignmentResult.data.tableIds);
-
-            finalStatus = ReservationStatus.CONFIRMED;
-
-            // console.log(
-            //   `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} and CONFIRMED`
-            // );
-          } else {
-            // console.log(
-            //   `✅ Auto-assigned ${assignmentResult.data.tableIds.length} table(s) to reservation ${reservation.id} but keeping as PENDING (paid reservation)`
-            // );
           }
         } catch (assignError) {
-          // console.error("Error assigning tables:", assignError);
-          // Keep as PENDING if assignment fails
+          // Table assignment failure is non-blocking — reservation status is already set
+          console.error("Error assigning tables:", assignError);
         }
-      } else {
-        // console.log(
-        //   `⚠️  No tables available for reservation ${reservation.id}. Keeping as PENDING for manual assignment.`
-        // );
       }
     }
 
@@ -548,8 +537,9 @@ export async function getFilteredReservations(
   try {
     const limit = filters.limit || 10;
     const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
 
     // Build the where clause based on filter type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -571,12 +561,12 @@ export async function getFilteredReservations(
         if (filters.dateFrom || filters.dateTo) {
           whereClause.date = {};
           if (filters.dateFrom) {
-            const [fy, fm, fd] = filters.dateFrom.split("-").map(Number);
-            whereClause.date.gte = new Date(Date.UTC(fy, fm - 1, fd));
+            whereClause.date.gte = new Date(filters.dateFrom);
           }
           if (filters.dateTo) {
-            const [ty, tm, td] = filters.dateTo.split("-").map(Number);
-            whereClause.date.lt = new Date(Date.UTC(ty, tm - 1, td + 1));
+            const endDate = new Date(filters.dateTo);
+            endDate.setDate(endDate.getDate() + 1);
+            whereClause.date.lt = endDate;
           }
         }
         break;
@@ -592,27 +582,34 @@ export async function getFilteredReservations(
       };
     }
 
-    // Get total count for this filter
-    const totalCount = await prisma.reservation.count({ where: whereClause });
-
-    // Fetch reservations with optional cursor-based pagination
-    const reservations = await prisma.reservation.findMany({
-      where: whereClause,
-      include: {
-        timeSlot: true,
-        tables: {
-          include: {
-            table: true,
+    // Batch count and data fetch in a single transaction
+    const [totalCount, reservations] = await prisma.$transaction([
+      prisma.reservation.count({ where: whereClause }),
+      prisma.reservation.findMany({
+        where: whereClause,
+        include: {
+          timeSlot: true,
+          tables: {
+            include: {
+              table: {
+                select: {
+                  id: true,
+                  name: true,
+                  number: true,
+                  capacity: true,
+                },
+              },
+            },
           },
         },
-      },
-      orderBy: [
-        { date: filters.type === "past" ? "desc" : "asc" },
-        { createdAt: "desc" },
-      ],
-      take: limit + 1, // Take one extra to check if there are more
-      ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
-    });
+        orderBy: [
+          { date: filters.type === "past" ? "desc" : "asc" },
+          { createdAt: "desc" },
+        ],
+        take: limit + 1, // Take one extra to check if there are more
+        ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+      }),
+    ]);
 
     // Check if there are more results
     const hasMore = reservations.length > limit;

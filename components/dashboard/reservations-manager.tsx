@@ -8,6 +8,7 @@ import {
   type ReservationFilterType,
   type PaginatedReservationsResult,
 } from "@/actions/Reservation";
+import { getTimeSlots } from "@/actions/TimeSlot";
 import type {
   SerializedReservation,
   TimeSlot,
@@ -15,7 +16,8 @@ import type {
 import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useCallback, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { DeleteReservationDialog } from "./delete-reservation-dialog";
 import { CreateReservationSidebar } from "./create-reservation-sidebar";
 import { ReservationsTable } from "./reservations-table";
@@ -29,19 +31,22 @@ interface ReservationsManagerProps {
     hasMore: boolean;
     totalCount: number;
   };
-  timeSlots: TimeSlot[];
   branchId: string;
 }
 
 export function ReservationsManager({
   initialReservations,
   initialPagination,
-  timeSlots,
   branchId,
 }: ReservationsManagerProps) {
+  const router = useRouter();
+
   // Reservations state
   const [reservations, setReservations] = useState(initialReservations);
   const [pagination, setPagination] = useState(initialPagination);
+
+  // Time slots — loaded lazily when the Create Reservation dialog is opened
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
   // Filter state
   const [filterType, setFilterType] = useState<ReservationFilterType>("today");
@@ -59,6 +64,15 @@ export function ReservationsManager({
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(
     null
   );
+
+  // Load time slots on demand when the Create Reservation dialog opens
+  useEffect(() => {
+    if (createDialogOpen && timeSlots.length === 0) {
+      getTimeSlots(branchId).then((result) => {
+        if (result.success && result.data) setTimeSlots(result.data);
+      });
+    }
+  }, [createDialogOpen, timeSlots.length, branchId]);
 
   // Fetch reservations with current filters
   const fetchReservations = useCallback(
@@ -174,8 +188,22 @@ export function ReservationsManager({
       // Rollback on failure
       setReservations(previousReservations);
       console.error("Failed to update reservation status:", result.error);
+      return;
     }
-    // No need to refetch on success - optimistic update already applied
+
+    // After seating: navigate to floor plan with the table pre-selected so
+    // staff can immediately start taking the order, with party size and client
+    // pre-filled from the reservation data.
+    if (newStatus === ReservationStatus.SEATED) {
+      const reservation = reservations.find((r) => r.id === id);
+      const tableId = reservation?.tables[0]?.table.id;
+      if (tableId) {
+        const params = new URLSearchParams({ tableId });
+        if (reservation?.people) params.set("partySize", String(reservation.people));
+        if (reservation?.customerEmail) params.set("customerEmail", reservation.customerEmail);
+        router.push(`/dashboard/tables?${params.toString()}`);
+      }
+    }
   };
 
   const handleView = (reservation: SerializedReservation) => {

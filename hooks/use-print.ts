@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
 import {
   prepareTestPrint,
@@ -91,6 +91,7 @@ export function usePrint(): UsePrintReturn {
   const [printStatus, setPrintStatus] = useState<PrintStatus>({
     status: "idle",
   });
+  const printControlTicketLock = useRef(false);
 
   const resetStatus = useCallback(() => {
     setPrintStatus({ status: "idle" });
@@ -103,6 +104,7 @@ export function usePrint(): UsePrintReturn {
     async (
       jobs: PrintJobData[],
       printJobIds: string[],
+      options?: { background?: boolean },
     ): Promise<{
       success: boolean;
       successCount: number;
@@ -118,43 +120,53 @@ export function usePrint(): UsePrintReturn {
         return { success: true, successCount: 0, failCount: 0 };
       }
 
-      // Check if gg-ez-print context is available
+      // Check if gg-ez-print context is available (service not installed / not in provider)
       if (!ggEzPrint) {
         console.debug(
           "[usePrint] gg-ez-print context not available - printing disabled for this session",
         );
-        setPrintStatus({
-          status: "error",
-          message:
-            "gg-ez-print no está disponible. Asegúrate de que esté instalado y ejecutándose, y recarga la página.",
-        });
-        return { success: false, successCount: 0, failCount: jobs.length };
-      }
-
-      // Check if connected
-      if (!ggEzPrint.isConnected) {
-        console.debug("[usePrint] gg-ez-print not connected");
-
-        if (ggEzPrint.isReconnecting) {
-          setPrintStatus({
-            status: "error",
-            message: `Reconectando a impresoras (intento ${ggEzPrint.reconnectAttempts}/${ggEzPrint.maxAttempts}). Por favor espere...`,
-          });
-        } else {
+        if (!options?.background) {
           setPrintStatus({
             status: "error",
             message:
-              "No hay conexión con el servicio de impresoras. Verifique que gg-ez-print esté ejecutándose.",
+              "gg-ez-print no está disponible. Asegúrate de que esté instalado y ejecutándose, y recarga la página.",
           });
         }
         return { success: false, successCount: 0, failCount: jobs.length };
       }
 
-      // Optimistic update - show printing
-      setPrintStatus({
-        status: "printing",
-        message: `Imprimiendo ${jobs.length} trabajo(s)...`,
-      });
+      // Check if connected — background prints fail silently; foreground prints wait for reconnect
+      if (!ggEzPrint.isConnected) {
+        console.debug("[usePrint] gg-ez-print not connected");
+
+        if (options?.background) {
+          return { success: false, successCount: 0, failCount: jobs.length };
+        }
+
+        setPrintStatus({
+          status: "preparing",
+          message: "Reconectando a impresoras...",
+        });
+
+        const reconnected = await ggEzPrint.client.waitForConnection(5000);
+
+        if (!reconnected) {
+          setPrintStatus({
+            status: "error",
+            message:
+              "No se pudo conectar con el servicio de impresoras. Verifique que gg-ez-print esté ejecutándose.",
+          });
+          return { success: false, successCount: 0, failCount: jobs.length };
+        }
+      }
+
+      // Optimistic update - show printing (skip for background auto-prints)
+      if (!options?.background) {
+        setPrintStatus({
+          status: "printing",
+          message: `Imprimiendo ${jobs.length} trabajo(s)...`,
+        });
+      }
 
       const results: Array<{
         printJobId: string;
@@ -220,7 +232,9 @@ export function usePrint(): UsePrintReturn {
             errorMessage.includes("Connection") ||
             errorMessage.includes("conectar") ||
             errorMessage.includes("no such host") ||
-            errorMessage.includes("NEEDS_RECONFIGURATION")
+            errorMessage.includes("NEEDS_RECONFIGURATION") ||
+            errorMessage.toLowerCase().includes("printer name") ||
+            errorMessage.toLowerCase().includes("invalid")
           ) {
             console.warn("[usePrint] Printer unreachable:", errorMessage);
           } else {
@@ -345,6 +359,7 @@ export function usePrint(): UsePrintReturn {
         const printResult = await executePrintJobs(
           result.jobs,
           result.printJobIds || [],
+          { background: true },
         );
 
         // Don't show status for auto-prints (too noisy)
@@ -380,6 +395,10 @@ export function usePrint(): UsePrintReturn {
       orderType?: string;
       customerName?: string;
     }): Promise<boolean> => {
+      // Guard against rapid double-clicks — ref is synchronous, immune to render batching
+      if (printControlTicketLock.current) return false;
+      printControlTicketLock.current = true;
+
       setPrintStatus({
         status: "preparing",
         message: "Preparando ticket de control...",
@@ -430,6 +449,8 @@ export function usePrint(): UsePrintReturn {
           error instanceof Error ? error.message : "Error desconocido";
         setPrintStatus({ status: "error", message });
         return false;
+      } finally {
+        printControlTicketLock.current = false;
       }
     },
     [executePrintJobs, resetStatus],

@@ -117,11 +117,11 @@ export function EditTimeSlotDialog({
 
       const timeFrom = `${String(startTime.getUTCHours()).padStart(
         2,
-        "0"
+        "0",
       )}:${String(startTime.getUTCMinutes()).padStart(2, "0")}`;
       const timeTo = `${String(endTime.getUTCHours()).padStart(
         2,
-        "0"
+        "0",
       )}:${String(endTime.getUTCMinutes()).padStart(2, "0")}`;
 
       setEditSlot({
@@ -133,7 +133,8 @@ export function EditTimeSlotDialog({
         name: timeSlot.name || "",
         moreInfoUrl: timeSlot.moreInfoUrl || "",
         tableIds: timeSlot.tables?.map((t) => t.id) || [],
-        customerLimit: (timeSlot as { customerLimit?: number | null }).customerLimit || null, // NEW
+        customerLimit:
+          (timeSlot as { customerLimit?: number | null }).customerLimit || null, // NEW
       });
     }
   }, [open, timeSlot]);
@@ -186,7 +187,7 @@ export function EditTimeSlotDialog({
             setEditSlot((prev) => ({
               ...prev,
               tableIds: prev.tableIds.filter((id) =>
-                availableTableIds.includes(id)
+                availableTableIds.includes(id),
               ),
             }));
           }
@@ -252,14 +253,14 @@ export function EditTimeSlotDialog({
     // Warn if removing limit with exclusive tables
     if (limit === null && editSlot.tableIds.length > 0) {
       const confirmed = confirm(
-        "Eliminar el límite de clientes devolverá estas mesas al grupo compartido. ¿Continuar?"
+        "Eliminar el límite de clientes devolverá estas mesas al grupo compartido. ¿Continuar?",
       );
       if (!confirmed) return;
     }
 
     if (limit !== null && limit > branchCapacity) {
       setCustomerLimitError(
-        `El límite de clientes (${limit}) excede la capacidad total (${branchCapacity})`
+        `El límite de clientes (${limit}) excede la capacidad total (${branchCapacity})`,
       );
     } else {
       setCustomerLimitError("");
@@ -303,14 +304,14 @@ export function EditTimeSlotDialog({
       if (editSlot.customerLimit && editSlot.customerLimit > 0) {
         if (editSlot.tableIds.length === 0) {
           alert(
-            "Debes seleccionar al menos una mesa exclusiva al establecer un límite de clientes."
+            "Debes seleccionar al menos una mesa exclusiva al establecer un límite de clientes.",
           );
           return;
         }
 
         if (selectedTablesCapacity < editSlot.customerLimit) {
           const confirmed = confirm(
-            `Las mesas seleccionadas (${selectedTablesCapacity} asientos) no cumplen el límite de clientes (${editSlot.customerLimit}). ¿Continuar de todas formas?`
+            `Las mesas seleccionadas (${selectedTablesCapacity} asientos) no cumplen el límite de clientes (${editSlot.customerLimit}). ¿Continuar de todas formas?`,
           );
           if (!confirmed) return;
         }
@@ -548,8 +549,8 @@ export function EditTimeSlotDialog({
                   {selectedTablesCapacity < editSlot.customerLimit && (
                     <span className="block mt-1 font-semibold">
                       Selecciona{" "}
-                      {editSlot.customerLimit - selectedTablesCapacity} asientos más
-                      para cumplir el límite.
+                      {editSlot.customerLimit - selectedTablesCapacity} asientos
+                      más para cumplir el límite.
                     </span>
                   )}
                 </AlertDescription>
@@ -585,7 +586,7 @@ export function EditTimeSlotDialog({
                     <p className="text-xs text-gray-500 mt-1">
                       {editSlot.customerLimit && editSlot.customerLimit > 0
                         ? "Estas mesas SOLO estarán disponibles para este turno"
-                        : "Por defecto, todas las mesas son compartidas. Selecciona mesas para hacerlas exclusivas de este turno."}
+                        : "Por defecto, todas las mesas son compartidas por los turnos. Selecciona mesas para hacerlas exclusivas de este turno."}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -642,8 +643,8 @@ export function EditTimeSlotDialog({
                               isDisabled
                                 ? "bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed"
                                 : editSlot.tableIds?.includes(table.id)
-                                ? "bg-green-50 border-green-500"
-                                : "bg-white border-gray-200"
+                                  ? "bg-green-50 border-green-500"
+                                  : "bg-white border-gray-200"
                             }`}
                           >
                             <Checkbox
@@ -694,11 +695,11 @@ export function EditTimeSlotDialog({
                                 </p>
                                 <p className="text-xs">
                                   {formatTime(
-                                    table.conflictingTimeSlot.startTime
+                                    table.conflictingTimeSlot.startTime,
                                   )}{" "}
                                   -{" "}
                                   {formatTime(
-                                    table.conflictingTimeSlot.endTime
+                                    table.conflictingTimeSlot.endTime,
                                   )}
                                 </p>
                               </TooltipContent>

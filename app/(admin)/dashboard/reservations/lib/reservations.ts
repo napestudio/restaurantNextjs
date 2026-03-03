@@ -1,10 +1,18 @@
-import type { Reservation as PrismaReservation, TimeSlot as PrismaTimeSlot, Table, ReservationTable, ReservationStatus } from "@/app/generated/prisma";
+import type { Reservation as PrismaReservation, TimeSlot as PrismaTimeSlot, ReservationTable, ReservationStatus } from "@/app/generated/prisma";
+
+// Narrow table shape returned by getFilteredReservations
+export type ReservationTableSummary = {
+  id: string;
+  name: string | null;
+  number: number;
+  capacity: number;
+};
 
 // Reservation type from database with includes
 export type ReservationWithRelations = PrismaReservation & {
   timeSlot: PrismaTimeSlot | null;
   tables: (ReservationTable & {
-    table: Table;
+    table: ReservationTableSummary;
   })[];
 };
 
@@ -39,7 +47,7 @@ export type SerializedReservation = {
     updatedAt: string; // ISO string
   } | null;
   tables: (ReservationTable & {
-    table: Table;
+    table: ReservationTableSummary;
   })[];
 };
 

@@ -9,8 +9,8 @@ import {
   removeOrderItem,
   updateDiscount,
 } from "@/actions/Order";
+import { getClientByEmail, type ClientData } from "@/actions/clients";
 import { usePrint } from "@/hooks/use-print";
-import { type ClientData } from "@/actions/clients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,8 @@ interface TableOrderSidebarProps {
   onClose: () => void;
   onTableChange?: (tableId: string) => void;
   onOrderUpdated: (tableId: string) => void;
+  initialPartySize?: number;
+  initialCustomerEmail?: string;
 }
 
 export function TableOrderSidebar({
@@ -51,10 +53,16 @@ export function TableOrderSidebar({
   onClose,
   onTableChange,
   onOrderUpdated,
+  initialPartySize,
+  initialCustomerEmail,
 }: TableOrderSidebarProps) {
-  const [partySize, setPartySize] = useState("");
+  const [partySize, setPartySize] = useState(
+    initialPartySize?.toString() ?? "",
+  );
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const hasAutoSelectedRef = useRef(false);
+  // Track previous tableId to detect genuine table changes (Strict Mode safe)
+  const prevTableIdRef = useRef<string | null | undefined>(undefined);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
@@ -82,8 +90,8 @@ export function TableOrderSidebar({
   // Use cached products from context
   const { products } = useProducts();
 
-  // QZ Tray printing
-  const { printOrderItems, printControlTicket, printStatus } = usePrint();
+  // gg-ez-print printing
+  const { printOrderItems, printControlTicket, printStatus, isPrinting } = usePrint();
   const { toast } = useToast();
 
   // Use SWR for order data fetching with auto-refresh
@@ -91,7 +99,6 @@ export function TableOrderSidebar({
     orders: allOrders,
     order: singleOrder,
     isLoading: isLoadingOrders,
-    isValidating,
     refresh,
     mutate,
   } = useOrdersData({
@@ -100,6 +107,7 @@ export function TableOrderSidebar({
     refreshInterval: 30000, // Refresh every 30 seconds
     revalidateOnFocus: true, // Refresh when tab becomes visible
     revalidateOnReconnect: true, // Refresh when network reconnects
+    focusThrottleInterval: 30000, // Don't re-fetch on focus more often than the poll interval
   });
 
   // Derive current order from allOrders (for shared) or singleOrder (for non-shared)
@@ -114,11 +122,16 @@ export function TableOrderSidebar({
   // Combined loading state
   const isLoading = isLoadingOrders || isLoadingAction;
 
-  // Show loading indicator when fetching order data
-  const showLoadingIndicator = (isLoadingOrders || isValidating) && !order;
+  // Show loading indicator only on true initial load (cold cache, data=undefined).
+  // Background revalidations (isValidating) are silent — no spinner on tab switch or 30s poll.
+  const showLoadingIndicator = isLoadingOrders && !order;
 
-  // Reset state when table changes
+  // Reset state when table genuinely changes (Strict Mode safe: skip initial mount and re-runs with same tableId)
   useEffect(() => {
+    const prevTableId = prevTableIdRef.current;
+    prevTableIdRef.current = tableId;
+    // undefined = initial mount; same value = Strict Mode double-invocation → skip both
+    if (prevTableId === undefined || prevTableId === tableId) return;
     if (tableId) {
       setPartySize("");
       setSelectedOrderId(null);
@@ -128,6 +141,14 @@ export function TableOrderSidebar({
       setClientSearchQuery("");
     }
   }, [tableId]);
+
+  // On mount: look up registered client by reservation email (if provided)
+  useEffect(() => {
+    if (!initialCustomerEmail || !branchId) return;
+    getClientByEmail(branchId, initialCustomerEmail).then((result) => {
+      if (result.success && result.data) setSelectedClient(result.data);
+    });
+  }, []); // mount only — eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-select first order when orders load
   useEffect(() => {
@@ -143,10 +164,12 @@ export function TableOrderSidebar({
     }
   }, [tableIsShared, allOrders, selectedOrderId]);
 
-  // Update party size when order changes
+  // Update party size when an active order with a saved partySize is loaded.
+  // Only override when the order actually has a value — otherwise preserve
+  // whatever was pre-filled (e.g. from a reservation's people count).
   useEffect(() => {
-    if (order) {
-      setPartySize(order.partySize?.toString() || "");
+    if (order?.partySize) {
+      setPartySize(order.partySize.toString());
     }
   }, [order]);
 
@@ -239,10 +262,10 @@ export function TableOrderSidebar({
       return;
     }
 
-    // Auto-print the newly added items via QZ Tray (station comandas - no prices, no waiter)
+    // Auto-print the newly added items via gg-ez-print (station comandas - no prices, no waiter)
     const tableName = tableNumber?.toString() || "—";
 
-    // Fire and forget - printing happens in background via QZ Tray
+    // Fire and forget - printing happens in background via gg-ez-print
     printOrderItems(
       {
         orderId: order.id,
@@ -330,15 +353,14 @@ export function TableOrderSidebar({
       if (remainingOrders.length > 0) {
         // Switch to the first remaining order
         setSelectedOrderId(remainingOrders[0].id);
-        // alert("Orden cerrada. Esta mesa compartida tiene más órdenes activas.");
       } else {
         // Last order closed, close sidebar
-        // alert("Última orden cerrada exitosamente");
         onClose();
       }
     } else {
-      // Non-shared table, close sidebar
-      // alert("Mesa cerrada exitosamente");
+      // Explicitly clear the SWR cache so keepPreviousData doesn't
+      // return this closed order if the same table is reopened later.
+      mutate(null);
       onClose();
     }
   };
@@ -355,7 +377,7 @@ export function TableOrderSidebar({
       order.assignedTo?.name || order.assignedTo?.username || "—";
     const tableName = tableNumber?.toString() || "—";
 
-    // Print via QZ Tray - optimistic updates handled by usePrint hook
+    // Print via gg-ez-print - optimistic updates handled by usePrint hook
     const success = await printControlTicket({
       orderId: order.id,
       orderCode: order.publicCode,
@@ -381,7 +403,7 @@ export function TableOrderSidebar({
         variant: "destructive",
         title: "Error de impresión",
         description:
-          "No se pudo imprimir el ticket. Verifica que QZ Tray esté ejecutándose y que haya impresoras configuradas.",
+          "No se pudo imprimir el ticket. Verifica que gg-ez-print esté ejecutándose y que haya impresoras configuradas.",
       });
     }
   };
@@ -548,6 +570,11 @@ export function TableOrderSidebar({
               min="1"
               value={partySize}
               onChange={(e) => setPartySize(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && partySize && parseInt(partySize) > 0) {
+                  handleCreateOrder();
+                }
+              }}
               placeholder="Ej: 4"
               disabled={isLoading}
               autoFocus
@@ -663,7 +690,7 @@ export function TableOrderSidebar({
               <Button
                 onClick={handlePrintCheck}
                 variant="outline"
-                disabled={printStatus.status === "printing"}
+                disabled={isPrinting}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -762,7 +789,9 @@ export function TableOrderSidebar({
                 className="bg-red-500"
                 disabled={isLoading}
               >
-                {!order.items || order.items.length === 0 ? "Eliminar Orden" : "Cerrar Mesa"}
+                {!order.items || order.items.length === 0
+                  ? "Eliminar Orden Vacia"
+                  : "Cerrar Mesa"}
               </Button>
             </div>
           </div>
@@ -789,14 +818,15 @@ export function TableOrderSidebar({
             publicCode: order.publicCode,
             partySize: order.partySize,
             discountPercentage: Number(order.discountPercentage),
-            items: order.items?.map((item) => ({
-              id: item.id,
-              itemName: item.product?.name,
-              quantity: item.quantity,
-              price: item.price,
-              originalPrice: item.originalPrice,
-              product: item.product,
-            })) || [],
+            items:
+              order.items?.map((item) => ({
+                id: item.id,
+                itemName: item.product?.name,
+                quantity: item.quantity,
+                price: item.price,
+                originalPrice: item.originalPrice,
+                product: item.product,
+              })) || [],
           }}
           tableNumber={tableNumber}
           branchId={branchId}

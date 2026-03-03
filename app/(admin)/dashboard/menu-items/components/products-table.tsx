@@ -203,7 +203,10 @@ export function ProductsTable({
                                   <span className="font-medium">
                                     {priceLabel}:
                                   </span>{" "}
-                                  ${price.price.toFixed(2)}
+                                  $
+                                  {price.price.toLocaleString("es-Ar", {
+                                    currency: "ARS",
+                                  })}
                                 </div>
                               );
                             })

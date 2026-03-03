@@ -245,6 +245,7 @@ export async function getTablesWithStatus(branchId: string) {
                 people: true,
                 status: true,
                 date: true,
+                exactTime: true,
                 timeSlot: {
                   select: {
                     startTime: true,
@@ -341,6 +342,7 @@ export async function getTableWithStatus(tableId: string) {
                 people: true,
                 status: true,
                 date: true,
+                exactTime: true,
                 timeSlot: {
                   select: {
                     startTime: true,

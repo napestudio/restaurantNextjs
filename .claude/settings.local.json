@@ -24,7 +24,9 @@
       "Bash(node -e \"require\\(''recharts''\\); console.log\\(''recharts OK''\\)\")",
       "Bash(xargs grep -l \"twilio\\\\|whatsapp\\\\|sms\\\\|notify\\\\|notification\")",
       "Bash(grep -n \"getUTCHours\\\\|getHours\" /c/dev/RestaurantesNextjs/restaurantNextjs/components/home/wizard-steps/*.tsx)",
-      "Bash(grep -n \"getProducts.*Menu\\\\|getMenuProducts\" actions/*.ts)"
+      "Bash(grep -n \"getProducts.*Menu\\\\|getMenuProducts\" actions/*.ts)",
+      "Bash(xargs grep -l \"gg-ez-print\\\\|GgEzPrint\\\\|qz-tray\\\\|qz\\\\.js\")",
+      "Bash(xargs grep -l \"reservation\\\\|booking\" -i)"
     ],
     "deny": [],
     "ask": []

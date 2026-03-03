@@ -590,16 +590,8 @@ export function EditPrinterDialog({
             <h3 className="font-medium text-sm">Personalización del Ticket</h3>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-ticketHeader">Encabezado del Ticket</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="edit-ticketHeader"
-                  value={ticketHeader}
-                  onChange={(e) => setTicketHeader(e.target.value)}
-                  placeholder="Ej: RESTAURANTE LA COCINA"
-                  disabled={isPending}
-                  className="flex-1"
-                />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-ticketHeader">Encabezado del Ticket</Label>
                 <Select
                   value={ticketHeaderSize}
                   onValueChange={setTicketHeaderSize}
@@ -616,22 +608,23 @@ export function EditPrinterDialog({
                   </SelectContent>
                 </Select>
               </div>
+              <Textarea
+                id="edit-ticketHeader"
+                value={ticketHeader}
+                onChange={(e) => setTicketHeader(e.target.value)}
+                placeholder={"Ej: RESTAURANTE LA COCINA\nDirección: Calle 123"}
+                disabled={isPending}
+                rows={3}
+                className="resize-none"
+              />
               <p className="text-xs text-muted-foreground">
-                Texto que aparece al inicio del ticket
+                Texto que aparece al inicio del ticket. Usa Enter para saltos de línea.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-ticketFooter">Pie del Ticket</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="edit-ticketFooter"
-                  value={ticketFooter}
-                  onChange={(e) => setTicketFooter(e.target.value)}
-                  placeholder="Ej: ¡Gracias por su visita!"
-                  disabled={isPending}
-                  className="flex-1"
-                />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-ticketFooter">Pie del Ticket</Label>
                 <Select
                   value={ticketFooterSize}
                   onValueChange={setTicketFooterSize}
@@ -648,8 +641,17 @@ export function EditPrinterDialog({
                   </SelectContent>
                 </Select>
               </div>
+              <Textarea
+                id="edit-ticketFooter"
+                value={ticketFooter}
+                onChange={(e) => setTicketFooter(e.target.value)}
+                placeholder={"Ej: ¡Gracias por su visita!\nVolvé pronto."}
+                disabled={isPending}
+                rows={3}
+                className="resize-none"
+              />
               <p className="text-xs text-muted-foreground">
-                Texto que aparece al final del ticket
+                Texto que aparece al final del ticket. Usa Enter para saltos de línea.
               </p>
             </div>
 
@@ -723,7 +725,7 @@ export function EditPrinterDialog({
           </Button>
           <Button
             onClick={handleUpdate}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-red-500 hover:bg-red-600"
             disabled={isPending || !isFormValid}
           >
             {isPending ? "Guardando..." : "Guardar Cambios"}

@@ -11,13 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { getClientByEmail, createClient } from "@/actions/clients";
 import { createOrderWithItems } from "@/actions/Order";
 import { OrderType } from "@/app/generated/prisma";
-import { CartItem } from "./delivery-page-client";
+import { CartItem, SelectedOrderType } from "./delivery-page-client";
 
 interface CustomerInfoFormProps {
   branchId: string;
   cart: CartItem[];
   deliveryFee: number;
   minOrderAmount: number;
+  orderType: SelectedOrderType;
   onBack: () => void;
   onOrderComplete: (publicCode: string, whatsappUrl: string) => void;
   restaurantName: string;
@@ -29,6 +30,7 @@ export function CustomerInfoForm({
   cart,
   deliveryFee,
   minOrderAmount,
+  orderType,
   onBack,
   onOrderComplete,
   restaurantName,
@@ -46,6 +48,8 @@ export function CustomerInfoForm({
     addressCity: "",
     notes: "",
   });
+
+  const isDelivery = orderType === "DELIVERY";
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -97,9 +101,8 @@ export function CustomerInfoForm({
     }
 
     if (
-      !formData.addressStreet ||
-      !formData.addressNumber ||
-      !formData.addressCity
+      isDelivery &&
+      (!formData.addressStreet || !formData.addressNumber || !formData.addressCity)
     ) {
       toast({
         title: "Dirección incompleta",
@@ -164,7 +167,7 @@ export function CustomerInfoForm({
       // 2. Create order with items
       const orderResult = await createOrderWithItems({
         branchId,
-        type: OrderType.DELIVERY,
+        type: isDelivery ? OrderType.DELIVERY : OrderType.TAKE_AWAY,
         clientId,
         description: formData.notes || undefined,
         items: cart.map((item) => ({
@@ -188,29 +191,49 @@ export function CustomerInfoForm({
           const itemLines = cart
             .map((item) => `- ${item.quantity}x ${item.name}`)
             .join("\n");
-          const address = [
-            formData.addressStreet,
-            formData.addressNumber,
-            formData.addressApartment,
-            formData.addressCity,
-          ]
-            .filter(Boolean)
-            .join(" ");
-          const message = [
-            `Hola ${restaurantName}, quiero realizar un pedido:`,
-            ``,
-            itemLines,
-            ``,
-            `*Datos de entrega:*`,
-            `Nombre: ${formData.name}`,
-            `Teléfono: ${formData.phone}`,
-            `Dirección: ${address}`,
-            formData.notes ? `Notas: ${formData.notes}` : null,
-            ``,
-            `Código de pedido: ${orderResult.data.publicCode}`,
-          ]
-            .filter((line) => line !== null)
-            .join("\n");
+
+          let message: string;
+          if (isDelivery) {
+            const address = [
+              formData.addressStreet,
+              formData.addressNumber,
+              formData.addressApartment,
+              formData.addressCity,
+            ]
+              .filter(Boolean)
+              .join(" ");
+            message = [
+              `Hola ${restaurantName}, quiero realizar un pedido:`,
+              ``,
+              itemLines,
+              ``,
+              `*Datos de entrega:*`,
+              `Nombre: ${formData.name}`,
+              `Teléfono: ${formData.phone}`,
+              `Dirección: ${address}`,
+              formData.notes ? `Notas: ${formData.notes}` : null,
+              ``,
+              `Código de pedido: ${orderResult.data.publicCode}`,
+            ]
+              .filter((line) => line !== null)
+              .join("\n");
+          } else {
+            message = [
+              `Hola ${restaurantName}, quiero hacer un pedido para RETIRAR:`,
+              ``,
+              itemLines,
+              ``,
+              `*Datos de contacto:*`,
+              `Nombre: ${formData.name}`,
+              `Teléfono: ${formData.phone}`,
+              formData.notes ? `Notas: ${formData.notes}` : null,
+              ``,
+              `Código de pedido: ${orderResult.data.publicCode}`,
+            ]
+              .filter((line) => line !== null)
+              .join("\n");
+          }
+
           fullWhatsappUrl = `${whatsappUrl}&text=${encodeURIComponent(message)}`;
         }
 
@@ -251,7 +274,7 @@ export function CustomerInfoForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-center gap-4">
         <h2 className="text-2xl font-bold text-neutral-900 pt-3">
-          Información de Entrega
+          {isDelivery ? "Información de Entrega" : "Información del Pedido"}
         </h2>
       </div>
 
@@ -301,69 +324,89 @@ export function CustomerInfoForm({
         </CardContent>
       </Card>
 
-      <Card className="bg-white text-black">
-        <CardHeader>
-          <CardTitle>Dirección de Entrega</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="addressStreet">Calle *</Label>
-              <Input
-                id="addressStreet"
-                name="addressStreet"
-                value={formData.addressStreet}
-                onChange={handleChange}
-                required
-              />
+      {isDelivery && (
+        <Card className="bg-white text-black">
+          <CardHeader>
+            <CardTitle>Dirección de Entrega</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressStreet">Calle *</Label>
+                <Input
+                  id="addressStreet"
+                  name="addressStreet"
+                  value={formData.addressStreet}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressNumber">Número *</Label>
+                <Input
+                  id="addressNumber"
+                  name="addressNumber"
+                  value={formData.addressNumber}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="addressNumber">Número *</Label>
-              <Input
-                id="addressNumber"
-                name="addressNumber"
-                value={formData.addressNumber}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="addressApartment">Piso/Depto (opcional)</Label>
-              <Input
-                id="addressApartment"
-                name="addressApartment"
-                value={formData.addressApartment}
-                onChange={handleChange}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressApartment">Piso/Depto (opcional)</Label>
+                <Input
+                  id="addressApartment"
+                  name="addressApartment"
+                  value={formData.addressApartment}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressCity">Ciudad *</Label>
+                <Input
+                  id="addressCity"
+                  name="addressCity"
+                  value={formData.addressCity}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="addressCity">Ciudad *</Label>
-              <Input
-                id="addressCity"
-                name="addressCity"
-                value={formData.addressCity}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Instrucciones de Entrega (opcional)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Instrucciones de Entrega (opcional)</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Ej: Timbre del primer piso, portón negro"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isDelivery && (
+        <Card className="bg-white text-black">
+          <CardHeader>
+            <CardTitle>Notas (opcional)</CardTitle>
+          </CardHeader>
+          <CardContent>
             <Textarea
               id="notes"
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              placeholder="Ej: Timbre del primer piso, portón negro"
+              placeholder="Ej: Sin cebolla, alergia a los frutos secos"
             />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="bg-white text-black">
         <CardHeader>
@@ -383,10 +426,12 @@ export function CustomerInfoForm({
               <span>Subtotal</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Envío</span>
-              <span>${deliveryFee.toFixed(2)}</span>
-            </div>
+            {isDelivery && (
+              <div className="flex justify-between text-gray-600">
+                <span>Envío</span>
+                <span>${deliveryFee.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-xl font-bold pt-2">
               <span>Total</span>
               <span>${total.toFixed(2)}</span>
