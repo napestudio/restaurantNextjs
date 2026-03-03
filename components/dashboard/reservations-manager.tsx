@@ -8,6 +8,7 @@ import {
   type ReservationFilterType,
   type PaginatedReservationsResult,
 } from "@/actions/Reservation";
+import { getTimeSlots } from "@/actions/TimeSlot";
 import type {
   SerializedReservation,
   TimeSlot,
@@ -16,7 +17,7 @@ import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { DeleteReservationDialog } from "./delete-reservation-dialog";
 import { CreateReservationSidebar } from "./create-reservation-sidebar";
 import { ReservationsTable } from "./reservations-table";
@@ -30,14 +31,12 @@ interface ReservationsManagerProps {
     hasMore: boolean;
     totalCount: number;
   };
-  timeSlots: TimeSlot[];
   branchId: string;
 }
 
 export function ReservationsManager({
   initialReservations,
   initialPagination,
-  timeSlots,
   branchId,
 }: ReservationsManagerProps) {
   const router = useRouter();
@@ -45,6 +44,9 @@ export function ReservationsManager({
   // Reservations state
   const [reservations, setReservations] = useState(initialReservations);
   const [pagination, setPagination] = useState(initialPagination);
+
+  // Time slots — loaded lazily when the Create Reservation dialog is opened
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
   // Filter state
   const [filterType, setFilterType] = useState<ReservationFilterType>("today");
@@ -62,6 +64,15 @@ export function ReservationsManager({
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(
     null
   );
+
+  // Load time slots on demand when the Create Reservation dialog opens
+  useEffect(() => {
+    if (createDialogOpen && timeSlots.length === 0) {
+      getTimeSlots(branchId).then((result) => {
+        if (result.success && result.data) setTimeSlots(result.data);
+      });
+    }
+  }, [createDialogOpen, timeSlots.length, branchId]);
 
   // Fetch reservations with current filters
   const fetchReservations = useCallback(

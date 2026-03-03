@@ -91,7 +91,7 @@ export function TableOrderSidebar({
   const { products } = useProducts();
 
   // gg-ez-print printing
-  const { printOrderItems, printControlTicket, printStatus } = usePrint();
+  const { printOrderItems, printControlTicket, printStatus, isPrinting } = usePrint();
   const { toast } = useToast();
 
   // Use SWR for order data fetching with auto-refresh
@@ -690,7 +690,7 @@ export function TableOrderSidebar({
               <Button
                 onClick={handlePrintCheck}
                 variant="outline"
-                disabled={printStatus.status === "printing"}
+                disabled={isPrinting}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

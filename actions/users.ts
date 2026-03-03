@@ -158,6 +158,7 @@ export async function getUsers(): Promise<{
     }
 
     const hasAdminAccess = await isUserAdmin(session.user.id);
+
     if (!hasAdminAccess) {
       return {
         success: false,
@@ -173,6 +174,7 @@ export async function getUsers(): Promise<{
         email: true,
         image: true,
         createdAt: true,
+
         userOnBranches: {
           select: {
             id: true,
@@ -231,7 +233,7 @@ export async function getUsers(): Promise<{
 
 export async function updateUser(
   userId: string,
-  data: UserUpdateInput
+  data: UserUpdateInput,
 ): Promise<{
   success: boolean;
   data?: { id: string; name: string | null; email: string | null };
@@ -332,7 +334,7 @@ export async function updateUser(
 
     // Update or create branch assignment
     const existingBranchAssignment = existingUser.userOnBranches.find(
-      (ub) => ub.branchId === branchId
+      (ub) => ub.branchId === branchId,
     );
 
     if (existingBranchAssignment) {

@@ -680,10 +680,10 @@ export async function printFullOrder(
 
   // Custom header (if configured)
   if (config.ticketHeader) {
-    content += Commands.ALIGN_CENTER;
+    content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
-    content += `${config.ticketHeader}\n`;
+    content += `${config.ticketHeader.replace(/\r\n/g, '\n')}\n`;
     content += Commands.BOLD_OFF;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
@@ -819,9 +819,9 @@ export async function printFullOrder(
 
   // Custom footer (if configured)
   if (config.ticketFooter) {
-    content += Commands.ALIGN_CENTER;
+    content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
-    content += `${config.ticketFooter}\n`;
+    content += `${config.ticketFooter.replace(/\r\n/g, '\n')}\n`;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
   }
@@ -854,10 +854,10 @@ export function generateTestPageData(config: PrinterConfig): string {
 
   // Custom header if configured
   if (config.ticketHeader) {
-    content += Commands.ALIGN_CENTER;
+    content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
-    content += `${config.ticketHeader}\n`;
+    content += `${config.ticketHeader.replace(/\r\n/g, '\n')}\n`;
     content += Commands.BOLD_OFF;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
@@ -960,9 +960,9 @@ export function generateTestPageData(config: PrinterConfig): string {
 
   // Custom footer if configured
   if (config.ticketFooter) {
-    content += Commands.ALIGN_CENTER;
+    content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
-    content += `${config.ticketFooter}\n`;
+    content += `${config.ticketFooter.replace(/\r\n/g, '\n')}\n`;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
   }
@@ -1073,10 +1073,10 @@ export function generateFullOrderData(
   let content = Commands.INIT;
 
   if (config.ticketHeader) {
-    content += Commands.ALIGN_CENTER;
+    content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
-    content += `${config.ticketHeader}\n`;
+    content += `${config.ticketHeader.replace(/\r\n/g, '\n')}\n`;
     content += Commands.BOLD_OFF;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
@@ -1198,9 +1198,9 @@ export function generateFullOrderData(
   }
 
   if (config.ticketFooter) {
-    content += Commands.ALIGN_CENTER;
+    content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
-    content += `${config.ticketFooter}\n`;
+    content += `${config.ticketFooter.replace(/\r\n/g, '\n')}\n`;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
   }

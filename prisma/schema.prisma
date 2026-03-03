@@ -441,6 +441,8 @@ model DeliveryConfig {
 
   // Service configuration
   isActive         Boolean  @default(true) // Master toggle for delivery service
+  allowDelivery    Boolean  @default(true)  // Whether customers can place delivery orders
+  allowTakeAway    Boolean  @default(false) // Whether customers can place take-away orders
   minOrderAmount   Decimal? @default(0) @db.Decimal(10, 2) // Minimum order amount
   deliveryFee      Decimal? @default(0) @db.Decimal(10, 2) // Delivery fee
   estimatedMinutes Int?     @default(45) // Estimated delivery time in minutes

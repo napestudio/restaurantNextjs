@@ -582,27 +582,34 @@ export async function getFilteredReservations(
       };
     }
 
-    // Get total count for this filter
-    const totalCount = await prisma.reservation.count({ where: whereClause });
-
-    // Fetch reservations with optional cursor-based pagination
-    const reservations = await prisma.reservation.findMany({
-      where: whereClause,
-      include: {
-        timeSlot: true,
-        tables: {
-          include: {
-            table: true,
+    // Batch count and data fetch in a single transaction
+    const [totalCount, reservations] = await prisma.$transaction([
+      prisma.reservation.count({ where: whereClause }),
+      prisma.reservation.findMany({
+        where: whereClause,
+        include: {
+          timeSlot: true,
+          tables: {
+            include: {
+              table: {
+                select: {
+                  id: true,
+                  name: true,
+                  number: true,
+                  capacity: true,
+                },
+              },
+            },
           },
         },
-      },
-      orderBy: [
-        { date: filters.type === "past" ? "desc" : "asc" },
-        { createdAt: "desc" },
-      ],
-      take: limit + 1, // Take one extra to check if there are more
-      ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
-    });
+        orderBy: [
+          { date: filters.type === "past" ? "desc" : "asc" },
+          { createdAt: "desc" },
+        ],
+        take: limit + 1, // Take one extra to check if there are more
+        ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+      }),
+    ]);
 
     // Check if there are more results
     const hasMore = reservations.length > limit;

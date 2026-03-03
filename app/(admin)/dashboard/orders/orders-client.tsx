@@ -139,6 +139,7 @@ export function OrdersClient({
   }, [initialOrders, initialPagination]);
 
   // Update URL and fetch orders
+  // Wrapped in startTransition to suppress loading.tsx and show the inline spinner instead
   const updateUrlAndFetch = (type: string, page: number, search?: string) => {
     const params = new URLSearchParams();
     params.set("type", type);
@@ -146,7 +147,9 @@ export function OrdersClient({
     if (search) {
       params.set("search", search);
     }
-    router.push(`/dashboard/orders?${params.toString()}`);
+    startTransition(() => {
+      router.push(`/dashboard/orders?${params.toString()}`);
+    });
   };
 
   // Handle tab change
@@ -227,48 +230,50 @@ export function OrdersClient({
     setCreateOrderType(null);
   };
 
-  // Handle order created - switch tab, refresh and open the details sidebar
-  const handleOrderCreated = async (
+  // Handle order created - switch tab and refresh
+  const handleOrderCreated = (
     orderId?: string,
     createdOrderType?: OrderType,
   ) => {
-    // Switch to the tab matching the created order type
     const targetTab = createdOrderType || currentTab;
 
-    // Update URL to reflect the new tab (this triggers a re-render with new data)
     if (createdOrderType && createdOrderType !== currentTab) {
+      // Navigate to the tab of the new order — server re-render will provide fresh data
       const params = new URLSearchParams();
       params.set("type", createdOrderType);
       params.set("page", "1");
       if (currentSearch) {
         params.set("search", currentSearch);
       }
-      router.push(`/dashboard/orders?${params.toString()}`);
-    }
+      startTransition(() => {
+        router.push(`/dashboard/orders?${params.toString()}`);
+      });
+    } else {
+      // Same tab: fetch client-side without a full navigation
+      startTransition(async () => {
+        const result = await getOrders({
+          branchId,
+          type: targetTab === "ALL" ? undefined : (targetTab as OrderType),
+          page: 1,
+          pageSize: 15,
+          search: currentSearch || undefined,
+        });
 
-    // Fetch orders for the target tab
-    const result = await getOrders({
-      branchId,
-      type: targetTab === "ALL" ? undefined : (targetTab as OrderType),
-      page: 1,
-      pageSize: 15,
-      search: currentSearch || undefined,
-    });
+        if (result.success && result.data) {
+          setOrders(result.data);
+          if (result.pagination) {
+            setPagination(result.pagination);
+          }
 
-    if (result.success && result.data) {
-      setOrders(result.data);
-      if (result.pagination) {
-        setPagination(result.pagination);
-      }
-
-      // If we have an order ID, find and open it in the sidebar
-      if (orderId) {
-        const createdOrder = result.data.find((o) => o.id === orderId);
-        if (createdOrder) {
-          setSelectedOrder(createdOrder);
-          setSidebarOpen(true);
+          if (orderId) {
+            const createdOrder = result.data.find((o) => o.id === orderId);
+            if (createdOrder) {
+              setSelectedOrder(createdOrder);
+              setSidebarOpen(true);
+            }
+          }
         }
-      }
+      });
     }
   };
 

@@ -22,9 +22,9 @@ interface ProductsProviderProps {
 }
 
 export function ProductsProvider({ branchId, orderType, children, initialProducts }: ProductsProviderProps) {
-  // Use initial products if provided, avoiding double fetch
+  // Use initial products if provided, otherwise start empty (loaded on demand)
   const [products, setProducts] = useState<OrderProduct[]>(initialProducts ?? []);
-  const [isLoading, setIsLoading] = useState(!initialProducts);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
@@ -43,12 +43,17 @@ export function ProductsProvider({ branchId, orderType, children, initialProduct
     }
   }, [branchId, orderType]);
 
-  // Fetch products on mount if no initial products were provided
+  // Sync with initialProducts if provided from server
   useEffect(() => {
-    if (!initialProducts) {
-      loadProducts();
+    if (initialProducts) {
+      setProducts(initialProducts);
     }
-  }, [initialProducts, loadProducts]);
+  }, [initialProducts]);
+
+  // Clear cached products when orderType changes so the sidebar reloads for the new type
+  useEffect(() => {
+    setProducts([]);
+  }, [orderType]);
 
   const refreshProducts = useCallback(async () => {
     await loadProducts();

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { CartItem } from "./delivery-page-client";
+import { CartItem, SelectedOrderType } from "./delivery-page-client";
 import { OrderProduct } from "@/types/products";
 
 interface ShoppingCartProps {
@@ -12,6 +12,7 @@ interface ShoppingCartProps {
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemove: (productId: string) => void;
   deliveryFee: number;
+  orderType: SelectedOrderType;
   onBack: () => void;
   onCheckout: () => void;
 }
@@ -22,14 +23,16 @@ export function ShoppingCart({
   onUpdateQuantity,
   onRemove,
   deliveryFee,
+  orderType,
   onBack,
   onCheckout,
 }: ShoppingCartProps) {
+  const isDelivery = orderType === "DELIVERY";
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const total = subtotal + deliveryFee;
+  const total = subtotal + (isDelivery ? deliveryFee : 0);
 
   if (cart.length === 0) {
     return (
@@ -137,10 +140,12 @@ export function ShoppingCart({
             <span>Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-gray-600">
-            <span>Costo de envío</span>
-            <span>${deliveryFee.toFixed(2)}</span>
-          </div>
+          {isDelivery && deliveryFee > 0 && (
+            <div className="flex justify-between text-gray-600">
+              <span>Costo de envío</span>
+              <span>${deliveryFee.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-xl font-bold pt-2 border-t">
             <span>Total</span>
             <span>${total.toFixed(2)}</span>
