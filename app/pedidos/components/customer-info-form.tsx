@@ -102,7 +102,9 @@ export function CustomerInfoForm({
 
     if (
       isDelivery &&
-      (!formData.addressStreet || !formData.addressNumber || !formData.addressCity)
+      (!formData.addressStreet ||
+        !formData.addressNumber ||
+        !formData.addressCity)
     ) {
       toast({
         title: "Dirección incompleta",
@@ -120,7 +122,12 @@ export function CustomerInfoForm({
     if (minOrderAmount > 0 && subtotal < minOrderAmount) {
       toast({
         title: "Monto mínimo no alcanzado",
-        description: `El monto mínimo de pedido es $${minOrderAmount.toFixed(2)}`,
+        description: `El monto mínimo de pedido es $${minOrderAmount.toLocaleString(
+          "es-AR",
+          {
+            currency: "ARS",
+          },
+        )}`,
         variant: "destructive",
       });
       return;
@@ -128,7 +135,9 @@ export function CustomerInfoForm({
 
     // Open a blank window now (within the user gesture) to avoid popup blocking.
     // We'll redirect it to WhatsApp once the order is confirmed.
-    const whatsappWindow = whatsappUrl ? window.open("about:blank", "_blank") : null;
+    const whatsappWindow = whatsappUrl
+      ? window.open("about:blank", "_blank")
+      : null;
 
     setIsSubmitting(true);
 
@@ -189,7 +198,14 @@ export function CustomerInfoForm({
         let fullWhatsappUrl = "";
         if (whatsappUrl) {
           const itemLines = cart
-            .map((item) => `- ${item.quantity}x ${item.name} ($${(item.price * item.quantity).toFixed(2)})`)
+            .map(
+              (item) =>
+                `- ${item.quantity}x ${item.name} ($${(
+                  item.price * item.quantity
+                ).toLocaleString("es-AR", {
+                  currency: "ARS",
+                })})`,
+            )
             .join("\n");
 
           const orderTotal = subtotal + (isDelivery ? deliveryFee : 0);
@@ -209,9 +225,15 @@ export function CustomerInfoForm({
               ``,
               itemLines,
               ``,
-              `Subtotal: $${subtotal.toFixed(2)}`,
-              `Envío: $${deliveryFee.toFixed(2)}`,
-              `*Total: $${orderTotal.toFixed(2)}*`,
+              `Subtotal: $${subtotal.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}`,
+              `Envío: $${deliveryFee.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}`,
+              `*Total: $${orderTotal.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}*`,
               ``,
               `*Tipo de pedido: Delivery*`,
               ``,
@@ -231,7 +253,9 @@ export function CustomerInfoForm({
               ``,
               itemLines,
               ``,
-              `*Total: $${orderTotal.toFixed(2)}*`,
+              `*Total: $${orderTotal.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}*`,
               ``,
               `*Tipo de pedido: Retiro en local*`,
               ``,
@@ -430,23 +454,43 @@ export function CustomerInfoForm({
               <span>
                 {item.quantity}x {item.name}
               </span>
-              <span>${(item.price * item.quantity).toFixed(2)}</span>
+              <span>
+                $
+                {(item.price * item.quantity).toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
+              </span>
             </div>
           ))}
           <div className="border-t pt-2 mt-2">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>
+                $
+                {subtotal.toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
+              </span>
             </div>
             {isDelivery && (
               <div className="flex justify-between text-gray-600">
                 <span>Envío</span>
-                <span>${deliveryFee.toFixed(2)}</span>
+                <span>
+                  $
+                  {deliveryFee.toLocaleString("es-AR", {
+                    currency: "ARS",
+                  })}
+                </span>
               </div>
             )}
             <div className="flex justify-between text-xl font-bold pt-2">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>
+                $
+                {total.toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
+              </span>
             </div>
           </div>
         </CardContent>

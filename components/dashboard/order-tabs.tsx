@@ -35,7 +35,7 @@ export function OrderTabs({
   const calculateOrderTotal = (order: Order) => {
     return order.items.reduce(
       (sum, item) => sum + item.quantity * item.price,
-      0
+      0,
     );
   };
 
@@ -135,7 +135,10 @@ export function OrderTabs({
                   : "Sin asignar"}
               </div>
               <div className="text-sm font-bold text-gray-900 mt-1">
-                ${total.toFixed(2)}
+                $
+                {total.toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
               </div>
             </button>
           );

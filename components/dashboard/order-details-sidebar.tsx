@@ -622,16 +622,26 @@ export function OrderDetailsSidebar({
                       item.originalPrice !== item.price && (
                         <div className="text-xs text-orange-600">
                           Precio modificado (Original: $
-                          {item.originalPrice.toFixed(2)})
+                          {item.originalPrice.toLocaleString("es-AR", {
+                            currency: "ARS",
+                          })}
+                          )
                         </div>
                       )}
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-gray-900">
-                      ${(item.quantity * item.price).toFixed(2)}
+                      $
+                      {(item.quantity * item.price).toLocaleString("es-AR", {
+                        currency: "ARS",
+                      })}
                     </div>
                     <div className="text-xs text-gray-500">
-                      ${item.price.toFixed(2)} c/u
+                      $
+                      {item.price.toLocaleString("es-AR", {
+                        currency: "ARS",
+                      })}{" "}
+                      c/u
                     </div>
                   </div>
                 </div>
@@ -645,14 +655,24 @@ export function OrderDetailsSidebar({
           {/* Subtotal */}
           <div className="flex justify-between px-4 py-3">
             <span className="text-gray-600">Subtotal</span>
-            <span className="font-medium">${subtotal.toFixed(2)}</span>
+            <span className="font-medium">
+              $
+              {subtotal.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}
+            </span>
           </div>
 
           {/* Discount */}
           {order.discountPercentage > 0 && (
             <div className="flex justify-between px-4 py-3 text-orange-600">
               <span>Descuento ({order.discountPercentage}%)</span>
-              <span>-${discount.toFixed(2)}</span>
+              <span>
+                -$
+                {discount.toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
+              </span>
             </div>
           )}
 
@@ -669,7 +689,12 @@ export function OrderDetailsSidebar({
                 </span>
               </div>
             )}
-            <span className="text-red-600">${total.toFixed(2)}</span>
+            <span className="text-red-600">
+              $
+              {total.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}
+            </span>
           </div>
         </div>
 
@@ -685,16 +710,18 @@ export function OrderDetailsSidebar({
             </Button>
           )}
           {order.status === OrderStatus.COMPLETED &&
-           !order.invoices?.some((invoice) => invoice.status === "EMITTED") && (
-            <Button
-              onClick={() => setIsInvoiceDialogOpen(true)}
-              variant="default"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Generar Factura
-            </Button>
-          )}
+            !order.invoices?.some(
+              (invoice) => invoice.status === "EMITTED",
+            ) && (
+              <Button
+                onClick={() => setIsInvoiceDialogOpen(true)}
+                variant="default"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Generar Factura
+              </Button>
+            )}
           <Button
             onClick={handlePrintControlTicket}
             disabled={isPrinting || order.items.length === 0}

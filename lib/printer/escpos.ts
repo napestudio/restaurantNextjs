@@ -683,7 +683,7 @@ export async function printFullOrder(
     content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
-    content += `${config.ticketHeader.replace(/\r\n/g, '\n')}\n`;
+    content += `${config.ticketHeader.replace(/\r\n/g, "\n")}\n`;
     content += Commands.BOLD_OFF;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
@@ -821,7 +821,7 @@ export async function printFullOrder(
   if (config.ticketFooter) {
     content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
-    content += `${config.ticketFooter.replace(/\r\n/g, '\n')}\n`;
+    content += `${config.ticketFooter.replace(/\r\n/g, "\n")}\n`;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
   }
@@ -857,7 +857,7 @@ export function generateTestPageData(config: PrinterConfig): string {
     content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
-    content += `${config.ticketHeader.replace(/\r\n/g, '\n')}\n`;
+    content += `${config.ticketHeader.replace(/\r\n/g, "\n")}\n`;
     content += Commands.BOLD_OFF;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
@@ -962,7 +962,7 @@ export function generateTestPageData(config: PrinterConfig): string {
   if (config.ticketFooter) {
     content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
-    content += `${config.ticketFooter.replace(/\r\n/g, '\n')}\n`;
+    content += `${config.ticketFooter.replace(/\r\n/g, "\n")}\n`;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
   }
@@ -1076,7 +1076,7 @@ export function generateFullOrderData(
     content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
-    content += `${config.ticketHeader.replace(/\r\n/g, '\n')}\n`;
+    content += `${config.ticketHeader.replace(/\r\n/g, "\n")}\n`;
     content += Commands.BOLD_OFF;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
@@ -1200,7 +1200,7 @@ export function generateFullOrderData(
   if (config.ticketFooter) {
     content += Commands.ALIGN_LEFT;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
-    content += `${config.ticketFooter.replace(/\r\n/g, '\n')}\n`;
+    content += `${config.ticketFooter.replace(/\r\n/g, "\n")}\n`;
     content += Commands.NORMAL_SIZE;
     content += Commands.FEED_LINE;
   }
@@ -1397,7 +1397,9 @@ export function generateAfipInvoiceData(
     }
 
     // Show unit price and VAT rate on separate line
-    const detailLine = `  $${item.unitPrice.toFixed(2)} c/u (IVA ${item.vatRate}%)`;
+    const detailLine = `  $${item.unitPrice.toLocaleString("es-AR", {
+      currency: "ARS",
+    })} c/u (IVA ${item.vatRate}%)`;
     content += detailLine + "\n";
   }
 

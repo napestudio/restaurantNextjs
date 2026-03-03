@@ -18,7 +18,7 @@ interface ReservationEmailData {
 }
 
 export function generateReservationNotificationEmail(
-  data: ReservationEmailData
+  data: ReservationEmailData,
 ): string {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -76,7 +76,7 @@ export function generateReservationNotificationEmail(
                     <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
                       <strong style="color: #374151; display: block; font-size: 14px; margin-bottom: 4px;">Fecha</strong>
                       <span style="color: #1f2937; font-size: 16px;">${formatDate(
-                        data.date
+                        data.date,
                       )}</span>
                     </td>
                   </tr>
@@ -84,7 +84,7 @@ export function generateReservationNotificationEmail(
                     <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
                       <strong style="color: #374151; display: block; font-size: 14px; margin-bottom: 4px;">Hora</strong>
                       <span style="color: #1f2937; font-size: 16px;">${formatTime(
-                        data.exactTime
+                        data.exactTime,
                       )}</span>
                       ${
                         data.timeSlotName
@@ -108,7 +108,7 @@ export function generateReservationNotificationEmail(
                     <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
                       <strong style="color: #374151; display: block; font-size: 14px; margin-bottom: 4px;">Mesas Asignadas</strong>
                       <span style="color: #1f2937; font-size: 16px;">${data.assignedTables.join(
-                        ", "
+                        ", ",
                       )}</span>
                     </td>
                   </tr>
@@ -139,8 +139,8 @@ export function generateReservationNotificationEmail(
                       <a href="mailto:${
                         data.customerEmail
                       }" style="color: #dc2626; text-decoration: none; font-size: 16px;">${
-    data.customerEmail
-  }</a>
+                        data.customerEmail
+                      }</a>
                     </td>
                   </tr>
                   ${
@@ -232,10 +232,19 @@ export function generateReservationNotificationEmail(
                 </p>
                 <div style="background-color: #fef3c7; border-radius: 8px; padding: 12px; margin-top: 12px;">
                   <p style="margin: 0; color: #78350f; font-size: 16px;">
-                    <strong>Monto total:</strong> $${(data.pricePerPerson * data.guests).toFixed(2)}
+                    <strong>Monto total:</strong> $${(
+                      data.pricePerPerson * data.guests
+                    ).toLocaleString("es-AR", {
+                      currency: "ARS",
+                    })}
                   </p>
                   <p style="margin: 4px 0 0; color: #92400e; font-size: 14px;">
-                    (${data.guests} ${data.guests === 1 ? 'persona' : 'personas'} × $${data.pricePerPerson.toFixed(2)})
+                    (${data.guests} ${data.guests === 1 ? "persona" : "personas"} × $${data.pricePerPerson.toLocaleString(
+                      "es-AR",
+                      {
+                        currency: "ARS",
+                      },
+                    )})
                   </p>
                 </div>
               </div>

@@ -63,20 +63,25 @@ export default function DeliveryPage({
 }: DeliveryPageProps) {
   const bothEnabled = allowDelivery && allowTakeAway;
 
-  const [step, setStep] = useState<WizardStep>(bothEnabled ? "orderType" : "menu");
+  const [step, setStep] = useState<WizardStep>(
+    bothEnabled ? "orderType" : "menu",
+  );
   const [selectedOrderType, setSelectedOrderType] = useState<SelectedOrderType>(
-    allowDelivery ? "DELIVERY" : "TAKE_AWAY"
+    allowDelivery ? "DELIVERY" : "TAKE_AWAY",
   );
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderPublicCode, setOrderPublicCode] = useState<string>("");
   const [whatsappOrderUrl, setWhatsappOrderUrl] = useState<string>("");
 
   // Pick the active product set based on the selected order type
-  const activeProducts = selectedOrderType === "TAKE_AWAY" ? takeawayProducts : products;
-  const activeSections = selectedOrderType === "TAKE_AWAY" ? takeawaySections : (sections ?? []);
+  const activeProducts =
+    selectedOrderType === "TAKE_AWAY" ? takeawayProducts : products;
+  const activeSections =
+    selectedOrderType === "TAKE_AWAY" ? takeawaySections : (sections ?? []);
 
   // Delivery fee only applies to DELIVERY orders
-  const effectiveDeliveryFee = selectedOrderType === "TAKE_AWAY" ? 0 : (config.deliveryFee || 0);
+  const effectiveDeliveryFee =
+    selectedOrderType === "TAKE_AWAY" ? 0 : config.deliveryFee || 0;
 
   const addToCart = (productId: string, name: string, price: number) => {
     setCart((prev) => {
@@ -169,11 +174,18 @@ export default function DeliveryPage({
                     <Car className="h-7 w-7 text-purple-700" />
                   </div>
                   <div>
-                    <p className="text-lg font-semibold text-neutral-900">Delivery</p>
-                    <p className="text-sm text-gray-500">Lo enviamos a tu domicilio</p>
+                    <p className="text-lg font-semibold text-neutral-900">
+                      Delivery
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Lo enviamos a tu domicilio
+                    </p>
                     {config.deliveryFee > 0 && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Costo de envío: ${config.deliveryFee.toFixed(2)}
+                        Costo de envío: $
+                        {config.deliveryFee.toLocaleString("es-AR", {
+                          currency: "ARS",
+                        })}
                       </p>
                     )}
                   </div>
@@ -187,9 +199,15 @@ export default function DeliveryPage({
                     <ShoppingBag className="h-7 w-7 text-purple-700" />
                   </div>
                   <div>
-                    <p className="text-lg font-semibold text-neutral-900">Retiro en local</p>
-                    <p className="text-sm text-gray-500">Pasás a buscarlo al local</p>
-                    <p className="text-xs text-gray-400 mt-1">Sin costo de envío</p>
+                    <p className="text-lg font-semibold text-neutral-900">
+                      Retiro en local
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Pasás a buscarlo al local
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Sin costo de envío
+                    </p>
                   </div>
                 </button>
               </div>

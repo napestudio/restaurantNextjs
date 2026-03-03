@@ -213,7 +213,12 @@ export function PreOrderItemsList({
       <div className="border-t pt-3 bg-white sticky bottom-0">
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total a confirmar:</span>
-          <span>${calculateTotal().toFixed(2)}</span>
+          <span>
+            $
+            {calculateTotal().toLocaleString("es-AR", {
+              currency: "ARS",
+            })}
+          </span>
         </div>
       </div>
     </div>
