@@ -14,7 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Save, ShoppingBag, UtensilsCrossed, Truck, Minus, Plus, Trash2 } from "lucide-react";
+import {
+  X,
+  Save,
+  ShoppingBag,
+  UtensilsCrossed,
+  Truck,
+  Minus,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { ClientPicker } from "@/components/dashboard/client-picker";
 import { WaiterPicker } from "@/components/dashboard/waiter-picker";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
@@ -57,7 +66,7 @@ export function CreateOrderSidebar({
 
   // Form state
   const [orderType, setOrderType] = useState<OrderType>(
-    initialOrderType || OrderType.DINE_IN
+    initialOrderType || OrderType.DINE_IN,
   );
   const [tableId, setTableId] = useState<string>("");
   const [partySize, setPartySize] = useState<string>("");
@@ -73,7 +82,11 @@ export function CreateOrderSidebar({
   const [clientSearchQuery, setClientSearchQuery] = useState("");
 
   // Use products from context — load on demand when sidebar opens
-  const { products, isLoading: productsLoading, refreshProducts } = useProducts();
+  const {
+    products,
+    isLoading: productsLoading,
+    refreshProducts,
+  } = useProducts();
 
   // Load products when the sidebar opens (if not already loaded)
   useEffect(() => {
@@ -97,15 +110,17 @@ export function CreateOrderSidebar({
     price: number;
   }) => {
     // Check if product already exists
-    const existingItem = localItems.find((item) => item.productId === product.id);
+    const existingItem = localItems.find(
+      (item) => item.productId === product.id,
+    );
     if (existingItem) {
       // Increment quantity
       setLocalItems(
         localItems.map((item) =>
           item.productId === product.id
             ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+            : item,
+        ),
       );
     } else {
       // Add new item
@@ -127,8 +142,8 @@ export function CreateOrderSidebar({
     if (quantity < 1) return;
     setLocalItems(
       localItems.map((item) =>
-        item.localId === localId ? { ...item, quantity } : item
-      )
+        item.localId === localId ? { ...item, quantity } : item,
+      ),
     );
   };
 
@@ -209,7 +224,9 @@ export function CreateOrderSidebar({
 
   const handleClose = () => {
     if (localItems.length > 0) {
-      if (confirm("¿Seguro que quieres cerrar? Perderás los productos agregados.")) {
+      if (
+        confirm("¿Seguro que quieres cerrar? Perderás los productos agregados.")
+      ) {
         resetForm();
         onClose();
       }
@@ -222,7 +239,7 @@ export function CreateOrderSidebar({
   // Calculate subtotal
   const subtotal = localItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
 
   if (!open) return null;
@@ -292,8 +309,7 @@ export function CreateOrderSidebar({
                   <SelectContent>
                     {tables.map((table) => (
                       <SelectItem key={table.id} value={table.id}>
-                        Mesa {table.number}{" "}
-                        {table.name ? `- ${table.name}` : ""}
+                        Mesa {table.number}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -373,7 +389,11 @@ export function CreateOrderSidebar({
               branchId={branchId}
               selectedWaiterId={selectedWaiterId}
               onSelectWaiter={setSelectedWaiterId}
-              label={orderType === OrderType.DINE_IN ? "Mesero/Cajero" : "Atendido por"}
+              label={
+                orderType === OrderType.DINE_IN
+                  ? "Mesero/Cajero"
+                  : "Atendido por"
+              }
               disabled={isLoading}
             />
           </div>
@@ -435,10 +455,7 @@ export function CreateOrderSidebar({
                         size="icon"
                         className="h-8 w-8"
                         onClick={() =>
-                          handleUpdateQuantity(
-                            item.localId,
-                            item.quantity - 1
-                          )
+                          handleUpdateQuantity(item.localId, item.quantity - 1)
                         }
                         disabled={item.quantity <= 1 || isLoading}
                       >
@@ -452,10 +469,7 @@ export function CreateOrderSidebar({
                         size="icon"
                         className="h-8 w-8"
                         onClick={() =>
-                          handleUpdateQuantity(
-                            item.localId,
-                            item.quantity + 1
-                          )
+                          handleUpdateQuantity(item.localId, item.quantity + 1)
                         }
                         disabled={isLoading}
                       >
