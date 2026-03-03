@@ -723,7 +723,9 @@ export async function printFullOrder(
       now.toLocaleTimeString("es-AR", { hour12: false }),
       width,
     ) + "\n";
-  content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  if (order.waiterName) {
+    content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  }
   if (order.customerName) {
     content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
   }
