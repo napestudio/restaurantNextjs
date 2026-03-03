@@ -337,6 +337,10 @@ export async function prepareControlTicketPrint(
         total,
         orderType: ticketInfo.orderType,
         customerName: ticketInfo.customerName,
+        clientPhone: ticketInfo.clientPhone,
+        deliveryAddress: ticketInfo.deliveryAddress,
+        deliveryCity: ticketInfo.deliveryCity,
+        deliveryNotes: ticketInfo.deliveryNotes,
       };
 
       const escPosData = generateFullOrderData(config, fullOrderData);
