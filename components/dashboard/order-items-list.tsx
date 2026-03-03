@@ -32,7 +32,7 @@ export function OrderItemsList({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState("");
   const [editingQuantityId, setEditingQuantityId] = useState<string | null>(
-    null
+    null,
   );
   const [tempQuantity, setTempQuantity] = useState("");
 
@@ -47,7 +47,7 @@ export function OrderItemsList({
       pendingUpdatesRef.current.delete(itemId);
       forceUpdate({});
     },
-    800
+    800,
   );
 
   const handlePriceClick = (itemId: string, currentPrice: number) => {
@@ -70,7 +70,7 @@ export function OrderItemsList({
 
   const handlePriceKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
-    itemId: string
+    itemId: string,
   ) => {
     if (e.key === "Enter") {
       handlePriceChange(itemId);
@@ -91,7 +91,7 @@ export function OrderItemsList({
         debouncedQuantityUpdate(itemId, newQuantity);
       }
     },
-    [debouncedQuantityUpdate]
+    [debouncedQuantityUpdate],
   );
 
   const handleQuantityInputChange = (itemId: string, value: string) => {
@@ -109,7 +109,7 @@ export function OrderItemsList({
 
   const handleQuantityKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
-    itemId: string
+    itemId: string,
   ) => {
     if (e.key === "Enter") {
       handleQuantityInputBlur(itemId);
@@ -210,55 +210,66 @@ export function OrderItemsList({
                 </div>
               </div>
 
-            <div className="flex items-center gap-2">
-              <div>
-                {editingItemId === item.id ? (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={tempPrice}
-                    onChange={(e) => setTempPrice(e.target.value)}
-                    onBlur={() => handlePriceBlur(item.id)}
-                    onKeyDown={(e) => handlePriceKeyDown(e, item.id)}
-                    className="w-20 h-8 text-sm"
-                    autoFocus
-                    disabled={disabled}
-                  />
-                ) : (
-                  <button
-                    onClick={() => handlePriceClick(item.id, item.price)}
-                    className="w-20 h-8 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded border border-gray-300 px-2"
-                    disabled={disabled}
-                  >
-                    ${Number(item.price).toFixed(2)}
-                  </button>
-                )}
-                {item.originalPrice && item.price !== item.originalPrice && (
-                  <div className="text-xs text-amber-600 mt-1 w-full text-right">
-                    ${Number(item.originalPrice).toFixed(2)}
-                  </div>
-                )}
-              </div>
+              <div className="flex items-center gap-2">
+                <div>
+                  {editingItemId === item.id ? (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={tempPrice}
+                      onChange={(e) => setTempPrice(e.target.value)}
+                      onBlur={() => handlePriceBlur(item.id)}
+                      onKeyDown={(e) => handlePriceKeyDown(e, item.id)}
+                      className="w-20 h-8 text-sm"
+                      autoFocus
+                      disabled={disabled}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => handlePriceClick(item.id, item.price)}
+                      className="w-20 h-8 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded border border-gray-300 px-2"
+                      disabled={disabled}
+                    >
+                      $
+                      {Number(item.price).toLocaleString("es-AR", {
+                        currency: "ARS",
+                      })}
+                    </button>
+                  )}
+                  {item.originalPrice && item.price !== item.originalPrice && (
+                    <div className="text-xs text-amber-600 mt-1 w-full text-right">
+                      $
+                      {Number(item.originalPrice).toLocaleString("es-AR", {
+                        currency: "ARS",
+                      })}
+                    </div>
+                  )}
+                </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-red-600"
-                onClick={() => onRemoveItem(item.id)}
-                disabled={disabled}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-red-600"
+                  onClick={() => onRemoveItem(item.id)}
+                  disabled={disabled}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        );
+          );
         })}
       </div>
 
       <div className="border-t pt-3">
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
-          <span>${total.toFixed(2)}</span>
+          <span>
+            $
+            {total.toLocaleString("es-AR", {
+              currency: "ARS",
+            })}
+          </span>
         </div>
       </div>
     </div>

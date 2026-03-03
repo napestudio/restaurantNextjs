@@ -88,7 +88,14 @@ export function TableOrderSidebar({
   const [preOrderItems, setPreOrderItems] = useState<PreOrderItem[]>([]);
 
   // Use cached products from context
-  const { products } = useProducts();
+  const { products, isLoading: productsLoading, refreshProducts } = useProducts();
+
+  // Load products on mount if not already loaded (mirrors create-order-sidebar pattern)
+  useEffect(() => {
+    if (products.length === 0 && !productsLoading) {
+      refreshProducts();
+    }
+  }, [products.length, productsLoading, refreshProducts]);
 
   // gg-ez-print printing
   const { printOrderItems, printControlTicket, printStatus, isPrinting } = usePrint();

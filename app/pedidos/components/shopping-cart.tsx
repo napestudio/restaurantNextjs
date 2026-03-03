@@ -62,73 +62,73 @@ export function ShoppingCart({
               ? product.trackStock && item.quantity >= product.stock
               : false;
             return (
-            <div
-              key={item.productId}
-              className="flex md:items-center md:flex-row flex-col gap-4 pb-4 border-b last:border-0"
-            >
-              <div className="flex justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold">{item.name}</h3>
-                  <p className="text-sm text-gray-600">
-                    ${" "}
-                    {item.price.toLocaleString("es-Ar", {
-                      currency: "ARS",
-                    })}{" "}
-                    c/u
-                  </p>
+              <div
+                key={item.productId}
+                className="flex md:items-center md:flex-row flex-col gap-4 pb-4 border-b last:border-0"
+              >
+                <div className="flex justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <p className="text-sm text-gray-600">
+                      ${" "}
+                      {item.price.toLocaleString("es-Ar", {
+                        currency: "ARS",
+                      })}{" "}
+                      c/u
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemove(item.productId)}
+                    className="text-red-500 hover:text-red-700 block md:hidden text-center"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      onUpdateQuantity(item.productId, item.quantity - 1)
+                    }
+                    disabled={item.quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-8 text-center font-semibold">
+                    {item.quantity}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      onUpdateQuantity(item.productId, item.quantity + 1)
+                    }
+                    disabled={isAtLimit}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="w-24 text-right font-semibold">
+                  ${" "}
+                  {(item.price * item.quantity).toLocaleString("es-AR", {
+                    currency: "ARS",
+                  })}
+                </div>
+
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onRemove(item.productId)}
-                  className="text-red-500 hover:text-red-700 block md:hidden text-center"
+                  className="text-red-500 hover:text-red-700 hidden md:block text-center"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 mx-auto" />
                 </Button>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    onUpdateQuantity(item.productId, item.quantity - 1)
-                  }
-                  disabled={item.quantity <= 1}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-semibold">
-                  {item.quantity}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    onUpdateQuantity(item.productId, item.quantity + 1)
-                  }
-                  disabled={isAtLimit}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="w-24 text-right font-semibold">
-                ${" "}
-                {(item.price * item.quantity).toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onRemove(item.productId)}
-                className="text-red-500 hover:text-red-700 hidden md:block text-center"
-              >
-                <Trash2 className="h-4 w-4 mx-auto" />
-              </Button>
-            </div>
             );
           })}
         </CardContent>
@@ -138,17 +138,32 @@ export function ShoppingCart({
         <CardContent className="pt-6 space-y-2">
           <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>
+              $
+              {subtotal.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}
+            </span>
           </div>
           {isDelivery && deliveryFee > 0 && (
             <div className="flex justify-between text-gray-600">
               <span>Costo de envío</span>
-              <span>${deliveryFee.toFixed(2)}</span>
+              <span>
+                $
+                {deliveryFee.toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
+              </span>
             </div>
           )}
           <div className="flex justify-between text-xl font-bold pt-2 border-t">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>
+              $
+              {total.toLocaleString("es-AR", {
+                currency: "ARS",
+              })}
+            </span>
           </div>
         </CardContent>
       </Card>

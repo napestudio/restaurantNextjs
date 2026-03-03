@@ -14,18 +14,27 @@ interface OrderComboboxProps {
   onSelect: (orderId: string, order: OrderWithoutInvoice | null) => void;
 }
 
-export function OrderCombobox({ branchId, value, onSelect }: OrderComboboxProps) {
+export function OrderCombobox({
+  branchId,
+  value,
+  onSelect,
+}: OrderComboboxProps) {
   const [search, setSearch] = useState("");
   const [orders, setOrders] = useState<OrderWithoutInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<OrderWithoutInvoice | null>(null);
+  const [selectedOrder, setSelectedOrder] =
+    useState<OrderWithoutInvoice | null>(null);
 
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const result = await getOrdersWithoutInvoice({ branchId, search, limit: 20 });
+        const result = await getOrdersWithoutInvoice({
+          branchId,
+          search,
+          limit: 20,
+        });
         if (result.success) {
           setOrders(result.data);
         } else {
@@ -83,7 +92,7 @@ export function OrderCombobox({ branchId, value, onSelect }: OrderComboboxProps)
 
       {!selectedOrder && search && (
         <div className="border rounded-md bg-white shadow-sm">
-          <ScrollArea className="h-[200px]">
+          <ScrollArea className="h-50">
             {isLoading ? (
               <div className="p-4 space-y-2">
                 <Skeleton className="h-12 w-full" />
@@ -105,16 +114,29 @@ export function OrderCombobox({ branchId, value, onSelect }: OrderComboboxProps)
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">Pedido #{order.publicCode}</div>
+                        <div className="font-medium">
+                          Pedido #{order.publicCode}
+                        </div>
                         <div className="text-sm text-gray-500">
-                          {order.table ? (order.table.name || `Mesa ${order.table.number}`) : "Sin mesa"}
+                          {order.table
+                            ? order.table.name || `Mesa ${order.table.number}`
+                            : "Sin mesa"}
                           {order.customerName && ` • ${order.customerName}`}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold">${order.total.toFixed(2)}</div>
+                        <div className="font-semibold">
+                          $
+                          {order.total.toLocaleString("es-AR", {
+                            currency: "ARS",
+                          })}
+                        </div>
                         <div className="text-xs text-gray-500">
-                          {order.type === "DINE_IN" ? "Local" : order.type === "TAKE_AWAY" ? "Para llevar" : "Delivery"}
+                          {order.type === "DINE_IN"
+                            ? "Local"
+                            : order.type === "TAKE_AWAY"
+                              ? "Para llevar"
+                              : "Delivery"}
                         </div>
                       </div>
                     </div>
@@ -130,14 +152,25 @@ export function OrderCombobox({ branchId, value, onSelect }: OrderComboboxProps)
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-blue-900">Pedido #{selectedOrder.publicCode}</div>
+              <div className="font-medium text-blue-900">
+                Pedido #{selectedOrder.publicCode}
+              </div>
               <div className="text-sm text-blue-700">
-                {selectedOrder.table ? (selectedOrder.table.name || `Mesa ${selectedOrder.table.number}`) : "Sin mesa"}
-                {selectedOrder.customerName && ` • ${selectedOrder.customerName}`}
+                {selectedOrder.table
+                  ? selectedOrder.table.name ||
+                    `Mesa ${selectedOrder.table.number}`
+                  : "Sin mesa"}
+                {selectedOrder.customerName &&
+                  ` • ${selectedOrder.customerName}`}
               </div>
             </div>
             <div className="text-right">
-              <div className="font-semibold text-blue-900">${selectedOrder.total.toFixed(2)}</div>
+              <div className="font-semibold text-blue-900">
+                $
+                {selectedOrder.total.toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
+              </div>
             </div>
           </div>
         </div>

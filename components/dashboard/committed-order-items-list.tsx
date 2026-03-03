@@ -57,7 +57,10 @@ export function CommittedOrderItemsList({
 
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold text-gray-700">
-                ${Number(item.price * item.quantity).toFixed(2)}
+                $
+                {Number(item.price * item.quantity).toLocaleString("es-AR", {
+                  currency: "ARS",
+                })}
               </div>
 
               <Button
@@ -77,7 +80,12 @@ export function CommittedOrderItemsList({
       <div className="border-t pt-3">
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
-          <span>${calculateTotal().toFixed(2)}</span>
+          <span>
+            $
+            {calculateTotal().toLocaleString("es-AR", {
+              currency: "ARS",
+            })}
+          </span>
         </div>
       </div>
     </div>

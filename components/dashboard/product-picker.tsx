@@ -189,7 +189,10 @@ export function ProductPicker({
                       )} */}
                     </div>
                     <div className="text-sm font-semibold text-gray-700">
-                      ${Number(product.price).toFixed(2)}
+                      $
+                      {Number(product.price).toLocaleString("es-AR", {
+                        currency: "ARS",
+                      })}
                     </div>
                   </div>
                 </button>

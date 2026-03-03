@@ -181,7 +181,12 @@ export function generateReservationConfirmationEmail(
                     })}
                   </p>
                   <p style="margin: 4px 0 0; color: #1e3a8a; font-size: 13px;">
-                    (${data.guests} ${data.guests === 1 ? "persona" : "personas"} × $${data.pricePerPerson.toFixed(2)})
+                    (${data.guests} ${data.guests === 1 ? "persona" : "personas"} × $${data.pricePerPerson.toLocaleString(
+                      "es-AR",
+                      {
+                        currency: "ARS",
+                      },
+                    )})
                   </p>
                 </div>
               </div>
