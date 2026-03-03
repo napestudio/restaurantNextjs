@@ -2,9 +2,11 @@
 
 import { loginWithCredentials, loginWithGoogle } from "@/actions/login";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleCredentialsSubmit(formData: FormData) {
     const result = await loginWithCredentials(formData);
@@ -50,15 +52,30 @@ export default function LoginForm() {
             >
               Password
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className="appearance-none relative block w-full px-3 py-3 border border-gray-300 bg-white placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Password"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                className="appearance-none relative block w-full px-3 py-3 pr-10 border border-gray-300 bg-white placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute inset-y-0 right-0 z-20 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-5 w-5" aria-hidden="true" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
