@@ -50,7 +50,7 @@ interface EditUserDialogProps {
   onOpenChange: (open: boolean) => void;
   user: UserWithBranches;
   onUpdated: () => void;
-  isSuperAdmin: boolean;
+  canManagePermissions: boolean;
 }
 
 const ALL_GRANTS = Object.keys(PERMISSION_GRANT_LABELS) as PermissionGrant[];
@@ -71,7 +71,7 @@ export function EditUserDialog({
   onOpenChange,
   user,
   onUpdated,
-  isSuperAdmin,
+  canManagePermissions,
 }: EditUserDialogProps) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isPending, setIsPending] = useState(false);
@@ -79,10 +79,10 @@ export function EditUserDialog({
   const [resolvedBranchId, setResolvedBranchId] = useState<string>("");
   // Map of permission → explicit override (true=allow, false=deny, undefined=no override)
   const [grantMap, setGrantMap] = useState<Map<PermissionGrant, boolean>>(
-    new Map()
+    new Map(),
   );
   const [grantsPending, setGrantsPending] = useState<PermissionGrant | null>(
-    null
+    null,
   );
 
   const primaryBranch = user.userOnBranches[0];
@@ -129,7 +129,7 @@ export function EditUserDialog({
         branches.find(
           (b) =>
             b.name === userBranch?.name &&
-            b.restaurant.name === userBranch?.restaurant.name
+            b.restaurant.name === userBranch?.restaurant.name,
         )?.id ||
         "";
 
@@ -147,20 +147,23 @@ export function EditUserDialog({
 
   // Load existing grants when branchId is resolved and user is SUPERADMIN
   useEffect(() => {
-    if (!open || !resolvedBranchId || !isSuperAdmin) return;
+    if (!open || !resolvedBranchId || !canManagePermissions) return;
 
     async function loadGrants() {
       const result = await getUserGrantsForBranch(user.id, resolvedBranchId);
       if (result.success && result.data) {
         setGrantMap(
           new Map(
-            (result.data as GrantRecord[]).map((g) => [g.permission, g.granted])
-          )
+            (result.data as GrantRecord[]).map((g) => [
+              g.permission,
+              g.granted,
+            ]),
+          ),
         );
       }
     }
     loadGrants();
-  }, [open, resolvedBranchId, isSuperAdmin, user.id]);
+  }, [open, resolvedBranchId, canManagePermissions, user.id]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -198,7 +201,7 @@ export function EditUserDialog({
     const roleCoversIt =
       hasMinimumRole(
         selectedRole as UserRole,
-        GRANT_ROLE_MAP[permission] ?? UserRole.SUPERADMIN
+        GRANT_ROLE_MAP[permission] ?? UserRole.SUPERADMIN,
       ) ?? false;
 
     const explicit = grantMap.get(permission);
@@ -210,7 +213,7 @@ export function EditUserDialog({
       user.id,
       resolvedBranchId,
       permission,
-      newAccess
+      newAccess,
     );
 
     if (result.success) {
@@ -224,12 +227,11 @@ export function EditUserDialog({
     const roleCoversIt =
       hasMinimumRole(
         selectedRole as UserRole,
-        GRANT_ROLE_MAP[permission] ?? UserRole.SUPERADMIN
+        GRANT_ROLE_MAP[permission] ?? UserRole.SUPERADMIN,
       ) ?? false;
 
     const explicit = grantMap.get(permission);
-    const effectiveAccess =
-      explicit !== undefined ? explicit : roleCoversIt;
+    const effectiveAccess = explicit !== undefined ? explicit : roleCoversIt;
 
     // Label shown next to checkbox
     let hint: string | null = null;
@@ -238,7 +240,11 @@ export function EditUserDialog({
     else if (explicit === false) hint = "revocado";
     else if (roleCoversIt) hint = "incluido en rol";
 
-    return { checked: effectiveAccess, hint, hasOverride: explicit !== undefined };
+    return {
+      checked: effectiveAccess,
+      hint,
+      hasOverride: explicit !== undefined,
+    };
   };
 
   return (
@@ -352,7 +358,7 @@ export function EditUserDialog({
             </div>
 
             {/* Permisos extra — SUPERADMIN only, fully interactive */}
-            {isSuperAdmin && resolvedBranchId && (
+            {canManagePermissions && resolvedBranchId && (
               <div className="space-y-2 pt-2 border-t">
                 <Label>Permisos extra</Label>
                 <p className="text-xs text-muted-foreground">
@@ -390,8 +396,8 @@ export function EditUserDialog({
                               hasOverride && !checked
                                 ? "text-red-500"
                                 : hasOverride && checked
-                                ? "text-green-600"
-                                : "text-muted-foreground"
+                                  ? "text-green-600"
+                                  : "text-muted-foreground"
                             }`}
                           >
                             {hint}
