@@ -19,7 +19,7 @@ export async function setUserPermission(
   granted: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { userId: grantedBy } = await authorizeAction(UserRole.SUPERADMIN);
+    const { userId: grantedBy } = await authorizeAction(UserRole.ADMIN);
 
     await prisma.userPermissionGrant.upsert({
       where: {
@@ -46,7 +46,7 @@ export async function clearUserPermission(
   permission: PermissionGrant
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await authorizeAction(UserRole.SUPERADMIN);
+    await authorizeAction(UserRole.ADMIN);
 
     await prisma.userPermissionGrant.deleteMany({
       where: { userId, branchId, permission },
@@ -68,7 +68,7 @@ export async function getUserGrantsForBranch(
   branchId: string
 ): Promise<{ success: boolean; data?: GrantRecord[]; error?: string }> {
   try {
-    await authorizeAction(UserRole.SUPERADMIN);
+    await authorizeAction(UserRole.ADMIN);
 
     const grants = await prisma.userPermissionGrant.findMany({
       where: { userId, branchId },

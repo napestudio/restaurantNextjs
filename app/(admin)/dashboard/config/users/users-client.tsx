@@ -1,25 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, UserPlus, Search, X, User } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { getUsers } from "@/actions/users";
 import {
   CreateUserDialog,
-  EditUserDialog,
   DeleteUserDialog,
+  EditUserDialog,
 } from "@/components/dashboard/users";
-import { UserWithBranches, USER_ROLE_LABELS, UserRole } from "@/types/user";
-import { getUsers } from "@/actions/users";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { USER_ROLE_LABELS, UserWithBranches } from "@/types/user";
+import { UserRole } from "@/app/generated/prisma";
+import { Pencil, Search, Trash2, User, UserPlus, X } from "lucide-react";
+import { useState } from "react";
 
 interface UsersClientProps {
   initialUsers: UserWithBranches[];
   currentUserId: string;
   branchId: string;
   isSuperAdmin: boolean;
+  isAdminOrHigher: boolean;
 }
 
 export function UsersClient({
@@ -27,13 +28,14 @@ export function UsersClient({
   currentUserId,
   branchId,
   isSuperAdmin,
+  isAdminOrHigher,
 }: UsersClientProps) {
   const [users, setUsers] = useState<UserWithBranches[]>(initialUsers);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithBranches | null>(
-    null
+    null,
   );
   const { toast } = useToast();
 
@@ -78,7 +80,7 @@ export function UsersClient({
   // On success: replace temp ID with real ID and show toast
   const handleCreateSuccess = (tempId: string, realId: string) => {
     setUsers((prev) =>
-      prev.map((user) => (user.id === tempId ? { ...user, id: realId } : user))
+      prev.map((user) => (user.id === tempId ? { ...user, id: realId } : user)),
     );
     toast({
       title: "Usuario creado",
@@ -131,6 +133,12 @@ export function UsersClient({
 
   // Filter users
   const filteredUsers = users.filter((user) => {
+    const primaryBranch = user.userOnBranches[0];
+
+    // Hide superadmin users from non-superadmins
+    if (!isSuperAdmin && primaryBranch?.role === UserRole.SUPERADMIN)
+      return false;
+
     // Search filter - search across username, name, and email
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -144,7 +152,6 @@ export function UsersClient({
 
     // Role filter
     if (filterRole !== "all") {
-      const primaryBranch = user.userOnBranches[0];
       if (!primaryBranch || primaryBranch.role !== filterRole) return false;
     }
 
@@ -198,7 +205,9 @@ export function UsersClient({
             className="h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring min-w-45"
           >
             <option value="all">Todos los roles</option>
-            <option value="SUPERADMIN">Super Admin</option>
+            {isSuperAdmin && (
+              <option value="SUPERADMIN">Super Admin</option>
+            )}
             <option value="ADMIN">Administrador</option>
             <option value="MANAGER">Manager</option>
             <option value="EMPLOYEE">Empleado</option>
@@ -376,7 +385,7 @@ export function UsersClient({
             onOpenChange={setEditDialogOpen}
             user={selectedUser}
             onUpdated={refreshUsers}
-            isSuperAdmin={isSuperAdmin}
+            canManagePermissions={isAdminOrHigher}
           />
 
           <DeleteUserDialog

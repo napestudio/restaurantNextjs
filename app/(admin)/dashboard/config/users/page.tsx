@@ -15,6 +15,7 @@ export default async function UsersPage() {
         currentUserId={userId}
         branchId={branchId}
         isSuperAdmin={userRole === UserRole.SUPERADMIN}
+        isAdminOrHigher={userRole === UserRole.ADMIN || userRole === UserRole.SUPERADMIN}
       />
     </div>
   );

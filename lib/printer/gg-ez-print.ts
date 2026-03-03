@@ -14,11 +14,11 @@ const WS_URL = "ws://localhost:8080/ws";
 // ============================================================================
 
 export interface ReconnectionConfig {
-  enabled: boolean;              // Enable/disable auto-reconnect
-  initialDelay: number;          // Initial delay in ms
-  maxDelay: number;              // Maximum delay in ms
-  maxAttempts: number;           // Max reconnection attempts
-  backoffMultiplier: number;     // Exponential backoff multiplier
+  enabled: boolean; // Enable/disable auto-reconnect
+  initialDelay: number; // Initial delay in ms
+  maxDelay: number; // Maximum delay in ms
+  maxAttempts: number; // Max reconnection attempts
+  backoffMultiplier: number; // Exponential backoff multiplier
 }
 
 export interface DiscoveredPrinter {
@@ -50,9 +50,9 @@ export interface GgEzPrintConnection {
   isConnected: boolean;
   error: string | null;
   reconnectAttempts: number;
-  isReconnecting: boolean;       // Active reconnection in progress
-  nextRetryIn?: number;          // Milliseconds until next retry attempt
-  maxAttempts?: number;          // Maximum attempts configured
+  isReconnecting: boolean; // Active reconnection in progress
+  nextRetryIn?: number; // Milliseconds until next retry attempt
+  maxAttempts?: number; // Maximum attempts configured
 }
 
 // ============================================================================
@@ -72,14 +72,15 @@ export class GgEzPrintClient {
   private userDisconnected: boolean = false;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private messageHandlers: ((response: GgEzPrintResponse) => void)[] = [];
-  private connectionHandlers: ((connection: GgEzPrintConnection) => void)[] = [];
+  private connectionHandlers: ((connection: GgEzPrintConnection) => void)[] =
+    [];
   private keepaliveIntervalId: ReturnType<typeof setInterval> | null = null;
   private readonly KEEPALIVE_INTERVAL_MS = 25000;
   private hadSuccessfulConnection = false;
 
   constructor(
     url: string = WS_URL,
-    reconnectionConfig?: Partial<ReconnectionConfig>
+    reconnectionConfig?: Partial<ReconnectionConfig>,
   ) {
     this.reconnectionConfig = {
       enabled: true,
@@ -134,14 +135,14 @@ export class GgEzPrintClient {
           const response: GgEzPrintResponse = JSON.parse(event.data);
           // Snapshot before iterating — handlers call splice() during cleanup,
           // which would shift indices and cause subsequent handlers to be skipped.
-          [...this.messageHandlers].forEach(handler => handler(response));
+          [...this.messageHandlers].forEach((handler) => handler(response));
         } catch (error) {
           console.error("Failed to parse gg-ez-print response:", error);
         }
       };
 
       this.ws.onerror = (error) => {
-        console.warn("gg-ez-print WebSocket error:", error);
+        // console.warn("gg-ez-print WebSocket error:", error);
         this.connection = {
           isConnected: false,
           error: "Error de conexión con gg-ez-print",
@@ -173,16 +174,18 @@ export class GgEzPrintClient {
           this.reconnectionConfig.enabled &&
           !this.userDisconnected &&
           this.hadSuccessfulConnection &&
-          this.connection.reconnectAttempts < this.reconnectionConfig.maxAttempts
+          this.connection.reconnectAttempts <
+            this.reconnectionConfig.maxAttempts
         ) {
           this.scheduleReconnect();
         }
       };
     } catch (error) {
-      console.warn("Failed to create gg-ez-print WebSocket:", error);
+      // console.warn("Failed to create gg-ez-print WebSocket:", error);
       this.connection = {
         isConnected: false,
-        error: "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose?",
+        error:
+          "No se pudo conectar a gg-ez-print. ¿Está el servicio ejecutándose?",
         reconnectAttempts: this.connection.reconnectAttempts,
         isReconnecting: false,
       };
@@ -224,8 +227,11 @@ export class GgEzPrintClient {
     // Calculate delay using exponential backoff
     const delay = Math.min(
       this.reconnectionConfig.initialDelay *
-        Math.pow(this.reconnectionConfig.backoffMultiplier, this.connection.reconnectAttempts),
-      this.reconnectionConfig.maxDelay
+        Math.pow(
+          this.reconnectionConfig.backoffMultiplier,
+          this.connection.reconnectAttempts,
+        ),
+      this.reconnectionConfig.maxDelay,
     );
 
     // Update UI with reconnecting status
@@ -244,7 +250,9 @@ export class GgEzPrintClient {
    * Attempt to reconnect
    */
   private attemptReconnect(): void {
-    console.log(`[GgEzPrint] Intento de reconexión ${this.connection.reconnectAttempts + 1}/${this.reconnectionConfig.maxAttempts}`);
+    console.log(
+      `[GgEzPrint] Intento de reconexión ${this.connection.reconnectAttempts + 1}/${this.reconnectionConfig.maxAttempts}`,
+    );
 
     this.connection.reconnectAttempts++;
     this.isReconnecting = false;
@@ -322,7 +330,9 @@ export class GgEzPrintClient {
       if (cleaned) return;
       cleanup();
       if (!this.userDisconnected) {
-        console.warn("[GgEzPrint] Keepalive timeout — conexión muerta, reconectando...");
+        console.warn(
+          "[GgEzPrint] Keepalive timeout — conexión muerta, reconectando...",
+        );
         this.forceReconnect();
       }
     }, 3000);
@@ -362,7 +372,11 @@ export class GgEzPrintClient {
       dead.onclose = null;
       dead.onerror = null;
       dead.onmessage = null;
-      try { dead.close(); } catch { /* ignore errors on dead socket */ }
+      try {
+        dead.close();
+      } catch {
+        /* ignore errors on dead socket */
+      }
     }
     this.isReconnecting = false;
     this.connection = {
@@ -482,7 +496,9 @@ export class GgEzPrintClient {
   /**
    * Subscribe to connection status changes
    */
-  public onConnectionChange(handler: (connection: GgEzPrintConnection) => void): () => void {
+  public onConnectionChange(
+    handler: (connection: GgEzPrintConnection) => void,
+  ): () => void {
     this.connectionHandlers.push(handler);
 
     // Immediately notify with current status
@@ -501,7 +517,7 @@ export class GgEzPrintClient {
    * Notify all connection handlers of status change
    */
   private notifyConnectionChange(connection: GgEzPrintConnection): void {
-    this.connectionHandlers.forEach(handler => handler(connection));
+    this.connectionHandlers.forEach((handler) => handler(connection));
   }
 
   /**
