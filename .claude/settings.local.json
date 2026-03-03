@@ -27,7 +27,8 @@
       "Bash(grep -n \"getProducts.*Menu\\\\|getMenuProducts\" actions/*.ts)",
       "Bash(xargs grep -l \"gg-ez-print\\\\|GgEzPrint\\\\|qz-tray\\\\|qz\\\\.js\")",
       "Bash(xargs grep -l \"reservation\\\\|booking\" -i)",
-      "Bash(git diff --no-pager components/dashboard/product-picker.tsx)"
+      "Bash(git diff --no-pager components/dashboard/product-picker.tsx)",
+      "Bash(node -e \":*)"
     ],
     "deny": [],
     "ask": []
