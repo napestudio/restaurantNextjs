@@ -14,6 +14,7 @@ interface UseFloorPlanStateProps {
   canvasWidth: number;
   canvasHeight: number;
   zoom: number;
+  initialSelectedTable?: string;
 }
 
 export function useFloorPlanState({
@@ -22,12 +23,15 @@ export function useFloorPlanState({
   canvasWidth,
   canvasHeight,
   zoom,
+  initialSelectedTable,
 }: UseFloorPlanStateProps) {
   // Initialize tables state with a function to avoid computing on every render
   const [tables, setTables] = useState<FloorTable[]>(() =>
     transformTables(dbTables)
   );
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [selectedTable, setSelectedTable] = useState<string | null>(
+    initialSelectedTable ?? null
+  );
   const [draggedTable, setDraggedTable] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
@@ -38,7 +42,7 @@ export function useFloorPlanState({
       return dbTables.map((dbTable) => {
         // Find existing floor table to preserve position/UI state
         const existingFloorTable = prevTables.find((t) => t.id === dbTable.id);
-        const { status, currentGuests, hasWaiter, waiterName } = calculateTableStatus(dbTable);
+        const { status, currentGuests, hasWaiter, waiterName, reservationInfo } = calculateTableStatus(dbTable);
 
         // If table exists, preserve floor plan properties but update status
         if (existingFloorTable) {
@@ -51,6 +55,7 @@ export function useFloorPlanState({
             isShared: dbTable.isShared,
             hasWaiter,
             waiterName,
+            reservationInfo,
           };
         }
 

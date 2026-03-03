@@ -14,7 +14,7 @@ interface ReservationConfirmationEmailData {
 }
 
 export function generateReservationConfirmationEmail(
-  data: ReservationConfirmationEmailData
+  data: ReservationConfirmationEmailData,
 ): string {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -124,7 +124,9 @@ export function generateReservationConfirmationEmail(
 
               <!-- Special Requirements (if any) -->
               ${
-                data.dietaryRestrictions || data.accessibilityNeeds || data.notes
+                data.dietaryRestrictions ||
+                data.accessibilityNeeds ||
+                data.notes
                   ? `
               <div style="background-color: #fffbeb; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #f59e0b;">
                 <h3 style="margin: 0 0 16px; color: #92400e; font-size: 16px; font-weight: 600;">
@@ -172,7 +174,11 @@ export function generateReservationConfirmationEmail(
                 </p>
                 <div style="background-color: #dbeafe; border-radius: 8px; padding: 12px; margin-top: 12px;">
                   <p style="margin: 0; color: #1e40af; font-size: 16px;">
-                    <strong>Total:</strong> $${(data.pricePerPerson * data.guests).toFixed(2)}
+                    <strong>Total:</strong> $${(
+                      data.pricePerPerson * data.guests
+                    ).toLocaleString("es-Ar", {
+                      currency: "ARS",
+                    })}
                   </p>
                   <p style="margin: 4px 0 0; color: #1e3a8a; font-size: 13px;">
                     (${data.guests} ${data.guests === 1 ? "persona" : "personas"} × $${data.pricePerPerson.toFixed(2)})

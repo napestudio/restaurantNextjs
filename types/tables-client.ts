@@ -21,6 +21,7 @@ export interface TableWithReservations {
       people: number;
       status: string;
       date: string;
+      exactTime: Date | string | null;
       timeSlot: {
         startTime: string;
         endTime: string;

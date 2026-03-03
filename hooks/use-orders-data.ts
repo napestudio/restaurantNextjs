@@ -49,6 +49,11 @@ interface UseOrdersDataOptions {
    * Default: true
    */
   revalidateOnReconnect?: boolean;
+  /**
+   * Throttle focus revalidation — min ms between focus-triggered revalidations.
+   * Default: 5000 (SWR default). Set to match refreshInterval to avoid redundant DB hits.
+   */
+  focusThrottleInterval?: number;
 }
 
 /**
@@ -74,6 +79,7 @@ export function useOrdersData({
   refreshInterval = 30000,
   revalidateOnFocus = true,
   revalidateOnReconnect = true,
+  focusThrottleInterval,
 }: UseOrdersDataOptions) {
   // Generate a stable cache key
   const cacheKey = tableId
@@ -103,6 +109,7 @@ export function useOrdersData({
       refreshInterval,
       revalidateOnFocus,
       revalidateOnReconnect,
+      ...(focusThrottleInterval !== undefined && { focusThrottleInterval }),
       // Keep previous data while revalidating for smoother UX
       keepPreviousData: true,
       // Deduplicate requests within 2 seconds

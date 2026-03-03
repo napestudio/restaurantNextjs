@@ -1,44 +1,53 @@
-import { Card, CardContent } from "@/components/ui/card";
+import type { FloorTableStatus } from "@/types/table";
+import type { FloorTable } from "@/lib/floor-plan-utils";
 
 interface FloorPlanStatsProps {
-  total: number;
-  empty: number;
-  occupied: number;
-  reserved: number;
+  tables: FloorTable[];
 }
 
-export function FloorPlanStats({
-  total,
-  empty,
-  occupied,
-  reserved,
-}: FloorPlanStatsProps) {
+const statusConfig: Array<{
+  key: FloorTableStatus;
+  label: string;
+  color: string;
+}> = [
+  { key: "empty", label: "Libres", color: "#22c55e" },
+  { key: "upcoming", label: "Próxima", color: "#f59e0b" },
+  { key: "reserved", label: "Llegando", color: "#8b5cf6" },
+  { key: "late", label: "Demorada", color: "#f97316" },
+  { key: "occupied", label: "Ocupadas", color: "#ef4444" },
+  { key: "pending_payment", label: "Pago pendiente", color: "#06b6d4" },
+  { key: "cleaning", label: "Limpieza", color: "#eab308" },
+];
+
+export function FloorPlanStats({ tables }: FloorPlanStatsProps) {
+  const counts = tables.reduce<Partial<Record<FloorTableStatus, number>>>(
+    (acc, t) => {
+      acc[t.status] = (acc[t.status] ?? 0) + 1;
+      return acc;
+    },
+    {},
+  );
+
+  const active = statusConfig.filter(({ key }) => (counts[key] ?? 0) > 0);
+
+  if (active.length === 0) return null;
+
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold">{total}</div>
-          <p className="text-xs text-muted-foreground">Total de Mesas</p>
-        </CardContent>
-      </Card>
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold text-green-700">{empty}</div>
-          <p className="text-xs text-green-600">Disponibles</p>
-        </CardContent>
-      </Card>
-      <Card className="border-red-200 bg-red-50">
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold text-red-700">{occupied}</div>
-          <p className="text-xs text-red-600">Ocupadas</p>
-        </CardContent>
-      </Card>
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold text-blue-700">{reserved}</div>
-          <p className="text-xs text-blue-600">Reservadas</p>
-        </CardContent>
-      </Card>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {active.map(({ key, label, color }) => (
+        <div key={key} className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-3 h-3 rounded-full shrink-0"
+            style={{ backgroundColor: color }}
+          />
+          <span className="text-xs text-muted-foreground">
+            {label}
+            <span className="font-semibold text-foreground ml-1">
+              {counts[key]}
+            </span>
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -131,7 +131,7 @@ export function CreateTimeSlotDialog({
             setNewSlot((prev) => ({
               ...prev,
               tableIds: prev.tableIds.filter((id) =>
-                availableTableIds.includes(id)
+                availableTableIds.includes(id),
               ),
             }));
           }
@@ -175,7 +175,7 @@ export function CreateTimeSlotDialog({
 
     if (limit !== null && limit > branchCapacity) {
       setCustomerLimitError(
-        `El límite de clientes (${limit}) excede la capacidad total (${branchCapacity})`
+        `El límite de clientes (${limit}) excede la capacidad total (${branchCapacity})`,
       );
     } else {
       setCustomerLimitError("");
@@ -249,14 +249,14 @@ export function CreateTimeSlotDialog({
       if (newSlot.customerLimit && newSlot.customerLimit > 0) {
         if (newSlot.tableIds.length === 0) {
           alert(
-            "Debes seleccionar al menos una mesa exclusiva al establecer un límite de clientes."
+            "Debes seleccionar al menos una mesa exclusiva al establecer un límite de clientes.",
           );
           return;
         }
 
         if (selectedTablesCapacity < newSlot.customerLimit) {
           const confirmed = confirm(
-            `Las mesas seleccionadas (${selectedTablesCapacity} asientos) no cumplen el límite de clientes (${newSlot.customerLimit}). ¿Continuar de todas formas?`
+            `Las mesas seleccionadas (${selectedTablesCapacity} asientos) no cumplen el límite de clientes (${newSlot.customerLimit}). ¿Continuar de todas formas?`,
           );
           if (!confirmed) return;
         }
@@ -503,8 +503,8 @@ export function CreateTimeSlotDialog({
                   {selectedTablesCapacity < newSlot.customerLimit && (
                     <span className="block mt-1 font-semibold">
                       Selecciona{" "}
-                      {newSlot.customerLimit - selectedTablesCapacity} asientos más
-                      para cumplir el límite.
+                      {newSlot.customerLimit - selectedTablesCapacity} asientos
+                      más para cumplir el límite.
                     </span>
                   )}
                 </AlertDescription>
@@ -540,7 +540,7 @@ export function CreateTimeSlotDialog({
                     <p className="text-xs text-gray-500 mt-1">
                       {newSlot.customerLimit && newSlot.customerLimit > 0
                         ? "Estas mesas SOLO estarán disponibles para este turno"
-                        : "Por defecto, todas las mesas son compartidas. Selecciona mesas para hacerlas exclusivas de este turno."}
+                        : "Por defecto, todas las mesas son compartidas por los turnos. Selecciona mesas para hacerlas exclusivas de este turno."}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -597,8 +597,8 @@ export function CreateTimeSlotDialog({
                               isDisabled
                                 ? "bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed"
                                 : newSlot.tableIds?.includes(table.id)
-                                ? "bg-green-50 border-green-500"
-                                : "bg-white border-gray-200"
+                                  ? "bg-green-50 border-green-500"
+                                  : "bg-white border-gray-200"
                             }`}
                           >
                             <Checkbox
@@ -649,11 +649,11 @@ export function CreateTimeSlotDialog({
                                 </p>
                                 <p className="text-xs">
                                   {formatTime(
-                                    table.conflictingTimeSlot.startTime
+                                    table.conflictingTimeSlot.startTime,
                                   )}{" "}
                                   -{" "}
                                   {formatTime(
-                                    table.conflictingTimeSlot.endTime
+                                    table.conflictingTimeSlot.endTime,
                                   )}
                                 </p>
                               </TooltipContent>
