@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { SerializedMenu } from "@/actions/menus";
 import {
   createMenuSection,
@@ -61,7 +61,17 @@ export function MenuSectionsEditor({
   const [editSectionName, setEditSectionName] = useState("");
   const [editSectionDescription, setEditSectionDescription] = useState("");
 
-  const sections = menu.menuSections || [];
+  const [sections, setSections] = useState(menu.menuSections || []);
+  const isOptimisticRef = useRef(false);
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (isOptimisticRef.current) {
+      isOptimisticRef.current = false;
+      return;
+    }
+    setSections(menu.menuSections || []);
+  }, [menu]);
 
   const handleAddSection = async () => {
     if (!newSectionName.trim()) {
@@ -117,16 +127,22 @@ export function MenuSectionsEditor({
     setEditSectionDescription("");
   };
 
-  const handleDeleteSection = async () => {
+  const handleDeleteSection = () => {
     if (!deletingSectionId) return;
 
-    const result = await deleteMenuSection(deletingSectionId);
-    if (result.success) {
-      setDeletingSectionId(null);
-      onUpdate();
-    } else {
-      alert(result.error || "Error al eliminar la sección");
-    }
+    const sectionIdToDelete = deletingSectionId;
+    const previousSections = sections;
+
+    setSections((prev) => prev.filter((s) => s.id !== sectionIdToDelete));
+    setDeletingSectionId(null);
+
+    startTransition(async () => {
+      const result = await deleteMenuSection(sectionIdToDelete);
+      if (!result.success) {
+        setSections(previousSections);
+        alert(result.error || "Error al eliminar la sección");
+      }
+    });
   };
 
   const handleToggleSection = (sectionId: string) => {

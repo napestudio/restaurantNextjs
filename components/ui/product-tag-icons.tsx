@@ -21,17 +21,17 @@ const TAG_CONFIG: Record<
   SPICY: {
     label: "Picante Leve",
     icon: SpicyIcon,
-    color: "text-neutral-300",
+    color: "text-red-400",
   },
   SPICY_MEDIUM: {
     label: "Picante Medio",
     icon: SpicyMediumIcon,
-    color: "text-neutral-300",
+    color: "text-red-400",
   },
   SPICY_HIGH: {
     label: "Muy Picante",
     icon: SpicyHighIcon,
-    color: "text-neutral-300",
+    color: "text-red-400",
   },
   VEGAN: {
     label: "Vegano",
@@ -84,7 +84,7 @@ export function ProductTagIcons({
   if (!tags || tags.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex gap-1.5">
       {tags.map((tag) => {
         const config = TAG_CONFIG[tag];
         if (!config) return null;
