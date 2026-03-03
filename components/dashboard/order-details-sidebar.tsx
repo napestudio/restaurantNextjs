@@ -278,8 +278,19 @@ export function OrderDetailsSidebar({
     if (!order) return;
 
     const waiterName =
-      order.assignedTo?.name || order.assignedTo?.username || "—";
+      order.assignedTo?.name || order.assignedTo?.username || undefined;
     const tableName = order.table?.number?.toString() || "—";
+    const isDelivery = order.type === OrderType.DELIVERY;
+
+    let deliveryAddress: string | undefined;
+    if (isDelivery && order.client) {
+      const parts = [
+        order.client.addressStreet,
+        order.client.addressNumber,
+        order.client.addressApartment,
+      ].filter(Boolean);
+      if (parts.length > 0) deliveryAddress = parts.join(" ");
+    }
 
     // Print via gg-ez-print - optimistic updates handled by usePrint hook
     const success = await printControlTicket({
@@ -299,6 +310,10 @@ export function OrderDetailsSidebar({
         order.discountPercentage > 0 ? order.discountPercentage : undefined,
       orderType: order.type,
       customerName: order.client?.name || order.customerName || undefined,
+      clientPhone: isDelivery ? (order.client?.phone ?? undefined) : undefined,
+      deliveryAddress: isDelivery ? deliveryAddress : undefined,
+      deliveryCity: isDelivery ? (order.client?.addressCity ?? undefined) : undefined,
+      deliveryNotes: isDelivery ? (order.client?.notes ?? undefined) : undefined,
     });
 
     if (!success) {

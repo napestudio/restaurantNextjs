@@ -646,7 +646,7 @@ export interface FullOrderItem {
 export interface FullOrderData {
   orderNumber: string;
   tableName: string;
-  waiterName: string;
+  waiterName?: string;
   items: FullOrderItem[];
   subtotal: number;
   discountPercentage?: number;
@@ -655,6 +655,10 @@ export interface FullOrderData {
   notes?: string;
   orderType?: string;
   customerName?: string;
+  clientPhone?: string | null;
+  deliveryAddress?: string | null;
+  deliveryCity?: string | null;
+  deliveryNotes?: string | null;
 }
 
 /**
@@ -719,7 +723,9 @@ export async function printFullOrder(
       now.toLocaleTimeString("es-AR", { hour12: false }),
       width,
     ) + "\n";
-  content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  if (order.waiterName) {
+    content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  }
   if (order.customerName) {
     content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
   }
@@ -1110,7 +1116,9 @@ export function generateFullOrderData(
       now.toLocaleTimeString("es-AR", { hour12: false }),
       width,
     ) + "\n";
-  content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  if (order.waiterName) {
+    content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
+  }
   if (order.customerName) {
     content += formatTwoColumns("Cliente:", order.customerName, width) + "\n";
   }
@@ -1118,6 +1126,29 @@ export function generateFullOrderData(
     content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
   }
   content += Commands.NORMAL_SIZE;
+
+  if (order.clientPhone || order.deliveryAddress) {
+    content += separator(width) + "\n";
+    content += Commands.BOLD_ON;
+    content += getControlFontSizeCommand(fontSize);
+    content += formatLine("ENTREGA", width, "center") + "\n";
+    content += Commands.BOLD_OFF;
+    content += separator(width) + "\n";
+    content += getControlFontSizeCommand(fontSize);
+    if (order.clientPhone) {
+      content += formatTwoColumns("Tel:", order.clientPhone, width) + "\n";
+    }
+    if (order.deliveryAddress) {
+      content += formatTwoColumns("Dir:", order.deliveryAddress, width) + "\n";
+    }
+    if (order.deliveryCity) {
+      content += formatTwoColumns("Ciudad:", order.deliveryCity, width) + "\n";
+    }
+    if (order.deliveryNotes) {
+      content += formatTwoColumns("Notas:", order.deliveryNotes, width) + "\n";
+    }
+    content += Commands.NORMAL_SIZE;
+  }
 
   content += separator(width) + "\n";
   content += addSpacing();

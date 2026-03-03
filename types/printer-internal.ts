@@ -26,11 +26,15 @@ export interface ControlTicketInfo {
   orderId: string;
   orderCode: string;
   tableName: string;
-  waiterName: string;
+  waiterName?: string;
   branchId: string;
   items: ControlTicketItem[];
   subtotal: number;
   discountPercentage?: number;
   orderType?: string;
   customerName?: string;
+  clientPhone?: string | null;
+  deliveryAddress?: string | null;
+  deliveryCity?: string | null;
+  deliveryNotes?: string | null;
 }

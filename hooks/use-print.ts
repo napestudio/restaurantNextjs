@@ -51,7 +51,7 @@ export interface UsePrintReturn {
     orderId: string;
     orderCode: string;
     tableName: string;
-    waiterName: string;
+    waiterName?: string;
     branchId: string;
     items: Array<{
       name: string;
@@ -63,6 +63,10 @@ export interface UsePrintReturn {
     discountPercentage?: number;
     orderType?: string;
     customerName?: string;
+    clientPhone?: string | null;
+    deliveryAddress?: string | null;
+    deliveryCity?: string | null;
+    deliveryNotes?: string | null;
   }) => Promise<boolean>;
   printPreOrderTicket: (orderInfo: {
     orderId: string;
@@ -395,7 +399,7 @@ export function usePrint(): UsePrintReturn {
       orderId: string;
       orderCode: string;
       tableName: string;
-      waiterName: string;
+      waiterName?: string;
       branchId: string;
       items: Array<{
         name: string;
@@ -407,6 +411,10 @@ export function usePrint(): UsePrintReturn {
       discountPercentage?: number;
       orderType?: string;
       customerName?: string;
+      clientPhone?: string | null;
+      deliveryAddress?: string | null;
+      deliveryCity?: string | null;
+      deliveryNotes?: string | null;
     }): Promise<boolean> => {
       // Guard against rapid double-clicks — ref is synchronous, immune to render batching
       if (printControlTicketLock.current) return false;
