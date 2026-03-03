@@ -388,7 +388,11 @@ export async function prepareControlTicketPrint(
  */
 export async function preparePreOrderTicketPrint(
   orderInfo: OrderInfoForPrint,
-  items: OrderItemForPrint[],
+  items: Array<{
+    itemName: string;
+    quantity: number;
+    notes?: string | null;
+  }>,
 ): Promise<PreparedPrintResult> {
   try {
     const printers = await prisma.printer.findMany({
