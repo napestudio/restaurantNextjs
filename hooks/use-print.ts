@@ -67,6 +67,7 @@ export interface UsePrintReturn {
     deliveryAddress?: string | null;
     deliveryCity?: string | null;
     deliveryNotes?: string | null;
+    paymentMethod?: string;
   }) => Promise<boolean>;
   printPreOrderTicket: (orderInfo: {
     orderId: string;
@@ -415,6 +416,7 @@ export function usePrint(): UsePrintReturn {
       deliveryAddress?: string | null;
       deliveryCity?: string | null;
       deliveryNotes?: string | null;
+      paymentMethod?: string;
     }): Promise<boolean> => {
       // Guard against rapid double-clicks — ref is synchronous, immune to render batching
       if (printControlTicketLock.current) return false;

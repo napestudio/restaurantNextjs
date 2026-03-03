@@ -659,6 +659,7 @@ export interface FullOrderData {
   deliveryAddress?: string | null;
   deliveryCity?: string | null;
   deliveryNotes?: string | null;
+  paymentMethod?: string;
 }
 
 /**
@@ -1124,6 +1125,9 @@ export function generateFullOrderData(
   }
   if (order.orderType) {
     content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
+  }
+  if (order.paymentMethod) {
+    content += formatTwoColumns("Pago:", order.paymentMethod, width) + "\n";
   }
   content += Commands.NORMAL_SIZE;
 
