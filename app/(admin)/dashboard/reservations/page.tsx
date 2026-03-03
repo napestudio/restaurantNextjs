@@ -1,5 +1,4 @@
 import { getFilteredReservations } from "@/actions/Reservation";
-import { getTimeSlots } from "@/actions/TimeSlot";
 import { ReservationsManager } from "@/components/dashboard/reservations-manager";
 import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
@@ -10,17 +9,11 @@ export default async function ReservationsPage() {
   // TODO: Get branchId from user session/context
   const branchId = process.env.BRANCH_ID || "";
 
-  // Fetch time slots and reservations in parallel for faster loading
-  const [timeSlotsResult, reservationsResult] = await Promise.all([
-    getTimeSlots(branchId),
-    getFilteredReservations(branchId, {
-      type: "today",
-      limit: 10,
-    }),
-  ]);
-
-  const timeSlots =
-    timeSlotsResult.success && timeSlotsResult.data ? timeSlotsResult.data : [];
+  // Time slots are NOT fetched here — they load lazily when the Create Reservation dialog opens
+  const reservationsResult = await getFilteredReservations(branchId, {
+    type: "today",
+    limit: 10,
+  });
 
   const reservations =
     reservationsResult.success && reservationsResult.data
@@ -41,7 +34,6 @@ export default async function ReservationsPage() {
         <ReservationsManager
           initialReservations={reservations}
           initialPagination={pagination}
-          timeSlots={timeSlots}
           branchId={branchId}
         />
       </main>

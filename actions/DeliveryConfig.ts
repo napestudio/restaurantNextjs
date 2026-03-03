@@ -24,6 +24,8 @@ type SerializedDeliveryConfig = {
   branchId: string;
   menuId: string | null;
   isActive: boolean;
+  allowDelivery: boolean;
+  allowTakeAway: boolean;
   minOrderAmount: number;
   deliveryFee: number;
   estimatedMinutes: number;
@@ -78,6 +80,8 @@ export async function getDeliveryConfig(branchId: string): Promise<{
         branchId: config.branchId,
         menuId: config.menuId,
         isActive: config.isActive,
+        allowDelivery: config.allowDelivery,
+        allowTakeAway: config.allowTakeAway,
         minOrderAmount: config.minOrderAmount ? Number(config.minOrderAmount) : 0,
         deliveryFee: config.deliveryFee ? Number(config.deliveryFee) : 0,
         estimatedMinutes: config.estimatedMinutes ?? 45,
@@ -114,6 +118,8 @@ export async function updateDeliveryConfig(data: {
   branchId: string;
   menuId: string | null;
   isActive: boolean;
+  allowDelivery?: boolean;
+  allowTakeAway?: boolean;
   minOrderAmount?: number;
   deliveryFee?: number;
   estimatedMinutes?: number;
@@ -131,6 +137,8 @@ export async function updateDeliveryConfig(data: {
           branchId: data.branchId,
           menuId: data.menuId,
           isActive: data.isActive,
+          allowDelivery: data.allowDelivery ?? true,
+          allowTakeAway: data.allowTakeAway ?? false,
           minOrderAmount: data.minOrderAmount ?? 0,
           deliveryFee: data.deliveryFee ?? 0,
           estimatedMinutes: data.estimatedMinutes ?? 45,
@@ -138,6 +146,8 @@ export async function updateDeliveryConfig(data: {
         update: {
           menuId: data.menuId,
           isActive: data.isActive,
+          allowDelivery: data.allowDelivery ?? true,
+          allowTakeAway: data.allowTakeAway ?? false,
           minOrderAmount: data.minOrderAmount ?? 0,
           deliveryFee: data.deliveryFee ?? 0,
           estimatedMinutes: data.estimatedMinutes ?? 45,

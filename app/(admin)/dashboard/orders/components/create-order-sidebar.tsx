@@ -72,8 +72,15 @@ export function CreateOrderSidebar({
   const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
 
-  // Use cached products from context
-  const { products } = useProducts();
+  // Use products from context — load on demand when sidebar opens
+  const { products, isLoading: productsLoading, refreshProducts } = useProducts();
+
+  // Load products when the sidebar opens (if not already loaded)
+  useEffect(() => {
+    if (open && products.length === 0 && !productsLoading) {
+      refreshProducts();
+    }
+  }, [open, products.length, productsLoading, refreshProducts]);
 
   // Update order type when initialOrderType changes
   useEffect(() => {

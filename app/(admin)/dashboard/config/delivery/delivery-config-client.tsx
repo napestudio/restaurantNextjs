@@ -49,6 +49,8 @@ type DeliveryConfig = {
   branchId: string;
   menuId: string | null;
   isActive: boolean;
+  allowDelivery: boolean;
+  allowTakeAway: boolean;
   minOrderAmount: number;
   deliveryFee: number;
   estimatedMinutes: number;
@@ -70,21 +72,29 @@ export default function DeliveryConfigClient({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingWindow, setEditingWindow] = useState<DeliveryWindow | null>(null);
+  const [editingWindow, setEditingWindow] = useState<DeliveryWindow | null>(
+    null,
+  );
 
   // Form state
   const [isActive, setIsActive] = useState(initialConfig?.isActive ?? true);
+  const [allowDelivery, setAllowDelivery] = useState(
+    initialConfig?.allowDelivery ?? true,
+  );
+  const [allowTakeAway, setAllowTakeAway] = useState(
+    initialConfig?.allowTakeAway ?? false,
+  );
   const [selectedMenuId, setSelectedMenuId] = useState<string>(
-    initialConfig?.menuId || "__none__"
+    initialConfig?.menuId || "__none__",
   );
   const [minOrderAmount, setMinOrderAmount] = useState(
-    initialConfig?.minOrderAmount?.toString() || "0"
+    initialConfig?.minOrderAmount?.toString() || "0",
   );
   const [deliveryFee, setDeliveryFee] = useState(
-    initialConfig?.deliveryFee?.toString() || "0"
+    initialConfig?.deliveryFee?.toString() || "0",
   );
   const [estimatedMinutes, setEstimatedMinutes] = useState(
-    initialConfig?.estimatedMinutes?.toString() || "45"
+    initialConfig?.estimatedMinutes?.toString() || "45",
   );
   const [windows, setWindows] = useState<DeliveryWindow[]>(
     initialConfig?.deliveryWindows?.map((w) => ({
@@ -96,15 +106,27 @@ export default function DeliveryConfigClient({
       daysOfWeek: w.daysOfWeek,
       maxOrders: w.maxOrders,
       isActive: w.isActive,
-    })) || []
+    })) || [],
   );
 
   const handleSave = () => {
+    if (!allowDelivery && !allowTakeAway) {
+      toast({
+        title: "Configuración inválida",
+        description:
+          "Debés habilitar al menos un tipo de pedido (Delivery o Retiro en local)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     startTransition(async () => {
       const result = await updateDeliveryConfig({
         branchId,
         menuId: selectedMenuId === "__none__" ? null : selectedMenuId,
         isActive,
+        allowDelivery,
+        allowTakeAway,
         minOrderAmount: parseFloat(minOrderAmount) || 0,
         deliveryFee: parseFloat(deliveryFee) || 0,
         estimatedMinutes: parseInt(estimatedMinutes) || 45,
@@ -140,9 +162,7 @@ export default function DeliveryConfigClient({
   };
 
   const handleEditWindow = (window: DeliveryWindow) => {
-    setWindows((prev) =>
-      prev.map((w) => (w.id === window.id ? window : w))
-    );
+    setWindows((prev) => prev.map((w) => (w.id === window.id ? window : w)));
     setEditingWindow(null);
     setIsDialogOpen(false);
   };
@@ -168,7 +188,8 @@ export default function DeliveryConfigClient({
           Configuración de Delivery
         </h1>
         <p className="mt-2 text-gray-600">
-          Configura el servicio de delivery, horarios y menú disponible para pedidos.
+          Configura el servicio de delivery, horarios y menú disponible para
+          pedidos.
         </p>
       </div>
 
@@ -184,9 +205,9 @@ export default function DeliveryConfigClient({
           {/* Active Toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="isActive">Servicio de Delivery</Label>
+              <Label htmlFor="isActive">Servicio de Pedidos</Label>
               <p className="text-sm text-gray-500">
-                Activa o desactiva el servicio de delivery
+                Activa o desactiva el servicio de pedidos online
               </p>
             </div>
             <Switch
@@ -194,6 +215,44 @@ export default function DeliveryConfigClient({
               checked={isActive}
               onCheckedChange={setIsActive}
             />
+          </div>
+
+          {/* Order Types */}
+          <div className="space-y-3">
+            <div>
+              <Label>Tipos de Pedido Habilitados</Label>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Elegí qué tipos de pedido pueden hacer los clientes
+              </p>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="allowDelivery">Delivery</Label>
+                <p className="text-sm text-gray-500">
+                  El pedido se envía al domicilio del cliente
+                </p>
+              </div>
+              <Switch
+                id="allowDelivery"
+                checked={allowDelivery}
+                onCheckedChange={setAllowDelivery}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="allowTakeAway">
+                  Retiro en local (Take Away)
+                </Label>
+                <p className="text-sm text-gray-500">
+                  El cliente pasa a buscar su pedido al local
+                </p>
+              </div>
+              <Switch
+                id="allowTakeAway"
+                checked={allowTakeAway}
+                onCheckedChange={setAllowTakeAway}
+              />
+            </div>
           </div>
 
           {/* Menu Selection */}
@@ -299,7 +358,7 @@ export default function DeliveryConfigClient({
           onClick={handleSave}
           disabled={isPending}
           size="lg"
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white"
         >
           {isPending ? "Guardando..." : "Guardar Configuración"}
         </Button>

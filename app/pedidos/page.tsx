@@ -42,13 +42,38 @@ export default async function PedidosPage() {
     );
   }
 
-  // Only show products the admin has explicitly added to the delivery menu.
-  // If no menu is configured, products and sections remain empty.
-  const menuResult = config.menuId
-    ? await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY)
-    : { products: [], sections: [] };
+  const allowDelivery = config.allowDelivery ?? true;
+  const allowTakeAway = config.allowTakeAway ?? false;
 
-  const { products, sections } = menuResult;
+  // Fetch product sets for each enabled order type.
+  // When both are enabled we need both price sets since prices can differ per type.
+  let products: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["products"] = [];
+  let sections: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["sections"] = [];
+  let takeawayProducts: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["products"] = [];
+  let takeawaySections: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["sections"] = [];
+
+  if (config.menuId) {
+    if (allowDelivery && allowTakeAway) {
+      // Fetch both price sets in parallel
+      const [deliveryResult, takeawayResult] = await Promise.all([
+        getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY),
+        getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.TAKE_AWAY),
+      ]);
+      products = deliveryResult.products;
+      sections = deliveryResult.sections;
+      takeawayProducts = takeawayResult.products;
+      takeawaySections = takeawayResult.sections;
+    } else if (allowTakeAway) {
+      const result = await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.TAKE_AWAY);
+      products = result.products;
+      sections = result.sections;
+    } else {
+      // Default: delivery only
+      const result = await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY);
+      products = result.products;
+      sections = result.sections;
+    }
+  }
 
   const restaurant = await getRestaurantByBranchId(BRANCH_ID);
   const phoneNumber = restaurant?.whatsappNumber || restaurant?.phone;
@@ -62,6 +87,10 @@ export default async function PedidosPage() {
       config={config}
       products={products}
       sections={sections}
+      takeawayProducts={takeawayProducts}
+      takeawaySections={takeawaySections}
+      allowDelivery={allowDelivery}
+      allowTakeAway={allowTakeAway}
       restaurantName={restaurant?.name ?? ""}
       whatsappUrl={whatsappUrl}
     />
