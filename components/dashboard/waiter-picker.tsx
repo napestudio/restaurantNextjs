@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getWaitersForBranch } from "@/actions/users";
+import { getWaitersForBranch, getCurrentUserId } from "@/actions/users";
 
 interface WaiterPickerProps {
   branchId: string;
@@ -42,12 +43,30 @@ export function WaiterPicker({
     branchId ? `waiters-${branchId}` : null,
     () => fetchWaiters(branchId),
     {
-      revalidateOnFocus: false, // Don't refetch when tab regains focus
-      revalidateOnReconnect: false, // Don't refetch on reconnect
-      dedupingInterval: 60000, // Dedupe requests within 1 minute
-      staleTime: 300000, // Consider data fresh for 5 minutes
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000,
+      staleTime: 300000,
     }
   );
+
+  // Fetch current user ID once (heavily cached — same for the entire session)
+  const { data: currentUserId } = useSWR("current-user-id", getCurrentUserId, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 300000,
+  });
+
+  // Auto-select the logged-in user once when waiters load, if they're in the list
+  const defaultAppliedRef = useRef(false);
+  useEffect(() => {
+    if (defaultAppliedRef.current) return;
+    if (!currentUserId || waiters.length === 0) return;
+    if (waiters.some((w) => w.id === currentUserId)) {
+      onSelectWaiter(currentUserId);
+      defaultAppliedRef.current = true;
+    }
+  }, [currentUserId, waiters, onSelectWaiter]);
 
   const handleValueChange = (value: string) => {
     if (value === "__none__") {
