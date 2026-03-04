@@ -96,6 +96,10 @@ type Order = {
     id: string;
     status: string;
   }>;
+  cashMovements?: Array<{
+    paymentMethod: string;
+    amount: number;
+  }>;
 };
 
 interface OrderDetailsSidebarProps {
@@ -410,6 +414,9 @@ export function OrderDetailsSidebar({
       deliveryAddress: isDelivery ? deliveryAddress : undefined,
       deliveryCity: isDelivery ? (order.client?.addressCity ?? undefined) : undefined,
       deliveryNotes: isDelivery ? (order.client?.notes ?? undefined) : undefined,
+      payments: order.cashMovements && order.cashMovements.length > 0
+        ? order.cashMovements.map((m) => ({ method: m.paymentMethod, amount: m.amount }))
+        : undefined,
       paymentMethod: showPaymentMethod
         ? (paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod)
         : undefined,
@@ -891,16 +898,6 @@ export function OrderDetailsSidebar({
           {/* Total */}
           <div className="flex justify-between px-4 py-4 bg-gray-100 font-semibold text-lg">
             <span>Total</span>
-            {/* Payment Method */}
-            {order.status === OrderStatus.COMPLETED && (
-              <div className="flex items-center gap-2 text-sm">
-                <CreditCard className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-600">
-                  {paymentMethodLabels[order.paymentMethod] ||
-                    order.paymentMethod}
-                </span>
-              </div>
-            )}
             <span className="text-red-600">
               $
               {total.toLocaleString("es-AR", {
@@ -908,6 +905,30 @@ export function OrderDetailsSidebar({
               })}
             </span>
           </div>
+
+          {/* Payment breakdown — shown below total for completed orders */}
+          {order.status === OrderStatus.COMPLETED && (
+            <div className="border-t">
+              {order.cashMovements && order.cashMovements.length > 0 ? (
+                order.cashMovements.map((m, i) => (
+                  <div key={i} className="flex justify-between items-center px-4 py-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      <span>{paymentMethodLabels[m.paymentMethod] ?? m.paymentMethod}</span>
+                    </div>
+                    <span className="font-medium text-gray-700">
+                      ${m.amount.toLocaleString("es-AR", { currency: "ARS" })}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500">
+                  <CreditCard className="h-3.5 w-3.5" />
+                  <span>{paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

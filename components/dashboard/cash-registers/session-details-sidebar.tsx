@@ -73,7 +73,7 @@ export function SessionDetailsSidebar({
 
   // Close form state - now tracks amounts per payment method
   const [countedAmounts, setCountedAmounts] = useState<Record<string, string>>(
-    {}
+    {},
   );
   const [closingNotes, setClosingNotes] = useState("");
   const [isClosing, setIsClosing] = useState(false);
@@ -120,37 +120,43 @@ export function SessionDetailsSidebar({
 
   // Calculate totals
   const incomeMovements = movements.filter(
-    (m) => m.type === "INCOME" || m.type === "SALE"
+    (m) => m.type === "INCOME" || m.type === "SALE",
   );
   const expenseMovements = movements.filter(
-    (m) => m.type === "EXPENSE" || m.type === "REFUND"
+    (m) => m.type === "EXPENSE" || m.type === "REFUND",
   );
 
   const totalIncome = incomeMovements.reduce((sum, m) => sum + m.amount, 0);
   const totalExpense = expenseMovements.reduce((sum, m) => sum + m.amount, 0);
 
   // Group by payment method
-  const incomeByMethod = incomeMovements.reduce((acc, m) => {
-    if (!acc[m.paymentMethod]) {
-      acc[m.paymentMethod] = { total: 0, movements: [] };
-    }
-    acc[m.paymentMethod].total += m.amount;
-    acc[m.paymentMethod].movements.push(m);
-    return acc;
-  }, {} as Record<string, { total: number; movements: SerializedMovement[] }>);
+  const incomeByMethod = incomeMovements.reduce(
+    (acc, m) => {
+      if (!acc[m.paymentMethod]) {
+        acc[m.paymentMethod] = { total: 0, movements: [] };
+      }
+      acc[m.paymentMethod].total += m.amount;
+      acc[m.paymentMethod].movements.push(m);
+      return acc;
+    },
+    {} as Record<string, { total: number; movements: SerializedMovement[] }>,
+  );
 
-  const expenseByMethod = expenseMovements.reduce((acc, m) => {
-    if (!acc[m.paymentMethod]) {
-      acc[m.paymentMethod] = { total: 0, movements: [] };
-    }
-    acc[m.paymentMethod].total += m.amount;
-    acc[m.paymentMethod].movements.push(m);
-    return acc;
-  }, {} as Record<string, { total: number; movements: SerializedMovement[] }>);
+  const expenseByMethod = expenseMovements.reduce(
+    (acc, m) => {
+      if (!acc[m.paymentMethod]) {
+        acc[m.paymentMethod] = { total: 0, movements: [] };
+      }
+      acc[m.paymentMethod].total += m.amount;
+      acc[m.paymentMethod].movements.push(m);
+      return acc;
+    },
+    {} as Record<string, { total: number; movements: SerializedMovement[] }>,
+  );
 
   // Get all unique payment methods used in this session
   const usedPaymentMethods = Array.from(
-    new Set(movements.map((m) => m.paymentMethod))
+    new Set(movements.map((m) => m.paymentMethod)),
   );
 
   // Always include CASH since opening amount is cash
@@ -182,7 +188,7 @@ export function SessionDetailsSidebar({
   // Calculate total expected (sum of all methods)
   const totalExpected = Object.values(expectedByMethod).reduce(
     (sum, v) => sum + v,
-    0
+    0,
   );
 
   // Calculate user totals per method
@@ -192,7 +198,7 @@ export function SessionDetailsSidebar({
   }
   const userTotal = Object.values(userTotalByMethod).reduce(
     (sum, v) => sum + v,
-    0
+    0,
   );
 
   // Calculate variance
@@ -200,7 +206,6 @@ export function SessionDetailsSidebar({
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
-      style: "currency",
       currency: "ARS",
     }).format(amount);
   };
@@ -223,7 +228,7 @@ export function SessionDetailsSidebar({
     // Validate that all payment methods have values
     const hasEmptyFields = usedPaymentMethods.some(
       (method) =>
-        !countedAmounts[method] || countedAmounts[method].trim() === ""
+        !countedAmounts[method] || countedAmounts[method].trim() === "",
     );
     if (hasEmptyFields) {
       setCloseError("Ingresa un monto para cada medio de pago");
@@ -284,7 +289,7 @@ export function SessionDetailsSidebar({
       <div
         className={cn(
           "fixed inset-0 bg-black/50 z-40 transition-opacity",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
@@ -293,7 +298,7 @@ export function SessionDetailsSidebar({
       <div
         className={cn(
           "fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
@@ -343,7 +348,7 @@ export function SessionDetailsSidebar({
             <span
               className={cn(
                 "font-medium",
-                session.status === "OPEN" ? "text-green-600" : "text-gray-600"
+                session.status === "OPEN" ? "text-green-600" : "text-gray-600",
               )}
             >
               {session.status === "OPEN" ? "Abierto" : "Cerrado"}
@@ -360,7 +365,9 @@ export function SessionDetailsSidebar({
           {/* Opening Amount */}
           <div className="flex justify-between px-4 py-3 border-b">
             <span className="font-medium text-sm">MONTO INICIAL</span>
-            <span className="font-medium">{formatCurrency(openingAmount)}</span>
+            <span className="font-medium">
+              $ {formatCurrency(openingAmount)}
+            </span>
           </div>
 
           {/* Income Section */}
@@ -372,7 +379,7 @@ export function SessionDetailsSidebar({
               <span className="font-medium text-sm">INGRESO</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  {formatCurrency(totalIncome)}
+                  $ {formatCurrency(totalIncome)}
                 </span>
                 {expandedSections.income ? (
                   <ChevronDown className="h-4 w-4" />
@@ -397,7 +404,7 @@ export function SessionDetailsSidebar({
                           }
                         </span>
                         <span className="text-sm">
-                          {formatCurrency(data.total)}
+                          $ {formatCurrency(data.total)}
                         </span>
                       </div>
                       {data.movements.map((m) => (
@@ -410,7 +417,7 @@ export function SessionDetailsSidebar({
                               ? "Ventas"
                               : m.description || "Ingreso"}
                           </span>
-                          <span>{formatCurrency(m.amount)}</span>
+                          <span>$ {formatCurrency(m.amount)}</span>
                         </div>
                       ))}
                     </div>
@@ -428,7 +435,7 @@ export function SessionDetailsSidebar({
               <span className="font-medium text-sm">EGRESO</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  - {formatCurrency(totalExpense)}
+                  - $ {formatCurrency(totalExpense)}
                 </span>
                 {expandedSections.expense ? (
                   <ChevronDown className="h-4 w-4" />
@@ -453,7 +460,7 @@ export function SessionDetailsSidebar({
                           }
                         </span>
                         <span className="text-sm">
-                          - {formatCurrency(data.total)}
+                          - $ {formatCurrency(data.total)}
                         </span>
                       </div>
                       {data.movements.map((m) => (
@@ -466,7 +473,7 @@ export function SessionDetailsSidebar({
                               ? "Devolución"
                               : m.description || "Egreso"}
                           </span>
-                          <span>{formatCurrency(m.amount)}</span>
+                          <span>$ {formatCurrency(m.amount)}</span>
                         </div>
                       ))}
                     </div>
@@ -478,7 +485,7 @@ export function SessionDetailsSidebar({
           {/* System Total */}
           <div className="flex justify-between px-4 py-3 bg-gray-100 font-semibold">
             <span>Total</span>
-            <span>{formatCurrency(totalExpected)}</span>
+            <span>$ {formatCurrency(totalExpected)}</span>
           </div>
         </div>
 
@@ -503,7 +510,8 @@ export function SessionDetailsSidebar({
                       *
                     </Label>
                     <span className="text-xs text-gray-500">
-                      Esperado: {formatCurrency(expectedByMethod[method] || 0)}
+                      Esperado: ${" "}
+                      {formatCurrency(expectedByMethod[method] || 0)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -542,7 +550,7 @@ export function SessionDetailsSidebar({
               {/* User Total */}
               <div className="flex justify-between py-3 bg-gray-100 px-4 -mx-4 font-semibold">
                 <span>Total</span>
-                <span>{formatCurrency(userTotal)}</span>
+                <span>$ {formatCurrency(userTotal)}</span>
               </div>
 
               {closeError && (
@@ -564,7 +572,7 @@ export function SessionDetailsSidebar({
               <div className="flex justify-between">
                 <span className="text-gray-500">Efectivo contado</span>
                 <span className="font-medium">
-                  {formatCurrency(session.countedCash || 0)}
+                  $ {formatCurrency(session.countedCash || 0)}
                 </span>
               </div>
               {session.closingNotes && (
@@ -575,7 +583,7 @@ export function SessionDetailsSidebar({
               )}
               <div className="flex justify-between py-3 bg-gray-100 px-4 -mx-4 font-semibold">
                 <span>Total</span>
-                <span>{formatCurrency(session.countedCash || 0)}</span>
+                <span>$ {formatCurrency(session.countedCash || 0)}</span>
               </div>
             </div>
           </div>
@@ -589,20 +597,20 @@ export function SessionDetailsSidebar({
               ? variance < 0
                 ? "bg-red-500"
                 : variance > 0
-                ? "bg-green-500"
-                : "bg-gray-500"
+                  ? "bg-green-500"
+                  : "bg-gray-500"
               : (session.variance || 0) < 0
-              ? "bg-red-500"
-              : (session.variance || 0) > 0
-              ? "bg-green-500"
-              : "bg-gray-500"
+                ? "bg-red-500"
+                : (session.variance || 0) > 0
+                  ? "bg-green-500"
+                  : "bg-gray-500",
           )}
         >
           <span>Diferencia</span>
           <span>
             {session.status === "OPEN"
-              ? formatCurrency(variance)
-              : formatCurrency(session.variance || 0)}
+              ? `$ ${formatCurrency(variance)}`
+              : `$ ${formatCurrency(session.variance || 0)}`}
           </span>
         </div>
 
@@ -617,7 +625,7 @@ export function SessionDetailsSidebar({
                 usedPaymentMethods.some(
                   (method) =>
                     !countedAmounts[method] ||
-                    countedAmounts[method].trim() === ""
+                    countedAmounts[method].trim() === "",
                 )
               }
             >

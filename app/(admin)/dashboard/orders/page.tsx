@@ -78,6 +78,10 @@ export default async function OrdersPage({
     ...order,
     discountPercentage: Number(order.discountPercentage),
     deliveryFee: Number(order.deliveryFee),
+    cashMovements: order.cashMovements?.map((m) => ({
+      paymentMethod: m.paymentMethod,
+      amount: Number(m.amount),
+    })),
   }));
 
   const pagination = ordersResult.pagination || {
