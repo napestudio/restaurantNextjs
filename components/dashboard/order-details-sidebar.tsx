@@ -6,6 +6,7 @@ import {
   assignClientToOrder,
   assignStaffToOrder,
   updateOrderStatus,
+  updateDeliveryFee,
 } from "@/actions/Order";
 import { usePrint } from "@/hooks/use-print";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
@@ -28,6 +29,7 @@ import {
   FileText,
   Mail,
   Package,
+  Percent,
   Printer,
   Save,
   Truck,
@@ -36,11 +38,13 @@ import {
   X,
   Banknote,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { CloseOrderDialog } from "./close-order-dialog";
+import { CreateClientDialog } from "./create-client-dialog";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,6 +62,7 @@ type Order = {
   tableId: string | null;
   paymentMethod: string;
   discountPercentage: number;
+  deliveryFee: number;
   needsInvoice: boolean;
   assignedToId: string | null;
   table: {
@@ -144,10 +149,19 @@ export function OrderDetailsSidebar({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [isEditingDeliveryFee, setIsEditingDeliveryFee] = useState(false);
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
+  const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order?.deliveryFee ?? 0);
 
   // GG EZ Print printing
   const { printControlTicket, printPreOrderTicket, isPrinting } = usePrint();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setCurrentDeliveryFee(order?.deliveryFee ?? 0);
+  }, [order?.deliveryFee]);
 
   if (!order) return null;
 
@@ -157,7 +171,8 @@ export function OrderDetailsSidebar({
     0,
   );
   const discount = (subtotal * order.discountPercentage) / 100;
-  const total = subtotal - discount;
+  const deliveryFeeValue = order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
+  const total = subtotal - discount + deliveryFeeValue;
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -190,6 +205,46 @@ export function OrderDetailsSidebar({
     setIsEditing(false);
     setSelectedClient(null);
     setSelectedWaiterId(null);
+  };
+
+  const handleCreateNewClient = (searchQuery: string) => {
+    setClientSearchQuery(searchQuery);
+    setShowCreateClientDialog(true);
+  };
+
+  const handleClientCreated = (client: ClientData) => {
+    setSelectedClient(client);
+    setShowCreateClientDialog(false);
+  };
+
+  const handleDeliveryFeeEdit = () => {
+    setDeliveryFeeInput(currentDeliveryFee.toString());
+    setIsEditingDeliveryFee(true);
+  };
+
+  const handleDeliveryFeeSave = async () => {
+    const newFee = parseFloat(deliveryFeeInput);
+    if (isNaN(newFee) || newFee < 0) {
+      toast({ variant: "destructive", title: "El costo de envío debe ser un número mayor o igual a 0" });
+      return;
+    }
+
+    const previousFee = currentDeliveryFee;
+    setCurrentDeliveryFee(newFee);
+    setIsEditingDeliveryFee(false);
+
+    const result = await updateDeliveryFee(order.id, newFee);
+    if (!result.success) {
+      setCurrentDeliveryFee(previousFee);
+      toast({ variant: "destructive", title: "Error al actualizar el costo de envío" });
+    } else {
+      onOrderUpdated?.();
+    }
+  };
+
+  const handleDeliveryFeeCancel = () => {
+    setIsEditingDeliveryFee(false);
+    setDeliveryFeeInput("");
   };
 
   const handleSaveChanges = async () => {
@@ -520,7 +575,7 @@ export function OrderDetailsSidebar({
                 branchId={branchId}
                 selectedClient={selectedClient}
                 onSelectClient={setSelectedClient}
-                onCreateNew={() => {}}
+                onCreateNew={handleCreateNewClient}
                 disabled={isSaving}
               />
             </div>
@@ -720,6 +775,57 @@ export function OrderDetailsSidebar({
             </div>
           )}
 
+          {/* Delivery Fee */}
+          {order.type === OrderType.DELIVERY && (
+            <div className="px-4 py-3">
+              {isEditingDeliveryFee ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-600 shrink-0">Envío:</span>
+                  <div className="relative flex-1 min-w-0">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={deliveryFeeInput}
+                      onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                      className="h-8 pl-7"
+                      autoFocus
+                    />
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8" onClick={handleDeliveryFeeSave}>
+                    Guardar
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8" onClick={handleDeliveryFeeCancel}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center text-blue-600">
+                  <span>Costo de envío</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      $
+                      {currentDeliveryFee.toLocaleString("es-AR", {
+                        currency: "ARS",
+                      })}
+                    </span>
+                    {order.status !== OrderStatus.COMPLETED && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={handleDeliveryFeeEdit}
+                      >
+                        <Percent className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Total */}
           <div className="flex justify-between px-4 py-4 bg-gray-100 font-semibold text-lg">
             <span>Total</span>
@@ -795,6 +901,15 @@ export function OrderDetailsSidebar({
         branchId={branchId}
         sectorId={order.table?.sectorId}
         onSuccess={handleCloseOrderSuccess}
+      />
+
+      {/* Create Client Dialog */}
+      <CreateClientDialog
+        open={showCreateClientDialog}
+        onOpenChange={setShowCreateClientDialog}
+        branchId={branchId}
+        onSuccess={handleClientCreated}
+        initialName={clientSearchQuery}
       />
 
       {/* Generate Invoice Dialog */}

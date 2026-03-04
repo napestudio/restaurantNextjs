@@ -179,6 +179,7 @@ export function CustomerInfoForm({
         type: isDelivery ? OrderType.DELIVERY : OrderType.TAKE_AWAY,
         clientId,
         description: formData.notes || undefined,
+        deliveryFee: isDelivery ? deliveryFee : 0,
         items: cart.map((item) => ({
           productId: item.productId,
           itemName: item.name,

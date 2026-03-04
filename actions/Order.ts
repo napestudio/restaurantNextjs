@@ -248,6 +248,7 @@ export async function createOrderWithItems(data: {
   assignedToId?: string | null;
   description?: string | null;
   items: OrderItemInput[];
+  deliveryFee?: number;
 }) {
   try {
     const {
@@ -259,6 +260,7 @@ export async function createOrderWithItems(data: {
       assignedToId,
       description,
       items,
+      deliveryFee,
     } = data;
 
     // Validation: at least one item required
@@ -312,6 +314,7 @@ export async function createOrderWithItems(data: {
           clientId: clientId || null,
           assignedToId: assignedToId || null,
           discountPercentage: clientDiscount,
+          deliveryFee: deliveryFee ?? 0,
           description: description || null,
         },
       });
@@ -624,6 +627,7 @@ export async function getTableOrders(tableId: string) {
     const serializedOrders = orders.map((order) => ({
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      deliveryFee: Number(order.deliveryFee),
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -1705,6 +1709,7 @@ export async function getOrders(filters: OrderFilters) {
     const serializedOrders = orders.map((order) => ({
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      deliveryFee: Number(order.deliveryFee),
       client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
@@ -1806,6 +1811,38 @@ export async function updateDiscount(
     return {
       success: false,
       error: "Error al actualizar el descuento",
+    };
+  }
+}
+
+// Update delivery fee for a delivery order
+export async function updateDeliveryFee(orderId: string, fee: number) {
+  try {
+    if (fee < 0) {
+      return {
+        success: false,
+        error: "El costo de envío no puede ser negativo",
+      };
+    }
+
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: { deliveryFee: fee },
+    });
+
+    return {
+      success: true,
+      data: {
+        ...order,
+        deliveryFee: Number(order.deliveryFee),
+        discountPercentage: Number(order.discountPercentage),
+      },
+    };
+  } catch (error) {
+    console.error("Error updating delivery fee:", error);
+    return {
+      success: false,
+      error: "Error al actualizar el costo de envío",
     };
   }
 }
@@ -2009,7 +2046,8 @@ export async function closeTableWithPayment(data: {
       );
       const discountAmount =
         subtotal * (Number(order.discountPercentage) / 100);
-      const total = subtotal - discountAmount;
+      const deliveryFeeAmount = Number(order.deliveryFee);
+      const total = subtotal - discountAmount + deliveryFeeAmount;
 
       // Validate payments array - allow empty if total is $0
       if ((!payments || payments.length === 0) && total > 0.01) {

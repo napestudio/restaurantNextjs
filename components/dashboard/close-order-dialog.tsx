@@ -15,6 +15,7 @@ import { Settings, Plus, X, Receipt, CreditCard, Percent } from "lucide-react";
 import {
   closeTableWithPayment,
   updateDiscount,
+  updateDeliveryFee,
   type PaymentMethodExtended,
   type PaymentEntry,
 } from "@/actions/Order";
@@ -40,6 +41,7 @@ interface Order {
   type: OrderType;
   partySize: number | null;
   discountPercentage: number;
+  deliveryFee: number;
   tableId: string | null;
   table: {
     number: number;
@@ -107,6 +109,9 @@ export function CloseOrderDialog({
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [currentDiscount, setCurrentDiscount] = useState(order.discountPercentage);
+  const [isEditingDeliveryFee, setIsEditingDeliveryFee] = useState(false);
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
+  const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order.deliveryFee);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Open/close dialog based on open prop
@@ -133,14 +138,21 @@ export function CloseOrderDialog({
     return subtotal * (currentDiscount / 100);
   }, [subtotal, currentDiscount]);
 
+  const deliveryFeeValue = order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
+
   const total = useMemo(() => {
-    return subtotal - discountAmount;
-  }, [subtotal, discountAmount]);
+    return subtotal - discountAmount + deliveryFeeValue;
+  }, [subtotal, discountAmount, deliveryFeeValue]);
 
   // Sync current discount when order changes
   useEffect(() => {
     setCurrentDiscount(order.discountPercentage);
   }, [order.discountPercentage]);
+
+  // Sync current delivery fee when order changes
+  useEffect(() => {
+    setCurrentDeliveryFee(order.deliveryFee);
+  }, [order.deliveryFee]);
 
   // Update payment amount when total changes
   useEffect(() => {
@@ -271,6 +283,35 @@ export function CloseOrderDialog({
     setDiscountInput("");
   };
 
+  const handleDeliveryFeeEdit = () => {
+    setDeliveryFeeInput(currentDeliveryFee.toString());
+    setIsEditingDeliveryFee(true);
+  };
+
+  const handleDeliveryFeeSave = async () => {
+    const newFee = parseFloat(deliveryFeeInput);
+    if (isNaN(newFee) || newFee < 0) {
+      setError("El costo de envío debe ser un número mayor o igual a 0");
+      return;
+    }
+
+    const previousFee = currentDeliveryFee;
+    setCurrentDeliveryFee(newFee);
+    setIsEditingDeliveryFee(false);
+    setError(null);
+
+    const result = await updateDeliveryFee(order.id, newFee);
+    if (!result.success) {
+      setCurrentDeliveryFee(previousFee);
+      setError(result.error || "Error al actualizar el costo de envío");
+    }
+  };
+
+  const handleDeliveryFeeCancel = () => {
+    setIsEditingDeliveryFee(false);
+    setDeliveryFeeInput("");
+  };
+
   const handleClose = async () => {
     // Validate cash register selection
     const selectedRegister = cashRegisters.find(
@@ -343,6 +384,8 @@ export function CloseOrderDialog({
     setPayments([{ id: "1", method: "CASH", amount: "" }]);
     setError(null);
     setSelectedRegisterId("");
+    setIsEditingDeliveryFee(false);
+    setDeliveryFeeInput("");
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -524,6 +567,66 @@ export function CloseOrderDialog({
                         <Percent className="h-4 w-4 mr-2" />
                         Agregar descuento
                       </Button>
+                    )}
+
+                    {/* Delivery Fee */}
+                    {order.type === OrderType.DELIVERY && (
+                      <>
+                        {isEditingDeliveryFee ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground shrink-0">Envío:</span>
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={deliveryFeeInput}
+                                onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                                className="h-8 pl-7"
+                                autoFocus
+                                disabled={isLoadingAction}
+                              />
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8"
+                              onClick={handleDeliveryFeeSave}
+                              disabled={isLoadingAction}
+                            >
+                              Guardar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8"
+                              onClick={handleDeliveryFeeCancel}
+                              disabled={isLoadingAction}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center text-sm text-blue-600">
+                            <span>Costo de envío:</span>
+                            <div className="flex items-center gap-2">
+                              <span>{formatCurrency(currentDeliveryFee)}</span>
+                              {!isEditingDeliveryFee && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={handleDeliveryFeeEdit}
+                                  disabled={isLoadingAction}
+                                >
+                                  <Percent className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     <div className="flex justify-between text-xl font-bold pt-2 border-t">
