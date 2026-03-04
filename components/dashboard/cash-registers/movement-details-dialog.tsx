@@ -19,6 +19,8 @@ import {
   Clock,
   FileText,
   User,
+  Link,
+  QrCode,
 } from "lucide-react";
 import { PAYMENT_METHOD_LABELS, MOVEMENT_TYPE_LABELS } from "@/types/cash-register";
 
@@ -49,6 +51,8 @@ const PAYMENT_METHOD_ICONS: Record<string, React.ReactNode> = {
   CARD_CREDIT: <CreditCard className="h-4 w-4" />,
   TRANSFER: <ArrowRightLeft className="h-4 w-4" />,
   ACCOUNT: <Building2 className="h-4 w-4" />,
+  PAYMENT_LINK: <Link className="h-4 w-4" />,
+  QR_CODE: <QrCode className="h-4 w-4" />,
 };
 
 export function MovementDetailsDialog({

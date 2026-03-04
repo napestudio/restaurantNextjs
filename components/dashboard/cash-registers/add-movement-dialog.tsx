@@ -86,7 +86,7 @@ export function AddMovementDialog({
       const result = await addManualMovement({
         sessionId,
         type,
-        paymentMethod: paymentMethod as "CASH" | "CARD_DEBIT" | "CARD_CREDIT" | "ACCOUNT" | "TRANSFER",
+        paymentMethod: paymentMethod as "CASH" | "CARD_DEBIT" | "CARD_CREDIT" | "ACCOUNT" | "TRANSFER" | "PAYMENT_LINK" | "QR_CODE",
         amount: parsedAmount,
         description: description.trim() || undefined,
         userId,

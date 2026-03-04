@@ -366,6 +366,8 @@ async function _getPaymentMethodStats(
     CARD_CREDIT: "Crédito",
     ACCOUNT: "Cuenta",
     TRANSFER: "Transferencia",
+    PAYMENT_LINK: "Link de pago",
+    QR_CODE: "QR",
   };
 
   return rows.map((r) => ({

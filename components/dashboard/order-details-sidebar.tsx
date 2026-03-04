@@ -155,6 +155,8 @@ const paymentMethodLabels: Record<string, string> = {
   CARD_CREDIT: "Tarjeta de Crédito",
   ACCOUNT: "Cuenta",
   TRANSFER: "Transferencia",
+  PAYMENT_LINK: "Link de pago",
+  QR_CODE: "QR",
 };
 
 export function OrderDetailsSidebar({

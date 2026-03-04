@@ -45,7 +45,14 @@ interface SerializedMovement {
   id: string;
   sessionId: string;
   type: "INCOME" | "EXPENSE" | "SALE" | "REFUND";
-  paymentMethod: "CASH" | "CARD_DEBIT" | "CARD_CREDIT" | "ACCOUNT" | "TRANSFER";
+  paymentMethod:
+    | "CASH"
+    | "CARD_DEBIT"
+    | "CARD_CREDIT"
+    | "ACCOUNT"
+    | "TRANSFER"
+    | "PAYMENT_LINK"
+    | "QR_CODE";
   amount: number;
   description: string | null;
   orderId: string | null;
@@ -88,8 +95,7 @@ export function SessionDetailsSidebar({
   const [closeError, setCloseError] = useState<string | null>(null);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
-  const canReopen =
-    userRole === "ADMIN" || userRole === "SUPERADMIN";
+  const canReopen = userRole === "ADMIN" || userRole === "SUPERADMIN";
 
   const loadMovements = async () => {
     if (!session) return;
@@ -309,7 +315,7 @@ export function SessionDetailsSidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
+          "fixed top-0 right-0 h-full w-full sm:w-112.5 bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >

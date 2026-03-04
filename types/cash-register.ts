@@ -1,16 +1,15 @@
 import type {
+  CashMovement,
+  CashMovementType,
   CashRegister,
   CashRegisterSession,
-  CashMovement,
-  Sector,
   CashRegisterStatus,
-  CashMovementType,
   PaymentMethodExtended,
-  CashRegisterOnSector,
+  Sector,
 } from "@/app/generated/prisma";
 
 // Re-export enums for convenience
-export type { CashRegisterStatus, CashMovementType, PaymentMethodExtended };
+export type { CashMovementType, CashRegisterStatus, PaymentMethodExtended };
 
 // Sector info for display
 export type SectorInfo = Pick<Sector, "id" | "name" | "color">;
@@ -142,16 +141,17 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethodExtended, string> = {
   CARD_CREDIT: "Tarjeta Crédito",
   ACCOUNT: "Cuenta Corriente",
   TRANSFER: "Transferencia",
+  PAYMENT_LINK: "Link de pago",
+  QR_CODE: "QR",
 };
 
-// Payment methods array for select dropdowns
-export const PAYMENT_METHODS: { value: PaymentMethodExtended; label: string }[] = [
-  { value: "CASH", label: "Efectivo" },
-  { value: "CARD_DEBIT", label: "Tarjeta Débito" },
-  { value: "CARD_CREDIT", label: "Tarjeta Crédito" },
-  { value: "TRANSFER", label: "Transferencia" },
-  { value: "ACCOUNT", label: "Cuenta Corriente" },
-];
+// Payment methods array for select dropdowns (derived from PAYMENT_METHOD_LABELS)
+export const PAYMENT_METHODS: {
+  value: PaymentMethodExtended;
+  label: string;
+}[] = (Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethodExtended[]).map(
+  (value) => ({ value, label: PAYMENT_METHOD_LABELS[value] }),
+);
 
 // Movement type labels in Spanish
 export const MOVEMENT_TYPE_LABELS: Record<CashMovementType, string> = {

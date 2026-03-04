@@ -24,6 +24,8 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: "Efectivo",
   CARD: "Tarjeta",
   TRANSFER: "Transferencia",
+  PAYMENT_LINK: "Link de pago",
+  QR_CODE: "QR",
 };
 
 interface ClientsManagerProps {
