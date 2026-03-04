@@ -19,8 +19,10 @@ import {
   type PaymentMethodExtended,
   type PaymentEntry,
 } from "@/actions/Order";
+import { getDeliveryConfig } from "@/actions/DeliveryConfig";
 import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
 import { PAYMENT_METHODS } from "@/types/cash-register";
+import { usePrint } from "@/hooks/use-print";
 import { OrderType } from "@/app/generated/prisma";
 
 interface OrderItem {
@@ -109,10 +111,9 @@ export function CloseOrderDialog({
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [currentDiscount, setCurrentDiscount] = useState(order.discountPercentage);
-  const [isEditingDeliveryFee, setIsEditingDeliveryFee] = useState(false);
-  const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
   const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order.deliveryFee);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { printControlTicket } = usePrint();
 
   // Open/close dialog based on open prop
   useEffect(() => {
@@ -153,6 +154,18 @@ export function CloseOrderDialog({
   useEffect(() => {
     setCurrentDeliveryFee(order.deliveryFee);
   }, [order.deliveryFee]);
+
+  // Auto-populate delivery fee from config when order has no fee set
+  useEffect(() => {
+    if (!open || order.type !== OrderType.DELIVERY || order.deliveryFee !== 0) return;
+    getDeliveryConfig(branchId).then((config) => {
+      const fee = config?.data?.deliveryFee;
+      if (fee && fee > 0) {
+        setCurrentDeliveryFee(fee);
+        updateDeliveryFee(order.id, fee);
+      }
+    });
+  }, [open, order.id, order.type, order.deliveryFee, branchId]);
 
   // Update payment amount when total changes
   useEffect(() => {
@@ -283,33 +296,11 @@ export function CloseOrderDialog({
     setDiscountInput("");
   };
 
-  const handleDeliveryFeeEdit = () => {
-    setDeliveryFeeInput(currentDeliveryFee.toString());
-    setIsEditingDeliveryFee(true);
-  };
-
-  const handleDeliveryFeeSave = async () => {
-    const newFee = parseFloat(deliveryFeeInput);
-    if (isNaN(newFee) || newFee < 0) {
-      setError("El costo de envío debe ser un número mayor o igual a 0");
-      return;
-    }
-
-    const previousFee = currentDeliveryFee;
-    setCurrentDeliveryFee(newFee);
-    setIsEditingDeliveryFee(false);
-    setError(null);
-
-    const result = await updateDeliveryFee(order.id, newFee);
+  const handleDeliveryFeeBlur = async () => {
+    const result = await updateDeliveryFee(order.id, currentDeliveryFee);
     if (!result.success) {
-      setCurrentDeliveryFee(previousFee);
       setError(result.error || "Error al actualizar el costo de envío");
     }
-  };
-
-  const handleDeliveryFeeCancel = () => {
-    setIsEditingDeliveryFee(false);
-    setDeliveryFeeInput("");
   };
 
   const handleClose = async () => {
@@ -362,6 +353,29 @@ export function CloseOrderDialog({
       });
 
       if (result.success) {
+        // Print control ticket with payment breakdown (fire and forget)
+        const isDelivery = order.type === OrderType.DELIVERY;
+        printControlTicket({
+          orderId: order.id,
+          orderCode: order.publicCode,
+          tableName: order.table?.number?.toString() ?? "—",
+          branchId,
+          items: order.items.map((item) => ({
+            name: item.itemName ?? item.product?.name ?? "",
+            quantity: item.quantity,
+            price: item.price,
+            notes: null,
+          })),
+          subtotal,
+          discountPercentage: currentDiscount > 0 ? currentDiscount : undefined,
+          deliveryFee: isDelivery && currentDeliveryFee > 0 ? currentDeliveryFee : undefined,
+          orderType: order.type,
+          payments: validPayments.length > 1 ? validPayments : undefined,
+          paymentMethod: validPayments.length === 1
+            ? (PAYMENT_METHODS.find(m => m.value === validPayments[0].method)?.label ?? validPayments[0].method)
+            : undefined,
+        });
+
         // Close dialog AFTER successful operation
         resetForm();
         onOpenChange(false);
@@ -384,8 +398,6 @@ export function CloseOrderDialog({
     setPayments([{ id: "1", method: "CASH", amount: "" }]);
     setError(null);
     setSelectedRegisterId("");
-    setIsEditingDeliveryFee(false);
-    setDeliveryFeeInput("");
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -571,62 +583,22 @@ export function CloseOrderDialog({
 
                     {/* Delivery Fee */}
                     {order.type === OrderType.DELIVERY && (
-                      <>
-                        {isEditingDeliveryFee ? (
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground shrink-0">Envío:</span>
-                            <div className="relative flex-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={deliveryFeeInput}
-                                onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                                className="h-8 pl-7"
-                                autoFocus
-                                disabled={isLoadingAction}
-                              />
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={handleDeliveryFeeSave}
-                              disabled={isLoadingAction}
-                            >
-                              Guardar
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={handleDeliveryFeeCancel}
-                              disabled={isLoadingAction}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between items-center text-sm text-blue-600">
-                            <span>Costo de envío:</span>
-                            <div className="flex items-center gap-2">
-                              <span>{formatCurrency(currentDeliveryFee)}</span>
-                              {!isEditingDeliveryFee && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={handleDeliveryFeeEdit}
-                                  disabled={isLoadingAction}
-                                >
-                                  <Percent className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <div className="flex justify-between items-center text-sm text-blue-600">
+                        <span>Costo de envío:</span>
+                        <div className="relative w-28">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={currentDeliveryFee}
+                            onChange={(e) => setCurrentDeliveryFee(parseFloat(e.target.value) || 0)}
+                            onBlur={handleDeliveryFeeBlur}
+                            disabled={isLoadingAction}
+                            className="h-8 pl-6 text-right"
+                          />
+                        </div>
+                      </div>
                     )}
 
                     <div className="flex justify-between text-xl font-bold pt-2 border-t">

@@ -68,7 +68,7 @@ interface CreateReservationSidebarProps {
 function generateFifteenMinuteIntervals(
   startTime: Date | string,
   endTime: Date | string,
-  dateStr: string
+  dateStr: string,
 ): TimeInterval[] {
   const intervals: TimeInterval[] = [];
   const now = new Date();
@@ -77,7 +77,8 @@ function generateFifteenMinuteIntervals(
   const [year, month, day] = dateStr.split("-").map(Number);
 
   // Convert to Date if string (server actions serialize dates as ISO strings)
-  const startDate = typeof startTime === "string" ? new Date(startTime) : startTime;
+  const startDate =
+    typeof startTime === "string" ? new Date(startTime) : startTime;
   const endDate = typeof endTime === "string" ? new Date(endTime) : endTime;
 
   // Extract hours and minutes from slot times using UTC
@@ -88,7 +89,10 @@ function generateFifteenMinuteIntervals(
 
   // Handle slots that span midnight (e.g., 23:00 - 00:00)
   // If end hour is less than start hour, it means the slot crosses midnight
-  if (endHour < startHour || (endHour === startHour && endMin <= startMin && endHour === 0)) {
+  if (
+    endHour < startHour ||
+    (endHour === startHour && endMin <= startMin && endHour === 0)
+  ) {
     endHour = 24; // Treat as 24:00 for loop purposes
   }
 
@@ -100,7 +104,15 @@ function generateFifteenMinuteIntervals(
     (currentHour === endHour && currentMin < endMin)
   ) {
     // Create date in local timezone
-    const intervalTime = new Date(year, month - 1, day, currentHour, currentMin, 0, 0);
+    const intervalTime = new Date(
+      year,
+      month - 1,
+      day,
+      currentHour,
+      currentMin,
+      0,
+      0,
+    );
 
     intervals.push({
       value: intervalTime.toISOString(),
@@ -159,7 +171,7 @@ export function CreateReservationSidebar({
 
   // Store date separately to prevent re-fetching when other fields change
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
 
   // Track the last fetched date to prevent duplicate fetches
@@ -186,7 +198,7 @@ export function CreateReservationSidebar({
       try {
         const result = await getAvailableTimeSlotsForDate(
           branchId,
-          selectedDate
+          selectedDate,
         );
         if (result.success && result.data) {
           setAvailableSlots(result.data);
@@ -223,7 +235,7 @@ export function CreateReservationSidebar({
     return generateFifteenMinuteIntervals(
       selectedSlot.startTime,
       selectedSlot.endTime,
-      selectedDate
+      selectedDate,
     );
   }, [selectedSlot, selectedDate]);
 
@@ -456,6 +468,7 @@ export function CreateReservationSidebar({
                             {formatTime(slot.startTime)} -{" "}
                             {formatTime(slot.endTime)}
                           </span>
+                          {slot.name && <span>{slot.name}</span>}
                           {slot.pricePerPerson > 0 && (
                             <span className="text-green-600 font-semibold text-xs">
                               ${slot.pricePerPerson}/persona
@@ -506,7 +519,7 @@ export function CreateReservationSidebar({
                             newReservation.exactTime !== interval.value &&
                             !interval.isPast,
                           "opacity-40 cursor-not-allowed": interval.isPast,
-                        }
+                        },
                       )}
                     >
                       {interval.label}
@@ -607,11 +620,7 @@ export function CreateReservationSidebar({
 
         {/* Footer */}
         <div className="border-t p-4 bg-gray-50 flex gap-3">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={handleClose} className="flex-1">
             Cancelar
           </Button>
           <Button

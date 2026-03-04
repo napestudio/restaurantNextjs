@@ -7,7 +7,10 @@ import {
   assignStaffToOrder,
   updateOrderStatus,
   updateDeliveryFee,
+  addOrderItems,
+  getAvailableProductsForOrder,
 } from "@/actions/Order";
+import { getDeliveryConfig } from "@/actions/DeliveryConfig";
 import { usePrint } from "@/hooks/use-print";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
@@ -29,7 +32,6 @@ import {
   FileText,
   Mail,
   Package,
-  Percent,
   Printer,
   Save,
   Truck,
@@ -46,7 +48,10 @@ import { WaiterPicker } from "./waiter-picker";
 import { CloseOrderDialog } from "./close-order-dialog";
 import { CreateClientDialog } from "./create-client-dialog";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
+import { ProductPicker } from "./product-picker";
+import { PreOrderItemsList, type PreOrderItem } from "./pre-order-items-list";
 import { useToast } from "@/hooks/use-toast";
+import type { OrderProduct } from "@/types/products";
 
 type Order = {
   id: string;
@@ -149,11 +154,15 @@ export function OrderDetailsSidebar({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
-  const [isEditingDeliveryFee, setIsEditingDeliveryFee] = useState(false);
-  const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
   const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order?.deliveryFee ?? 0);
+
+  // Add items state
+  const [preOrderItems, setPreOrderItems] = useState<PreOrderItem[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<OrderProduct[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isConfirmingItems, setIsConfirmingItems] = useState(false);
 
   // GG EZ Print printing
   const { printControlTicket, printPreOrderTicket, isPrinting } = usePrint();
@@ -162,6 +171,28 @@ export function OrderDetailsSidebar({
   React.useEffect(() => {
     setCurrentDeliveryFee(order?.deliveryFee ?? 0);
   }, [order?.deliveryFee]);
+
+  // Reset pre-order items and reload products when switching between orders
+  React.useEffect(() => {
+    setPreOrderItems([]);
+    if (!order?.id) return;
+    setIsLoadingProducts(true);
+    getAvailableProductsForOrder(branchId, order.type).then((products) => {
+      setAvailableProducts(products);
+      setIsLoadingProducts(false);
+    });
+  }, [order?.id, order?.type, branchId]);
+
+  React.useEffect(() => {
+    if (order?.type !== OrderType.DELIVERY || (order?.deliveryFee ?? 0) !== 0) return;
+    getDeliveryConfig(branchId).then((config) => {
+      const fee = config?.data?.deliveryFee;
+      if (fee && fee > 0) {
+        setCurrentDeliveryFee(fee);
+        updateDeliveryFee(order.id, fee);
+      }
+    });
+  }, [order?.id, order?.type, order?.deliveryFee, branchId]);
 
   if (!order) return null;
 
@@ -217,34 +248,41 @@ export function OrderDetailsSidebar({
     setShowCreateClientDialog(false);
   };
 
-  const handleDeliveryFeeEdit = () => {
-    setDeliveryFeeInput(currentDeliveryFee.toString());
-    setIsEditingDeliveryFee(true);
+  const handleSelectProduct = (product: OrderProduct) => {
+    setPreOrderItems((prev) => [
+      ...prev,
+      {
+        productId: product.id,
+        itemName: product.name,
+        quantity: 1,
+        price: Number(product.price),
+        originalPrice: Number(product.price),
+        notes: undefined,
+        categoryId: product.categoryId,
+      },
+    ]);
   };
 
-  const handleDeliveryFeeSave = async () => {
-    const newFee = parseFloat(deliveryFeeInput);
-    if (isNaN(newFee) || newFee < 0) {
-      toast({ variant: "destructive", title: "El costo de envío debe ser un número mayor o igual a 0" });
-      return;
+  const handleConfirmAddItems = async () => {
+    if (!order || preOrderItems.length === 0) return;
+    setIsConfirmingItems(true);
+    const result = await addOrderItems(order.id, preOrderItems);
+    if (result.success) {
+      setPreOrderItems([]);
+      onOrderUpdated?.();
+    } else {
+      toast({ variant: "destructive", title: result.error || "Error al agregar productos" });
     }
+    setIsConfirmingItems(false);
+  };
 
-    const previousFee = currentDeliveryFee;
-    setCurrentDeliveryFee(newFee);
-    setIsEditingDeliveryFee(false);
-
-    const result = await updateDeliveryFee(order.id, newFee);
+  const handleDeliveryFeeBlur = async () => {
+    const result = await updateDeliveryFee(order.id, currentDeliveryFee);
     if (!result.success) {
-      setCurrentDeliveryFee(previousFee);
       toast({ variant: "destructive", title: "Error al actualizar el costo de envío" });
     } else {
       onOrderUpdated?.();
     }
-  };
-
-  const handleDeliveryFeeCancel = () => {
-    setIsEditingDeliveryFee(false);
-    setDeliveryFeeInput("");
   };
 
   const handleSaveChanges = async () => {
@@ -365,6 +403,7 @@ export function OrderDetailsSidebar({
       subtotal,
       discountPercentage:
         order.discountPercentage > 0 ? order.discountPercentage : undefined,
+      deliveryFee: isDelivery && currentDeliveryFee > 0 ? currentDeliveryFee : undefined,
       orderType: order.type,
       customerName: order.client?.name || order.customerName || undefined,
       clientPhone: isDelivery ? (order.client?.phone ?? undefined) : undefined,
@@ -421,6 +460,10 @@ export function OrderDetailsSidebar({
     order.status !== OrderStatus.COMPLETED &&
     order.status !== OrderStatus.CANCELED &&
     order.items.length > 0;
+
+  const canAddItems =
+    order.status !== OrderStatus.COMPLETED &&
+    order.status !== OrderStatus.CANCELED;
 
   return (
     <>
@@ -706,6 +749,56 @@ export function OrderDetailsSidebar({
             PRODUCTOS ({order.items.length})
           </div>
 
+          {/* Product Picker — always visible for active orders */}
+          {canAddItems && (
+            <div className="p-4 border-b space-y-3">
+              <ProductPicker
+                products={availableProducts}
+                onSelectProduct={handleSelectProduct}
+                onSubmitPreOrder={
+                  preOrderItems.length > 0 ? handleConfirmAddItems : undefined
+                }
+                placeholder="Buscar producto..."
+                disabled={isConfirmingItems || isLoadingProducts}
+              />
+              {preOrderItems.length > 0 && (
+                <>
+                  <PreOrderItemsList
+                    items={preOrderItems}
+                    onUpdateItem={(index, item) =>
+                      setPreOrderItems((prev) =>
+                        prev.map((x, i) => (i === index ? item : x)),
+                      )
+                    }
+                    onRemoveItem={(index) =>
+                      setPreOrderItems((prev) =>
+                        prev.filter((_, i) => i !== index),
+                      )
+                    }
+                    disabled={isConfirmingItems}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setPreOrderItems([])}
+                      disabled={isConfirmingItems}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={handleConfirmAddItems}
+                      disabled={isConfirmingItems}
+                    >
+                      {isConfirmingItems ? "Guardando..." : "Confirmar"}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="divide-y">
             {order.items.map((item) => (
               <div key={item.id} className="px-4 py-3">
@@ -777,52 +870,21 @@ export function OrderDetailsSidebar({
 
           {/* Delivery Fee */}
           {order.type === OrderType.DELIVERY && (
-            <div className="px-4 py-3">
-              {isEditingDeliveryFee ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-600 shrink-0">Envío:</span>
-                  <div className="relative flex-1 min-w-0">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={deliveryFeeInput}
-                      onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                      className="h-8 pl-7"
-                      autoFocus
-                    />
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-8" onClick={handleDeliveryFeeSave}>
-                    Guardar
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8" onClick={handleDeliveryFeeCancel}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex justify-between items-center text-blue-600">
-                  <span>Costo de envío</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      $
-                      {currentDeliveryFee.toLocaleString("es-AR", {
-                        currency: "ARS",
-                      })}
-                    </span>
-                    {order.status !== OrderStatus.COMPLETED && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={handleDeliveryFeeEdit}
-                      >
-                        <Percent className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
+            <div className="px-4 py-3 flex justify-between items-center text-blue-600">
+              <span>Costo de envío</span>
+              <div className="relative w-28">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={currentDeliveryFee}
+                  onChange={(e) => setCurrentDeliveryFee(parseFloat(e.target.value) || 0)}
+                  onBlur={handleDeliveryFeeBlur}
+                  disabled={order.status === OrderStatus.COMPLETED}
+                  className="h-8 pl-6 text-right"
+                />
+              </div>
             </div>
           )}
 

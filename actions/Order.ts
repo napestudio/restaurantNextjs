@@ -2161,6 +2161,7 @@ export async function closeTableWithPayment(data: {
     const serializedOrder = {
       ...result,
       discountPercentage: Number(result.discountPercentage),
+      deliveryFee: Number(result.deliveryFee),
       items: result.items.map((item) => ({
         ...item,
         price: Number(item.price),
