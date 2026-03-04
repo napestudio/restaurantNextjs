@@ -26,6 +26,7 @@ export type Order = {
   // Billing
   paymentMethod: string;
   discountPercentage: number;
+  deliveryFee: number;
   needsInvoice: boolean;
 
   // Table relation
