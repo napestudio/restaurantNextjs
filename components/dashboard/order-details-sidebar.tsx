@@ -7,6 +7,7 @@ import {
   assignStaffToOrder,
   updateOrderStatus,
   updateDeliveryFee,
+  updateDiscount,
   addOrderItems,
   getAvailableProductsForOrder,
   updateOrderType,
@@ -41,6 +42,7 @@ import {
   FileText,
   Mail,
   Package,
+  Percent,
   Printer,
   Save,
   Truck,
@@ -166,6 +168,7 @@ export function OrderDetailsSidebar({
 }: OrderDetailsSidebarProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [discountInput, setDiscountInput] = useState("");
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -223,31 +226,24 @@ export function OrderDetailsSidebar({
     (sum, item) => sum + item.quantity * item.price,
     0,
   );
-  const discount = (subtotal * order.discountPercentage) / 100;
+  const effectiveDiscount = isEditing
+    ? (parseFloat(discountInput) || 0)
+    : order.discountPercentage;
+  const discount = (subtotal * effectiveDiscount) / 100;
   const deliveryFeeValue = order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
   const total = subtotal - discount + deliveryFeeValue;
 
+  const handleClientSelect = (client: ClientData | null) => {
+    setSelectedClient(client);
+    setDiscountInput((client?.discountPercentage ?? 0).toString());
+  };
+
   const handleEditClick = () => {
     setIsEditing(true);
+    setDiscountInput(order.discountPercentage.toString());
     // Set current values
     if (order.client) {
-      setSelectedClient({
-        id: order.client.id,
-        name: order.client.name,
-        email: order.client.email,
-        phone: null,
-        birthDate: null,
-        taxId: null,
-        notes: null,
-        addressStreet: null,
-        addressNumber: null,
-        addressApartment: null,
-        addressCity: null,
-        discountPercentage: 0,
-        preferredPaymentMethod: null,
-        hasCurrentAccount: false,
-        createdAt: new Date(),
-      } as ClientData);
+      setSelectedClient(order.client);
     }
     if (order.assignedTo) {
       setSelectedWaiterId(order.assignedTo.id);
@@ -258,6 +254,7 @@ export function OrderDetailsSidebar({
     setIsEditing(false);
     setSelectedClient(null);
     setSelectedWaiterId(null);
+    setDiscountInput("");
   };
 
   const handleCreateNewClient = (searchQuery: string) => {
@@ -324,6 +321,15 @@ export function OrderDetailsSidebar({
         const result = await assignClientToOrder(order.id, clientId);
         if (!result.success) {
           console.error("Failed to update client:", result.error);
+        }
+      }
+
+      // Update discount if changed (user's input wins over client's auto-discount)
+      const finalDiscount = Math.max(0, Math.min(100, parseFloat(discountInput) || 0));
+      if (finalDiscount !== order.discountPercentage || clientId !== currentClientId) {
+        const result = await updateDiscount(order.id, finalDiscount);
+        if (!result.success) {
+          console.error("Failed to update discount:", result.error);
         }
       }
 
@@ -684,7 +690,7 @@ export function OrderDetailsSidebar({
               <ClientPicker
                 branchId={branchId}
                 selectedClient={selectedClient}
-                onSelectClient={setSelectedClient}
+                onSelectClient={handleClientSelect}
                 onCreateNew={handleCreateNewClient}
                 disabled={isSaving}
               />
@@ -923,16 +929,38 @@ export function OrderDetailsSidebar({
           </div>
 
           {/* Discount */}
-          {order.discountPercentage > 0 && (
-            <div className="flex justify-between px-4 py-3 text-orange-600">
-              <span>Descuento ({order.discountPercentage}%)</span>
-              <span>
-                -$
-                {discount.toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
-              </span>
+          {isEditing ? (
+            <div className="flex justify-between items-center px-4 py-3 text-orange-600">
+              <div className="flex items-center gap-1">
+                <Percent className="h-4 w-4" />
+                <span>Descuento</span>
+              </div>
+              <div className="relative w-28">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={discountInput}
+                  onChange={(e) => setDiscountInput(e.target.value)}
+                  className="h-8 pr-6 text-right"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-orange-600">%</span>
+              </div>
             </div>
+          ) : (
+            order.discountPercentage > 0 && (
+              <div className="flex justify-between px-4 py-3 text-orange-600">
+                <span>Descuento ({order.discountPercentage}%)</span>
+                <span>
+                  -$
+                  {discount.toLocaleString("es-AR", {
+                    currency: "ARS",
+                  })}
+                </span>
+              </div>
+            )
           )}
 
           {/* Delivery Fee */}
