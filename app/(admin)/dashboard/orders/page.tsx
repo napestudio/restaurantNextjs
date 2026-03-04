@@ -77,6 +77,11 @@ export default async function OrdersPage({
   const orders = rawOrders.map((order) => ({
     ...order,
     discountPercentage: Number(order.discountPercentage),
+    deliveryFee: Number(order.deliveryFee),
+    cashMovements: order.cashMovements?.map((m) => ({
+      paymentMethod: m.paymentMethod,
+      amount: Number(m.amount),
+    })),
   }));
 
   const pagination = ordersResult.pagination || {

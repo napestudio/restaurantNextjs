@@ -295,7 +295,7 @@ export default function DeliveryConfigClient({
 
           {/* Delivery Fee */}
           <div className="space-y-2">
-            <Label htmlFor="deliveryFee">Cargo por Delivery ($)</Label>
+            <Label htmlFor="deliveryFee">Costo de envío ($)</Label>
             <Input
               id="deliveryFee"
               type="number"

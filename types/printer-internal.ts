@@ -31,6 +31,8 @@ export interface ControlTicketInfo {
   items: ControlTicketItem[];
   subtotal: number;
   discountPercentage?: number;
+  deliveryFee?: number;
+  payments?: Array<{ method: string; amount: number }>;
   orderType?: string;
   customerName?: string;
   clientPhone?: string | null;

@@ -651,6 +651,8 @@ export interface FullOrderData {
   subtotal: number;
   discountPercentage?: number;
   discountAmount?: number;
+  deliveryFee?: number;
+  payments?: Array<{ method: string; amount: number }>;
   total: number;
   notes?: string;
   orderType?: string;
@@ -1080,7 +1082,7 @@ export function generateFullOrderData(
   let content = Commands.INIT;
 
   if (config.ticketHeader) {
-    content += Commands.ALIGN_LEFT;
+    content += Commands.ALIGN_CENTER;
     content += getSizeCommand(config.ticketHeaderSize ?? 2);
     content += Commands.BOLD_ON;
     content += `${config.ticketHeader.replace(/\r\n/g, "\n")}\n`;
@@ -1096,11 +1098,17 @@ export function generateFullOrderData(
   content += Commands.FEED_LINE;
   content += addSpacing();
 
+  const isDineIn = !order.orderType || order.orderType === "DINE_IN";
+
   content += Commands.ALIGN_LEFT;
   content += separator(width, "=") + "\n";
 
   content += Commands.DOUBLE_HEIGHT_ON;
-  content += formatLine(`MESA ${order.tableName}`, width, "center") + "\n";
+  if (isDineIn) {
+    content += formatLine(`MESA ${order.tableName}`, width, "center") + "\n";
+  } else {
+    content += formatLine(order.orderType === "DELIVERY" ? "DELIVERY" : "PARA LLEVAR", width, "center") + "\n";
+  }
   content += Commands.NORMAL_SIZE;
 
   content += separator(width, "=") + "\n";
@@ -1117,7 +1125,7 @@ export function generateFullOrderData(
       now.toLocaleTimeString("es-AR", { hour12: false }),
       width,
     ) + "\n";
-  if (order.waiterName) {
+  if (isDineIn && order.waiterName) {
     content += formatTwoColumns("Mozo:", order.waiterName, width) + "\n";
   }
   if (order.customerName) {
@@ -1126,7 +1134,23 @@ export function generateFullOrderData(
   if (order.orderType) {
     content += formatTwoColumns("Tipo:", order.orderType, width) + "\n";
   }
-  if (order.paymentMethod) {
+  if (order.payments && order.payments.length > 1) {
+    const paymentLabels: Record<string, string> = {
+      CASH: "Efectivo",
+      CARD_DEBIT: "Tarjeta Debito",
+      CARD_CREDIT: "Tarjeta Credito",
+      TRANSFER: "Transferencia",
+      ACCOUNT: "Cuenta Cte",
+    };
+    for (const p of order.payments) {
+      const label = paymentLabels[p.method] ?? p.method;
+      content += formatTwoColumns(
+        `${label}:`,
+        `$${p.amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+        width,
+      ) + "\n";
+    }
+  } else if (order.paymentMethod) {
     content += formatTwoColumns("Pago:", order.paymentMethod, width) + "\n";
   }
   content += Commands.NORMAL_SIZE;
@@ -1205,6 +1229,14 @@ export function generateFullOrderData(
         width,
       ) + "\n";
   }
+  if (order.deliveryFee && order.deliveryFee > 0) {
+    content +=
+      formatTwoColumns(
+        "Envio:",
+        `$${order.deliveryFee.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
+        width,
+      ) + "\n";
+  }
   content += Commands.NORMAL_SIZE;
 
   content += separator(width) + "\n";
@@ -1233,7 +1265,7 @@ export function generateFullOrderData(
   }
 
   if (config.ticketFooter) {
-    content += Commands.ALIGN_LEFT;
+    content += Commands.ALIGN_CENTER;
     content += getSizeCommand(config.ticketFooterSize ?? 1);
     content += `${config.ticketFooter.replace(/\r\n/g, "\n")}\n`;
     content += Commands.NORMAL_SIZE;

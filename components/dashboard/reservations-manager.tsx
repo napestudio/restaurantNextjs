@@ -6,7 +6,6 @@ import {
   getFilteredReservations,
   updateReservationStatus,
   type ReservationFilterType,
-  type PaginatedReservationsResult,
 } from "@/actions/Reservation";
 import { getTimeSlots } from "@/actions/TimeSlot";
 import type {
@@ -18,11 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { DeleteReservationDialog } from "./delete-reservation-dialog";
 import { CreateReservationSidebar } from "./create-reservation-sidebar";
+import { DeleteReservationDialog } from "./delete-reservation-dialog";
+import LoadingToast from "./loading-toast";
 import { ReservationsTable } from "./reservations-table";
 import { ViewReservationDialog } from "./view-reservation-dialog";
-import LoadingToast from "./loading-toast";
 
 interface ReservationsManagerProps {
   initialReservations: SerializedReservation[];
@@ -62,7 +61,7 @@ export function ReservationsManager({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(
-    null
+    null,
   );
 
   // Load time slots on demand when the Create Reservation dialog opens
@@ -81,7 +80,10 @@ export function ReservationsManager({
         type: filterType,
         dateFrom: filterType === "dateRange" ? dateFrom : undefined,
         dateTo: filterType === "dateRange" ? dateTo : undefined,
-        status: statusFilter !== "all" ? (statusFilter.toUpperCase() as ReservationStatus) : undefined,
+        status:
+          statusFilter !== "all"
+            ? (statusFilter.toUpperCase() as ReservationStatus)
+            : undefined,
         cursor,
         limit: 10,
       });
@@ -99,12 +101,16 @@ export function ReservationsManager({
         });
       }
     },
-    [branchId, filterType, dateFrom, dateTo, statusFilter]
+    [branchId, filterType, dateFrom, dateTo, statusFilter],
   );
 
   // Handle filter changes - reset and fetch
   const handleFilterChange = useCallback(
-    (newFilterType: ReservationFilterType, newDateFrom?: string, newDateTo?: string) => {
+    (
+      newFilterType: ReservationFilterType,
+      newDateFrom?: string,
+      newDateTo?: string,
+    ) => {
       setFilterType(newFilterType);
       if (newDateFrom !== undefined) setDateFrom(newDateFrom);
       if (newDateTo !== undefined) setDateTo(newDateTo);
@@ -112,9 +118,16 @@ export function ReservationsManager({
       startTransition(async () => {
         const result = await getFilteredReservations(branchId, {
           type: newFilterType,
-          dateFrom: newFilterType === "dateRange" ? (newDateFrom ?? dateFrom) : undefined,
-          dateTo: newFilterType === "dateRange" ? (newDateTo ?? dateTo) : undefined,
-          status: statusFilter !== "all" ? (statusFilter.toUpperCase() as ReservationStatus) : undefined,
+          dateFrom:
+            newFilterType === "dateRange"
+              ? (newDateFrom ?? dateFrom)
+              : undefined,
+          dateTo:
+            newFilterType === "dateRange" ? (newDateTo ?? dateTo) : undefined,
+          status:
+            statusFilter !== "all"
+              ? (statusFilter.toUpperCase() as ReservationStatus)
+              : undefined,
           limit: 10,
         });
 
@@ -128,7 +141,7 @@ export function ReservationsManager({
         }
       });
     },
-    [branchId, dateFrom, dateTo, statusFilter]
+    [branchId, dateFrom, dateTo, statusFilter],
   );
 
   // Handle status filter change
@@ -141,7 +154,10 @@ export function ReservationsManager({
           type: filterType,
           dateFrom: filterType === "dateRange" ? dateFrom : undefined,
           dateTo: filterType === "dateRange" ? dateTo : undefined,
-          status: newStatus !== "all" ? (newStatus.toUpperCase() as ReservationStatus) : undefined,
+          status:
+            newStatus !== "all"
+              ? (newStatus.toUpperCase() as ReservationStatus)
+              : undefined,
           limit: 10,
         });
 
@@ -155,7 +171,7 @@ export function ReservationsManager({
         }
       });
     },
-    [branchId, filterType, dateFrom, dateTo]
+    [branchId, filterType, dateFrom, dateTo],
   );
 
   // Load more (pagination)
@@ -177,8 +193,8 @@ export function ReservationsManager({
       prev.map((reservation) =>
         reservation.id === id
           ? { ...reservation, status: newStatus }
-          : reservation
-      )
+          : reservation,
+      ),
     );
 
     // Perform server update
@@ -199,8 +215,10 @@ export function ReservationsManager({
       const tableId = reservation?.tables[0]?.table.id;
       if (tableId) {
         const params = new URLSearchParams({ tableId });
-        if (reservation?.people) params.set("partySize", String(reservation.people));
-        if (reservation?.customerEmail) params.set("customerEmail", reservation.customerEmail);
+        if (reservation?.people)
+          params.set("partySize", String(reservation.people));
+        if (reservation?.customerEmail)
+          params.set("customerEmail", reservation.customerEmail);
         router.push(`/dashboard/tables?${params.toString()}`);
       }
     }
@@ -224,7 +242,7 @@ export function ReservationsManager({
 
       // Optimistic update - immediately remove from UI
       setReservations((prev) =>
-        prev.filter((reservation) => reservation.id !== reservationToDelete)
+        prev.filter((reservation) => reservation.id !== reservationToDelete),
       );
       setPagination((prev) => ({
         ...prev,
@@ -262,7 +280,9 @@ export function ReservationsManager({
     clientId?: string;
   }) => {
     // Find the selected time slot for optimistic data
-    const selectedTimeSlot = timeSlots.find((ts) => ts.id === newReservation.time);
+    const selectedTimeSlot = timeSlots.find(
+      (ts) => ts.id === newReservation.time,
+    );
     const tempId = `temp-${Date.now()}`;
     const now = new Date().toISOString();
 
@@ -276,7 +296,9 @@ export function ReservationsManager({
       date: new Date(newReservation.date).toISOString(),
       people: Number.parseInt(newReservation.guests),
       timeSlotId: newReservation.time,
-      exactTime: newReservation.exactTime ? new Date(newReservation.exactTime).toISOString() : null,
+      exactTime: newReservation.exactTime
+        ? new Date(newReservation.exactTime).toISOString()
+        : null,
       status: newReservation.status.toUpperCase() as ReservationStatus,
       dietaryRestrictions: newReservation.dietaryRestrictions || null,
       accessibilityNeeds: newReservation.accessibilityNeeds || null,
@@ -287,23 +309,27 @@ export function ReservationsManager({
       timeSlot: selectedTimeSlot
         ? {
             id: selectedTimeSlot.id,
-            startTime: typeof selectedTimeSlot.startTime === "string"
-              ? selectedTimeSlot.startTime
-              : selectedTimeSlot.startTime.toISOString(),
-            endTime: typeof selectedTimeSlot.endTime === "string"
-              ? selectedTimeSlot.endTime
-              : selectedTimeSlot.endTime.toISOString(),
+            startTime:
+              typeof selectedTimeSlot.startTime === "string"
+                ? selectedTimeSlot.startTime
+                : selectedTimeSlot.startTime.toISOString(),
+            endTime:
+              typeof selectedTimeSlot.endTime === "string"
+                ? selectedTimeSlot.endTime
+                : selectedTimeSlot.endTime.toISOString(),
             daysOfWeek: selectedTimeSlot.daysOfWeek,
             pricePerPerson: selectedTimeSlot.pricePerPerson || 0,
             notes: selectedTimeSlot.notes,
             isActive: selectedTimeSlot.isActive,
             branchId: selectedTimeSlot.branchId,
-            createdAt: typeof selectedTimeSlot.createdAt === "string"
-              ? selectedTimeSlot.createdAt
-              : selectedTimeSlot.createdAt.toISOString(),
-            updatedAt: typeof selectedTimeSlot.updatedAt === "string"
-              ? selectedTimeSlot.updatedAt
-              : selectedTimeSlot.updatedAt.toISOString(),
+            createdAt:
+              typeof selectedTimeSlot.createdAt === "string"
+                ? selectedTimeSlot.createdAt
+                : selectedTimeSlot.createdAt.toISOString(),
+            updatedAt:
+              typeof selectedTimeSlot.updatedAt === "string"
+                ? selectedTimeSlot.updatedAt
+                : selectedTimeSlot.updatedAt.toISOString(),
           }
         : null,
       tables: [],
@@ -343,14 +369,14 @@ export function ReservationsManager({
     if (result.success && result.data) {
       // Replace temp reservation with real one from server
       setReservations((prev) =>
-        prev.map((r) => (r.id === tempId ? result.data! : r))
+        prev.map((r) => (r.id === tempId ? result.data! : r)),
       );
 
       // NEW: Show warning if assigned to shared table only
       if ((result as { isSharedTableOnly?: boolean }).isSharedTableOnly) {
         setTimeout(() => {
           alert(
-            "Nota: Esta reserva fue asignada a una mesa compartida. La mesa puede ser compartida con otros clientes."
+            "Nota: Esta reserva fue asignada a una mesa compartida. La mesa puede ser compartida con otros clientes.",
           );
         }, 300);
       }
@@ -392,7 +418,9 @@ export function ReservationsManager({
         isPending={isPending}
         onFilterTypeChange={handleFilterChange}
         onStatusFilterChange={handleStatusFilterChange}
-        onDateRangeChange={(from, to) => handleFilterChange("dateRange", from, to)}
+        onDateRangeChange={(from, to) =>
+          handleFilterChange("dateRange", from, to)
+        }
         onStatusUpdate={handleStatusUpdate}
         onView={handleView}
         onDelete={handleDeleteClick}

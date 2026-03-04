@@ -313,7 +313,8 @@ export async function prepareControlTicketPrint(
     const discountAmount = ticketInfo.discountPercentage
       ? subtotal * (ticketInfo.discountPercentage / 100)
       : 0;
-    const total = subtotal - discountAmount;
+    const deliveryFee = ticketInfo.deliveryFee ?? 0;
+    const total = subtotal - discountAmount + deliveryFee;
 
     const jobs: PrintJobData[] = [];
     const printJobIds: string[] = [];
@@ -334,6 +335,8 @@ export async function prepareControlTicketPrint(
         subtotal,
         discountPercentage: ticketInfo.discountPercentage,
         discountAmount,
+        deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
+        payments: ticketInfo.payments,
         total,
         orderType: ticketInfo.orderType,
         customerName: ticketInfo.customerName,

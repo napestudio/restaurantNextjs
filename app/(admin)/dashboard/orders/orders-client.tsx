@@ -216,7 +216,28 @@ export function OrdersClient({
   };
 
   const handleOrderUpdated = () => {
-    refreshOrders();
+    startTransition(async () => {
+      const orderType =
+        currentTab === "ALL" ? undefined : (currentTab as OrderType);
+      const result = await getOrders({
+        branchId,
+        type: orderType,
+        page: currentPage,
+        pageSize: 15,
+        search: currentSearch || undefined,
+      });
+      if (result.success && result.data) {
+        setOrders(result.data);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
+        // Also update the selected order so the sidebar reflects the latest data
+        if (selectedOrder) {
+          const updated = result.data.find((o) => o.id === selectedOrder.id);
+          if (updated) setSelectedOrder(updated);
+        }
+      }
+    });
   };
 
   // Handle create order

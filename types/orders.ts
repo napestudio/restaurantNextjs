@@ -65,6 +65,12 @@ export type Order = {
     id: string;
     status: string;
   }>;
+
+  // Payment breakdown (for divided/split payments)
+  cashMovements?: Array<{
+    paymentMethod: string;
+    amount: number;
+  }>;
 };
 
 export type OrderItemInput = {

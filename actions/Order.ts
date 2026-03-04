@@ -1696,6 +1696,13 @@ export async function getOrders(filters: OrderFilters) {
             },
             // Removed orderBy - reduces query complexity, order list only needs existence/status
           },
+          cashMovements: {
+            where: { type: "SALE" },
+            select: {
+              paymentMethod: true,
+              amount: true,
+            },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -1717,6 +1724,10 @@ export async function getOrders(filters: OrderFilters) {
         originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
       })),
       invoices: order.invoices || [],
+      cashMovements: order.cashMovements.map((m) => ({
+        paymentMethod: m.paymentMethod,
+        amount: Number(m.amount),
+      })),
     }));
 
     const totalPages = Math.ceil(totalCount / pageSize);
@@ -2057,12 +2068,12 @@ export async function closeTableWithPayment(data: {
       // Validate payment amounts match total
       const totalPayment = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
 
-      // Allow small rounding differences (0.01)
-      if (Math.abs(totalPayment - total) > 0.01) {
+      // Reject only if payment is less than total (allow overpayment / change)
+      if (totalPayment < total - 0.01) {
         throw new Error(
-          `Total ($${totalPayment.toFixed(
+          `El pago ($${totalPayment.toFixed(
             2,
-          )}) no coincide con el total de la mesa ($${total.toFixed(2)})`,
+          )}) es menor al total de la orden ($${total.toFixed(2)})`,
         );
       }
 
@@ -2161,6 +2172,7 @@ export async function closeTableWithPayment(data: {
     const serializedOrder = {
       ...result,
       discountPercentage: Number(result.discountPercentage),
+      deliveryFee: Number(result.deliveryFee),
       items: result.items.map((item) => ({
         ...item,
         price: Number(item.price),

@@ -19,8 +19,10 @@ import {
   type PaymentMethodExtended,
   type PaymentEntry,
 } from "@/actions/Order";
+import { getDeliveryConfig } from "@/actions/DeliveryConfig";
 import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
 import { PAYMENT_METHODS } from "@/types/cash-register";
+import { usePrint } from "@/hooks/use-print";
 import { OrderType } from "@/app/generated/prisma";
 
 interface OrderItem {
@@ -102,17 +104,20 @@ export function CloseOrderDialog({
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
-    []
+    [],
   );
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
-  const [currentDiscount, setCurrentDiscount] = useState(order.discountPercentage);
-  const [isEditingDeliveryFee, setIsEditingDeliveryFee] = useState(false);
-  const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
-  const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order.deliveryFee);
+  const [currentDiscount, setCurrentDiscount] = useState(
+    order.discountPercentage,
+  );
+  const [currentDeliveryFee, setCurrentDeliveryFee] = useState(
+    order.deliveryFee,
+  );
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { printControlTicket } = usePrint();
 
   // Open/close dialog based on open prop
   useEffect(() => {
@@ -130,7 +135,7 @@ export function CloseOrderDialog({
   const subtotal = useMemo(() => {
     return order.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0
+      0,
     );
   }, [order.items]);
 
@@ -138,7 +143,8 @@ export function CloseOrderDialog({
     return subtotal * (currentDiscount / 100);
   }, [subtotal, currentDiscount]);
 
-  const deliveryFeeValue = order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
+  const deliveryFeeValue =
+    order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
 
   const total = useMemo(() => {
     return subtotal - discountAmount + deliveryFeeValue;
@@ -153,6 +159,19 @@ export function CloseOrderDialog({
   useEffect(() => {
     setCurrentDeliveryFee(order.deliveryFee);
   }, [order.deliveryFee]);
+
+  // Auto-populate delivery fee from config when order has no fee set
+  useEffect(() => {
+    if (!open || order.type !== OrderType.DELIVERY || order.deliveryFee !== 0)
+      return;
+    getDeliveryConfig(branchId).then((config) => {
+      const fee = config?.data?.deliveryFee;
+      if (fee && fee > 0) {
+        setCurrentDeliveryFee(fee);
+        updateDeliveryFee(order.id, fee);
+      }
+    });
+  }, [open, order.id, order.type, order.deliveryFee, branchId]);
 
   // Update payment amount when total changes
   useEffect(() => {
@@ -186,13 +205,15 @@ export function CloseOrderDialog({
         if (sectorId) {
           // Only show registers that serve this sector
           availableRegisters = result.data.filter((register) =>
-            register.sectors.some((sector) => sector.id === sectorId)
+            register.sectors.some((sector) => sector.id === sectorId),
           );
         }
 
         // Fallback: If no registers found for sector, show all (safety net)
         if (availableRegisters.length === 0) {
-          console.warn(`No cash registers found for sector ${sectorId}, showing all available registers`);
+          console.warn(
+            `No cash registers found for sector ${sectorId}, showing all available registers`,
+          );
           availableRegisters = result.data;
         }
 
@@ -239,12 +260,12 @@ export function CloseOrderDialog({
   const updatePaymentLine = (
     id: string,
     field: "method" | "amount",
-    value: string
+    value: string,
   ) => {
     setPayments(
       payments.map((p) =>
-        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p
-      )
+        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p,
+      ),
     );
   };
 
@@ -283,39 +304,17 @@ export function CloseOrderDialog({
     setDiscountInput("");
   };
 
-  const handleDeliveryFeeEdit = () => {
-    setDeliveryFeeInput(currentDeliveryFee.toString());
-    setIsEditingDeliveryFee(true);
-  };
-
-  const handleDeliveryFeeSave = async () => {
-    const newFee = parseFloat(deliveryFeeInput);
-    if (isNaN(newFee) || newFee < 0) {
-      setError("El costo de envío debe ser un número mayor o igual a 0");
-      return;
-    }
-
-    const previousFee = currentDeliveryFee;
-    setCurrentDeliveryFee(newFee);
-    setIsEditingDeliveryFee(false);
-    setError(null);
-
-    const result = await updateDeliveryFee(order.id, newFee);
+  const handleDeliveryFeeBlur = async () => {
+    const result = await updateDeliveryFee(order.id, currentDeliveryFee);
     if (!result.success) {
-      setCurrentDeliveryFee(previousFee);
       setError(result.error || "Error al actualizar el costo de envío");
     }
-  };
-
-  const handleDeliveryFeeCancel = () => {
-    setIsEditingDeliveryFee(false);
-    setDeliveryFeeInput("");
   };
 
   const handleClose = async () => {
     // Validate cash register selection
     const selectedRegister = cashRegisters.find(
-      (r) => r.id === selectedRegisterId
+      (r) => r.id === selectedRegisterId,
     );
     if (!selectedRegister?.session) {
       setError("Selecciona una caja registradora con sesión abierta");
@@ -340,8 +339,8 @@ export function CloseOrderDialog({
     if (paymentTotal < total - 0.01) {
       setError(
         `El monto pagado (${formatCurrency(
-          paymentTotal
-        )}) es menor al total (${formatCurrency(total)})`
+          paymentTotal,
+        )}) es menor al total (${formatCurrency(total)})`,
       );
       return;
     }
@@ -362,6 +361,35 @@ export function CloseOrderDialog({
       });
 
       if (result.success) {
+        // Print control ticket with payment breakdown (fire and forget)
+        const isDelivery = order.type === OrderType.DELIVERY;
+        printControlTicket({
+          orderId: order.id,
+          orderCode: order.publicCode,
+          tableName: order.table?.number?.toString() ?? "—",
+          branchId,
+          items: order.items.map((item) => ({
+            name: item.itemName ?? item.product?.name ?? "",
+            quantity: item.quantity,
+            price: item.price,
+            notes: null,
+          })),
+          subtotal,
+          discountPercentage: currentDiscount > 0 ? currentDiscount : undefined,
+          deliveryFee:
+            isDelivery && currentDeliveryFee > 0
+              ? currentDeliveryFee
+              : undefined,
+          orderType: order.type,
+          payments: validPayments.length > 1 ? validPayments : undefined,
+          paymentMethod:
+            validPayments.length === 1
+              ? (PAYMENT_METHODS.find(
+                  (m) => m.value === validPayments[0].method,
+                )?.label ?? validPayments[0].method)
+              : undefined,
+        });
+
         // Close dialog AFTER successful operation
         resetForm();
         onOpenChange(false);
@@ -371,7 +399,8 @@ export function CloseOrderDialog({
         setError(result.error || "Error al cerrar la orden");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Error al cerrar la orden";
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al cerrar la orden";
       setError(errorMessage);
       console.error("Error closing order:", err);
     } finally {
@@ -384,8 +413,6 @@ export function CloseOrderDialog({
     setPayments([{ id: "1", method: "CASH", amount: "" }]);
     setError(null);
     setSelectedRegisterId("");
-    setIsEditingDeliveryFee(false);
-    setDeliveryFeeInput("");
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -397,9 +424,7 @@ export function CloseOrderDialog({
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
-      style: "currency",
       currency: "ARS",
-      minimumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -433,9 +458,7 @@ export function CloseOrderDialog({
             <h2 className="text-xl font-semibold">
               Finalizar Venta - {getOrderTitle()}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {branchName}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{branchName}</p>
           </div>
           <button
             onClick={() => handleOpenChange(false)}
@@ -456,7 +479,8 @@ export function CloseOrderDialog({
                 No hay cajas abiertas
               </h3>
               <p className="text-muted-foreground mb-4">
-                Para finalizar una venta, primero debes abrir una caja registradora.
+                Para finalizar una venta, primero debes abrir una caja
+                registradora.
               </p>
             </div>
           ) : (
@@ -484,7 +508,7 @@ export function CloseOrderDialog({
                           </span>
                         </div>
                         <span className="font-medium whitespace-nowrap">
-                          {formatCurrency(item.price * item.quantity)}
+                          $ {formatCurrency(item.price * item.quantity)}
                         </span>
                       </div>
                     ))}
@@ -498,12 +522,12 @@ export function CloseOrderDialog({
                           <span className="text-muted-foreground">
                             Subtotal:
                           </span>
-                          <span>{formatCurrency(subtotal)}</span>
+                          <span>$ {formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-green-600">
                           <span>Descuento ({currentDiscount}%):</span>
                           <div className="flex items-center gap-2">
-                            <span>-{formatCurrency(discountAmount)}</span>
+                            <span>-$ {formatCurrency(discountAmount)}</span>
                             {!isEditingDiscount && (
                               <Button
                                 variant="ghost"
@@ -571,67 +595,33 @@ export function CloseOrderDialog({
 
                     {/* Delivery Fee */}
                     {order.type === OrderType.DELIVERY && (
-                      <>
-                        {isEditingDeliveryFee ? (
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground shrink-0">Envío:</span>
-                            <div className="relative flex-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={deliveryFeeInput}
-                                onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                                className="h-8 pl-7"
-                                autoFocus
-                                disabled={isLoadingAction}
-                              />
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={handleDeliveryFeeSave}
-                              disabled={isLoadingAction}
-                            >
-                              Guardar
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={handleDeliveryFeeCancel}
-                              disabled={isLoadingAction}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between items-center text-sm text-blue-600">
-                            <span>Costo de envío:</span>
-                            <div className="flex items-center gap-2">
-                              <span>{formatCurrency(currentDeliveryFee)}</span>
-                              {!isEditingDeliveryFee && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={handleDeliveryFeeEdit}
-                                  disabled={isLoadingAction}
-                                >
-                                  <Percent className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <div className="flex justify-between items-center text-sm text-blue-600">
+                        <span>Costo de envío:</span>
+                        <div className="relative w-28">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={currentDeliveryFee}
+                            onChange={(e) =>
+                              setCurrentDeliveryFee(
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            onBlur={handleDeliveryFeeBlur}
+                            disabled={isLoadingAction}
+                            className="h-8 pl-6 text-right"
+                          />
+                        </div>
+                      </div>
                     )}
 
                     <div className="flex justify-between text-xl font-bold pt-2 border-t">
                       <span>Total:</span>
-                      <span>{formatCurrency(total)}</span>
+                      <span>$ {formatCurrency(total)}</span>
                     </div>
                   </div>
                 </div>
@@ -660,10 +650,13 @@ export function CloseOrderDialog({
                   <div className="space-y-2">
                     <Label htmlFor="cash-register-select">Caja:</Label>
                     {isLoadingRegisters ? (
-                      <div className="text-sm text-muted-foreground">Cargando cajas...</div>
+                      <div className="text-sm text-muted-foreground">
+                        Cargando cajas...
+                      </div>
                     ) : cashRegisters.length === 0 ? (
                       <div className="text-sm text-destructive">
-                        No hay cajas abiertas en este sector. Abra una caja primero.
+                        No hay cajas abiertas en este sector. Abra una caja
+                        primero.
                       </div>
                     ) : cashRegisters.length === 1 ? (
                       // Show read-only for single register
@@ -671,7 +664,11 @@ export function CloseOrderDialog({
                         {cashRegisters[0].name}
                         {cashRegisters[0].sectors.length > 0 && (
                           <span className="text-muted-foreground ml-2">
-                            ({cashRegisters[0].sectors.map(s => s.name).join(", ")})
+                            (
+                            {cashRegisters[0].sectors
+                              .map((s) => s.name)
+                              .join(", ")}
+                            )
                           </span>
                         )}
                       </div>
@@ -690,7 +687,11 @@ export function CloseOrderDialog({
                               {register.name}
                               {register.sectors.length > 0 && (
                                 <span className="text-muted-foreground ml-2">
-                                  ({register.sectors.map(s => s.name).join(", ")})
+                                  (
+                                  {register.sectors
+                                    .map((s) => s.name)
+                                    .join(", ")}
+                                  )
                                 </span>
                               )}
                             </SelectItem>
@@ -711,7 +712,7 @@ export function CloseOrderDialog({
                               updatePaymentLine(
                                 payment.id,
                                 "method",
-                                e.target.value as PaymentMethodExtended
+                                e.target.value as PaymentMethodExtended,
                               )
                             }
                             disabled={isLoadingAction}
@@ -736,7 +737,7 @@ export function CloseOrderDialog({
                                 updatePaymentLine(
                                   payment.id,
                                   "amount",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="0.00"
@@ -768,7 +769,7 @@ export function CloseOrderDialog({
                           Vuelto:
                         </span>
                         <span className="text-2xl font-bold text-green-700">
-                          {formatCurrency(change)}
+                          $ {formatCurrency(change)}
                         </span>
                       </div>
                     </div>
