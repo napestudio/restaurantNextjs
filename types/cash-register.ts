@@ -29,6 +29,9 @@ export interface SerializedCashRegisterSession {
   countedCash: number | null;
   variance: number | null;
   closingNotes: string | null;
+  reopenedAt: string | null;
+  reopenedBy: string | null;
+  reopenNotes: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -117,6 +120,11 @@ export interface OpenSessionForm {
 export interface CloseSessionForm {
   countedCash: number;
   closingNotes: string;
+}
+
+// Form state for reopening a closed session
+export interface ReopenSessionForm {
+  reopenNotes: string;
 }
 
 // Form state for adding movement

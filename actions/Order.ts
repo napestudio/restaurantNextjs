@@ -2297,6 +2297,125 @@ export async function getOrdersWithoutInvoice(params: {
  * Get count of active orders by type
  * Used for displaying badges on order type tabs
  */
+// Change order type between TAKE_AWAY and DELIVERY
+// Recalculates item prices and adjusts delivery fee accordingly
+export async function updateOrderType(
+  orderId: string,
+  newType: OrderType,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await authorizeAction(
+      UserRole.MANAGER,
+      "Solo gerentes y superiores pueden cambiar el tipo de orden",
+    );
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        branchId: true,
+        type: true,
+        status: true,
+        items: {
+          select: { id: true, productId: true },
+        },
+      },
+    });
+
+    if (!order) {
+      return { success: false, error: "Orden no encontrada" };
+    }
+    if (
+      order.status === OrderStatus.COMPLETED ||
+      order.status === OrderStatus.CANCELED
+    ) {
+      return {
+        success: false,
+        error: "No se puede cambiar el tipo de una orden finalizada",
+      };
+    }
+    if (order.type === newType) {
+      return { success: false, error: "La orden ya es de ese tipo" };
+    }
+    if (
+      order.type === OrderType.DINE_IN ||
+      newType === OrderType.DINE_IN
+    ) {
+      return {
+        success: false,
+        error: "Solo se puede cambiar entre Para Llevar y Delivery",
+      };
+    }
+
+    // Build price map for items that have a productId
+    const productIds = order.items
+      .filter((item) => item.productId)
+      .map((item) => item.productId!);
+
+    const priceMap: Record<string, number> = {};
+
+    if (productIds.length > 0) {
+      const pobs = await prisma.productOnBranch.findMany({
+        where: {
+          branchId: order.branchId,
+          productId: { in: productIds },
+        },
+        select: {
+          productId: true,
+          prices: {
+            where: {
+              type: {
+                in: [newType, OrderType.DINE_IN] as never[],
+              },
+            },
+            select: { price: true, type: true },
+          },
+        },
+      });
+
+      for (const pob of pobs) {
+        // Prefer the new type price, fall back to DINE_IN
+        const priceObj =
+          pob.prices.find((p) => p.type === (newType as string)) ??
+          pob.prices.find((p) => p.type === OrderType.DINE_IN);
+        if (priceObj) {
+          priceMap[pob.productId] = Number(priceObj.price);
+        }
+      }
+    }
+
+    // Auto-apply delivery fee from config when switching TO delivery
+    let newDeliveryFee = 0;
+    if (newType === OrderType.DELIVERY) {
+      const config = await prisma.deliveryConfig.findUnique({
+        where: { branchId: order.branchId },
+        select: { deliveryFee: true },
+      });
+      newDeliveryFee = Number(config?.deliveryFee ?? 0);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { type: newType, deliveryFee: newDeliveryFee },
+      });
+
+      for (const item of order.items) {
+        if (item.productId && priceMap[item.productId] !== undefined) {
+          await tx.orderItem.update({
+            where: { id: item.id },
+            data: { price: priceMap[item.productId] },
+          });
+        }
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating order type:", error);
+    return { success: false, error: "Error al cambiar el tipo de orden" };
+  }
+}
+
 export async function getActiveOrderCounts(branchId: string) {
   try {
     const counts = await prisma.order.groupBy({

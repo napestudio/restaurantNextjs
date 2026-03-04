@@ -36,6 +36,9 @@ interface SerializedSession {
   countedCash: number | null;
   variance: number | null;
   closingNotes: string | null;
+  reopenedAt: string | null;
+  reopenedBy: string | null;
+  reopenNotes: string | null;
   createdAt: string;
   updatedAt: string;
   cashRegister: {
@@ -125,6 +128,9 @@ export function OpenRegisterDialog({
           countedCash: null,
           variance: null,
           closingNotes: null,
+          reopenedAt: null,
+          reopenedBy: null,
+          reopenNotes: null,
           createdAt,
           updatedAt,
           cashRegister: {
