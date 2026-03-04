@@ -1164,6 +1164,11 @@ model CashRegisterSession {
   variance     Decimal? // countedCash - expectedCash
   closingNotes String?
 
+  // Re-opening audit trail (nullable until re-opened)
+  reopenedAt  DateTime?
+  reopenedBy  String? // User ID
+  reopenNotes String?
+
   movements CashMovement[]
 
   createdAt DateTime @default(now())

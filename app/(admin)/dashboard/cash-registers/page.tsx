@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/permissions/middleware";
 import { UserRole } from "@/app/generated/prisma";
 
 export default async function CashRegistersPage() {
-  await requireRole(UserRole.MANAGER);
+  const { userRole } = await requireRole(UserRole.MANAGER);
 
   const branchId = BRANCH_ID || "";
 
@@ -58,6 +58,7 @@ export default async function CashRegistersPage() {
     variance: session.variance ? Number(session.variance) : null,
     openedAt: session.openedAt.toISOString(),
     closedAt: session.closedAt ? session.closedAt.toISOString() : null,
+    reopenedAt: session.reopenedAt ? session.reopenedAt.toISOString() : null,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
   }));
@@ -75,6 +76,7 @@ export default async function CashRegistersPage() {
       variance: session.variance ? Number(session.variance) : null,
       openedAt: session.openedAt.toISOString(),
       closedAt: session.closedAt ? session.closedAt.toISOString() : null,
+      reopenedAt: session.reopenedAt ? session.reopenedAt.toISOString() : null,
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),
     })),
@@ -87,6 +89,7 @@ export default async function CashRegistersPage() {
           branchId={branchId}
           cashRegisters={registersWithStatus}
           initialSessions={serializedSessions}
+          userRole={userRole}
         />
       </main>
     </div>

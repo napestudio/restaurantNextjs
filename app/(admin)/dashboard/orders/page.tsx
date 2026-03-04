@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { ProductsProvider } from "@/contexts/products-context";
 import { OrderType, UserRole } from "@/app/generated/prisma";
 import { requireRole } from "@/lib/permissions/middleware";
+import { isManagerOrHigher } from "@/lib/permissions/role-utils";
 
 type SearchParams = Promise<{
   type?: string;
@@ -19,7 +20,7 @@ export default async function OrdersPage({
 }: {
   searchParams: SearchParams;
 }) {
-  await requireRole(UserRole.WAITER);
+  const { userRole } = await requireRole(UserRole.WAITER);
 
   const params = await searchParams;
   // TODO: Get branchId from user session/context
@@ -114,6 +115,7 @@ export default async function OrdersPage({
             initialTab={activeTab}
             initialSearch={searchParam || ""}
             activeOrderCounts={orderCounts}
+            canChangeOrderType={isManagerOrHigher(userRole)}
           />
         </ProductsProvider>
       </main>

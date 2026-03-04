@@ -10,6 +10,7 @@ import {
   getSessionMovements,
   closeCashRegisterSession,
 } from "@/actions/CashRegister";
+import { ReopenSessionDialog } from "./reopen-session-dialog";
 import { PAYMENT_METHOD_LABELS } from "@/types/cash-register";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,9 @@ interface SerializedSession {
   countedCash: number | null;
   variance: number | null;
   closingNotes: string | null;
+  reopenedAt: string | null;
+  reopenedBy: string | null;
+  reopenNotes: string | null;
   createdAt: string;
   updatedAt: string;
   cashRegister: {
@@ -54,6 +58,8 @@ interface SessionDetailsSidebarProps {
   open: boolean;
   onClose: () => void;
   onSessionClosed: (session: SerializedSession) => void;
+  onSessionReopened: (session: SerializedSession) => void;
+  userRole: string | null;
 }
 
 export function SessionDetailsSidebar({
@@ -61,6 +67,8 @@ export function SessionDetailsSidebar({
   open,
   onClose,
   onSessionClosed,
+  onSessionReopened,
+  userRole,
 }: SessionDetailsSidebarProps) {
   const [movements, setMovements] = useState<SerializedMovement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +86,10 @@ export function SessionDetailsSidebar({
   const [closingNotes, setClosingNotes] = useState("");
   const [isClosing, setIsClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+
+  const canReopen =
+    userRole === "ADMIN" || userRole === "SUPERADMIN";
 
   const loadMovements = async () => {
     if (!session) return;
@@ -585,7 +597,31 @@ export function SessionDetailsSidebar({
                 <span>Total</span>
                 <span>$ {formatCurrency(session.countedCash || 0)}</span>
               </div>
+              {session.reopenedAt && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                  Reabierta el{" "}
+                  {new Date(session.reopenedAt).toLocaleString("es-AR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {session.reopenNotes && ` — ${session.reopenNotes}`}
+                </div>
+              )}
             </div>
+            {canReopen && (
+              <div className="px-4 pb-4">
+                <Button
+                  onClick={() => setReopenDialogOpen(true)}
+                  variant="outline"
+                  className="w-full border-amber-400 text-amber-700 hover:bg-amber-50"
+                >
+                  Reabrir sesión
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -634,6 +670,18 @@ export function SessionDetailsSidebar({
           </div>
         )}
       </div>
+
+      {reopenDialogOpen && (
+        <ReopenSessionDialog
+          open={reopenDialogOpen}
+          onOpenChange={setReopenDialogOpen}
+          session={session}
+          onReopened={(reopenedSession) => {
+            onSessionReopened(reopenedSession);
+            setReopenDialogOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

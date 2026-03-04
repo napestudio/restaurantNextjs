@@ -98,6 +98,7 @@ interface OrdersClientProps {
     TAKE_AWAY: number;
     DELIVERY: number;
   };
+  canChangeOrderType: boolean;
 }
 
 export function OrdersClient({
@@ -108,6 +109,7 @@ export function OrdersClient({
   initialTab,
   initialSearch,
   activeOrderCounts,
+  canChangeOrderType,
 }: OrdersClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -238,6 +240,16 @@ export function OrdersClient({
         }
       }
     });
+  };
+
+  // Handle order type change — close sidebar and navigate to new type's tab
+  const handleOrderTypeChanged = (newType: OrderType) => {
+    handleCloseSidebar();
+    if (currentTab !== "ALL") {
+      updateUrlAndFetch(newType, 1, currentSearch);
+    } else {
+      handleOrderUpdated();
+    }
   };
 
   // Handle create order
@@ -478,6 +490,8 @@ export function OrdersClient({
         onClose={handleCloseSidebar}
         branchId={branchId}
         onOrderUpdated={handleOrderUpdated}
+        canChangeOrderType={canChangeOrderType}
+        onOrderTypeChanged={handleOrderTypeChanged}
       />
 
       {/* Create Order Sidebar */}

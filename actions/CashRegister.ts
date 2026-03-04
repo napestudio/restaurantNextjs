@@ -36,6 +36,12 @@ const closeSessionSchema = z.object({
   userId: z.string().min(1, "El usuario es requerido"),
 });
 
+const reopenSessionSchema = z.object({
+  sessionId: z.string().min(1, "La sesión es requerida"),
+  userId: z.string().min(1, "El usuario es requerido"),
+  notes: z.string().optional(),
+});
+
 const addMovementSchema = z.object({
   sessionId: z.string().min(1, "La sesión es requerida"),
   type: z.enum(["INCOME", "EXPENSE", "SALE", "REFUND"]),
@@ -590,6 +596,89 @@ export async function closeCashRegisterSession(
     return {
       success: false,
       error: "Error al cerrar la sesión de caja",
+    };
+  }
+}
+
+export async function reopenCashRegisterSession(
+  data: z.infer<typeof reopenSessionSchema>
+) {
+  try {
+    // Only ADMIN and SUPERADMIN can re-open closed sessions
+    await authorizeAction(UserRole.ADMIN);
+
+    const validatedData = reopenSessionSchema.parse(data);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const session = await tx.cashRegisterSession.findUnique({
+        where: { id: validatedData.sessionId },
+      });
+
+      if (!session) {
+        throw new Error("Sesión no encontrada");
+      }
+
+      if (session.status === "OPEN") {
+        throw new Error("Esta sesión ya está abierta");
+      }
+
+      // Enforce single-open-session-per-register rule
+      const existingOpenSession = await tx.cashRegisterSession.findFirst({
+        where: {
+          cashRegisterId: session.cashRegisterId,
+          status: "OPEN",
+        },
+      });
+
+      if (existingOpenSession) {
+        throw new Error(
+          "Esta caja ya tiene una sesión abierta. Cerrá la sesión activa antes de reabrir una anterior."
+        );
+      }
+
+      return tx.cashRegisterSession.update({
+        where: { id: validatedData.sessionId },
+        data: {
+          status: "OPEN",
+          // Clear closing fields
+          closedAt: null,
+          closedBy: null,
+          expectedCash: null,
+          countedCash: null,
+          variance: null,
+          closingNotes: null,
+          // Set re-open audit trail
+          reopenedAt: new Date(),
+          reopenedBy: validatedData.userId,
+          reopenNotes: validatedData.notes || null,
+        },
+      });
+    });
+
+    revalidatePath("/dashboard/config/cash-registers");
+    revalidatePath("/dashboard/cash-registers");
+
+    return {
+      success: true,
+      data: serializeForClient(result),
+    };
+  } catch (error) {
+    console.error("Error reopening cash register session:", error);
+    if (error instanceof ZodError) {
+      return {
+        success: false,
+        error: error.issues[0].message,
+      };
+    }
+    if (error instanceof Error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+    return {
+      success: false,
+      error: "Error al reabrir la sesión de caja",
     };
   }
 }

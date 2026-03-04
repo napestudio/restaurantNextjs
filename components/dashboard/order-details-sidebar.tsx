@@ -9,7 +9,15 @@ import {
   updateDeliveryFee,
   addOrderItems,
   getAvailableProductsForOrder,
+  updateOrderType,
 } from "@/actions/Order";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { getDeliveryConfig } from "@/actions/DeliveryConfig";
 import { usePrint } from "@/hooks/use-print";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
@@ -25,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
+  ArrowLeftRight,
   Clock,
   CreditCard,
   DollarSign,
@@ -108,6 +117,8 @@ interface OrderDetailsSidebarProps {
   onClose: () => void;
   branchId: string;
   onOrderUpdated?: () => void;
+  canChangeOrderType?: boolean;
+  onOrderTypeChanged?: (newType: OrderType) => void;
 }
 
 const statusColors = {
@@ -150,6 +161,8 @@ export function OrderDetailsSidebar({
   onClose,
   branchId,
   onOrderUpdated,
+  canChangeOrderType,
+  onOrderTypeChanged,
 }: OrderDetailsSidebarProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
@@ -161,6 +174,11 @@ export function OrderDetailsSidebar({
   const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order?.deliveryFee ?? 0);
+
+  // Type change state
+  const [typeChangeConfirmOpen, setTypeChangeConfirmOpen] = useState(false);
+  const [pendingNewType, setPendingNewType] = useState<OrderType | null>(null);
+  const [isChangingType, setIsChangingType] = useState(false);
 
   // Add items state
   const [preOrderItems, setPreOrderItems] = useState<PreOrderItem[]>([]);
@@ -462,6 +480,39 @@ export function OrderDetailsSidebar({
     onClose();
   };
 
+  const handleTypeChangeTrigger = (newType: OrderType) => {
+    setPendingNewType(newType);
+    setTypeChangeConfirmOpen(true);
+  };
+
+  const handleTypeChangeConfirm = async () => {
+    if (!pendingNewType) return;
+    setIsChangingType(true);
+    const result = await updateOrderType(order.id, pendingNewType);
+    if (result.success) {
+      setTypeChangeConfirmOpen(false);
+      setPendingNewType(null);
+      toast({ title: "Tipo de orden actualizado" });
+      onOrderTypeChanged?.(pendingNewType);
+    } else {
+      toast({
+        variant: "destructive",
+        title: result.error ?? "Error al cambiar el tipo de orden",
+      });
+    }
+    setIsChangingType(false);
+  };
+
+  // Whether type can be changed for this order
+  const canChangeType =
+    canChangeOrderType &&
+    (order.type === OrderType.TAKE_AWAY || order.type === OrderType.DELIVERY) &&
+    order.status !== OrderStatus.COMPLETED &&
+    order.status !== OrderStatus.CANCELED;
+
+  const oppositeType =
+    order.type === OrderType.TAKE_AWAY ? OrderType.DELIVERY : OrderType.TAKE_AWAY;
+
   // Check if order can be finalized (not already completed or canceled)
   const canFinalizeOrder =
     order.status !== OrderStatus.COMPLETED &&
@@ -550,6 +601,15 @@ export function OrderDetailsSidebar({
               <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
                 <TypeIcon className="h-4 w-4" />
                 <span>{typeLabels[order.type]}</span>
+                {canChangeType && (
+                  <button
+                    onClick={() => handleTypeChangeTrigger(oppositeType)}
+                    className="ml-1 p-0.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    title={`Cambiar a ${typeLabels[oppositeType]}`}
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
@@ -1009,6 +1069,43 @@ export function OrderDetailsSidebar({
           onOrderUpdated?.();
         }}
       />
+
+      {/* Change Order Type Confirmation Dialog */}
+      <Dialog open={typeChangeConfirmOpen} onOpenChange={setTypeChangeConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cambiar tipo de orden</DialogTitle>
+          </DialogHeader>
+          {pendingNewType && (
+            <div className="py-2 space-y-3">
+              <p className="text-sm text-gray-700">
+                ¿Cambiar de{" "}
+                <span className="font-semibold">{typeLabels[order.type]}</span>{" "}
+                a{" "}
+                <span className="font-semibold">{typeLabels[pendingNewType]}</span>?
+              </p>
+              <p className="text-xs text-gray-500">
+                Los precios de los productos se recalcularán según el nuevo tipo.
+                {pendingNewType === OrderType.DELIVERY
+                  ? " Se aplicará el costo de envío configurado."
+                  : " Se eliminará el costo de envío."}
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTypeChangeConfirmOpen(false)}
+              disabled={isChangingType}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleTypeChangeConfirm} disabled={isChangingType}>
+              {isChangingType ? "Cambiando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

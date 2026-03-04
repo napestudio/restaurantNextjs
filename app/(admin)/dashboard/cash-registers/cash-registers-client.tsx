@@ -31,6 +31,9 @@ interface SerializedSession {
   countedCash: number | null;
   variance: number | null;
   closingNotes: string | null;
+  reopenedAt: string | null;
+  reopenedBy: string | null;
+  reopenNotes: string | null;
   createdAt: string;
   updatedAt: string;
   cashRegister: {
@@ -46,12 +49,14 @@ interface CashRegistersClientProps {
   branchId: string;
   cashRegisters: CashRegisterWithStatus[];
   initialSessions: SerializedSession[];
+  userRole: string;
 }
 
 export function CashRegistersClient({
   branchId,
   cashRegisters,
   initialSessions,
+  userRole,
 }: CashRegistersClientProps) {
   const [sessions, setSessions] =
     useState<SerializedSession[]>(initialSessions);
@@ -116,6 +121,13 @@ export function CashRegistersClient({
     setSessions((prev) =>
       prev.map((s) => (s.id === closedSession.id ? closedSession : s))
     );
+  };
+
+  const handleSessionReopened = (reopenedSession: SerializedSession) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === reopenedSession.id ? reopenedSession : s))
+    );
+    setSelectedSession(reopenedSession);
   };
 
   // Get registers that can be opened (active and no open session)
@@ -457,6 +469,8 @@ export function CashRegistersClient({
         open={sidebarOpen}
         onClose={handleSidebarClose}
         onSessionClosed={handleSidebarSessionClosed}
+        onSessionReopened={handleSessionReopened}
+        userRole={userRole}
       />
     </div>
   );

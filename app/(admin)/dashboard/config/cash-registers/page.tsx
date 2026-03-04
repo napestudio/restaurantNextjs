@@ -36,6 +36,7 @@ export default async function CashRegistersConfigPage() {
       variance: session.variance ? Number(session.variance) : null,
       openedAt: session.openedAt.toISOString(),
       closedAt: session.closedAt ? session.closedAt.toISOString() : null,
+      reopenedAt: session.reopenedAt ? session.reopenedAt.toISOString() : null,
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),
     })),

@@ -30,6 +30,9 @@ interface SerializedSession {
   countedCash: number | null;
   variance: number | null;
   closingNotes: string | null;
+  reopenedAt: string | null;
+  reopenedBy: string | null;
+  reopenNotes: string | null;
   createdAt: string;
   updatedAt: string;
   cashRegister: {
