@@ -1,8 +1,12 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { authConfig } from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -18,19 +22,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Dynamically import Prisma and bcrypt only when needed (not in Edge Runtime during middleware)
-        const { prisma } = await import("@/lib/prisma");
-        const bcrypt = await import("bcryptjs");
-
         const user = await prisma.user.findUnique({
           where: { username: credentials.username as string },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            password: true,
+          },
         });
 
-        if (!user || !user.password) {
+        if (!user?.password) {
           return null;
         }
 
-        // Verify password
         const isValid = await bcrypt.compare(
           credentials.password as string,
           user.password
@@ -49,24 +55,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
 });

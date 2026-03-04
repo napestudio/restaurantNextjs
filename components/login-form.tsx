@@ -1,18 +1,22 @@
 "use client";
 
 import { loginWithCredentials, loginWithGoogle } from "@/actions/login";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  async function handleCredentialsSubmit(formData: FormData) {
-    const result = await loginWithCredentials(formData);
-    if (result?.error) {
-      setError(result.error);
-    }
+  function handleCredentialsSubmit(formData: FormData) {
+    setError(null);
+    startTransition(async () => {
+      const result = await loginWithCredentials(formData);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -65,8 +69,9 @@ export default function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
+                disabled={isPending}
                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                className="absolute inset-y-0 right-0 z-20 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700"
+                className="absolute inset-y-0 right-0 z-20 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 disabled:opacity-40"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -88,9 +93,17 @@ export default function LoginForm() {
         <div>
           <button
             type="submit"
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-900 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            disabled={isPending}
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-900 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Ingresar
+            {isPending ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Ingresando...
+              </span>
+            ) : (
+              "Ingresar"
+            )}
           </button>
         </div>
       </form>

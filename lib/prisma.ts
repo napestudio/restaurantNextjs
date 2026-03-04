@@ -13,13 +13,13 @@ const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-export const prisma =
-  global.prisma ||
+global.prisma =
+  global.prisma ??
   new PrismaClient({
     adapter,
   });
 
-if (process.env.NODE_ENV !== "production") global.prisma = prisma;
+export const prisma = global.prisma;
 
 // Export with proper index signature for PrismaAdapter compatibility
 export default prisma as PrismaClient & { [key: string]: unknown };
