@@ -12,6 +12,7 @@ import {
 } from "@/actions/CashRegister";
 import { ReopenSessionDialog } from "./reopen-session-dialog";
 import { PAYMENT_METHOD_LABELS } from "@/types/cash-register";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 interface SerializedSession {
@@ -222,12 +223,6 @@ export function SessionDetailsSidebar({
   // Calculate variance
   const variance = userTotal - totalExpected;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      currency: "ARS",
-    }).format(amount);
-  };
-
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleString("es-AR", {
@@ -384,7 +379,7 @@ export function SessionDetailsSidebar({
           <div className="flex justify-between px-4 py-3 border-b">
             <span className="font-medium text-sm">MONTO INICIAL</span>
             <span className="font-medium">
-              $ {formatCurrency(openingAmount)}
+              {formatCurrency(openingAmount)}
             </span>
           </div>
 
@@ -397,7 +392,7 @@ export function SessionDetailsSidebar({
               <span className="font-medium text-sm">INGRESO</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  $ {formatCurrency(totalIncome)}
+                  {formatCurrency(totalIncome)}
                 </span>
                 {expandedSections.income ? (
                   <ChevronDown className="h-4 w-4" />
@@ -422,7 +417,7 @@ export function SessionDetailsSidebar({
                           }
                         </span>
                         <span className="text-sm">
-                          $ {formatCurrency(data.total)}
+                          {formatCurrency(data.total)}
                         </span>
                       </div>
                       {data.movements.map((m) => (
@@ -435,7 +430,7 @@ export function SessionDetailsSidebar({
                               ? "Ventas"
                               : m.description || "Ingreso"}
                           </span>
-                          <span>$ {formatCurrency(m.amount)}</span>
+                          <span>{formatCurrency(m.amount)}</span>
                         </div>
                       ))}
                     </div>
@@ -453,7 +448,7 @@ export function SessionDetailsSidebar({
               <span className="font-medium text-sm">EGRESO</span>
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  - $ {formatCurrency(totalExpense)}
+                  -{formatCurrency(totalExpense)}
                 </span>
                 {expandedSections.expense ? (
                   <ChevronDown className="h-4 w-4" />
@@ -478,7 +473,7 @@ export function SessionDetailsSidebar({
                           }
                         </span>
                         <span className="text-sm">
-                          - $ {formatCurrency(data.total)}
+                          -{formatCurrency(data.total)}
                         </span>
                       </div>
                       {data.movements.map((m) => (
@@ -491,7 +486,7 @@ export function SessionDetailsSidebar({
                               ? "Devolución"
                               : m.description || "Egreso"}
                           </span>
-                          <span>$ {formatCurrency(m.amount)}</span>
+                          <span>{formatCurrency(m.amount)}</span>
                         </div>
                       ))}
                     </div>
@@ -503,7 +498,7 @@ export function SessionDetailsSidebar({
           {/* System Total */}
           <div className="flex justify-between px-4 py-3 bg-gray-100 font-semibold">
             <span>Total</span>
-            <span>$ {formatCurrency(totalExpected)}</span>
+            <span>{formatCurrency(totalExpected)}</span>
           </div>
         </div>
 
@@ -528,7 +523,7 @@ export function SessionDetailsSidebar({
                       *
                     </Label>
                     <span className="text-xs text-gray-500">
-                      Esperado: ${" "}
+                      Esperado:{" "}
                       {formatCurrency(expectedByMethod[method] || 0)}
                     </span>
                   </div>
@@ -568,7 +563,7 @@ export function SessionDetailsSidebar({
               {/* User Total */}
               <div className="flex justify-between py-3 bg-gray-100 px-4 -mx-4 font-semibold">
                 <span>Total</span>
-                <span>$ {formatCurrency(userTotal)}</span>
+                <span>{formatCurrency(userTotal)}</span>
               </div>
 
               {closeError && (
@@ -590,7 +585,7 @@ export function SessionDetailsSidebar({
               <div className="flex justify-between">
                 <span className="text-gray-500">Efectivo contado</span>
                 <span className="font-medium">
-                  $ {formatCurrency(session.countedCash || 0)}
+                  {formatCurrency(session.countedCash || 0)}
                 </span>
               </div>
               {session.closingNotes && (
@@ -601,7 +596,7 @@ export function SessionDetailsSidebar({
               )}
               <div className="flex justify-between py-3 bg-gray-100 px-4 -mx-4 font-semibold">
                 <span>Total</span>
-                <span>$ {formatCurrency(session.countedCash || 0)}</span>
+                <span>{formatCurrency(session.countedCash || 0)}</span>
               </div>
               {session.reopenedAt && (
                 <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
@@ -651,8 +646,8 @@ export function SessionDetailsSidebar({
           <span>Diferencia</span>
           <span>
             {session.status === "OPEN"
-              ? `$ ${formatCurrency(variance)}`
-              : `$ ${formatCurrency(session.variance || 0)}`}
+              ? formatCurrency(variance)
+              : formatCurrency(session.variance || 0)}
           </span>
         </div>
 

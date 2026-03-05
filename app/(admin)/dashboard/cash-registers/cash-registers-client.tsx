@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { CashRegisterWithStatus } from "@/types/cash-register";
 import { CircleDot, CircleOff, DollarSign, Plus, Wallet } from "lucide-react";
@@ -134,14 +135,6 @@ export function CashRegistersClient({
   const availableRegisters = cashRegisters.filter(
     (r) => r.isActive && !r.hasOpenSession
   );
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-    }).format(amount);
-  };
 
   // Format date/time
   const formatDateTime = (dateStr: string) => {

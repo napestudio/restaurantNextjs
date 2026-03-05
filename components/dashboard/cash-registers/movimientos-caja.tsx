@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import {
   CashRegisterWithStatus,
@@ -178,13 +179,6 @@ export function MovimientosCaja({
   };
 
   // Format helpers
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-    }).format(amount);
-  };
-
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleString("es-AR", {
