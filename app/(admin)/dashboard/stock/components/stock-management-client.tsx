@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { getBranchStockSummary, getLowStockAlerts } from "@/actions/stock";
 import type {
   PriceType,
@@ -578,9 +579,7 @@ export function StockManagementClient({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
                       {dineInPrice
-                        ? `$${dineInPrice.price.toLocaleString("es-Ar", {
-                            currency: "ARS",
-                          })}`
+                        ? formatCurrency(dineInPrice.price)
                         : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">

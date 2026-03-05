@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useState } from "react";
 import { ArrowLeft, Car, ShoppingBag } from "lucide-react";
 import Link from "next/link";
@@ -182,10 +183,7 @@ export default function DeliveryPage({
                     </p>
                     {config.deliveryFee > 0 && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Costo de envío: $
-                        {config.deliveryFee.toLocaleString("es-AR", {
-                          currency: "ARS",
-                        })}
+                        Costo de envío: {formatCurrency(config.deliveryFee)}
                       </p>
                     )}
                   </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Minus, Plus, Trash2 } from "lucide-react";
@@ -70,10 +71,7 @@ export function ShoppingCart({
                   <div className="flex-1">
                     <h3 className="font-semibold">{item.name}</h3>
                     <p className="text-sm text-gray-600">
-                      ${" "}
-                      {item.price.toLocaleString("es-Ar", {
-                        currency: "ARS",
-                      })}{" "}
+                      {formatCurrency(item.price)}{" "}
                       c/u
                     </p>
                   </div>
@@ -114,10 +112,7 @@ export function ShoppingCart({
                 </div>
 
                 <div className="w-24 text-right font-semibold">
-                  ${" "}
-                  {(item.price * item.quantity).toLocaleString("es-AR", {
-                    currency: "ARS",
-                  })}
+                  {formatCurrency(item.price * item.quantity)}
                 </div>
 
                 <Button
@@ -139,30 +134,21 @@ export function ShoppingCart({
           <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
             <span>
-              $
-              {subtotal.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}
+              {formatCurrency(subtotal)}
             </span>
           </div>
           {isDelivery && deliveryFee > 0 && (
             <div className="flex justify-between text-gray-600">
               <span>Costo de envío</span>
               <span>
-                $
-                {deliveryFee.toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(deliveryFee)}
               </span>
             </div>
           )}
           <div className="flex justify-between text-xl font-bold pt-2 border-t">
             <span>Total</span>
             <span>
-              $
-              {total.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}
+              {formatCurrency(total)}
             </span>
           </div>
         </CardContent>

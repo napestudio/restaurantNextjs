@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
@@ -57,10 +58,7 @@ export function CommittedOrderItemsList({
 
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold text-gray-700">
-                $
-                {Number(item.price * item.quantity).toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(Number(item.price * item.quantity))}
               </div>
 
               <Button
@@ -81,10 +79,7 @@ export function CommittedOrderItemsList({
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
           <span>
-            $
-            {calculateTotal().toLocaleString("es-AR", {
-              currency: "ARS",
-            })}
+            {formatCurrency(calculateTotal())}
           </span>
         </div>
       </div>

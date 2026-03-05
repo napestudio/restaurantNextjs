@@ -2,15 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, ShoppingBag, DollarSign, Archive } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 import type { KpiStats } from "@/actions/Statistics";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 interface KpiCardsProps {
   kpi: KpiStats;
@@ -20,7 +13,7 @@ export function KpiCards({ kpi }: KpiCardsProps) {
   const cards = [
     {
       label: "Ingresos totales",
-      value: formatCurrency(kpi.totalRevenue),
+      value: formatCurrency(kpi.totalRevenue, { maximumFractionDigits: 0 }),
       icon: DollarSign,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
@@ -34,7 +27,7 @@ export function KpiCards({ kpi }: KpiCardsProps) {
     },
     {
       label: "Ticket promedio",
-      value: formatCurrency(kpi.avgOrderValue),
+      value: formatCurrency(kpi.avgOrderValue, { maximumFractionDigits: 0 }),
       icon: TrendingUp,
       color: "text-violet-600",
       bg: "bg-violet-50",

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -214,10 +215,7 @@ export function PreOrderItemsList({
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total a confirmar:</span>
           <span>
-            $
-            {calculateTotal().toLocaleString("es-AR", {
-              currency: "ARS",
-            })}
+            {formatCurrency(calculateTotal())}
           </span>
         </div>
       </div>

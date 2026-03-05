@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
@@ -124,7 +125,7 @@ export function ProductList({
           )}
 
           <p className="text-lg font-bold text-neutral-900 mt-1">
-            ${product.price.toLocaleString("es-AR")}
+            {formatCurrency(product.price)}
           </p>
         </div>
         <div className="w-25 h-25 md:w-30 md:h-30 bg-gray-200 rounded-md shrink-0 relative overflow-hidden">

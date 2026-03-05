@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useState, useEffect } from "react";
 import { getOrdersWithoutInvoice } from "@/actions/Order";
 import type { OrderWithoutInvoice } from "@/actions/Order";
@@ -126,10 +127,7 @@ export function OrderCombobox({
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">
-                          $
-                          {order.total.toLocaleString("es-AR", {
-                            currency: "ARS",
-                          })}
+                          {formatCurrency(order.total)}
                         </div>
                         <div className="text-xs text-gray-500">
                           {order.type === "DINE_IN"
@@ -166,10 +164,7 @@ export function OrderCombobox({
             </div>
             <div className="text-right">
               <div className="font-semibold text-blue-900">
-                $
-                {selectedOrder.total.toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(selectedOrder.total)}
               </div>
             </div>
           </div>

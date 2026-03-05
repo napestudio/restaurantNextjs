@@ -22,6 +22,7 @@ import {
   Link,
   QrCode,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 import { PAYMENT_METHOD_LABELS, MOVEMENT_TYPE_LABELS } from "@/types/cash-register";
 
 interface Movement {
@@ -61,13 +62,6 @@ export function MovementDetailsDialog({
   movement,
 }: MovementDetailsDialogProps) {
   if (!movement) return null;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-    }).format(amount);
-  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

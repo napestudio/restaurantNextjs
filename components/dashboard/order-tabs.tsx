@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -135,10 +136,7 @@ export function OrderTabs({
                   : "Sin asignar"}
               </div>
               <div className="text-sm font-bold text-gray-900 mt-1">
-                $
-                {total.toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(total)}
               </div>
             </button>
           );
