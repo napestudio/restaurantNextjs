@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import React from "react";
 import type { ClientData } from "@/actions/clients";
 import {
@@ -888,26 +889,16 @@ export function OrderDetailsSidebar({
                     {item.originalPrice &&
                       item.originalPrice !== item.price && (
                         <div className="text-xs text-orange-600">
-                          Precio modificado (Original: $
-                          {item.originalPrice.toLocaleString("es-AR", {
-                            currency: "ARS",
-                          })}
-                          )
+                          Precio modificado (Original: {formatCurrency(item.originalPrice)})
                         </div>
                       )}
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-gray-900">
-                      $
-                      {(item.quantity * item.price).toLocaleString("es-AR", {
-                        currency: "ARS",
-                      })}
+                      {formatCurrency(item.quantity * item.price)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      $
-                      {item.price.toLocaleString("es-AR", {
-                        currency: "ARS",
-                      })}{" "}
+                      {formatCurrency(item.price)}{" "}
                       c/u
                     </div>
                   </div>
@@ -923,10 +914,7 @@ export function OrderDetailsSidebar({
           <div className="flex justify-between px-4 py-3">
             <span className="text-gray-600">Subtotal</span>
             <span className="font-medium">
-              $
-              {subtotal.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}
+              {formatCurrency(subtotal)}
             </span>
           </div>
 
@@ -956,10 +944,7 @@ export function OrderDetailsSidebar({
               <div className="flex justify-between px-4 py-3 text-orange-600">
                 <span>Descuento ({order.discountPercentage}%)</span>
                 <span>
-                  -$
-                  {discount.toLocaleString("es-AR", {
-                    currency: "ARS",
-                  })}
+                  -{formatCurrency(discount)}
                 </span>
               </div>
             )
@@ -989,10 +974,7 @@ export function OrderDetailsSidebar({
           <div className="flex justify-between px-4 py-4 bg-gray-100 font-semibold text-lg">
             <span>Total</span>
             <span className="text-red-600">
-              $
-              {total.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}
+              {formatCurrency(total)}
             </span>
           </div>
 
@@ -1007,7 +989,7 @@ export function OrderDetailsSidebar({
                       <span>{paymentMethodLabels[m.paymentMethod] ?? m.paymentMethod}</span>
                     </div>
                     <span className="font-medium text-gray-700">
-                      ${m.amount.toLocaleString("es-AR", { currency: "ARS" })}
+                      {formatCurrency(m.amount)}
                     </span>
                   </div>
                 ))

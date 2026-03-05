@@ -10,17 +10,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/currency";
 import type { RevenueByDay } from "@/actions/Statistics";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 interface RevenueChartProps {
   data: RevenueByDay[];
@@ -76,7 +69,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 }
               />
               <Tooltip
-                formatter={(value: number | undefined) => [formatCurrency(value ?? 0), "Ingresos"]}
+                formatter={(value: number | undefined) => [formatCurrency(value ?? 0, { maximumFractionDigits: 0 }), "Ingresos"]}
                 labelStyle={{ color: "#374151", fontWeight: 600 }}
                 contentStyle={{
                   borderRadius: 8,

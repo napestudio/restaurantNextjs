@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { DollarSign, AlertTriangle } from "lucide-react";
 import { closeCashRegisterSession } from "@/actions/CashRegister";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 interface SerializedSession {
@@ -161,14 +162,6 @@ export function CloseRegisterDialog({
       resetForm();
     }
     onOpenChange(open);
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-    }).format(amount);
   };
 
   // Format date/time

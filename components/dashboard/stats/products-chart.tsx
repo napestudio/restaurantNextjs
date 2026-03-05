@@ -10,15 +10,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/currency";
 import type { TopProduct } from "@/actions/Statistics";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 interface ProductsChartProps {
   data: TopProduct[];
@@ -72,7 +65,7 @@ export function ProductsChart({ data }: ProductsChartProps) {
                 formatter={(value: number | undefined, name: string | undefined) => {
                   const v = value ?? 0;
                   return [
-                    name === "units" ? `${v} uds.` : formatCurrency(v),
+                    name === "units" ? `${v} uds.` : formatCurrency(v, { maximumFractionDigits: 0 }),
                     name === "units" ? "Unidades" : "Ingresos",
                   ];
                 }}

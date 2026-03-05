@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import type { TimeSlot } from "@/app/(admin)/dashboard/config/slots/lib/time-slots";
 import {
   formatTime,
@@ -68,10 +69,7 @@ export function TimeSlotsTable({
 
                   {slot.pricePerPerson && slot.pricePerPerson > 0 ? (
                     <Badge variant="default" className="bg-green-600">
-                      ${" "}
-                      {slot.pricePerPerson.toLocaleString("es-Ar", {
-                        currency: "ARS",
-                      })}{" "}
+                      {formatCurrency(slot.pricePerPerson)}{" "}
                       /<Users />
                     </Badge>
                   ) : (

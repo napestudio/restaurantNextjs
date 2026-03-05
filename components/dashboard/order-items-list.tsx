@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useState, useRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -230,18 +231,12 @@ export function OrderItemsList({
                       className="w-20 h-8 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded border border-gray-300 px-2"
                       disabled={disabled}
                     >
-                      $
-                      {Number(item.price).toLocaleString("es-AR", {
-                        currency: "ARS",
-                      })}
+                      {formatCurrency(Number(item.price))}
                     </button>
                   )}
                   {item.originalPrice && item.price !== item.originalPrice && (
                     <div className="text-xs text-amber-600 mt-1 w-full text-right">
-                      $
-                      {Number(item.originalPrice).toLocaleString("es-AR", {
-                        currency: "ARS",
-                      })}
+                      {formatCurrency(Number(item.originalPrice))}
                     </div>
                   )}
                 </div>
@@ -265,10 +260,7 @@ export function OrderItemsList({
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
           <span>
-            $
-            {total.toLocaleString("es-AR", {
-              currency: "ARS",
-            })}
+            {formatCurrency(total)}
           </span>
         </div>
       </div>

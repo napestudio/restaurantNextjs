@@ -24,6 +24,7 @@ import type {
   PriceType,
   ProductTag,
 } from "@/app/generated/prisma";
+import { formatCurrency } from "@/lib/currency";
 import Image from "next/image";
 
 type SerializedProductPrice = {
@@ -203,10 +204,7 @@ export function ProductsTable({
                                   <span className="font-medium">
                                     {priceLabel}:
                                   </span>{" "}
-                                  $
-                                  {price.price.toLocaleString("es-Ar", {
-                                    currency: "ARS",
-                                  })}
+                                  {formatCurrency(price.price)}
                                 </div>
                               );
                             })

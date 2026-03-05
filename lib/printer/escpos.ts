@@ -6,6 +6,7 @@
  */
 
 import { Socket } from "net";
+import { formatCurrency } from "@/lib/currency";
 
 export interface PrinterConfig {
   // Connection type
@@ -1466,9 +1467,7 @@ export function generateAfipInvoiceData(
     }
 
     // Show unit price and VAT rate on separate line
-    const detailLine = `  $${item.unitPrice.toLocaleString("es-AR", {
-      currency: "ARS",
-    })} c/u (IVA ${item.vatRate}%)`;
+    const detailLine = `  ${formatCurrency(item.unitPrice)} c/u (IVA ${item.vatRate}%)`;
     content += detailLine + "\n";
   }
 

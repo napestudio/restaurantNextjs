@@ -1,3 +1,5 @@
+import { formatCurrency } from "@/lib/currency";
+
 interface ReservationConfirmationEmailData {
   customerName: string;
   date: string;
@@ -174,19 +176,10 @@ export function generateReservationConfirmationEmail(
                 </p>
                 <div style="background-color: #dbeafe; border-radius: 8px; padding: 12px; margin-top: 12px;">
                   <p style="margin: 0; color: #1e40af; font-size: 16px;">
-                    <strong>Total:</strong> $${(
-                      data.pricePerPerson * data.guests
-                    ).toLocaleString("es-Ar", {
-                      currency: "ARS",
-                    })}
+                    <strong>Total:</strong> ${formatCurrency(data.pricePerPerson * data.guests)}
                   </p>
                   <p style="margin: 4px 0 0; color: #1e3a8a; font-size: 13px;">
-                    (${data.guests} ${data.guests === 1 ? "persona" : "personas"} × $${data.pricePerPerson.toLocaleString(
-                      "es-AR",
-                      {
-                        currency: "ARS",
-                      },
-                    )})
+                    (${data.guests} ${data.guests === 1 ? "persona" : "personas"} × ${formatCurrency(data.pricePerPerson)})
                   </p>
                 </div>
               </div>

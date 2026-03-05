@@ -21,6 +21,7 @@ import {
 } from "@/actions/Order";
 import { getDeliveryConfig } from "@/actions/DeliveryConfig";
 import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
+import { formatCurrency } from "@/lib/currency";
 import { PAYMENT_METHODS } from "@/types/cash-register";
 import { usePrint } from "@/hooks/use-print";
 import { OrderType } from "@/app/generated/prisma";
@@ -422,12 +423,6 @@ export function CloseOrderDialog({
     onOpenChange(newOpen);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      currency: "ARS",
-    }).format(amount);
-  };
-
   // Check if there are no open cash registers
   const noOpenRegisters = !isLoadingRegisters && cashRegisters.length === 0;
 
@@ -508,7 +503,7 @@ export function CloseOrderDialog({
                           </span>
                         </div>
                         <span className="font-medium whitespace-nowrap">
-                          $ {formatCurrency(item.price * item.quantity)}
+                          {formatCurrency(item.price * item.quantity)}
                         </span>
                       </div>
                     ))}
@@ -522,12 +517,12 @@ export function CloseOrderDialog({
                           <span className="text-muted-foreground">
                             Subtotal:
                           </span>
-                          <span>$ {formatCurrency(subtotal)}</span>
+                          <span>{formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-green-600">
                           <span>Descuento ({currentDiscount}%):</span>
                           <div className="flex items-center gap-2">
-                            <span>-$ {formatCurrency(discountAmount)}</span>
+                            <span>-{formatCurrency(discountAmount)}</span>
                             {!isEditingDiscount && (
                               <Button
                                 variant="ghost"
@@ -621,7 +616,7 @@ export function CloseOrderDialog({
 
                     <div className="flex justify-between text-xl font-bold pt-2 border-t">
                       <span>Total:</span>
-                      <span>$ {formatCurrency(total)}</span>
+                      <span>{formatCurrency(total)}</span>
                     </div>
                   </div>
                 </div>
@@ -769,7 +764,7 @@ export function CloseOrderDialog({
                           Vuelto:
                         </span>
                         <span className="text-2xl font-bold text-green-700">
-                          $ {formatCurrency(change)}
+                          {formatCurrency(change)}
                         </span>
                       </div>
                     </div>

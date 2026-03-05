@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatCurrency } from "@/lib/currency";
 import { PAYMENT_METHODS } from "@/types/cash-register";
 import { CreditCard, Percent, Plus, Receipt, Settings, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -332,14 +333,6 @@ export function CloseTableDialog({
       resetForm();
     }
     onOpenChange(newOpen);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-    }).format(amount);
   };
 
   // Check if there are no open cash registers

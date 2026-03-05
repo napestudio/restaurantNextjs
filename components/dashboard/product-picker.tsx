@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -189,10 +190,7 @@ export function ProductPicker({
                       )} */}
                     </div>
                     <div className="text-sm font-semibold text-gray-700">
-                      $
-                      {Number(product.price).toLocaleString("es-AR", {
-                        currency: "ARS",
-                      })}
+                      {formatCurrency(Number(product.price))}
                     </div>
                   </div>
                 </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCurrency } from "@/lib/currency";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,12 +123,7 @@ export function CustomerInfoForm({
     if (minOrderAmount > 0 && subtotal < minOrderAmount) {
       toast({
         title: "Monto mínimo no alcanzado",
-        description: `El monto mínimo de pedido es $${minOrderAmount.toLocaleString(
-          "es-AR",
-          {
-            currency: "ARS",
-          },
-        )}`,
+        description: `El monto mínimo de pedido es ${formatCurrency(minOrderAmount)}`,
         variant: "destructive",
       });
       return;
@@ -201,11 +197,7 @@ export function CustomerInfoForm({
           const itemLines = cart
             .map(
               (item) =>
-                `- ${item.quantity}x ${item.name} ($${(
-                  item.price * item.quantity
-                ).toLocaleString("es-AR", {
-                  currency: "ARS",
-                })})`,
+                `- ${item.quantity}x ${item.name} (${formatCurrency(item.price * item.quantity)})`,
             )
             .join("\n");
 
@@ -226,15 +218,9 @@ export function CustomerInfoForm({
               ``,
               itemLines,
               ``,
-              `Subtotal: $${subtotal.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}`,
-              `Envío: $${deliveryFee.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}`,
-              `*Total: $${orderTotal.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}*`,
+              `Subtotal: ${formatCurrency(subtotal)}`,
+              `Envío: ${formatCurrency(deliveryFee)}`,
+              `*Total: ${formatCurrency(orderTotal)}*`,
               ``,
               `*Tipo de pedido: Delivery*`,
               ``,
@@ -254,9 +240,7 @@ export function CustomerInfoForm({
               ``,
               itemLines,
               ``,
-              `*Total: $${orderTotal.toLocaleString("es-AR", {
-                currency: "ARS",
-              })}*`,
+              `*Total: ${formatCurrency(orderTotal)}*`,
               ``,
               `*Tipo de pedido: Retiro en local*`,
               ``,
@@ -456,10 +440,7 @@ export function CustomerInfoForm({
                 {item.quantity}x {item.name}
               </span>
               <span>
-                $
-                {(item.price * item.quantity).toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(item.price * item.quantity)}
               </span>
             </div>
           ))}
@@ -467,30 +448,21 @@ export function CustomerInfoForm({
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
               <span>
-                $
-                {subtotal.toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(subtotal)}
               </span>
             </div>
             {isDelivery && (
               <div className="flex justify-between text-gray-600">
                 <span>Envío</span>
                 <span>
-                  $
-                  {deliveryFee.toLocaleString("es-AR", {
-                    currency: "ARS",
-                  })}
+                  {formatCurrency(deliveryFee)}
                 </span>
               </div>
             )}
             <div className="flex justify-between text-xl font-bold pt-2">
               <span>Total</span>
               <span>
-                $
-                {total.toLocaleString("es-AR", {
-                  currency: "ARS",
-                })}
+                {formatCurrency(total)}
               </span>
             </div>
           </div>

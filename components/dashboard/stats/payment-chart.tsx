@@ -10,15 +10,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/currency";
 import type { PaymentMethodStat } from "@/actions/Statistics";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 interface PaymentChartProps {
   data: PaymentMethodStat[];
@@ -69,7 +62,7 @@ export function PaymentChart({ data }: PaymentChartProps) {
               />
               <Tooltip
                 formatter={(value: number | undefined) => [
-                  formatCurrency(value ?? 0),
+                  formatCurrency(value ?? 0, { maximumFractionDigits: 0 }),
                   "Total",
                 ]}
                 contentStyle={{
