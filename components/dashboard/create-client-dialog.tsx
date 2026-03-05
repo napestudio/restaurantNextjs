@@ -275,6 +275,8 @@ export function CreateClientDialog({
                       <SelectItem value="CASH">Efectivo</SelectItem>
                       <SelectItem value="CARD">Tarjeta</SelectItem>
                       <SelectItem value="TRANSFER">Transferencia</SelectItem>
+                      <SelectItem value="PAYMENT_LINK">Link de pago</SelectItem>
+                      <SelectItem value="QR_CODE">QR</SelectItem>
                     </SelectContent>
                   </Select>
 

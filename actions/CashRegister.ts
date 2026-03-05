@@ -51,6 +51,8 @@ const addMovementSchema = z.object({
     "CARD_CREDIT",
     "ACCOUNT",
     "TRANSFER",
+    "PAYMENT_LINK",
+    "QR_CODE",
   ]),
   amount: z.number().positive("El monto debe ser positivo"),
   description: z.string().optional(),
@@ -837,7 +839,9 @@ export async function recordSaleFromOrder(data: {
     | "CARD_DEBIT"
     | "CARD_CREDIT"
     | "ACCOUNT"
-    | "TRANSFER";
+    | "TRANSFER"
+    | "PAYMENT_LINK"
+    | "QR_CODE";
   amount: number;
   userId: string;
 }) {
@@ -856,7 +860,9 @@ export async function recordRefund(data: {
     | "CARD_DEBIT"
     | "CARD_CREDIT"
     | "ACCOUNT"
-    | "TRANSFER";
+    | "TRANSFER"
+    | "PAYMENT_LINK"
+    | "QR_CODE";
   amount: number;
   reason: string;
   userId: string;

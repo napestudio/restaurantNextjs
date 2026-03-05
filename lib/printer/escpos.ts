@@ -1141,6 +1141,8 @@ export function generateFullOrderData(
       CARD_CREDIT: "Tarjeta Credito",
       TRANSFER: "Transferencia",
       ACCOUNT: "Cuenta Cte",
+      PAYMENT_LINK: "Link de pago",
+      QR_CODE: "QR",
     };
     for (const p of order.payments) {
       const label = paymentLabels[p.method] ?? p.method;

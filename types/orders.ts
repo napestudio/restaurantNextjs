@@ -1,4 +1,4 @@
-import type { OrderStatus, OrderType } from "@/app/generated/prisma";
+import type { OrderStatus, OrderType, PaymentMethodExtended } from "@/app/generated/prisma";
 import type { ClientData } from "@/actions/clients";
 
 export type Order = {
@@ -94,13 +94,7 @@ export type OrderFilters = {
   pageSize?: number;
 };
 
-// Payment method type for closing tables (extended)
-export type PaymentMethodExtended =
-  | "CASH"
-  | "CARD_DEBIT"
-  | "CARD_CREDIT"
-  | "ACCOUNT"
-  | "TRANSFER";
+export type { PaymentMethodExtended };
 
 // Payment entry for split payments
 export type PaymentEntry = {

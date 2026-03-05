@@ -2117,6 +2117,12 @@ export async function closeTableWithPayment(data: {
         case "ACCOUNT":
           orderPaymentMethod = PaymentMethod.TRANSFER;
           break;
+        case "PAYMENT_LINK":
+          orderPaymentMethod = PaymentMethod.PAYMENT_LINK;
+          break;
+        case "QR_CODE":
+          orderPaymentMethod = PaymentMethod.QR_CODE;
+          break;
         default:
           orderPaymentMethod = PaymentMethod.CASH;
       }

@@ -19,6 +19,8 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: "Efectivo",
   CARD: "Tarjeta",
   TRANSFER: "Transferencia",
+  PAYMENT_LINK: "Link de pago",
+  QR_CODE: "QR",
 };
 
 interface ClientDetailsSidebarProps {
@@ -35,7 +37,6 @@ export function ClientDetailsSidebar({
   onClientUpdated,
 }: ClientDetailsSidebarProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
@@ -230,7 +231,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm font-medium">{client.name}</p>
@@ -246,7 +246,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{client.phone || "—"}</p>
@@ -263,7 +262,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{client.email || "—"}</p>
@@ -280,7 +278,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, birthDate: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{formatDate(client.birthDate)}</p>
@@ -296,7 +293,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, taxId: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{client.taxId || "—"}</p>
@@ -319,7 +315,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, addressStreet: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{client.addressStreet || "—"}</p>
@@ -339,7 +334,6 @@ export function ClientDetailsSidebar({
                         addressNumber: e.target.value,
                       })
                     }
-                    disabled={isSaving}
                   />
                 ) : (
                   <p className="text-sm">{client.addressNumber || "—"}</p>
@@ -358,7 +352,6 @@ export function ClientDetailsSidebar({
                         addressApartment: e.target.value,
                       })
                     }
-                    disabled={isSaving}
                   />
                 ) : (
                   <p className="text-sm">{client.addressApartment || "—"}</p>
@@ -375,7 +368,6 @@ export function ClientDetailsSidebar({
                   onChange={(e) =>
                     setFormData({ ...formData, addressCity: e.target.value })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{client.addressCity || "—"}</p>
@@ -405,7 +397,6 @@ export function ClientDetailsSidebar({
                       discountPercentage: parseFloat(e.target.value) || 0,
                     })
                   }
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm">{client.discountPercentage}%</p>
@@ -428,13 +419,14 @@ export function ClientDetailsSidebar({
                         : undefined,
                     })
                   }
-                  disabled={isSaving}
                   className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="">Ninguno</option>
                   <option value="CASH">Efectivo</option>
                   <option value="CARD">Tarjeta</option>
                   <option value="TRANSFER">Transferencia</option>
+                  <option value="PAYMENT_LINK">Link de pago</option>
+                  <option value="QR_CODE">QR</option>
                 </select>
               ) : (
                 <p className="text-sm">
@@ -459,7 +451,6 @@ export function ClientDetailsSidebar({
                           hasCurrentAccount: e.target.checked,
                         })
                       }
-                      disabled={isSaving}
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label
@@ -495,7 +486,6 @@ export function ClientDetailsSidebar({
                   }
                   placeholder="Notas adicionales..."
                   rows={4}
-                  disabled={isSaving}
                 />
               ) : (
                 <p className="text-sm whitespace-pre-wrap">
@@ -525,24 +515,17 @@ export function ClientDetailsSidebar({
               <Button
                 variant="outline"
                 onClick={handleCancel}
-                disabled={isSaving}
                 className="flex-1"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={isSaving || !formData.name.trim()}
+                disabled={!formData.name.trim()}
                 className="flex-1 bg-orange-500 hover:bg-orange-600"
               >
-                {isSaving ? (
-                  "Guardando..."
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Guardar
-                  </>
-                )}
+                <Save className="h-4 w-4 mr-2" />
+                Guardar
               </Button>
             </div>
           ) : (

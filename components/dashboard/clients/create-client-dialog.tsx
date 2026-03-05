@@ -34,7 +34,6 @@ export function CreateClientDialog({
   onCreated,
   branchId,
 }: CreateClientDialogProps) {
-  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<ClientInput>({
@@ -168,7 +167,6 @@ export function CreateClientDialog({
                       setFormData({ ...formData, name: e.target.value })
                     }
                     placeholder="Juan Pérez"
-                    disabled={isPending}
                     required
                   />
                 </div>
@@ -182,7 +180,6 @@ export function CreateClientDialog({
                       setFormData({ ...formData, phone: e.target.value })
                     }
                     placeholder="+54 9 11 1234-5678"
-                    disabled={isPending}
                   />
                 </div>
 
@@ -196,7 +193,6 @@ export function CreateClientDialog({
                       setFormData({ ...formData, email: e.target.value })
                     }
                     placeholder="juan@ejemplo.com"
-                    disabled={isPending}
                   />
                 </div>
 
@@ -209,7 +205,6 @@ export function CreateClientDialog({
                     onChange={(e) =>
                       setFormData({ ...formData, birthDate: e.target.value })
                     }
-                    disabled={isPending}
                   />
                 </div>
 
@@ -222,7 +217,6 @@ export function CreateClientDialog({
                       setFormData({ ...formData, taxId: e.target.value })
                     }
                     placeholder="12345678"
-                    disabled={isPending}
                   />
                 </div>
               </div>
@@ -247,7 +241,6 @@ export function CreateClientDialog({
                       })
                     }
                     placeholder="Av. Corrientes"
-                    disabled={isPending}
                   />
                 </div>
 
@@ -263,7 +256,6 @@ export function CreateClientDialog({
                       })
                     }
                     placeholder="1234"
-                    disabled={isPending}
                   />
                 </div>
 
@@ -279,7 +271,6 @@ export function CreateClientDialog({
                       })
                     }
                     placeholder="5B"
-                    disabled={isPending}
                   />
                 </div>
 
@@ -292,7 +283,6 @@ export function CreateClientDialog({
                       setFormData({ ...formData, addressCity: e.target.value })
                     }
                     placeholder="Buenos Aires"
-                    disabled={isPending}
                   />
                 </div>
               </div>
@@ -321,7 +311,6 @@ export function CreateClientDialog({
                       })
                     }
                     placeholder="0"
-                    disabled={isPending}
                   />
                 </div>
 
@@ -340,13 +329,14 @@ export function CreateClientDialog({
                           : undefined,
                       })
                     }
-                    disabled={isPending}
                     className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="">Ninguno</option>
                     <option value="CASH">Efectivo</option>
                     <option value="CARD">Tarjeta</option>
                     <option value="TRANSFER">Transferencia</option>
+                    <option value="PAYMENT_LINK">Link de pago</option>
+                    <option value="QR_CODE">QR</option>
                   </select>
                 </div>
 
@@ -362,7 +352,6 @@ export function CreateClientDialog({
                           hasCurrentAccount: e.target.checked,
                         })
                       }
-                      disabled={isPending}
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label
@@ -392,7 +381,6 @@ export function CreateClientDialog({
                   }
                   placeholder="Información adicional sobre el cliente..."
                   rows={3}
-                  disabled={isPending}
                 />
               </div>
             </div>
@@ -403,16 +391,15 @@ export function CreateClientDialog({
               type="button"
               variant="outline"
               onClick={() => handleOpenChange(false)}
-              disabled={isPending}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              disabled={isPending || !formData.name.trim()}
+              disabled={!formData.name.trim()}
               className="bg-red-500 hover:bg-red-600"
             >
-              {isPending ? "Creando..." : "Crear Cliente"}
+              Crear Cliente
             </Button>
           </DialogFooter>
         </form>

@@ -37,6 +37,8 @@ enum PaymentMethod {
   CASH
   CARD
   TRANSFER
+  PAYMENT_LINK
+  QR_CODE
 }
 
 enum ReservationStatus {
@@ -109,6 +111,8 @@ enum PaymentMethodExtended {
   CARD_CREDIT
   ACCOUNT // Current account / on account
   TRANSFER
+  PAYMENT_LINK
+  QR_CODE
 }
 
 enum HomePageLinkType {
