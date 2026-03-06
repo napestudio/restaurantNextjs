@@ -32,7 +32,9 @@ export default async function CartaPage({ params }: CartaPageProps) {
           <div className="text-center space-y-2 mb-8">
             <h1 className="text-4xl font-bold">{menu.name}</h1>
             {menu.description && (
-              <p className="text-neutral-400 whitespace-pre-wrap text-left">{menu.description}</p>
+              <p className="text-neutral-400 whitespace-pre-wrap text-center">
+                {menu.description}
+              </p>
             )}
           </div>
           <div>

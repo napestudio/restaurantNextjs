@@ -37,7 +37,7 @@ export function MenuItem({
       )}
       <div className="flex-1 flex flex-col min-h-full justify-between pb-3">
         <div className="flex flex-col md:flex-row items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg text-white">
+          <h3 className="font-semibold text-lg text-white leading-none">
             <div className="flex md:flex-row flex-col gap-1 items-center">
               {name}
               {tags.length > 0 && (
