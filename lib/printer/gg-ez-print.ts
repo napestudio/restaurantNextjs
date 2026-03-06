@@ -61,6 +61,7 @@ export interface GgEzPrintConnection {
 
 export class GgEzPrintClient {
   private ws: WebSocket | null = null;
+  private readonly url: string;
   private connection: GgEzPrintConnection = {
     isConnected: false,
     error: null,
@@ -82,6 +83,7 @@ export class GgEzPrintClient {
     url: string = WS_URL,
     reconnectionConfig?: Partial<ReconnectionConfig>,
   ) {
+    this.url = url;
     this.reconnectionConfig = {
       enabled: true,
       initialDelay: 2000,
@@ -116,7 +118,7 @@ export class GgEzPrintClient {
     }
 
     try {
-      this.ws = new WebSocket(WS_URL);
+      this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
         this.hadSuccessfulConnection = true;
