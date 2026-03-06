@@ -108,7 +108,7 @@ export function ProductList({
     const productId = "productId" in product ? product.productId : product.id;
     const quantity = getQuantityInCart(productId);
     return (
-      <div className="bg-white rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-lg p-4 flex items-start gap-4 hover:shadow-md transition-shadow">
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-black text-lg gap-1">
             {product.name}{" "}
@@ -119,9 +119,7 @@ export function ProductList({
             )}
           </h3>
           {product.description && (
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {product.description}
-            </p>
+            <p className="text-sm text-gray-600 ">{product.description}</p>
           )}
 
           <p className="text-lg font-bold text-neutral-900 mt-1">
