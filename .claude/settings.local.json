@@ -29,7 +29,9 @@
       "Bash(xargs grep -l \"reservation\\\\|booking\" -i)",
       "Bash(git diff --no-pager components/dashboard/product-picker.tsx)",
       "Bash(node -e \":*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git log --oneline --all --grep=\"email\" -i)"
     ],
     "deny": [],
     "ask": []

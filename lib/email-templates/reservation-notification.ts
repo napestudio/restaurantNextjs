@@ -29,6 +29,7 @@ export function generateReservationNotificationEmail(
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "America/Argentina/Buenos_Aires",
     }).format(date);
   };
 
@@ -38,6 +39,7 @@ export function generateReservationNotificationEmail(
     return new Intl.DateTimeFormat("es-ES", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Argentina/Buenos_Aires",
     }).format(time);
   };
 
