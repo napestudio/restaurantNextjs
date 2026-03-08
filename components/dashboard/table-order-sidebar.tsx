@@ -30,6 +30,7 @@ import { ProductPicker } from "./product-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { useToast } from "@/hooks/use-toast";
 import { OrderProduct } from "@/types/products";
+import { formatCurrency } from "@/lib/currency";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -497,7 +498,7 @@ export function TableOrderSidebar({
   }
 
   return (
-    <div className="h-full flex flex-col bg-neutral-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-neutral-50 overflow-hidden relative">
       <div className="flex flex-row items-center justify-between shrink-0 bg-red-500 shadow-sm">
         <div className="flex items-center gap-2 px-2 py-1 text-white">
           <div className="text-xl">
@@ -643,37 +644,20 @@ export function TableOrderSidebar({
               />
             </div>
 
-            {/* Pre-Order Items (editable with notes) - Fixed at top */}
+            {/* Pre-Order Items (editable with notes) - scrollable, footer pinned absolutely */}
             {preOrderItems.length > 0 && (
-              <div className="space-y-2 shrink-0">
+              <div className="flex-1 min-h-0 overflow-y-auto pb-[110px]">
                 <PreOrderItemsList
                   items={preOrderItems}
                   onUpdateItem={handleUpdatePreOrderItem}
                   onRemoveItem={handleRemovePreOrderItem}
                   disabled={isLoading}
                 />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setPreOrderItems([])}
-                    variant="outline"
-                    className="flex-1"
-                    disabled={isLoading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={handleConfirmPreOrder}
-                    className="flex-1"
-                    disabled={isLoading}
-                  >
-                    Confirmar
-                  </Button>
-                </div>
               </div>
             )}
 
             {/* Committed Order Items (read-only, can only remove) - SCROLLABLE */}
-            {order.items?.length > 0 && (
+            {order.items?.length > 0 && preOrderItems.length === 0 && (
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <CommittedOrderItemsList
                   items={
@@ -693,6 +677,7 @@ export function TableOrderSidebar({
             )}
 
             {/* Action Buttons - Fixed at bottom */}
+            {preOrderItems.length === 0 && (
             <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
               <Button
                 onClick={handlePrintCheck}
@@ -801,9 +786,37 @@ export function TableOrderSidebar({
                   : "Cerrar Mesa"}
               </Button>
             </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Pre-Order Footer - always pinned at bottom */}
+      {preOrderItems.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 bg-neutral-50 border-t p-2 flex flex-col gap-2 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
+          <div className="flex justify-between items-center font-bold text-base">
+            <span>Total a confirmar:</span>
+            <span>{formatCurrency(preOrderItems.reduce((sum, item) => sum + item.quantity * item.price, 0))}</span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setPreOrderItems([])}
+              variant="outline"
+              className="flex-1"
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmPreOrder}
+              className="flex-1"
+              disabled={isLoading}
+            >
+              Confirmar
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Move Order Dialog */}
       <MoveOrderDialog

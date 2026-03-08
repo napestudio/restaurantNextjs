@@ -10,8 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDateLongAR, formatTimeAR, formatDateTimeAR } from "@/lib/date-utils";
 
 interface ViewReservationDialogProps {
   reservation: SerializedReservation | null;
@@ -93,9 +92,7 @@ export function ViewReservationDialog({
                   Fecha
                 </h3>
                 <p className="text-sm font-semibold">
-                  {format(parseISO(reservation.date), "d 'de' MMMM, yyyy", {
-                    locale: es,
-                  })}
+                  {formatDateLongAR(reservation.date)}
                 </p>
               </div>
               <div>
@@ -110,7 +107,7 @@ export function ViewReservationDialog({
                 </p>
                 {reservation.exactTime && (
                   <p className="text-xs text-blue-600 mt-1">
-                    Llegada: {format(parseISO(reservation.exactTime), "HH:mm")}
+                    Llegada: {formatTimeAR(reservation.exactTime)}
                   </p>
                 )}
               </div>
@@ -181,11 +178,7 @@ export function ViewReservationDialog({
                 Creada el
               </h3>
               <p className="text-sm">
-                {format(
-                  parseISO(reservation.createdAt),
-                  "d 'de' MMMM, yyyy HH:mm",
-                  { locale: es }
-                )}
+                {formatDateTimeAR(reservation.createdAt)}
               </p>
             </div>
           </div>

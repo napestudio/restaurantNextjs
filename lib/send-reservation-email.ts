@@ -32,12 +32,12 @@ export async function sendReservationNotificationEmail(
     return { success: false, error: "Email configuration not set up" };
   }
 
+  const [dYear, dMonth, dDay] = params.date.toISOString().slice(0, 10).split("-").map(Number);
   const formattedDate = new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(params.date);
+  }).format(new Date(dYear, dMonth - 1, dDay));
 
   const results: {
     restaurant?: { success: boolean; messageId?: string; error?: string };
