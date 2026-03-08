@@ -53,6 +53,7 @@ export type Order = {
     quantity: number;
     price: number;
     originalPrice: number | null;
+    notes: string | null;
 
     product: {
       name: string;
