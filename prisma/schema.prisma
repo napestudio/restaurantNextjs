@@ -1158,14 +1158,14 @@ model CashRegisterSession {
   // Opening
   openedAt      DateTime @default(now())
   openedBy      String // User ID
-  openingAmount Decimal  @default(0) // Initial cash in drawer
+  openingAmount Decimal  @default(0) @db.Decimal(10, 2) // Initial cash in drawer
 
   // Closing (nullable until closed)
   closedAt     DateTime?
   closedBy     String?
-  expectedCash Decimal? // System-calculated expected cash
-  countedCash  Decimal? // Actual counted cash
-  variance     Decimal? // countedCash - expectedCash
+  expectedCash Decimal? @db.Decimal(10, 2) // System-calculated expected cash
+  countedCash  Decimal? @db.Decimal(10, 2) // Actual counted cash
+  variance     Decimal? @db.Decimal(10, 2) // countedCash - expectedCash
   closingNotes String?
 
   // Re-opening audit trail (nullable until re-opened)
@@ -1191,7 +1191,7 @@ model CashMovement {
 
   type          CashMovementType
   paymentMethod PaymentMethodExtended
-  amount        Decimal // Always positive; type determines direction
+  amount        Decimal @db.Decimal(10, 2) // Always positive; type determines direction
   description   String?
 
   // Link to order (for SALE/REFUND types)

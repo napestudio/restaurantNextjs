@@ -3,6 +3,7 @@
 import { formatCurrency } from "@/lib/currency";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { X, MessageSquare, Minus, Plus } from "lucide-react";
@@ -99,8 +100,7 @@ export function PreOrderItemsList({
                       <Minus className="h-3 w-3" />
                     </Button>
 
-                    <Input
-                      type="number"
+                    <NumberInput
                       min="1"
                       value={item.quantity}
                       onChange={(e) => {
@@ -146,8 +146,7 @@ export function PreOrderItemsList({
                 {/* Editable price */}
                 <div className="flex items-center gap-1">
                   <span className="text-sm text-gray-600">$</span>
-                  <Input
-                    type="number"
+                  <NumberInput
                     step="0.01"
                     value={item.price}
                     onChange={(e) => handlePriceChange(index, e.target.value)}

@@ -10,6 +10,7 @@ import {
   type Product,
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
+import { todayBoundsARDate, dateStringToTimestampBoundsAR } from "@/lib/date-utils";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import type {
   DeliverySection,
@@ -1346,10 +1347,7 @@ export async function getProductsForDeliveryMenu(
 // Only returns tables that are free (EMPTY status) and not reserved
 export async function getAvailableTablesForMove(branchId: string) {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = todayBoundsARDate();
 
     const tables = await prisma.table.findMany({
       where: {
@@ -1600,6 +1598,7 @@ export async function getOrders(filters: OrderFilters) {
       createdAt?: {
         gte?: Date;
         lte?: Date;
+        lt?: Date;
       };
       status?: OrderStatus;
       tableId?: string;
@@ -1614,17 +1613,17 @@ export async function getOrders(filters: OrderFilters) {
       branchId,
     };
 
-    // Date range filter
+    // Date range filter — dates come in as UTC midnight from date pickers;
+    // use Argentina-aware boundaries (midnight AR = 03:00 UTC)
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
-        where.createdAt.gte = startDate;
+        const { start } = dateStringToTimestampBoundsAR(startDate.toISOString().slice(0, 10));
+        where.createdAt.gte = start;
       }
       if (endDate) {
-        // Set to end of day
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        where.createdAt.lte = endOfDay;
+        const { end } = dateStringToTimestampBoundsAR(endDate.toISOString().slice(0, 10));
+        where.createdAt.lt = end;
       }
     }
 

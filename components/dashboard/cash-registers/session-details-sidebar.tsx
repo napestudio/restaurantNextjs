@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { X, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
@@ -529,9 +530,8 @@ export function SessionDetailsSidebar({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <Input
+                    <NumberInput
                       id={`counted-${method}`}
-                      type="number"
                       min="0"
                       step="0.01"
                       value={countedAmounts[method] || ""}

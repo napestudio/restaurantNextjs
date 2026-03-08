@@ -34,7 +34,10 @@
       "Bash(git log --oneline --all --grep=\"email\" -i)",
       "Bash(xargs grep -l -i \"statistics\\\\|estadistica\\\\|kpi\\\\|revenue\")",
       "Bash(xargs grep -l \"getAllStats\\\\|busiestHours\\\\|revenueByDay\")",
-      "Bash(xargs grep -l \"formatDateAR\\\\|formatTimeAR\")"
+      "Bash(xargs grep -l \"formatDateAR\\\\|formatTimeAR\")",
+      "Bash(py -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(xargs grep -l -E \"\\(ticket|comanda|print|receipt\\)\")",
+      "Bash(xargs grep -l \"toLocaleString\\\\|toLocaleDateString\\\\|toLocaleTimeString\\\\|getHours\\\\|getMinutes\\\\|getSeconds\\\\|toISOString\\\\|format.*Date\")"
     ],
     "deny": [],
     "ask": []

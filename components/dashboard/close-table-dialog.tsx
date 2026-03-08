@@ -8,7 +8,7 @@ import {
   type PaymentMethodExtended,
 } from "@/actions/Order";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/currency";
 import { PAYMENT_METHODS } from "@/types/cash-register";
@@ -448,8 +448,7 @@ export function CloseTableDialog({
                     {/* Discount Editor */}
                     {isEditingDiscount && (
                       <div className="flex items-center gap-2 text-sm">
-                        <Input
-                          type="number"
+                        <NumberInput
                           min="0"
                           max="100"
                           step="0.01"
@@ -559,8 +558,7 @@ export function CloseTableDialog({
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                               $
                             </span>
-                            <Input
-                              type="number"
+                            <NumberInput
                               min="0"
                               step="0.01"
                               value={payment.amount}

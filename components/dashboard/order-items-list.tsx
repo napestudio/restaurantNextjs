@@ -3,6 +3,7 @@
 import { formatCurrency } from "@/lib/currency";
 import { useState, useRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Minus, Plus } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -171,8 +172,7 @@ export function OrderItemsList({
                   </Button>
 
                   {editingQuantityId === item.id ? (
-                    <Input
-                      type="number"
+                    <NumberInput
                       min="1"
                       value={tempQuantity}
                       onChange={(e) =>
@@ -214,8 +214,7 @@ export function OrderItemsList({
               <div className="flex items-center gap-2">
                 <div>
                   {editingItemId === item.id ? (
-                    <Input
-                      type="number"
+                    <NumberInput
                       step="0.01"
                       value={tempPrice}
                       onChange={(e) => setTempPrice(e.target.value)}

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z, ZodError } from "zod";
 import { Prisma, UserRole } from "@/app/generated/prisma";
 import { serializeForClient } from "@/lib/serialize";
+import { dateStringToTimestampBoundsAR } from "@/lib/date-utils";
 import { authorizeAction } from "@/lib/permissions/middleware";
 
 // =============================================================================
@@ -1050,15 +1051,13 @@ export async function getManualMovements(params: {
   try {
     const { branchId, dateFrom, dateTo, cashRegisterId, type, limit = 50, offset = 0 } = params;
 
-    // Build date filter
-    const dateFilter: { gte?: Date; lte?: Date } = {};
+    // Build date filter — use Argentina-aware boundaries (midnight AR = 03:00 UTC)
+    const dateFilter: { gte?: Date; lte?: Date; lt?: Date } = {};
     if (dateFrom) {
-      dateFilter.gte = new Date(dateFrom);
-      dateFilter.gte.setHours(0, 0, 0, 0);
+      dateFilter.gte = dateStringToTimestampBoundsAR(dateFrom).start;
     }
     if (dateTo) {
-      dateFilter.lte = new Date(dateTo);
-      dateFilter.lte.setHours(23, 59, 59, 999);
+      dateFilter.lt = dateStringToTimestampBoundsAR(dateTo).end;
     }
 
     const whereClause = {
