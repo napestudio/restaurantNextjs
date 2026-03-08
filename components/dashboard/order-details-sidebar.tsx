@@ -99,6 +99,7 @@ type Order = {
     quantity: number;
     price: number;
     originalPrice: number | null;
+    notes: string | null;
     product: {
       name: string;
       categoryId: string | null;
@@ -429,7 +430,7 @@ export function OrderDetailsSidebar({
         name: item.itemName,
         quantity: item.quantity,
         price: Number(item.price),
-        notes: null,
+        notes: item.notes ?? null,
       })),
       subtotal,
       discountPercentage:
@@ -470,7 +471,7 @@ export function OrderDetailsSidebar({
       items: order.items.map((item) => ({
         itemName: item.itemName,
         quantity: item.quantity,
-        notes: null,
+        notes: item.notes ?? null,
       })),
     });
     if (!success) {
