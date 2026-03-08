@@ -20,8 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import {
+  formatDateAR,
+  formatTimeAR,
+  formatTimestampDateAR,
+} from "@/lib/date-utils";
 import {
   CalendarDays,
   ChevronDown,
@@ -49,7 +52,7 @@ interface ReservationsTableProps {
   onFilterTypeChange: (
     type: ReservationFilterType,
     dateFrom?: string,
-    dateTo?: string
+    dateTo?: string,
   ) => void;
   onStatusFilterChange: (status: string) => void;
   onDateRangeChange: (dateFrom: string, dateTo: string) => void;
@@ -293,17 +296,15 @@ export function ReservationsTable({
                   <TableCell>
                     <div className="text-sm">
                       <div className="font-medium">
-                        {format(parseISO(reservation.date), "dd MMM yyyy", {
-                          locale: es,
-                        })}
+                        {formatDateAR(reservation.date)}
                       </div>
                       <div className="text-muted-foreground">
-                        {reservation.timeSlot
-                          ? `${reservation.timeSlot.startTime.slice(
-                              11,
-                              16
-                            )} - ${reservation.timeSlot.endTime.slice(11, 16)}`
-                          : "No time slot"}
+                        LLegada{" "}
+                        {reservation.exactTime
+                          ? formatTimeAR(reservation.exactTime)
+                          : reservation.timeSlot
+                            ? `${reservation.timeSlot.startTime.slice(11, 16)} - ${reservation.timeSlot.endTime.slice(11, 16)}`
+                            : "Sin turno"}
                       </div>
                     </div>
                   </TableCell>
@@ -332,8 +333,8 @@ export function ReservationsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                    <div>{format(parseISO(reservation.createdAt), "dd MMM yyyy", { locale: es })}</div>
-                    <div>{format(parseISO(reservation.createdAt), "HH:mm")}</div>
+                    <div>{formatTimestampDateAR(reservation.createdAt)}</div>
+                    <div>{formatTimeAR(reservation.createdAt)}</div>
                   </TableCell>
                   <TableCell>
                     <Select

@@ -16,7 +16,7 @@ import { PartySizePicker } from "@/components/ui/party-size-picker";
 import type { TimeSlot } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import { formatTime } from "@/app/(admin)/dashboard/reservations/lib/utils";
 import { WeekDatePicker } from "../week-date-picker";
-import { getAvailableTimeSlotsForDate } from "@/actions/TimeSlot";
+import { getAvailableTimeSlotsForDate, getTimeSlots } from "@/actions/TimeSlot";
 import { ClientPicker } from "@/components/dashboard/client-picker";
 import { CreateClientDialog } from "@/components/dashboard/create-client-dialog";
 import { type ClientData } from "@/actions/clients";
@@ -132,6 +132,14 @@ function generateFifteenMinuteIntervals(
   return intervals;
 }
 
+function getLocalDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function CreateReservationSidebar({
   open,
   onOpenChange,
@@ -142,7 +150,7 @@ export function CreateReservationSidebar({
     name: "",
     email: "",
     phone: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getLocalDateString(),
     time: "",
     exactTime: "",
     guests: 2,
@@ -152,6 +160,7 @@ export function CreateReservationSidebar({
     status: "confirmed",
   });
 
+  const [allTimeSlots, setAllTimeSlots] = useState<{ daysOfWeek: string[] }[]>([]);
   const [availableSlots, setAvailableSlots] = useState<
     {
       id: string;
@@ -170,13 +179,20 @@ export function CreateReservationSidebar({
   const [clientSearchQuery, setClientSearchQuery] = useState("");
 
   // Store date separately to prevent re-fetching when other fields change
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString());
 
   // Track the last fetched date to prevent duplicate fetches
   const lastFetchedRef = useRef<string>("");
   const isFetchingRef = useRef(false);
+
+  // Fetch all time slots on mount for date picker availability
+  useEffect(() => {
+    getTimeSlots(branchId).then((result) => {
+      if (result.success && result.data) {
+        setAllTimeSlots(result.data.map((s) => ({ daysOfWeek: s.daysOfWeek })));
+      }
+    });
+  }, [branchId]);
 
   useEffect(() => {
     // Only fetch if:
@@ -215,14 +231,14 @@ export function CreateReservationSidebar({
     fetchSlots();
   }, [selectedDate, branchId]);
 
-  // Calculate which days have available slots
+  // Calculate which days have slots (from ALL time slots, not just the selected date)
   const availableDays = useMemo(() => {
     const daysSet = new Set<string>();
-    availableSlots.forEach((slot) => {
+    allTimeSlots.forEach((slot) => {
       slot.daysOfWeek.forEach((day) => daysSet.add(day));
     });
     return Array.from(daysSet);
-  }, [availableSlots]);
+  }, [allTimeSlots]);
 
   // Get the selected time slot for time intervals
   const selectedSlot = useMemo(() => {
@@ -277,7 +293,7 @@ export function CreateReservationSidebar({
   };
 
   const resetForm = () => {
-    const newDate = new Date().toISOString().split("T")[0];
+    const newDate = getLocalDateString();
     setNewReservation({
       name: "",
       email: "",

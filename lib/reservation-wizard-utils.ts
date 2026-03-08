@@ -94,6 +94,7 @@ export function formatReservationDate(date: string): string {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 }
 
@@ -104,5 +105,6 @@ export function formatReservationTime(exactTime: string): string {
   return new Date(exactTime).toLocaleTimeString("es-ES", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 }

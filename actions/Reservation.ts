@@ -537,9 +537,12 @@ export async function getFilteredReservations(
   try {
     const limit = filters.limit || 10;
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    // Compute today's date in Argentina (UTC-3) to match how reservation.date is stored
+    // (stored as YYYY-MM-DDT00:00:00Z where YYYY-MM-DD is the Argentina local date)
+    const ARGENTINA_OFFSET_MS = -3 * 60 * 60 * 1000;
+    const argNow = new Date(now.getTime() + ARGENTINA_OFFSET_MS);
+    const todayStart = new Date(Date.UTC(argNow.getUTCFullYear(), argNow.getUTCMonth(), argNow.getUTCDate()));
+    const todayEnd = new Date(Date.UTC(argNow.getUTCFullYear(), argNow.getUTCMonth(), argNow.getUTCDate() + 1));
 
     // Build the where clause based on filter type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

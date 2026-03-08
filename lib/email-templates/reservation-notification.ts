@@ -23,14 +23,13 @@ export function generateReservationNotificationEmail(
   data: ReservationEmailData,
 ): string {
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
     return new Intl.DateTimeFormat("es-ES", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-      timeZone: "America/Argentina/Buenos_Aires",
-    }).format(date);
+    }).format(new Date(year, month - 1, day));
   };
 
   const formatTime = (timeString?: string) => {
