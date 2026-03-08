@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, Plus, Minus, Package, Loader2 } from "lucide-react";
 import { adjustStock } from "@/actions/stock";
+import { NumberInput } from "@/components/ui/number-input";
 import { formatStock, getUnitLabel } from "../../menu-items/lib/units";
 import type { UnitType, WeightUnit, VolumeUnit } from "@/app/generated/prisma";
 
@@ -318,14 +319,12 @@ export function StockAdjustmentDialog({
               {adjustmentType === "set" ? "Nuevo Stock" : "Cantidad"} *
             </label>
             <div className="relative">
-              <input
-                type="number"
+              <NumberInput
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 step="0.01"
                 min="0"
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder={`Ej: 10`}
               />
               <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">

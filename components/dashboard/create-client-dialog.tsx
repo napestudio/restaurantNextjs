@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -242,9 +243,8 @@ export function CreateClientDialog({
 
                 <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-3 items-center pl-6">
                   <Label htmlFor="client-discount">Descuento (%)</Label>
-                  <Input
+                  <NumberInput
                     id="client-discount"
-                    type="number"
                     min="0"
                     max="100"
                     step="0.01"

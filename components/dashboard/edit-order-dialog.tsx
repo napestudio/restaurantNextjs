@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
 import { type ClientData } from "@/actions/clients";
@@ -162,9 +163,8 @@ export function EditOrderDialog({
             <Label htmlFor="edit-party-size">
               Personas <span className="text-red-500">*</span>
             </Label>
-            <Input
+            <NumberInput
               id="edit-party-size"
-              type="number"
               min="1"
               value={partySize}
               onChange={(e) => setPartySize(e.target.value)}

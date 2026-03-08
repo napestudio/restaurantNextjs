@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { formatTimestampDateAR } from "@/lib/date-utils";
 import { PrintJobStatus, PrinterStatus } from "@/app/generated/prisma";
 import {
   generateTestPageData,
@@ -777,7 +778,7 @@ export async function prepareInvoicePrint(
     const invoiceData = {
       invoiceType: `Factura ${invoice.invoiceType === 1 ? "A" : invoice.invoiceType === 6 ? "B" : "C"}`,
       invoiceNumber: `${invoice.ptoVta.toString().padStart(4, "0")}-${invoice.invoiceNumber.toString().padStart(8, "0")}`,
-      invoiceDate: new Date(invoice.invoiceDate).toLocaleDateString("es-AR"),
+      invoiceDate: formatTimestampDateAR(invoice.invoiceDate.toISOString()),
       businessName,
       cuit: businessCuit,
       customerDoc: `${invoice.customerDocType === 80 ? "CUIT" : invoice.customerDocType === 96 ? "DNI" : "Doc"}: ${invoice.customerDocNumber}`,

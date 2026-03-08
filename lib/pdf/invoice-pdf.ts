@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { formatTimestampDateAR } from "@/lib/date-utils";
 
 interface InvoicePDFParams {
   invoice: {
@@ -59,7 +60,7 @@ export async function generateInvoicePDF(params: InvoicePDFParams): Promise<Buff
 
       // Date and CAE
       doc.fontSize(10);
-      doc.text(`Fecha: ${new Date(params.invoice.date).toLocaleDateString("es-AR")}`);
+      doc.text(`Fecha: ${formatTimestampDateAR(params.invoice.date instanceof Date ? params.invoice.date.toISOString() : params.invoice.date)}`);
       doc.text(`CAE: ${params.invoice.cae}`);
       doc.text(`Venc. CAE: ${params.invoice.caeFchVto}`);
       doc.moveDown();

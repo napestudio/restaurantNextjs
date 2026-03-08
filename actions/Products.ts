@@ -16,6 +16,7 @@ import { CSVImportInput, CSVImportResult } from "@/lib/csv/csv-types";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import { prisma } from "@/lib/prisma";
 import { generateProductSKU } from "@/lib/sku-generator";
+import { todayStringAR } from "@/lib/date-utils";
 import { revalidatePath } from "next/cache";
 
 import type { CreateMenuItemInput, UpdateMenuItemInput, SetProductBranchInput } from "@/types/products";
@@ -995,7 +996,7 @@ export async function exportMenuItemsCSV(params: {
     const csv = [headers.join(","), ...rows].join("\n");
 
     // Generate filename
-    const filename = `productos-${new Date().toISOString().slice(0, 10)}.csv`;
+    const filename = `productos-${todayStringAR()}.csv`;
 
     // Convert to base64 data URL
     const base64 = Buffer.from(csv, "utf-8").toString("base64");

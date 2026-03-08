@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -226,9 +227,8 @@ export function CloseRegisterDialog({
             <Label htmlFor="counted">Efectivo contado *</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
+              <NumberInput
                 id="counted"
-                type="number"
                 min="0"
                 step="0.01"
                 value={countedCash}

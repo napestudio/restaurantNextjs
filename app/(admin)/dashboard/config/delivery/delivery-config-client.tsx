@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -279,9 +280,8 @@ export default function DeliveryConfigClient({
           {/* Min Order Amount */}
           <div className="space-y-2">
             <Label htmlFor="minOrderAmount">Monto Mínimo de Pedido ($)</Label>
-            <Input
+            <NumberInput
               id="minOrderAmount"
-              type="number"
               step="0.01"
               min="0"
               value={minOrderAmount}
@@ -296,9 +296,8 @@ export default function DeliveryConfigClient({
           {/* Delivery Fee */}
           <div className="space-y-2">
             <Label htmlFor="deliveryFee">Costo de envío ($)</Label>
-            <Input
+            <NumberInput
               id="deliveryFee"
-              type="number"
               step="0.01"
               min="0"
               value={deliveryFee}
@@ -313,9 +312,8 @@ export default function DeliveryConfigClient({
           {/* Estimated Minutes */}
           <div className="space-y-2">
             <Label htmlFor="estimatedMinutes">Tiempo Estimado (minutos)</Label>
-            <Input
+            <NumberInput
               id="estimatedMinutes"
-              type="number"
               min="1"
               value={estimatedMinutes}
               onChange={(e) => setEstimatedMinutes(e.target.value)}

@@ -8,6 +8,7 @@ import { authorizeAction } from "@/lib/permissions/middleware";
 import { emitTestInvoice, getLastInvoiceNumber } from "./Arca";
 import { generateAfipQrData, generateAfipQrUrl } from "@/lib/arca-qr";
 import { getCurrentArcaEnvironment } from "@/lib/arca-config";
+import { toAFIPDateAR } from "@/lib/date-utils";
 
 // ============================================================================
 // TYPES
@@ -199,9 +200,8 @@ async function buildAfipInvoicePayload(
   ptoVta: number,
   totals: CalculatedTotals,
 ) {
-  // Format date as YYYYMMDD
-  const invoiceDate = new Date();
-  const dateStr = invoiceDate.toISOString().split("T")[0].replace(/-/g, "");
+  // Format date as YYYYMMDD in Argentina timezone
+  const dateStr = toAFIPDateAR(new Date());
 
   // Build payload
   const payload = {
@@ -1027,9 +1027,8 @@ export async function generateManualInvoice(params: {
     // Calculate VAT breakdown from items
     const totals = calculateVatBreakdownFromItems(items, invoiceType);
 
-    // Format date as YYYYMMDD
-    const invoiceDate = new Date();
-    const dateStr = invoiceDate.toISOString().split("T")[0].replace(/-/g, "");
+    // Format date as YYYYMMDD in Argentina timezone
+    const dateStr = toAFIPDateAR(new Date());
 
     // Map VAT rates to ARCA IDs
     const vatRateToId: Record<number, number> = {
@@ -1374,9 +1373,8 @@ export async function cancelInvoiceWithCreditNote(
 
     const nextCreditNoteNumber = (lastCreditNoteResult.data?.cbteNro || 0) + 1;
 
-    // Format date as YYYYMMDD
-    const creditNoteDate = new Date();
-    const dateStr = creditNoteDate.toISOString().split("T")[0].replace(/-/g, "");
+    // Format date as YYYYMMDD in Argentina timezone
+    const dateStr = toAFIPDateAR(new Date());
 
     // Build ARCA payload for credit note
     const afipPayload = {
@@ -1416,7 +1414,7 @@ export async function cancelInvoiceWithCreditNote(
           PtoVta: originalInvoice.ptoVta,
           Nro: originalInvoice.invoiceNumber,
           Cuit: String(cuit),
-          CbteFch: originalInvoice.invoiceDate.toISOString().split("T")[0].replace(/-/g, ""),
+          CbteFch: toAFIPDateAR(originalInvoice.invoiceDate),
         },
       ],
     };
@@ -1451,7 +1449,7 @@ export async function cancelInvoiceWithCreditNote(
           invoiceType: creditNoteType,
           ptoVta,
           invoiceNumber: nextCreditNoteNumber,
-          invoiceDate: creditNoteDate,
+          invoiceDate: new Date(),
           subtotal: Number(originalInvoice.subtotal),
           vatAmount: Number(originalInvoice.vatAmount),
           totalAmount: Number(originalInvoice.totalAmount),
@@ -1670,9 +1668,8 @@ export async function generateCreditNote(params: {
 
     const nextCreditNoteNumber = (lastCreditNoteResult.data?.cbteNro || 0) + 1;
 
-    // Format date
-    const creditNoteDate = new Date();
-    const dateStr = creditNoteDate.toISOString().split("T")[0].replace(/-/g, "");
+    // Format date in Argentina timezone
+    const dateStr = toAFIPDateAR(new Date());
 
     // Map VAT rates to ARCA IDs
     const vatRateToId: Record<number, number> = {
@@ -1723,7 +1720,7 @@ export async function generateCreditNote(params: {
           PtoVta: originalInvoice.ptoVta,
           Nro: originalInvoice.invoiceNumber,
           Cuit: String(cuit),
-          CbteFch: originalInvoice.invoiceDate.toISOString().split("T")[0].replace(/-/g, ""),
+          CbteFch: toAFIPDateAR(originalInvoice.invoiceDate),
         },
       ],
     };
@@ -1758,7 +1755,7 @@ export async function generateCreditNote(params: {
           invoiceType: creditNoteType,
           ptoVta,
           invoiceNumber: nextCreditNoteNumber,
-          invoiceDate: creditNoteDate,
+          invoiceDate: new Date(),
           subtotal: totals.subtotal,
           vatAmount: totals.totalVat,
           totalAmount: totals.total,
@@ -1963,9 +1960,8 @@ export async function generateDebitNote(params: {
 
     const nextDebitNoteNumber = (lastDebitNoteResult.data?.cbteNro || 0) + 1;
 
-    // Format date
-    const debitNoteDate = new Date();
-    const dateStr = debitNoteDate.toISOString().split("T")[0].replace(/-/g, "");
+    // Format date in Argentina timezone
+    const dateStr = toAFIPDateAR(new Date());
 
     // Map VAT rates to ARCA IDs
     const vatRateToId: Record<number, number> = {
@@ -2016,7 +2012,7 @@ export async function generateDebitNote(params: {
           PtoVta: originalInvoice.ptoVta,
           Nro: originalInvoice.invoiceNumber,
           Cuit: String(cuit),
-          CbteFch: originalInvoice.invoiceDate.toISOString().split("T")[0].replace(/-/g, ""),
+          CbteFch: toAFIPDateAR(originalInvoice.invoiceDate),
         },
       ],
     };
@@ -2051,7 +2047,7 @@ export async function generateDebitNote(params: {
           invoiceType: debitNoteType,
           ptoVta,
           invoiceNumber: nextDebitNoteNumber,
-          invoiceDate: debitNoteDate,
+          invoiceDate: new Date(),
           subtotal: totals.subtotal,
           vatAmount: totals.totalVat,
           totalAmount: totals.total,

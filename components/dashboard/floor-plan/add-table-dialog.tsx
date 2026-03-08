@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -66,9 +67,8 @@ export function AddTableDialog({
         <div className="space-y-4 py-4">
           <div>
             <Label htmlFor="table-number">Número de Mesa *</Label>
-            <Input
+            <NumberInput
               id="table-number"
-              type="number"
               value={tableNumber}
               onChange={(e) => onTableNumberChange(e.target.value)}
               placeholder="1, 2, 3..."

@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { todayBoundsARDate } from "@/lib/date-utils";
 import { ReservationStatus, Table } from "@/app/generated/prisma";
 import { TableShapeType } from "@/types/table";
 
@@ -215,10 +216,7 @@ export async function getTables(branchId: string) {
  */
 export async function getTablesWithStatus(branchId: string) {
   try {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = todayBoundsARDate();
 
     const tables = await prisma.table.findMany({
       where: {
@@ -314,10 +312,7 @@ export async function getTableById(id: string) {
  */
 export async function getTableWithStatus(tableId: string) {
   try {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = todayBoundsARDate();
 
     const table = await prisma.table.findUnique({
       where: { id: tableId },

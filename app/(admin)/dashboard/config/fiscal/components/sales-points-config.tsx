@@ -9,6 +9,7 @@ import {
 } from "@/actions/FiscalConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, CheckCircle } from "lucide-react";
@@ -96,9 +97,8 @@ export function SalesPointsConfig({
         <Label htmlFor="defaultPtoVta">
           Punto de venta predeterminado <span className="text-red-500">*</span>
         </Label>
-        <Input
+        <NumberInput
           id="defaultPtoVta"
-          type="number"
           min="1"
           max="9999"
           value={formData.defaultPtoVta}

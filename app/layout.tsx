@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { LogoutOverlay } from "@/components/logout-overlay";
+import { NoScrollNumberInputs } from "@/components/no-scroll-number-inputs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,6 +55,7 @@ export default function RootLayout({
         {children}
         <Toaster />
         <LogoutOverlay />
+        <NoScrollNumberInputs />
       </body>
     </html>
   );

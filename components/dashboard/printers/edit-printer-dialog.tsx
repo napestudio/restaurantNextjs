@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -504,9 +505,8 @@ export function EditPrinterDialog({
                 <Label htmlFor="edit-charactersPerLine">
                   Caracteres por Línea
                 </Label>
-                <Input
+                <NumberInput
                   id="edit-charactersPerLine"
-                  type="number"
                   value={charactersPerLine}
                   onChange={(e) => setCharactersPerLine(e.target.value)}
                   disabled={isPending}
@@ -516,9 +516,8 @@ export function EditPrinterDialog({
 
             <div className="space-y-2">
               <Label htmlFor="edit-printCopies">Número de Copias</Label>
-              <Input
+              <NumberInput
                 id="edit-printCopies"
-                type="number"
                 min="1"
                 max="5"
                 value={printCopies}

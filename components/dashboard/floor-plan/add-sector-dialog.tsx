@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { createSector } from "@/actions/Sector";
 import { useToast } from "@/hooks/use-toast";
@@ -145,9 +146,8 @@ export function AddSectorDialog({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="sector-width">Ancho del Plano (m)</Label>
-              <Input
+              <NumberInput
                 id="sector-width"
-                type="number"
                 min="1"
                 max="50"
                 step="0.5"
@@ -159,9 +159,8 @@ export function AddSectorDialog({
             </div>
             <div>
               <Label htmlFor="sector-height">Alto del Plano (m)</Label>
-              <Input
+              <NumberInput
                 id="sector-height"
-                type="number"
                 min="1"
                 max="50"
                 step="0.5"
