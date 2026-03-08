@@ -545,6 +545,7 @@ export async function getTableOrder(tableId: string) {
       ? {
           ...order,
           discountPercentage: Number(order.discountPercentage),
+          deliveryFee: Number(order.deliveryFee),
           items: order.items.map((item) => ({
             ...item,
             price: Number(item.price),
