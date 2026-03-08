@@ -46,9 +46,19 @@ interface Order {
   discountPercentage: number;
   deliveryFee: number;
   tableId: string | null;
+  customerName: string | null;
   table: {
     number: number;
     name: string | null;
+  } | null;
+  client: {
+    name: string;
+    phone: string | null;
+    addressStreet: string | null;
+    addressNumber: string | null;
+    addressApartment: string | null;
+    addressCity: string | null;
+    notes: string | null;
   } | null;
   items: OrderItem[];
 }
@@ -364,6 +374,17 @@ export function CloseOrderDialog({
       if (result.success) {
         // Print control ticket with payment breakdown (fire and forget)
         const isDelivery = order.type === OrderType.DELIVERY;
+
+        let deliveryAddress: string | undefined;
+        if (isDelivery && order.client) {
+          const parts = [
+            order.client.addressStreet,
+            order.client.addressNumber,
+            order.client.addressApartment,
+          ].filter(Boolean);
+          if (parts.length > 0) deliveryAddress = parts.join(" ");
+        }
+
         printControlTicket({
           orderId: order.id,
           orderCode: order.publicCode,
@@ -382,6 +403,11 @@ export function CloseOrderDialog({
               ? currentDeliveryFee
               : undefined,
           orderType: order.type,
+          customerName: order.client?.name || order.customerName || undefined,
+          clientPhone: isDelivery ? (order.client?.phone ?? undefined) : undefined,
+          deliveryAddress: isDelivery ? deliveryAddress : undefined,
+          deliveryCity: isDelivery ? (order.client?.addressCity ?? undefined) : undefined,
+          deliveryNotes: isDelivery ? (order.client?.notes ?? undefined) : undefined,
           payments: validPayments.length > 1 ? validPayments : undefined,
           paymentMethod:
             validPayments.length === 1
