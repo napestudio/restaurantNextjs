@@ -82,6 +82,7 @@ export default function FloorPlanHandler({
     string | null
   >(null);
   const [hasDragged, setHasDragged] = useState(false);
+
   const [newTable, setNewTable] = useState({
     number: "",
     name: "",
@@ -208,6 +209,11 @@ export default function FloorPlanHandler({
     hasDragged,
     editModeOnly,
   ]);
+
+  // Set initial zoom to 85% on mobile (runs once after hydration)
+  useEffect(() => {
+    if (!window.matchMedia("(min-width: 1024px)").matches) setZoom(0.85);
+  }, []);
 
   // Autosave with debounce (1.5s after last change)
   useEffect(() => {
@@ -543,9 +549,15 @@ export default function FloorPlanHandler({
           />
         </div>
 
-        {/* Right Sidebar - Order Management or Properties Panel (not shown in editModeOnly) */}
+        {/* Unified panel:
+            mobile  → fixed fullscreen overlay (slides from right, z-50)
+            desktop → static grid column (lg:col-span-2) */}
         {!editModeOnly && (
-          <div className="lg:col-span-2 relative h-full overflow-hidden">
+          <div
+            className={`fixed top-0 right-0 h-full w-full z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:col-span-2 lg:h-full lg:z-auto lg:translate-x-0 lg:transform-none lg:transition-none lg:overflow-hidden ${
+              selectedTableForOrder ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
             {selectedTableForOrder && !editModeOnly ? (
               <TableOrderSidebar
                 tableId={selectedTableForOrder}
@@ -578,6 +590,18 @@ export default function FloorPlanHandler({
           </div>
         )}
       </div>
+
+      {/* Backdrop — mobile only (lg:hidden), fades with selectedTableForOrder */}
+      {!editModeOnly && (
+        <div
+          className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity ${
+            selectedTableForOrder
+              ? "opacity-100"
+              : "opacity-0 pointer-events-none"
+          }`}
+          onClick={handleCloseSidebar}
+        />
+      )}
 
       {/* Edit sidebar for editModeOnly */}
       {editModeOnly && (
