@@ -48,6 +48,7 @@ interface Order {
   deliveryFee: number;
   tableId: string | null;
   customerName: string | null;
+  createdAt: Date | string;
   table: {
     number: number;
     name: string | null;
