@@ -40,4 +40,5 @@ export interface ControlTicketInfo {
   deliveryCity?: string | null;
   deliveryNotes?: string | null;
   paymentMethod?: string;
+  orderCreatedAt?: string;
 }

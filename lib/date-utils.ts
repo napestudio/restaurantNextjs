@@ -7,7 +7,7 @@ const AR_OFFSET_MS = -3 * 60 * 60 * 1000; // UTC-3, no DST
  */
 export function formatDateAR(isoString: string): string {
   const [year, month, day] = isoString.slice(0, 10).split("-").map(Number);
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -19,7 +19,7 @@ export function formatDateAR(isoString: string): string {
  */
 export function formatDateLongAR(isoString: string): string {
   const [year, month, day] = isoString.slice(0, 10).split("-").map(Number);
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat("es-AR", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -31,32 +31,29 @@ export function formatDateLongAR(isoString: string): string {
  * Uses Argentina timezone to convert the UTC instant to local date.
  */
 export function formatTimestampDateAR(isoString: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone: TZ,
   }).format(new Date(isoString));
 }
 
 /** "20:00" — for full UTC timestamps. */
 export function formatTimeAR(isoString: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: TZ,
   }).format(new Date(isoString));
 }
 
 /** "7 de marzo, 2026 20:30" — for full UTC timestamps. */
 export function formatDateTimeAR(isoString: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat("es-AR", {
     day: "numeric",
     month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: TZ,
   }).format(new Date(isoString));
 }
 
@@ -67,7 +64,7 @@ export function formatDateTimeAR(isoString: string): string {
  * Use for any invoice date sent to AFIP, including reference dates from DB.
  */
 export function toAFIPDateAR(date: Date | string): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ })
+  return new Intl.DateTimeFormat("en-AR")
     .format(typeof date === "string" ? new Date(date) : date)
     .replace(/-/g, "");
 }
@@ -85,7 +82,9 @@ export function todayStringAR(): string {
  */
 export function todayBoundsAR(): { start: Date; end: Date } {
   const ar = new Date(Date.now() + AR_OFFSET_MS);
-  const y = ar.getUTCFullYear(), m = ar.getUTCMonth(), d = ar.getUTCDate();
+  const y = ar.getUTCFullYear(),
+    m = ar.getUTCMonth(),
+    d = ar.getUTCDate();
   return {
     start: new Date(Date.UTC(y, m, d, 3, 0, 0)),
     end: new Date(Date.UTC(y, m, d + 1, 3, 0, 0)),
@@ -99,7 +98,9 @@ export function todayBoundsAR(): { start: Date; end: Date } {
  */
 export function todayBoundsARDate(): { start: Date; end: Date } {
   const ar = new Date(Date.now() + AR_OFFSET_MS);
-  const y = ar.getUTCFullYear(), m = ar.getUTCMonth(), d = ar.getUTCDate();
+  const y = ar.getUTCFullYear(),
+    m = ar.getUTCMonth(),
+    d = ar.getUTCDate();
   return {
     start: new Date(Date.UTC(y, m, d)),
     end: new Date(Date.UTC(y, m, d + 1)),

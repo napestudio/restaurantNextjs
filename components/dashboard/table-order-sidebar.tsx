@@ -408,6 +408,9 @@ export function TableOrderSidebar({
         : undefined,
       orderType: order.type,
       customerName: order.client?.name,
+      orderCreatedAt: order.createdAt instanceof Date
+        ? order.createdAt.toISOString()
+        : order.createdAt,
     });
 
     if (!success) {

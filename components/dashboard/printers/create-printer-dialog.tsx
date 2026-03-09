@@ -630,7 +630,7 @@ export function CreatePrinterDialog({
           </Button>
           <Button
             onClick={handleCreate}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-red-500 hover:bg-red-600"
             disabled={isPending || !isFormValid}
           >
             {isPending ? "Creando..." : "Crear Impresora"}
