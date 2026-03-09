@@ -90,9 +90,11 @@ export type OrderFilters = {
   status?: OrderStatus;
   tableId?: string;
   type?: OrderType;
+  paymentMethod?: string;
   search?: string;
   page?: number;
   pageSize?: number;
+  sortOrder?: "asc" | "desc";
 };
 
 export type { PaymentMethodExtended };

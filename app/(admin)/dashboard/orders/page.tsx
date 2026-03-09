@@ -13,6 +13,10 @@ type SearchParams = Promise<{
   type?: string;
   page?: string;
   search?: string;
+  startDate?: string;
+  endDate?: string;
+  paymentMethod?: string;
+  sortOrder?: string;
 }>;
 
 export default async function OrdersPage({
@@ -30,6 +34,10 @@ export default async function OrdersPage({
   const typeParam = params.type;
   const pageParam = params.page;
   const searchParam = params.search;
+  const startDateParam = params.startDate;
+  const endDateParam = params.endDate;
+  const paymentMethodParam = params.paymentMethod;
+  const sortOrderParam = params.sortOrder;
 
   // Validate and set order type (default to DINE_IN)
   const validTypes = ["DINE_IN", "TAKE_AWAY", "DELIVERY", "ALL"];
@@ -46,6 +54,12 @@ export default async function OrdersPage({
 
   // Fetch orders, tables, and order counts in parallel
   // Products are NOT fetched here — they load lazily when the Create Order sidebar is opened
+  const validSortOrders = ["asc", "desc"];
+  const sortOrder =
+    sortOrderParam && validSortOrders.includes(sortOrderParam)
+      ? (sortOrderParam as "asc" | "desc")
+      : "desc";
+
   const [ordersResult, tables, orderCounts] = await Promise.all([
     getOrders({
       branchId,
@@ -53,6 +67,10 @@ export default async function OrdersPage({
       page,
       pageSize,
       search: searchParam,
+      startDate: startDateParam ? new Date(startDateParam) : undefined,
+      endDate: endDateParam ? new Date(endDateParam) : undefined,
+      paymentMethod: paymentMethodParam || undefined,
+      sortOrder,
     }),
     prisma.table.findMany({
       where: {
@@ -114,6 +132,10 @@ export default async function OrdersPage({
             initialPagination={pagination}
             initialTab={activeTab}
             initialSearch={searchParam || ""}
+            initialStartDate={startDateParam || ""}
+            initialEndDate={endDateParam || ""}
+            initialPaymentMethod={paymentMethodParam || ""}
+            initialSortOrder={sortOrder}
             activeOrderCounts={orderCounts}
             canChangeOrderType={isManagerOrHigher(userRole)}
           />
