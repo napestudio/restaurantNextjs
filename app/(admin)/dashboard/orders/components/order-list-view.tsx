@@ -60,6 +60,7 @@ import { useState } from "react";
 interface OrderListViewProps {
   orders: Order[];
   onOrderClick?: (order: Order) => void;
+  activeTab?: string;
 }
 
 const statusColors = {
@@ -88,7 +89,7 @@ const typeLabels = {
   [OrderType.DELIVERY]: "Delivery",
 };
 
-export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
+export function OrderListView({ orders, onOrderClick, activeTab }: OrderListViewProps) {
   const { toast } = useToast();
 
   const [printingInvoice, setPrintingInvoice] = useState<string | null>(null);
@@ -181,7 +182,11 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                 Tipo
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mesa/Cliente
+                {activeTab === "DINE_IN"
+                  ? "Mesa"
+                  : activeTab === "TAKE_AWAY" || activeTab === "DELIVERY"
+                    ? "Cliente"
+                    : "Mesa/Cliente"}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Productos
@@ -226,22 +231,50 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm">
-                      {order.table ? (
-                        <>
-                          <div className="text-gray-900 font-medium">
-                            Mesa {order.table.number}
-                          </div>
-                          {order.partySize && (
-                            <div className="text-xs text-gray-500">
-                              {order.partySize}{" "}
-                              {order.partySize === 1 ? "persona" : "personas"}
+                      {activeTab === "DINE_IN" ? (
+                        order.table ? (
+                          <>
+                            <div className="text-gray-900 font-medium">
+                              Mesa {order.table.number}
                             </div>
-                          )}
-                        </>
-                      ) : order.client ? (
-                        <div className="text-gray-900">{order.client.name}</div>
+                            {order.partySize && (
+                              <div className="text-xs text-gray-500">
+                                {order.partySize}{" "}
+                                {order.partySize === 1 ? "persona" : "personas"}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-gray-400">-</div>
+                        )
+                      ) : activeTab === "TAKE_AWAY" || activeTab === "DELIVERY" ? (
+                        order.client ? (
+                          <div className="text-gray-900">{order.client.name}</div>
+                        ) : order.customerName ? (
+                          <div className="text-gray-900">{order.customerName}</div>
+                        ) : (
+                          <div className="text-gray-400">-</div>
+                        )
                       ) : (
-                        <div className="text-gray-400">-</div>
+                        order.table ? (
+                          <>
+                            <div className="text-gray-900 font-medium">
+                              Mesa {order.table.number}
+                            </div>
+                            {order.partySize && (
+                              <div className="text-xs text-gray-500">
+                                {order.partySize}{" "}
+                                {order.partySize === 1 ? "persona" : "personas"}
+                              </div>
+                            )}
+                          </>
+                        ) : order.client ? (
+                          <div className="text-gray-900">{order.client.name}</div>
+                        ) : order.customerName ? (
+                          <div className="text-gray-900">{order.customerName}</div>
+                        ) : (
+                          <div className="text-gray-400">-</div>
+                        )
                       )}
                     </div>
                   </td>

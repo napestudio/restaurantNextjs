@@ -700,6 +700,7 @@ export function OrdersClient({
             <OrderListView
               orders={displayedOrders}
               onOrderClick={handleOrderClick}
+              activeTab={currentTab}
             />
           )}
         </TabsContent>
