@@ -911,12 +911,11 @@ export async function closeTable(orderId: string) {
 
       const previousTableId = existingOrder?.tableId;
 
-      // Mark order as completed and clear tableId
+      // Mark order as completed
       const completedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           status: OrderStatus.COMPLETED,
-          tableId: null, // Clear table association when order is completed
         },
         include: {
           items: {
@@ -2135,7 +2134,6 @@ export async function closeTableWithPayment(data: {
           orderPaymentMethod = PaymentMethod.CASH;
       }
 
-      // Store tableId before clearing it
       const previousTableId = order.tableId;
 
       // Update order status and payment method
@@ -2146,8 +2144,6 @@ export async function closeTableWithPayment(data: {
             ? OrderStatus.IN_PROGRESS
             : OrderStatus.COMPLETED,
           paymentMethod: orderPaymentMethod,
-          // Clear tableId when order is fully completed
-          tableId: isPartialClose ? order.tableId : null,
         },
         include: {
           items: {

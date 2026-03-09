@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
+import { getDeliveryConfig } from "@/actions/DeliveryConfig";
+import {
+  closeTableWithPayment,
+  updateDeliveryFee,
+  updateDiscount,
+  type PaymentEntry,
+  type PaymentMethodExtended,
+} from "@/actions/Order";
+import { OrderType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
+import { NumberInput } from "@/components/ui/number-input";
 import {
   Select,
   SelectContent,
@@ -12,20 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Plus, X, Receipt, CreditCard, Percent } from "lucide-react";
-import {
-  closeTableWithPayment,
-  updateDiscount,
-  updateDeliveryFee,
-  type PaymentMethodExtended,
-  type PaymentEntry,
-} from "@/actions/Order";
-import { getDeliveryConfig } from "@/actions/DeliveryConfig";
-import { getOpenCashRegistersForBranch } from "@/actions/CashRegister";
+import { usePrint } from "@/hooks/use-print";
 import { formatCurrency } from "@/lib/currency";
 import { PAYMENT_METHODS } from "@/types/cash-register";
-import { usePrint } from "@/hooks/use-print";
-import { OrderType } from "@/app/generated/prisma";
+import { CreditCard, Percent, Plus, Receipt, Settings, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
   id: string;
@@ -406,10 +405,16 @@ export function CloseOrderDialog({
               : undefined,
           orderType: order.type,
           customerName: order.client?.name || order.customerName || undefined,
-          clientPhone: isDelivery ? (order.client?.phone ?? undefined) : undefined,
+          clientPhone: isDelivery
+            ? (order.client?.phone ?? undefined)
+            : undefined,
           deliveryAddress: isDelivery ? deliveryAddress : undefined,
-          deliveryCity: isDelivery ? (order.client?.addressCity ?? undefined) : undefined,
-          deliveryNotes: isDelivery ? (order.client?.notes ?? undefined) : undefined,
+          deliveryCity: isDelivery
+            ? (order.client?.addressCity ?? undefined)
+            : undefined,
+          deliveryNotes: isDelivery
+            ? (order.client?.notes ?? undefined)
+            : undefined,
           payments: validPayments.length > 1 ? validPayments : undefined,
           paymentMethod:
             validPayments.length === 1
@@ -417,9 +422,10 @@ export function CloseOrderDialog({
                   (m) => m.value === validPayments[0].method,
                 )?.label ?? validPayments[0].method)
               : undefined,
-          orderCreatedAt: order.createdAt instanceof Date
-            ? order.createdAt.toISOString()
-            : order.createdAt,
+          orderCreatedAt:
+            order.createdAt instanceof Date
+              ? order.createdAt.toISOString()
+              : order.createdAt,
         });
 
         // Close dialog AFTER successful operation
