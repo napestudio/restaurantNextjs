@@ -10,6 +10,7 @@ import {
   type Product,
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
+import { serializeForClient } from "@/lib/serialize";
 import { todayBoundsARDate, dateStringToTimestampBoundsAR } from "@/lib/date-utils";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import type {
@@ -213,22 +214,9 @@ export async function createOrder(data: {
       return newOrder;
     });
 
-    // Serialize Decimal fields
-    const serializedOrder = {
-      ...order,
-      discountPercentage: Number(order.discountPercentage),
-      client: order.client ? serializeClient(order.client) : null,
-      items: order.items.map((item) => ({
-        ...item,
-        price: Number(item.price),
-        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
-        product: serializeProduct(item.product),
-      })),
-    };
-
     return {
       success: true,
-      data: serializedOrder,
+      data: serializeForClient(order),
     };
   } catch (error) {
     console.error("Error creating order:", error);
@@ -381,22 +369,9 @@ export async function createOrderWithItems(data: {
       };
     }
 
-    // Serialize Decimal fields
-    const serializedOrder = {
-      ...order,
-      discountPercentage: Number(order.discountPercentage),
-      client: order.client ? serializeClient(order.client) : null,
-      items: order.items.map((item) => ({
-        ...item,
-        price: Number(item.price),
-        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
-        product: serializeProduct(item.product),
-      })),
-    };
-
     return {
       success: true,
-      data: serializedOrder,
+      data: serializeForClient(order),
     };
   } catch (error) {
     console.error("Error creating order with items:", error);
