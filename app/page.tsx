@@ -23,16 +23,12 @@ export default async function Home() {
     getActiveHomePageLinks(branchId),
   ]);
 
-  // Helper function to generate URL based on link type
   const generateLinkUrl = (link: SerializedHomePageLink): string => {
     switch (link.type) {
       case "MENU":
         return link.menu?.slug ? `/carta/${link.menu.slug}` : "/";
       case "TIMESLOT":
-        // Link to reservations with query param for pre-selecting the time slot
-        return link.timeSlotId
-          ? `/reservas?slot=${link.timeSlotId}`
-          : "/reservas";
+        return "/reservas";
       case "RESERVATION":
         return "/reservas";
       case "PEDIDOS":
