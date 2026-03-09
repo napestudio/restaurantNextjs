@@ -48,6 +48,7 @@ interface Order {
   deliveryFee: number;
   tableId: string | null;
   customerName: string | null;
+  createdAt: Date | string;
   table: {
     number: number;
     name: string | null;
@@ -416,6 +417,9 @@ export function CloseOrderDialog({
                   (m) => m.value === validPayments[0].method,
                 )?.label ?? validPayments[0].method)
               : undefined,
+          orderCreatedAt: order.createdAt instanceof Date
+            ? order.createdAt.toISOString()
+            : order.createdAt,
         });
 
         // Close dialog AFTER successful operation

@@ -5,6 +5,7 @@ import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency";
 import { Order } from "@/types/orders";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -322,7 +323,7 @@ export function OrderListView({ orders, onOrderClick }: OrderListViewProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm font-bold text-gray-900">
-                      ${total.toFixed(2)}
+                      {formatCurrency(total)}
                     </div>
                   </td>
                 </tr>

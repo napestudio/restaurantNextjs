@@ -449,6 +449,9 @@ export function OrderDetailsSidebar({
       paymentMethod: showPaymentMethod
         ? (paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod)
         : undefined,
+      orderCreatedAt: order.createdAt instanceof Date
+        ? order.createdAt.toISOString()
+        : order.createdAt,
     });
 
     if (!success) {

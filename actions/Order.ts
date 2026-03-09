@@ -1587,9 +1587,11 @@ export async function getOrders(filters: OrderFilters) {
       status,
       tableId,
       type,
+      paymentMethod,
       search,
       page = 1,
       pageSize = 10,
+      sortOrder = "desc",
     } = filters;
 
     // Build where clause
@@ -1603,6 +1605,7 @@ export async function getOrders(filters: OrderFilters) {
       status?: OrderStatus;
       tableId?: string;
       type?: OrderType;
+      paymentMethod?: PaymentMethod;
       publicCode?: {
         contains: string;
         mode: "insensitive";
@@ -1640,6 +1643,11 @@ export async function getOrders(filters: OrderFilters) {
     // Type filter
     if (type) {
       where.type = type;
+    }
+
+    // Payment method filter
+    if (paymentMethod) {
+      where.paymentMethod = paymentMethod as PaymentMethod;
     }
 
     // Search filter (by public code)
@@ -1705,7 +1713,7 @@ export async function getOrders(filters: OrderFilters) {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          createdAt: sortOrder,
         },
         skip,
         take: pageSize,

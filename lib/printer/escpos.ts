@@ -664,6 +664,7 @@ export interface FullOrderData {
   deliveryCity?: string | null;
   deliveryNotes?: string | null;
   paymentMethod?: string;
+  orderCreatedAt?: string;
 }
 
 /**
@@ -720,12 +721,18 @@ export async function printFullOrder(
   const nowISO = new Date().toISOString();
   content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
-  content +=
-    formatTwoColumns("Fecha:", formatTicketDateAR(nowISO), width) + "\n";
+  if (order.orderCreatedAt) {
+    content +=
+      formatTwoColumns(
+        "F. Pedido:",
+        `${formatTicketDateAR(order.orderCreatedAt)} ${formatTicketTimeAR(order.orderCreatedAt)}`,
+        width,
+      ) + "\n";
+  }
   content +=
     formatTwoColumns(
-      "Hora:",
-      formatTicketTimeAR(nowISO),
+      "F. Impresion:",
+      `${formatTicketDateAR(nowISO)} ${formatTicketTimeAR(nowISO)}`,
       width,
     ) + "\n";
   if (order.waiterName) {
@@ -1119,12 +1126,18 @@ export function generateFullOrderData(
   const nowISO = new Date().toISOString();
   content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
-  content +=
-    formatTwoColumns("Fecha:", formatTicketDateAR(nowISO), width) + "\n";
+  if (order.orderCreatedAt) {
+    content +=
+      formatTwoColumns(
+        "F. Pedido:",
+        `${formatTicketDateAR(order.orderCreatedAt)} ${formatTicketTimeAR(order.orderCreatedAt)}`,
+        width,
+      ) + "\n";
+  }
   content +=
     formatTwoColumns(
-      "Hora:",
-      formatTicketTimeAR(nowISO),
+      "F. Impresion:",
+      `${formatTicketDateAR(nowISO)} ${formatTicketTimeAR(nowISO)}`,
       width,
     ) + "\n";
   if (isDineIn && order.waiterName) {
