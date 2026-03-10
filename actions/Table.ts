@@ -1149,6 +1149,28 @@ export async function setTablesOccupied(tableIds: string[]) {
 }
 
 /**
+ * Set table status to PAYING when a check is printed
+ * Call this after printing the control ticket
+ */
+export async function setTablesPaying(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "PAYING",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as paying:", error);
+    return { success: false, error: "Failed to set tables as paying" };
+  }
+}
+
+/**
  * Set table status to EMPTY when customers leave
  * Call this when a reservation is completed or cancelled
  */

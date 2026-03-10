@@ -9,6 +9,7 @@ import {
   removeOrderItem,
   updateDiscount,
 } from "@/actions/Order";
+import { setTablesPaying, setTablesOccupied } from "@/actions/Table";
 import { getClientByEmail, type ClientData } from "@/actions/clients";
 import { usePrint } from "@/hooks/use-print";
 import { Button } from "@/components/ui/button";
@@ -294,6 +295,9 @@ export function TableOrderSidebar({
       })),
     );
 
+    // If table was in PAYING state, revert to OCCUPIED since new items were added
+    await setTablesOccupied([tableId]);
+
     // Clear pre-order items after successful confirmation
     setPreOrderItems([]);
 
@@ -413,7 +417,12 @@ export function TableOrderSidebar({
         : order.createdAt,
     });
 
-    if (!success) {
+    if (success) {
+      if (tableId) {
+        await setTablesPaying([tableId]);
+        onOrderUpdated(tableId);
+      }
+    } else {
       toast({
         variant: "destructive",
         title: "Error de impresión",

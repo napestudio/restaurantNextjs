@@ -454,6 +454,7 @@ export async function createTableOrder(
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      deliveryFee: Number(order.deliveryFee),
       client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
