@@ -123,7 +123,7 @@ export function CloseRegisterDialog({
           ...session,
           status: "CLOSED",
           closedAt,
-          closedBy: result.data.closedBy || userId,
+          closedBy: result.data.closedBy || null,
           expectedCash:
             result.data.expectedCash != null
               ? Number(result.data.expectedCash)
