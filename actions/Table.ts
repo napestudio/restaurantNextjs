@@ -1048,7 +1048,7 @@ export async function updateTableFloorPlan(
     height?: number;
     rotation?: number;
     shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
-    status?: "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING";
+    status?: "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING" | "PAYING";
   }
 ) {
   try {
@@ -1145,6 +1145,28 @@ export async function setTablesOccupied(tableIds: string[]) {
   } catch (error) {
     console.error("Error setting tables as occupied:", error);
     return { success: false, error: "Failed to set tables as occupied" };
+  }
+}
+
+/**
+ * Set table status to PAYING when a check is printed
+ * Call this after printing the control ticket
+ */
+export async function setTablesPaying(tableIds: string[]) {
+  try {
+    await prisma.table.updateMany({
+      where: {
+        id: { in: tableIds },
+      },
+      data: {
+        status: "PAYING",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error setting tables as paying:", error);
+    return { success: false, error: "Failed to set tables as paying" };
   }
 }
 

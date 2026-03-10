@@ -14,6 +14,7 @@ export const statusMap: Record<string, TableStatus> = {
   OCCUPIED: "occupied",
   RESERVED: "reserved",
   CLEANING: "cleaning",
+  PAYING: "paying",
 };
 
 /**
@@ -21,12 +22,13 @@ export const statusMap: Record<string, TableStatus> = {
  */
 export const reverseStatusMap: Record<
   TableStatus,
-  "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING"
+  "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING" | "PAYING"
 > = {
   empty: "EMPTY",
   occupied: "OCCUPIED",
   reserved: "RESERVED",
   cleaning: "CLEANING",
+  paying: "PAYING",
 };
 
 /**
@@ -118,7 +120,7 @@ export function calculateTableStatus(dbTable: TableWithReservations): {
       (sum, order) => sum + (order.partySize || 0),
       0
     );
-    status = "occupied";
+    status = dbTable.status === "PAYING" ? "paying" : "occupied";
     const orderWithWaiter = dbTable.orders.find((order) => order.assignedTo);
     if (orderWithWaiter?.assignedTo) {
       hasWaiter = true;

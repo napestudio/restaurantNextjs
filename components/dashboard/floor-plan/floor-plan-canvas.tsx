@@ -39,6 +39,7 @@ const statusColors: Record<FloorTableStatus, string> = {
   late:            "#f97316", // orange-500 — reservation overdue, not seated
   pending_payment: "#06b6d4", // cyan-500 — paid reservation awaiting payment
   cleaning:        "#eab308", // yellow-500 — being cleaned
+  paying:          "#3b82f6", // blue-500 — check printed, awaiting payment
 };
 
 const statusStrokeColors: Record<FloorTableStatus, string> = {
@@ -49,6 +50,7 @@ const statusStrokeColors: Record<FloorTableStatus, string> = {
   late:            "#ea580c", // orange-700
   pending_payment: "#0891b2", // cyan-700
   cleaning:        "#ca8a04", // yellow-700
+  paying:          "#1d4ed8", // blue-700
 };
 
 // Edit mode colors (gray)

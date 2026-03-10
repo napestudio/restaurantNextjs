@@ -68,6 +68,7 @@ enum TableStatus {
   OCCUPIED
   RESERVED
   CLEANING
+  PAYING
 }
 
 enum UnitType {
