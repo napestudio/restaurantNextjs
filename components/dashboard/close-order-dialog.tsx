@@ -7,7 +7,6 @@ import {
   updateDeliveryFee,
   updateDiscount,
   type PaymentEntry,
-  type PaymentMethodExtended,
 } from "@/actions/Order";
 import { OrderType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,9 @@ import {
 import { usePrint } from "@/hooks/use-print";
 import { formatCurrency } from "@/lib/currency";
 import { PAYMENT_METHODS } from "@/types/cash-register";
-import { CreditCard, Percent, Plus, Receipt, Settings, X } from "lucide-react";
+import { PaymentSection } from "@/components/dashboard/payment-section";
+import { usePayments } from "@/hooks/use-payments";
+import { Percent, Receipt, Settings, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
@@ -89,12 +90,6 @@ interface CloseOrderDialogProps {
   onSuccess: () => void;
 }
 
-type PaymentLine = {
-  id: string;
-  method: PaymentMethodExtended;
-  amount: string;
-};
-
 const typeLabels: Record<OrderType, string> = {
   [OrderType.DINE_IN]: "Para Comer Aquí",
   [OrderType.TAKE_AWAY]: "Para Llevar",
@@ -110,9 +105,6 @@ export function CloseOrderDialog({
   sectorId,
   onSuccess,
 }: CloseOrderDialogProps) {
-  const [payments, setPayments] = useState<PaymentLine[]>([
-    { id: "1", method: "CASH", amount: "" },
-  ]);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
@@ -185,24 +177,16 @@ export function CloseOrderDialog({
     });
   }, [open, order.id, order.type, order.deliveryFee, branchId]);
 
-  // Update payment amount when total changes
-  useEffect(() => {
-    setPayments((prevPayments) => {
-      if (prevPayments.length === 1) {
-        return [{ ...prevPayments[0], amount: total.toFixed(2) }];
-      }
-      return prevPayments;
-    });
-  }, [total]);
-
-  // Calculate total payment and change
-  const totalPayment = useMemo(() => {
-    return payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-  }, [payments]);
-
-  const change = useMemo(() => {
-    return Math.max(0, totalPayment - total);
-  }, [totalPayment, total]);
+  const {
+    payments,
+    lastAddedId,
+    remainder,
+    change,
+    addPaymentLine,
+    removePaymentLine,
+    updatePaymentLine,
+    resetPayments,
+  } = usePayments(total);
 
   // Load open cash registers when dialog opens
   useEffect(() => {
@@ -245,41 +229,6 @@ export function CloseOrderDialog({
       loadCashRegisters();
     }
   }, [open, branchId, sectorId]);
-
-  // Set initial payment amount when total changes
-  useEffect(() => {
-    if (open) {
-      setPayments((prev) => {
-        if (prev.length === 1 && prev[0].amount === "") {
-          return [{ ...prev[0], amount: total.toFixed(2) }];
-        }
-        return prev;
-      });
-    }
-  }, [open, total]);
-
-  const addPaymentLine = () => {
-    const newId = Date.now().toString();
-    setPayments([...payments, { id: newId, method: "CASH", amount: "" }]);
-  };
-
-  const removePaymentLine = (id: string) => {
-    if (payments.length > 1) {
-      setPayments(payments.filter((p) => p.id !== id));
-    }
-  };
-
-  const updatePaymentLine = (
-    id: string,
-    field: "method" | "amount",
-    value: string,
-  ) => {
-    setPayments(
-      payments.map((p) =>
-        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p,
-      ),
-    );
-  };
 
   const handleDiscountEdit = () => {
     setDiscountInput(currentDiscount.toString());
@@ -347,12 +296,9 @@ export function CloseOrderDialog({
       return;
     }
 
-    const paymentTotal = validPayments.reduce((sum, p) => sum + p.amount, 0);
-    if (paymentTotal < total - 0.01) {
+    if (remainder > 0.01 && total > 0.01) {
       setError(
-        `El monto pagado (${formatCurrency(
-          paymentTotal,
-        )}) es menor al total (${formatCurrency(total)})`,
+        `El monto pagado (${formatCurrency(total - remainder)}) es menor al total (${formatCurrency(total)})`,
       );
       return;
     }
@@ -444,9 +390,12 @@ export function CloseOrderDialog({
   };
 
   const resetForm = () => {
-    setPayments([{ id: "1", method: "CASH", amount: "" }]);
+    resetPayments(total);
     setError(null);
     setSelectedRegisterId("");
+    setCurrentDiscount(order.discountPercentage);
+    setIsEditingDiscount(false);
+    setDiscountInput("");
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -655,158 +604,74 @@ export function CloseOrderDialog({
 
               {/* Right Side - Payment */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-semibold text-lg">Pago</h3>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addPaymentLine}
-                    disabled={isLoadingAction}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Dividir pago
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Cash Register Selector */}
-                  <div className="space-y-2">
-                    <Label htmlFor="cash-register-select">Caja:</Label>
-                    {isLoadingRegisters ? (
-                      <div className="text-sm text-muted-foreground">
-                        Cargando cajas...
-                      </div>
-                    ) : cashRegisters.length === 0 ? (
-                      <div className="text-sm text-destructive">
-                        No hay cajas abiertas en este sector. Abra una caja
-                        primero.
-                      </div>
-                    ) : cashRegisters.length === 1 ? (
-                      // Show read-only for single register
-                      <div className="text-sm font-medium">
-                        {cashRegisters[0].name}
-                        {cashRegisters[0].sectors.length > 0 && (
-                          <span className="text-muted-foreground ml-2">
-                            (
-                            {cashRegisters[0].sectors
-                              .map((s) => s.name)
-                              .join(", ")}
-                            )
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      // Show dropdown for multiple registers
-                      <Select
-                        value={selectedRegisterId}
-                        onValueChange={setSelectedRegisterId}
-                      >
-                        <SelectTrigger id="cash-register-select">
-                          <SelectValue placeholder="Seleccione una caja" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cashRegisters.map((register) => (
-                            <SelectItem key={register.id} value={register.id}>
-                              {register.name}
-                              {register.sectors.length > 0 && (
-                                <span className="text-muted-foreground ml-2">
-                                  (
-                                  {register.sectors
-                                    .map((s) => s.name)
-                                    .join(", ")}
-                                  )
-                                </span>
-                              )}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
-                  {/* Payment Lines */}
-                  <div className="space-y-3">
-                    {payments.map((payment) => (
-                      <div key={payment.id} className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <select
-                            value={payment.method}
-                            onChange={(e) =>
-                              updatePaymentLine(
-                                payment.id,
-                                "method",
-                                e.target.value as PaymentMethodExtended,
-                              )
-                            }
-                            disabled={isLoadingAction}
-                            className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {PAYMENT_METHODS.map((method) => (
-                              <option key={method.value} value={method.value}>
-                                {method.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="relative flex-1 min-w-32">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                              $
-                            </span>
-                            <NumberInput
-                              min="0"
-                              step="0.01"
-                              value={payment.amount}
-                              onChange={(e) =>
-                                updatePaymentLine(
-                                  payment.id,
-                                  "amount",
-                                  e.target.value,
+                {/* Cash Register Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="cash-register-select">Caja:</Label>
+                  {isLoadingRegisters ? (
+                    <div className="text-sm text-muted-foreground">
+                      Cargando cajas...
+                    </div>
+                  ) : cashRegisters.length === 0 ? (
+                    <div className="text-sm text-destructive">
+                      No hay cajas abiertas en este sector. Abra una caja
+                      primero.
+                    </div>
+                  ) : cashRegisters.length === 1 ? (
+                    <div className="text-sm font-medium">
+                      {cashRegisters[0].name}
+                      {cashRegisters[0].sectors.length > 0 && (
+                        <span className="text-muted-foreground ml-2">
+                          (
+                          {cashRegisters[0].sectors
+                            .map((s) => s.name)
+                            .join(", ")}
+                          )
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <Select
+                      value={selectedRegisterId}
+                      onValueChange={setSelectedRegisterId}
+                    >
+                      <SelectTrigger id="cash-register-select">
+                        <SelectValue placeholder="Seleccione una caja" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cashRegisters.map((register) => (
+                          <SelectItem key={register.id} value={register.id}>
+                            {register.name}
+                            {register.sectors.length > 0 && (
+                              <span className="text-muted-foreground ml-2">
+                                (
+                                {register.sectors.map((s) => s.name).join(", ")}
                                 )
-                              }
-                              placeholder="0.00"
-                              className="pl-7"
-                              disabled={isLoadingAction}
-                            />
-                          </div>
-                          {payments.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-muted-foreground hover:text-red-500 shrink-0"
-                              onClick={() => removePaymentLine(payment.id)}
-                              disabled={isLoadingAction}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Change Display */}
-                  {change > 0 && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="text-green-800 font-medium">
-                          Vuelto:
-                        </span>
-                        <span className="text-2xl font-bold text-green-700">
-                          {formatCurrency(change)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error Message */}
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                      {error}
-                    </div>
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
+
+                <PaymentSection
+                  payments={payments}
+                  lastAddedId={lastAddedId}
+                  remainder={remainder}
+                  change={change}
+                  disabled={isLoadingAction}
+                  onAdd={addPaymentLine}
+                  onRemove={removePaymentLine}
+                  onUpdate={updatePaymentLine}
+                />
+
+                {/* Error Message */}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
               </div>
             </div>
           )}
