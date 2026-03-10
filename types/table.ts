@@ -1,7 +1,7 @@
 export type TableShapeType = "CIRCLE" | "SQUARE" | "RECTANGLE" | "WIDE";
 
 /** Statuses that map directly to the DB TableStatus enum (manually settable) */
-export type TableStatus = "empty" | "occupied" | "reserved" | "cleaning";
+export type TableStatus = "empty" | "occupied" | "reserved" | "cleaning" | "paying";
 
 /** Extended statuses used only in the floor plan display (computed from time + reservations) */
 export type FloorTableStatus =
