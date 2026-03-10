@@ -1048,7 +1048,7 @@ export async function updateTableFloorPlan(
     height?: number;
     rotation?: number;
     shape?: "SQUARE" | "RECTANGLE" | "CIRCLE";
-    status?: "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING";
+    status?: "EMPTY" | "OCCUPIED" | "RESERVED" | "CLEANING" | "PAYING";
   }
 ) {
   try {
