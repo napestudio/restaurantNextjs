@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatDateTimeAR } from "@/lib/date-utils";
 
 export default function PrinterTestPage() {
   const socketRef = useRef<WebSocket | null>(null);
@@ -47,7 +48,7 @@ export default function PrinterTestPage() {
         type: tipo,
         content: `TEST ${tipo}\nImpresora: ${
           tipo === "USB" ? selectedUsb : networkIp
-        }\nFecha: ${new Date().toLocaleString()}\n`,
+        }\nFecha: ${formatDateTimeAR(new Date().toISOString())}\n`,
         font_size: 1,
         paper_width: 80,
       },

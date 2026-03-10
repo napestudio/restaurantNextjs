@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -21,7 +22,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Loader2, Plus, X } from "lucide-react";
-import { generateInvoiceForOrder, generateManualInvoice } from "@/actions/Invoice";
+import {
+  generateInvoiceForOrder,
+  generateManualInvoice,
+} from "@/actions/Invoice";
 import type { ManualInvoiceLineItem } from "@/actions/Invoice";
 import type { OrderWithoutInvoice } from "@/actions/Order";
 import { OrderCombobox } from "@/components/ui/order-combobox";
@@ -36,8 +40,16 @@ interface CreateInvoiceDialogProps {
 
 // Invoice types
 const INVOICE_TYPES = [
-  { value: "1", label: "Factura A", description: "Para responsables inscriptos" },
-  { value: "6", label: "Factura B", description: "Para consumidor final / monotributistas" },
+  {
+    value: "1",
+    label: "Factura A",
+    description: "Para responsables inscriptos",
+  },
+  {
+    value: "6",
+    label: "Factura B",
+    description: "Para consumidor final / monotributistas",
+  },
   { value: "11", label: "Factura C", description: "Para operaciones exentas" },
 ] as const;
 
@@ -75,12 +87,13 @@ export function CreateInvoiceDialog({
 
   // Order tab
   const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [selectedOrder, setSelectedOrder] = useState<OrderWithoutInvoice | null>(null);
+  const [selectedOrder, setSelectedOrder] =
+    useState<OrderWithoutInvoice | null>(null);
 
   // Manual tab
-  const [lineItems, setLineItems] = useState<Array<ManualInvoiceLineItem & { id: string }>>([
-    { id: "1", description: "", quantity: 1, unitPrice: 0, vatRate: 21 },
-  ]);
+  const [lineItems, setLineItems] = useState<
+    Array<ManualInvoiceLineItem & { id: string }>
+  >([{ id: "1", description: "", quantity: 1, unitPrice: 0, vatRate: 21 }]);
 
   const isConsumidorFinal = docType === "99";
 
@@ -91,7 +104,9 @@ export function CreateInvoiceDialog({
     setDocNumber("");
     setSelectedOrderId("");
     setSelectedOrder(null);
-    setLineItems([{ id: "1", description: "", quantity: 1, unitPrice: 0, vatRate: 21 }]);
+    setLineItems([
+      { id: "1", description: "", quantity: 1, unitPrice: 0, vatRate: 21 },
+    ]);
     setActiveTab("order");
   };
 
@@ -115,7 +130,10 @@ export function CreateInvoiceDialog({
     });
 
     subtotal = Object.values(vatGroups).reduce((sum, v) => sum + v.base, 0);
-    const totalVat = Object.values(vatGroups).reduce((sum, v) => sum + v.amount, 0);
+    const totalVat = Object.values(vatGroups).reduce(
+      (sum, v) => sum + v.amount,
+      0,
+    );
     const total = subtotal + totalVat;
 
     return { subtotal, totalVat, total, vatGroups };
@@ -124,20 +142,31 @@ export function CreateInvoiceDialog({
   const totals = calculateTotals();
 
   const addLineItem = () => {
-    const newId = (Math.max(...lineItems.map(item => parseInt(item.id))) + 1).toString();
-    setLineItems([...lineItems, { id: newId, description: "", quantity: 1, unitPrice: 0, vatRate: 21 }]);
+    const newId = (
+      Math.max(...lineItems.map((item) => parseInt(item.id))) + 1
+    ).toString();
+    setLineItems([
+      ...lineItems,
+      { id: newId, description: "", quantity: 1, unitPrice: 0, vatRate: 21 },
+    ]);
   };
 
   const removeLineItem = (id: string) => {
     if (lineItems.length > 1) {
-      setLineItems(lineItems.filter(item => item.id !== id));
+      setLineItems(lineItems.filter((item) => item.id !== id));
     }
   };
 
-  const updateLineItem = (id: string, field: keyof ManualInvoiceLineItem, value: string | number) => {
-    setLineItems(lineItems.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+  const updateLineItem = (
+    id: string,
+    field: keyof ManualInvoiceLineItem,
+    value: string | number,
+  ) => {
+    setLineItems(
+      lineItems.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    );
   };
 
   const validateForm = (): boolean => {
@@ -197,7 +226,8 @@ export function CreateInvoiceDialog({
     } else {
       // Manual invoice validation
       const validItems = lineItems.filter(
-        item => item.description.trim() && item.quantity > 0 && item.unitPrice > 0
+        (item) =>
+          item.description.trim() && item.quantity > 0 && item.unitPrice > 0,
       );
 
       if (validItems.length === 0) {
@@ -235,12 +265,21 @@ export function CreateInvoiceDialog({
 
       if (activeTab === "order" && selectedOrderId) {
         // Generate invoice from order
-        result = await generateInvoiceForOrder(selectedOrderId, invoiceTypeNum, customerData);
+        result = await generateInvoiceForOrder(
+          selectedOrderId,
+          invoiceTypeNum,
+          customerData,
+        );
       } else {
         // Generate manual invoice
         const validItems = lineItems
-          .filter(item => item.description.trim() && item.quantity > 0 && item.unitPrice > 0)
-          .map(({ id, ...item }) => item);
+          .filter(
+            (item) =>
+              item.description.trim() &&
+              item.quantity > 0 &&
+              item.unitPrice > 0,
+          )
+          .map(({ ...item }) => item);
 
         result = await generateManualInvoice({
           branchId,
@@ -268,7 +307,10 @@ export function CreateInvoiceDialog({
     } catch (error) {
       toast({
         title: "Error inesperado",
-        description: error instanceof Error ? error.message : "No se pudo generar la factura",
+        description:
+          error instanceof Error
+            ? error.message
+            : "No se pudo generar la factura",
         variant: "destructive",
       });
     } finally {
@@ -285,7 +327,10 @@ export function CreateInvoiceDialog({
     }
   };
 
-  const handleOrderSelect = (orderId: string, order: OrderWithoutInvoice | null) => {
+  const handleOrderSelect = (
+    orderId: string,
+    order: OrderWithoutInvoice | null,
+  ) => {
     setSelectedOrderId(orderId);
     setSelectedOrder(order);
     if (order?.customerName) {
@@ -295,7 +340,7 @@ export function CreateInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -307,7 +352,10 @@ export function CreateInvoiceDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "order" | "manual")}>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "order" | "manual")}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="order">Desde Pedido</TabsTrigger>
               <TabsTrigger value="manual">Factura Manual</TabsTrigger>
@@ -322,7 +370,10 @@ export function CreateInvoiceDialog({
 
               {selectedOrder && (
                 <div className="text-sm text-muted-foreground">
-                  Total del pedido: <span className="font-semibold">${selectedOrder.total.toFixed(2)}</span>
+                  Total del pedido:{" "}
+                  <span className="font-semibold">
+                    ${selectedOrder.total.toFixed(2)}
+                  </span>
                 </div>
               )}
             </TabsContent>
@@ -343,41 +394,58 @@ export function CreateInvoiceDialog({
                   </Button>
                 </div>
 
-                {lineItems.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-2 items-start p-3 border rounded-md">
+                {lineItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="grid grid-cols-12 gap-2 items-start p-3 border rounded-md"
+                  >
                     <div className="col-span-5">
                       <Input
                         placeholder="Descripción"
                         value={item.description}
-                        onChange={(e) => updateLineItem(item.id, "description", e.target.value)}
+                        onChange={(e) =>
+                          updateLineItem(item.id, "description", e.target.value)
+                        }
                         disabled={isPending}
                       />
                     </div>
                     <div className="col-span-2">
-                      <Input
-                        type="number"
+                      <NumberInput
                         placeholder="Cant."
                         min="1"
                         value={item.quantity}
-                        onChange={(e) => updateLineItem(item.id, "quantity", parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                          updateLineItem(
+                            item.id,
+                            "quantity",
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
                         disabled={isPending}
                       />
                     </div>
                     <div className="col-span-2">
-                      <Input
-                        type="number"
+                      <NumberInput
                         placeholder="Precio"
                         min="0"
                         step="0.01"
                         value={item.unitPrice}
-                        onChange={(e) => updateLineItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          updateLineItem(
+                            item.id,
+                            "unitPrice",
+                            parseFloat(e.target.value) || 0,
+                          )
+                        }
                         disabled={isPending}
                       />
                     </div>
                     <div className="col-span-2">
                       <Select
                         value={item.vatRate.toString()}
-                        onValueChange={(v) => updateLineItem(item.id, "vatRate", parseFloat(v))}
+                        onValueChange={(v) =>
+                          updateLineItem(item.id, "vatRate", parseFloat(v))
+                        }
                         disabled={isPending}
                       >
                         <SelectTrigger>
@@ -414,7 +482,10 @@ export function CreateInvoiceDialog({
                   <span>${totals.subtotal.toFixed(2)}</span>
                 </div>
                 {Object.entries(totals.vatGroups).map(([rate, values]) => (
-                  <div key={rate} className="flex justify-between text-sm text-muted-foreground">
+                  <div
+                    key={rate}
+                    className="flex justify-between text-sm text-muted-foreground"
+                  >
                     <span>IVA {rate}%:</span>
                     <span>${values.amount.toFixed(2)}</span>
                   </div>
@@ -431,7 +502,11 @@ export function CreateInvoiceDialog({
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="invoiceType">Tipo de Factura</Label>
-              <Select value={invoiceType} onValueChange={setInvoiceType} disabled={isPending}>
+              <Select
+                value={invoiceType}
+                onValueChange={setInvoiceType}
+                disabled={isPending}
+              >
                 <SelectTrigger id="invoiceType">
                   <SelectValue />
                 </SelectTrigger>
@@ -440,7 +515,9 @@ export function CreateInvoiceDialog({
                     <SelectItem key={type.value} value={type.value}>
                       <div className="flex flex-col">
                         <span className="font-medium">{type.label}</span>
-                        <span className="text-xs text-muted-foreground">{type.description}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {type.description}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -464,7 +541,11 @@ export function CreateInvoiceDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="docType">Tipo de Documento</Label>
-              <Select value={docType} onValueChange={setDocType} disabled={isPending}>
+              <Select
+                value={docType}
+                onValueChange={setDocType}
+                disabled={isPending}
+              >
                 <SelectTrigger id="docType">
                   <SelectValue />
                 </SelectTrigger>
@@ -480,13 +561,20 @@ export function CreateInvoiceDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="docNumber">
-                Número de Documento {!isConsumidorFinal && <span className="text-red-500">*</span>}
+                Número de Documento{" "}
+                {!isConsumidorFinal && <span className="text-red-500">*</span>}
               </Label>
               <Input
                 id="docNumber"
-                placeholder={isConsumidorFinal ? "No aplica" : "Número sin guiones ni puntos"}
+                placeholder={
+                  isConsumidorFinal
+                    ? "No aplica"
+                    : "Número sin guiones ni puntos"
+                }
                 value={isConsumidorFinal ? "" : docNumber}
-                onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setDocNumber(e.target.value.replace(/\D/g, ""))
+                }
                 disabled={isPending || isConsumidorFinal}
                 required={!isConsumidorFinal}
                 maxLength={11}

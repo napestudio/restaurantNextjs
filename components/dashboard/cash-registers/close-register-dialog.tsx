@@ -1,10 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { closeCashRegisterSession } from "@/actions/CashRegister";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DollarSign, AlertTriangle } from "lucide-react";
-import { closeCashRegisterSession } from "@/actions/CashRegister";
+import { Label } from "@/components/ui/label";
+import { NumberInput } from "@/components/ui/number-input";
+import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, DollarSign } from "lucide-react";
+import { useState } from "react";
 
 interface SerializedSession {
   id: string;
@@ -60,11 +60,9 @@ export function CloseRegisterDialog({
 }: CloseRegisterDialogProps) {
   const [countedCash, setCountedCash] = useState("");
   const [closingNotes, setClosingNotes] = useState("");
-  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Calculate expected cash (opening amount + sales - expenses)
-  // For now, we just use opening amount since we don't have movements yet
   const expectedCash = session.openingAmount;
 
   // Calculate variance preview
@@ -78,8 +76,6 @@ export function CloseRegisterDialog({
       return;
     }
 
-    // TODO: Get actual user ID from session
-    const userId = "system";
     const now = new Date().toISOString();
 
     // Create optimistic closed session
@@ -87,7 +83,7 @@ export function CloseRegisterDialog({
       ...session,
       status: "CLOSED",
       closedAt: now,
-      closedBy: userId,
+      closedBy: null,
       expectedCash: expectedCash,
       countedCash: amount,
       variance: amount - expectedCash,
@@ -106,7 +102,6 @@ export function CloseRegisterDialog({
         sessionId: session.id,
         countedCash: amount,
         closingNotes: closingNotes.trim() || undefined,
-        userId,
       });
 
       if (result.success && result.data) {
@@ -125,7 +120,7 @@ export function CloseRegisterDialog({
           ...session,
           status: "CLOSED",
           closedAt,
-          closedBy: result.data.closedBy || userId,
+          closedBy: result.data.closedBy || null,
           expectedCash:
             result.data.expectedCash != null
               ? Number(result.data.expectedCash)
@@ -226,16 +221,14 @@ export function CloseRegisterDialog({
             <Label htmlFor="counted">Efectivo contado *</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
+              <NumberInput
                 id="counted"
-                type="number"
                 min="0"
                 step="0.01"
                 value={countedCash}
                 onChange={(e) => setCountedCash(e.target.value)}
                 placeholder="0.00"
                 className="pl-10"
-                disabled={isPending}
               />
             </div>
             <p className="text-xs text-muted-foreground">
@@ -251,8 +244,8 @@ export function CloseRegisterDialog({
                 variancePreview < 0
                   ? "bg-red-50 border-red-200"
                   : variancePreview > 0
-                  ? "bg-green-50 border-green-200"
-                  : "bg-gray-50 border-gray-200"
+                    ? "bg-green-50 border-green-200"
+                    : "bg-gray-50 border-gray-200",
               )}
             >
               <div className="flex items-center gap-2">
@@ -260,7 +253,7 @@ export function CloseRegisterDialog({
                   <AlertTriangle
                     className={cn(
                       "h-4 w-4",
-                      variancePreview < 0 ? "text-red-600" : "text-green-600"
+                      variancePreview < 0 ? "text-red-600" : "text-green-600",
                     )}
                   />
                 )}
@@ -271,8 +264,8 @@ export function CloseRegisterDialog({
                     variancePreview < 0
                       ? "text-red-600"
                       : variancePreview > 0
-                      ? "text-green-600"
-                      : "text-gray-600"
+                        ? "text-green-600"
+                        : "text-gray-600",
                   )}
                 >
                   {formatCurrency(variancePreview)}
@@ -282,7 +275,7 @@ export function CloseRegisterDialog({
                 <p
                   className={cn(
                     "text-xs mt-1",
-                    variancePreview < 0 ? "text-red-600" : "text-green-600"
+                    variancePreview < 0 ? "text-red-600" : "text-green-600",
                   )}
                 >
                   {variancePreview < 0
@@ -302,7 +295,6 @@ export function CloseRegisterDialog({
               onChange={(e) => setClosingNotes(e.target.value)}
               placeholder="Observaciones sobre el cierre..."
               rows={3}
-              disabled={isPending}
             />
           </div>
 
@@ -318,16 +310,15 @@ export function CloseRegisterDialog({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={isPending}
           >
             Cancelar
           </Button>
           <Button
             onClick={handleClose}
             className="bg-red-600 hover:bg-red-700"
-            disabled={isPending || !countedCash}
+            disabled={!countedCash}
           >
-            {isPending ? "Finalizando..." : "Finalizar Arqueo"}
+            Finalizar Arqueo
           </Button>
         </DialogFooter>
       </DialogContent>

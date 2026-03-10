@@ -10,6 +10,8 @@ import {
   type Product,
 } from "@/app/generated/prisma";
 import { serializeClient } from "@/lib/serializers";
+import { serializeForClient } from "@/lib/serialize";
+import { todayBoundsARDate, dateStringToTimestampBoundsAR } from "@/lib/date-utils";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import type {
   DeliverySection,
@@ -212,22 +214,9 @@ export async function createOrder(data: {
       return newOrder;
     });
 
-    // Serialize Decimal fields
-    const serializedOrder = {
-      ...order,
-      discountPercentage: Number(order.discountPercentage),
-      client: order.client ? serializeClient(order.client) : null,
-      items: order.items.map((item) => ({
-        ...item,
-        price: Number(item.price),
-        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
-        product: serializeProduct(item.product),
-      })),
-    };
-
     return {
       success: true,
-      data: serializedOrder,
+      data: serializeForClient(order),
     };
   } catch (error) {
     console.error("Error creating order:", error);
@@ -380,22 +369,9 @@ export async function createOrderWithItems(data: {
       };
     }
 
-    // Serialize Decimal fields
-    const serializedOrder = {
-      ...order,
-      discountPercentage: Number(order.discountPercentage),
-      client: order.client ? serializeClient(order.client) : null,
-      items: order.items.map((item) => ({
-        ...item,
-        price: Number(item.price),
-        originalPrice: item.originalPrice ? Number(item.originalPrice) : null,
-        product: serializeProduct(item.product),
-      })),
-    };
-
     return {
       success: true,
-      data: serializedOrder,
+      data: serializeForClient(order),
     };
   } catch (error) {
     console.error("Error creating order with items:", error);
@@ -545,6 +521,7 @@ export async function getTableOrder(tableId: string) {
       ? {
           ...order,
           discountPercentage: Number(order.discountPercentage),
+          deliveryFee: Number(order.deliveryFee),
           items: order.items.map((item) => ({
             ...item,
             price: Number(item.price),
@@ -909,12 +886,11 @@ export async function closeTable(orderId: string) {
 
       const previousTableId = existingOrder?.tableId;
 
-      // Mark order as completed and clear tableId
+      // Mark order as completed
       const completedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           status: OrderStatus.COMPLETED,
-          tableId: null, // Clear table association when order is completed
         },
         include: {
           items: {
@@ -1345,10 +1321,7 @@ export async function getProductsForDeliveryMenu(
 // Only returns tables that are free (EMPTY status) and not reserved
 export async function getAvailableTablesForMove(branchId: string) {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { start: today, end: tomorrow } = todayBoundsARDate();
 
     const tables = await prisma.table.findMany({
       where: {
@@ -1588,9 +1561,11 @@ export async function getOrders(filters: OrderFilters) {
       status,
       tableId,
       type,
+      paymentMethod,
       search,
       page = 1,
       pageSize = 10,
+      sortOrder = "desc",
     } = filters;
 
     // Build where clause
@@ -1599,10 +1574,12 @@ export async function getOrders(filters: OrderFilters) {
       createdAt?: {
         gte?: Date;
         lte?: Date;
+        lt?: Date;
       };
       status?: OrderStatus;
       tableId?: string;
       type?: OrderType;
+      paymentMethod?: PaymentMethod;
       publicCode?: {
         contains: string;
         mode: "insensitive";
@@ -1613,17 +1590,17 @@ export async function getOrders(filters: OrderFilters) {
       branchId,
     };
 
-    // Date range filter
+    // Date range filter — dates come in as UTC midnight from date pickers;
+    // use Argentina-aware boundaries (midnight AR = 03:00 UTC)
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
-        where.createdAt.gte = startDate;
+        const { start } = dateStringToTimestampBoundsAR(startDate.toISOString().slice(0, 10));
+        where.createdAt.gte = start;
       }
       if (endDate) {
-        // Set to end of day
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        where.createdAt.lte = endOfDay;
+        const { end } = dateStringToTimestampBoundsAR(endDate.toISOString().slice(0, 10));
+        where.createdAt.lt = end;
       }
     }
 
@@ -1640,6 +1617,11 @@ export async function getOrders(filters: OrderFilters) {
     // Type filter
     if (type) {
       where.type = type;
+    }
+
+    // Payment method filter
+    if (paymentMethod) {
+      where.paymentMethod = paymentMethod as PaymentMethod;
     }
 
     // Search filter (by public code)
@@ -1705,7 +1687,7 @@ export async function getOrders(filters: OrderFilters) {
           },
         },
         orderBy: {
-          createdAt: "desc",
+          createdAt: sortOrder,
         },
         skip,
         take: pageSize,
@@ -2005,11 +1987,11 @@ export async function closeTableWithPayment(data: {
   orderId: string;
   payments: PaymentEntry[];
   sessionId: string;
-  userId: string;
   isPartialClose?: boolean;
 }) {
   try {
-    const { orderId, payments, sessionId, userId, isPartialClose } = data;
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+    const { orderId, payments, sessionId, isPartialClose } = data;
 
     const result = await prisma.$transaction(async (tx) => {
       // Get the order with items and table
@@ -2086,7 +2068,7 @@ export async function closeTableWithPayment(data: {
               type: "SALE",
               paymentMethod: payment.method,
               amount: payment.amount,
-              description: `Table ${order.table?.number || "N/A"} - Order ${
+              description: `Mesa ${order.table?.number || "S/N"} - Orden ${
                 order.publicCode
               }`,
               orderId: order.id,
@@ -2127,7 +2109,6 @@ export async function closeTableWithPayment(data: {
           orderPaymentMethod = PaymentMethod.CASH;
       }
 
-      // Store tableId before clearing it
       const previousTableId = order.tableId;
 
       // Update order status and payment method
@@ -2138,8 +2119,6 @@ export async function closeTableWithPayment(data: {
             ? OrderStatus.IN_PROGRESS
             : OrderStatus.COMPLETED,
           paymentMethod: orderPaymentMethod,
-          // Clear tableId when order is fully completed
-          tableId: isPartialClose ? order.tableId : null,
         },
         include: {
           items: {

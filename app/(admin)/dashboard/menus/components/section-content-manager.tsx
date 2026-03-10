@@ -32,6 +32,7 @@ import {
 } from "@/actions/menus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -556,9 +557,8 @@ export function SectionContentManager({
 
             <div className="space-y-2">
               <Label htmlFor="customPrice">Precio Personalizado (opcional)</Label>
-              <Input
+              <NumberInput
                 id="customPrice"
-                type="number"
                 step="0.01"
                 value={customPrice}
                 onChange={(e) => setCustomPrice(e.target.value)}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -482,9 +483,8 @@ export function CreatePrinterDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="charactersPerLine">Caracteres por Línea</Label>
-                <Input
+                <NumberInput
                   id="charactersPerLine"
-                  type="number"
                   value={charactersPerLine}
                   onChange={(e) => setCharactersPerLine(e.target.value)}
                   disabled={isPending}
@@ -494,9 +494,8 @@ export function CreatePrinterDialog({
 
             <div className="space-y-2">
               <Label htmlFor="printCopies">Número de Copias</Label>
-              <Input
+              <NumberInput
                 id="printCopies"
-                type="number"
                 min="1"
                 max="5"
                 value={printCopies}
@@ -631,7 +630,7 @@ export function CreatePrinterDialog({
           </Button>
           <Button
             onClick={handleCreate}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-red-500 hover:bg-red-600"
             disabled={isPending || !isFormValid}
           >
             {isPending ? "Creando..." : "Crear Impresora"}

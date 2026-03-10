@@ -14,6 +14,7 @@ import type {
   WeightUnit,
 } from "@/app/generated/prisma";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { NumberInput } from "@/components/ui/number-input";
 import { GlutenFreeIcon } from "@/components/ui/tag-icons/GlutenFreeIcon";
 import { SpicyHighIcon } from "@/components/ui/tag-icons/SpicyHighIcon";
 import { SpicyIcon } from "@/components/ui/tag-icons/SpicyIcon";
@@ -740,14 +741,12 @@ export function ProductDialog({
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Alerta de Stock Mínimo
                     </label>
-                    <input
-                      type="number"
+                    <NumberInput
                       name="minStockAlert"
                       value={formData.minStockAlert}
                       onChange={handleChange}
                       step="0.01"
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Cantidad mínima antes de alertar"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -776,15 +775,13 @@ export function ProductDialog({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Stock Actual *
                         </label>
-                        <input
-                          type="number"
+                        <NumberInput
                           name="stock"
                           value={formData.stock}
                           onChange={handleChange}
                           min="0"
                           step="0.01"
                           required={formData.trackStock}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="0"
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -822,14 +819,13 @@ export function ProductDialog({
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                         $
                       </span>
-                      <input
-                        type="number"
+                      <NumberInput
                         name="price_DINE_IN"
                         value={formData.prices.dineIn}
                         onChange={handleChange}
                         min="0"
                         step="0.01"
-                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="pl-7"
                         placeholder="0.00"
                       />
                     </div>
@@ -844,14 +840,13 @@ export function ProductDialog({
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                         $
                       </span>
-                      <input
-                        type="number"
+                      <NumberInput
                         name="price_TAKE_AWAY"
                         value={formData.prices.takeAway}
                         onChange={handleChange}
                         min="0"
                         step="0.01"
-                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="pl-7"
                         placeholder="0.00"
                       />
                     </div>
@@ -866,14 +861,13 @@ export function ProductDialog({
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                         $
                       </span>
-                      <input
-                        type="number"
+                      <NumberInput
                         name="price_DELIVERY"
                         value={formData.prices.delivery}
                         onChange={handleChange}
                         min="0"
                         step="0.01"
-                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="pl-7"
                         placeholder="0.00"
                       />
                     </div>

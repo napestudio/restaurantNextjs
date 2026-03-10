@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -89,13 +90,9 @@ export function OpenRegisterDialog({
     setError(null);
 
     try {
-      // TODO: Get actual user ID from session
-      const userId = "system";
-
       const result = await openCashRegisterSession({
         cashRegisterId,
         openingAmount: amount,
-        userId,
       });
 
       if (result.success && result.data) {
@@ -225,9 +222,8 @@ export function OpenRegisterDialog({
             <Label htmlFor="amount">Monto Inicial *</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
+              <NumberInput
                 id="amount"
-                type="number"
                 min="0"
                 step="0.01"
                 value={openingAmount}

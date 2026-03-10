@@ -1,11 +1,11 @@
 "use client";
 
-import { formatCurrency } from "@/lib/currency";
-import { useState, useRef, useCallback, useMemo } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Minus, Plus } from "lucide-react";
+import { NumberInput } from "@/components/ui/number-input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { formatCurrency } from "@/lib/currency";
+import { Minus, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 export type OrderItemType = {
   id: string;
@@ -171,8 +171,7 @@ export function OrderItemsList({
                   </Button>
 
                   {editingQuantityId === item.id ? (
-                    <Input
-                      type="number"
+                    <NumberInput
                       min="1"
                       value={tempQuantity}
                       onChange={(e) =>
@@ -214,8 +213,7 @@ export function OrderItemsList({
               <div className="flex items-center gap-2">
                 <div>
                   {editingItemId === item.id ? (
-                    <Input
-                      type="number"
+                    <NumberInput
                       step="0.01"
                       value={tempPrice}
                       onChange={(e) => setTempPrice(e.target.value)}
@@ -259,9 +257,7 @@ export function OrderItemsList({
       <div className="border-t pt-3">
         <div className="flex justify-between items-center text-lg font-bold">
           <span>Total:</span>
-          <span>
-            {formatCurrency(total)}
-          </span>
+          <span>{formatCurrency(total)}</span>
         </div>
       </div>
     </div>

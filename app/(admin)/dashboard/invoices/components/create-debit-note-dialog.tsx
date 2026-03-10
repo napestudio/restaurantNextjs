@@ -11,11 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDebitNote } from "@/actions/Invoice";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatTimestampDateAR } from "@/lib/date-utils";
 
 interface Invoice {
   id: string;
@@ -219,7 +221,7 @@ export function CreateDebitNoteDialog({
               </div>
               <div>
                 <span className="text-gray-600">Fecha:</span>{" "}
-                {new Date(invoice.invoiceDate).toLocaleDateString()}
+                {formatTimestampDateAR(new Date(invoice.invoiceDate).toISOString())}
               </div>
               <div>
                 <span className="text-gray-600">Total Original:</span> $
@@ -270,8 +272,7 @@ export function CreateDebitNoteDialog({
                   </div>
                   <div className="col-span-2">
                     <Label className="text-xs">Cantidad</Label>
-                    <Input
-                      type="number"
+                    <NumberInput
                       min="1"
                       value={item.quantity}
                       onChange={(e) =>
@@ -285,8 +286,7 @@ export function CreateDebitNoteDialog({
                   </div>
                   <div className="col-span-2">
                     <Label className="text-xs">Precio Unit.</Label>
-                    <Input
-                      type="number"
+                    <NumberInput
                       min="0"
                       step="0.01"
                       value={item.unitPrice}

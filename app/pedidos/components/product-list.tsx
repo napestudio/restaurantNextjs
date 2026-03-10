@@ -1,8 +1,8 @@
 "use client";
 
 import { formatCurrency } from "@/lib/currency";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { ClickableImage } from "@/components/ui/clickable-image";
 import { Plus, Minus } from "lucide-react";
 import { CartItem } from "./delivery-page-client";
 import {
@@ -138,7 +138,7 @@ export function ProductList({
             />
           </div>
           {product.imageUrl && (
-            <Image
+            <ClickableImage
               src={product.imageUrl}
               alt={product.name}
               width={200}

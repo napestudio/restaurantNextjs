@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -297,9 +298,8 @@ export function CreateClientDialog({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="discountPercentage">Descuento (%)</Label>
-                  <Input
+                  <NumberInput
                     id="discountPercentage"
-                    type="number"
                     min="0"
                     max="100"
                     step="0.01"

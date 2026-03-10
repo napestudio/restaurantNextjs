@@ -163,7 +163,7 @@ async function _getRevenueByDay(
 ): Promise<RevenueByDay[]> {
   const rows = await prisma.$queryRaw<RawRevenueRow[]>`
     SELECT
-      DATE(cm."createdAt") as day,
+      DATE(cm."createdAt" - INTERVAL '3 hours') as day,
       SUM(cm.amount) as revenue,
       COUNT(DISTINCT cm."orderId") as orders
     FROM "CashMovement" cm
@@ -173,8 +173,8 @@ async function _getRevenueByDay(
       AND cm.type = 'SALE'
       AND cm."createdAt" >= ${from}
       AND cm."createdAt" <= ${to}
-    GROUP BY DATE(cm."createdAt")
-    ORDER BY DATE(cm."createdAt") ASC
+    GROUP BY DATE(cm."createdAt" - INTERVAL '3 hours')
+    ORDER BY DATE(cm."createdAt" - INTERVAL '3 hours') ASC
   `;
 
   return rows.map((r) => ({
@@ -209,7 +209,7 @@ async function _getBusiestHours(
 ): Promise<HourStat[]> {
   const rows = await prisma.$queryRaw<RawHourRow[]>`
     SELECT
-      EXTRACT(HOUR FROM "createdAt")::integer as hour,
+      EXTRACT(HOUR FROM ("createdAt" - INTERVAL '3 hours'))::integer as hour,
       COUNT(*)::integer as orders
     FROM "Order"
     WHERE "branchId" = ${branchId}

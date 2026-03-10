@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { X, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
@@ -11,6 +12,7 @@ import {
   closeCashRegisterSession,
 } from "@/actions/CashRegister";
 import { ReopenSessionDialog } from "./reopen-session-dialog";
+import { SessionMovementDetailDialog } from "./session-movement-detail-dialog";
 import { PAYMENT_METHOD_LABELS } from "@/types/cash-register";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -95,6 +97,8 @@ export function SessionDetailsSidebar({
   const [isClosing, setIsClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [selectedMovementId, setSelectedMovementId] = useState<string | null>(null);
+  const [movementDetailOpen, setMovementDetailOpen] = useState(false);
 
   const canReopen = userRole === "ADMIN" || userRole === "SUPERADMIN";
 
@@ -260,7 +264,6 @@ export function SessionDetailsSidebar({
         sessionId: session.id,
         countedCash: cashCounted,
         closingNotes: closingNotes.trim() || undefined,
-        userId: "system", // TODO: Get from auth
       });
 
       if (result.success && result.data) {
@@ -421,9 +424,13 @@ export function SessionDetailsSidebar({
                         </span>
                       </div>
                       {data.movements.map((m) => (
-                        <div
+                        <button
                           key={m.id}
-                          className="flex justify-between py-1 ml-4 text-sm text-gray-600"
+                          onClick={() => {
+                            setSelectedMovementId(m.id);
+                            setMovementDetailOpen(true);
+                          }}
+                          className="flex justify-between py-1 ml-4 text-sm text-gray-600 w-full text-left hover:text-gray-900 hover:bg-white/60 rounded px-1 transition-colors"
                         >
                           <span>
                             {m.type === "SALE"
@@ -431,7 +438,7 @@ export function SessionDetailsSidebar({
                               : m.description || "Ingreso"}
                           </span>
                           <span>{formatCurrency(m.amount)}</span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ))}
@@ -477,9 +484,13 @@ export function SessionDetailsSidebar({
                         </span>
                       </div>
                       {data.movements.map((m) => (
-                        <div
+                        <button
                           key={m.id}
-                          className="flex justify-between py-1 ml-4 text-sm text-gray-600"
+                          onClick={() => {
+                            setSelectedMovementId(m.id);
+                            setMovementDetailOpen(true);
+                          }}
+                          className="flex justify-between py-1 ml-4 text-sm text-gray-600 w-full text-left hover:text-gray-900 hover:bg-white/60 rounded px-1 transition-colors"
                         >
                           <span>
                             {m.type === "REFUND"
@@ -487,7 +498,7 @@ export function SessionDetailsSidebar({
                               : m.description || "Egreso"}
                           </span>
                           <span>{formatCurrency(m.amount)}</span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ))}
@@ -529,9 +540,8 @@ export function SessionDetailsSidebar({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <Input
+                    <NumberInput
                       id={`counted-${method}`}
-                      type="number"
                       min="0"
                       step="0.01"
                       value={countedAmounts[method] || ""}
@@ -683,6 +693,15 @@ export function SessionDetailsSidebar({
           }}
         />
       )}
+
+      <SessionMovementDetailDialog
+        movementId={selectedMovementId}
+        open={movementDetailOpen}
+        onOpenChange={(open) => {
+          setMovementDetailOpen(open);
+          if (!open) setSelectedMovementId(null);
+        }}
+      />
     </>
   );
 }

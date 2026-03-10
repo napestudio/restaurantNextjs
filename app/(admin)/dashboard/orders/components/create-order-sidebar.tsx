@@ -5,6 +5,7 @@ import { createOrderWithItems } from "@/actions/Order";
 import { OrderType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -319,9 +320,8 @@ export function CreateOrderSidebar({
               {/* Party Size */}
               <div className="space-y-2">
                 <Label htmlFor="party-size">Personas</Label>
-                <Input
+                <NumberInput
                   id="party-size"
-                  type="number"
                   min="1"
                   value={partySize}
                   onChange={(e) => setPartySize(e.target.value)}

@@ -76,7 +76,6 @@ export function ReopenSessionDialog({
     try {
       const result = await reopenCashRegisterSession({
         sessionId: session.id,
-        userId: "system", // TODO: Get from auth
         notes: reopenNotes.trim() || undefined,
       });
 

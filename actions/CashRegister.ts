@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z, ZodError } from "zod";
 import { Prisma, UserRole } from "@/app/generated/prisma";
 import { serializeForClient } from "@/lib/serialize";
+import { dateStringToTimestampBoundsAR } from "@/lib/date-utils";
 import { authorizeAction } from "@/lib/permissions/middleware";
 
 // =============================================================================
@@ -26,19 +27,16 @@ const updateCashRegisterSchema = z.object({
 const openSessionSchema = z.object({
   cashRegisterId: z.string().min(1, "La caja es requerida"),
   openingAmount: z.number().min(0, "El monto inicial no puede ser negativo"),
-  userId: z.string().min(1, "El usuario es requerido"),
 });
 
 const closeSessionSchema = z.object({
   sessionId: z.string().min(1, "La sesión es requerida"),
   countedCash: z.number().min(0, "El efectivo contado no puede ser negativo"),
   closingNotes: z.string().optional(),
-  userId: z.string().min(1, "El usuario es requerido"),
 });
 
 const reopenSessionSchema = z.object({
   sessionId: z.string().min(1, "La sesión es requerida"),
-  userId: z.string().min(1, "El usuario es requerido"),
   notes: z.string().optional(),
 });
 
@@ -57,7 +55,6 @@ const addMovementSchema = z.object({
   amount: z.number().positive("El monto debe ser positivo"),
   description: z.string().optional(),
   orderId: z.string().optional().nullable(),
-  userId: z.string().min(1, "El usuario es requerido"),
 });
 
 // =============================================================================
@@ -412,7 +409,7 @@ export async function openCashRegisterSession(
 ) {
   try {
     // Authorization check - only MANAGER and above can open cash register sessions
-    await authorizeAction(UserRole.MANAGER);
+    const { userId } = await authorizeAction(UserRole.MANAGER);
 
     const validatedData = openSessionSchema.parse(data);
 
@@ -447,7 +444,7 @@ export async function openCashRegisterSession(
       const session = await tx.cashRegisterSession.create({
         data: {
           cashRegisterId: validatedData.cashRegisterId,
-          openedBy: validatedData.userId,
+          openedBy: userId,
           openingAmount: new Prisma.Decimal(validatedData.openingAmount),
           status: "OPEN",
         },
@@ -489,7 +486,7 @@ export async function closeCashRegisterSession(
 ) {
   try {
     // Authorization check - only MANAGER and above can close cash register sessions
-    await authorizeAction(UserRole.MANAGER);
+    const { userId } = await authorizeAction(UserRole.MANAGER);
 
     const validatedData = closeSessionSchema.parse(data);
 
@@ -563,7 +560,7 @@ export async function closeCashRegisterSession(
         data: {
           status: "CLOSED",
           closedAt: new Date(),
-          closedBy: validatedData.userId,
+          closedBy: userId,
           expectedCash: new Prisma.Decimal(expectedCash),
           countedCash: new Prisma.Decimal(validatedData.countedCash),
           variance: new Prisma.Decimal(variance),
@@ -607,7 +604,7 @@ export async function reopenCashRegisterSession(
 ) {
   try {
     // Only ADMIN and SUPERADMIN can re-open closed sessions
-    await authorizeAction(UserRole.ADMIN);
+    const { userId } = await authorizeAction(UserRole.ADMIN);
 
     const validatedData = reopenSessionSchema.parse(data);
 
@@ -651,7 +648,7 @@ export async function reopenCashRegisterSession(
           closingNotes: null,
           // Set re-open audit trail
           reopenedAt: new Date(),
-          reopenedBy: validatedData.userId,
+          reopenedBy: userId,
           reopenNotes: validatedData.notes || null,
         },
       });
@@ -769,7 +766,7 @@ export async function addManualMovement(
 ) {
   try {
     // Authorization check - only MANAGER and above can add manual cash movements
-    await authorizeAction(UserRole.MANAGER);
+    const { userId } = await authorizeAction(UserRole.MANAGER);
 
     const validatedData = addMovementSchema.parse(data);
 
@@ -796,7 +793,7 @@ export async function addManualMovement(
           amount: new Prisma.Decimal(validatedData.amount),
           description: validatedData.description || null,
           orderId: validatedData.orderId || null,
-          createdBy: validatedData.userId,
+          createdBy: userId,
         },
       });
 
@@ -843,7 +840,6 @@ export async function recordSaleFromOrder(data: {
     | "PAYMENT_LINK"
     | "QR_CODE";
   amount: number;
-  userId: string;
 }) {
   return addManualMovement({
     ...data,
@@ -865,7 +861,6 @@ export async function recordRefund(data: {
     | "QR_CODE";
   amount: number;
   reason: string;
-  userId: string;
 }) {
   return addManualMovement({
     sessionId: data.sessionId,
@@ -874,7 +869,6 @@ export async function recordRefund(data: {
     amount: data.amount,
     type: "REFUND",
     description: `Devolución: ${data.reason}`,
-    userId: data.userId,
   });
 }
 
@@ -1050,15 +1044,13 @@ export async function getManualMovements(params: {
   try {
     const { branchId, dateFrom, dateTo, cashRegisterId, type, limit = 50, offset = 0 } = params;
 
-    // Build date filter
-    const dateFilter: { gte?: Date; lte?: Date } = {};
+    // Build date filter — use Argentina-aware boundaries (midnight AR = 03:00 UTC)
+    const dateFilter: { gte?: Date; lte?: Date; lt?: Date } = {};
     if (dateFrom) {
-      dateFilter.gte = new Date(dateFrom);
-      dateFilter.gte.setHours(0, 0, 0, 0);
+      dateFilter.gte = dateStringToTimestampBoundsAR(dateFrom).start;
     }
     if (dateTo) {
-      dateFilter.lte = new Date(dateTo);
-      dateFilter.lte.setHours(23, 59, 59, 999);
+      dateFilter.lt = dateStringToTimestampBoundsAR(dateTo).end;
     }
 
     const whereClause = {
@@ -1186,6 +1178,109 @@ export async function getMovementById(movementId: string) {
       success: false,
       error: "Error al obtener el movimiento",
     };
+  }
+}
+
+// Get a single movement with full order details (for detail modal)
+export async function getMovementWithOrderDetails(movementId: string) {
+  try {
+    const movement = await prisma.cashMovement.findUnique({
+      where: { id: movementId },
+      include: {
+        session: {
+          include: {
+            cashRegister: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        order: {
+          include: {
+            items: {
+              select: {
+                id: true,
+                itemName: true,
+                quantity: true,
+                price: true,
+                notes: true,
+              },
+            },
+            client: {
+              select: {
+                name: true,
+                phone: true,
+                email: true,
+                taxId: true,
+              },
+            },
+            assignedTo: {
+              select: { name: true, username: true },
+            },
+            table: {
+              select: { number: true, name: true },
+            },
+            cashMovements: {
+              select: { paymentMethod: true, amount: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!movement) {
+      return { success: false, error: "Movimiento no encontrado" };
+    }
+
+    const serializedMovement = {
+      id: movement.id,
+      type: movement.type,
+      paymentMethod: movement.paymentMethod,
+      amount: Number(movement.amount),
+      description: movement.description,
+      createdAt: movement.createdAt.toISOString(),
+      createdBy: movement.createdBy,
+      sessionId: movement.sessionId,
+      orderId: movement.orderId,
+      cashRegisterName: movement.session.cashRegister.name,
+    };
+
+    const serializedOrder = movement.order
+      ? {
+          id: movement.order.id,
+          publicCode: movement.order.publicCode,
+          type: movement.order.type,
+          status: movement.order.status,
+          customerName: movement.order.customerName,
+          customerEmail: movement.order.customerEmail,
+          partySize: movement.order.partySize,
+          discountPercentage: Number(movement.order.discountPercentage),
+          deliveryFee: Number(movement.order.deliveryFee),
+          description: movement.order.description,
+          courierName: movement.order.courierName,
+          table: movement.order.table,
+          client: movement.order.client,
+          assignedTo: movement.order.assignedTo,
+          items: movement.order.items.map((item) => ({
+            id: item.id,
+            itemName: item.itemName,
+            quantity: item.quantity,
+            price: Number(item.price),
+            notes: item.notes,
+          })),
+          paymentBreakdown: movement.order.cashMovements.map((cm) => ({
+            paymentMethod: cm.paymentMethod,
+            amount: Number(cm.amount),
+          })),
+        }
+      : null;
+
+    return {
+      success: true,
+      data: { movement: serializedMovement, order: serializedOrder },
+    };
+  } catch (error) {
+    console.error("Error fetching movement with order details:", error);
+    return { success: false, error: "Error al obtener el detalle del movimiento" };
   }
 }
 

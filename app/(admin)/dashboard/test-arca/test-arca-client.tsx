@@ -9,6 +9,7 @@ import {
   getSalesPoints,
   getInvoiceTypes,
 } from "@/actions/Arca";
+import { NumberInput } from "@/components/ui/number-input";
 import {
   INVOICE_TYPES,
   DOCUMENT_TYPES,
@@ -800,9 +801,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Punto de Venta
               </label>
-              <input
-                type="number"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              <NumberInput
                 value={formData.PtoVta}
                 onChange={(e) =>
                   setFormData({ ...formData, PtoVta: Number(e.target.value) })
@@ -836,9 +835,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Número de Documento
               </label>
-              <input
-                type="number"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              <NumberInput
                 value={formData.DocNro}
                 onChange={(e) =>
                   setFormData({ ...formData, DocNro: Number(e.target.value) })
@@ -917,9 +914,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
 
                     {/* Quantity */}
                     <div className="col-span-2">
-                      <input
-                        type="number"
-                        className="w-full p-1.5 text-sm border border-gray-300 rounded"
+                      <NumberInput
                         placeholder="Cant."
                         min="1"
                         value={item.quantity}
@@ -935,9 +930,7 @@ export function TestArcaClient({ printers }: TestArcaClientProps) {
 
                     {/* Unit Price */}
                     <div className="col-span-2">
-                      <input
-                        type="number"
-                        className="w-full p-1.5 text-sm border border-gray-300 rounded"
+                      <NumberInput
                         placeholder="P. Unit."
                         step="0.01"
                         min="0"

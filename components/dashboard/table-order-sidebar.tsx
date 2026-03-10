@@ -12,7 +12,7 @@ import {
 import { getClientByEmail, type ClientData } from "@/actions/clients";
 import { usePrint } from "@/hooks/use-print";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
@@ -89,7 +89,11 @@ export function TableOrderSidebar({
   const [preOrderItems, setPreOrderItems] = useState<PreOrderItem[]>([]);
 
   // Use cached products from context
-  const { products, isLoading: productsLoading, refreshProducts } = useProducts();
+  const {
+    products,
+    isLoading: productsLoading,
+    refreshProducts,
+  } = useProducts();
 
   // Load products on mount if not already loaded (mirrors create-order-sidebar pattern)
   useEffect(() => {
@@ -99,7 +103,7 @@ export function TableOrderSidebar({
   }, [products.length, productsLoading, refreshProducts]);
 
   // gg-ez-print printing
-  const { printOrderItems, printControlTicket, printStatus, isPrinting } = usePrint();
+  const { printOrderItems, printControlTicket, isPrinting } = usePrint();
   const { toast } = useToast();
 
   // Use SWR for order data fetching with auto-refresh
@@ -404,6 +408,9 @@ export function TableOrderSidebar({
         : undefined,
       orderType: order.type,
       customerName: order.client?.name,
+      orderCreatedAt: order.createdAt instanceof Date
+        ? order.createdAt.toISOString()
+        : order.createdAt,
     });
 
     if (!success) {
@@ -572,9 +579,8 @@ export function TableOrderSidebar({
             <Label htmlFor="party-size">
               Personas <span className="text-red-500">*</span>
             </Label>
-            <Input
+            <NumberInput
               id="party-size"
-              type="number"
               min="1"
               value={partySize}
               onChange={(e) => setPartySize(e.target.value)}
@@ -646,7 +652,7 @@ export function TableOrderSidebar({
 
             {/* Pre-Order Items (editable with notes) - scrollable, footer pinned absolutely */}
             {preOrderItems.length > 0 && (
-              <div className="flex-1 min-h-0 overflow-y-auto pb-[110px]">
+              <div className="flex-1 min-h-0 overflow-y-auto pb-27.5">
                 <PreOrderItemsList
                   items={preOrderItems}
                   onUpdateItem={handleUpdatePreOrderItem}
@@ -678,114 +684,115 @@ export function TableOrderSidebar({
 
             {/* Action Buttons - Fixed at bottom */}
             {preOrderItems.length === 0 && (
-            <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
-              <Button
-                onClick={handlePrintCheck}
-                variant="outline"
-                disabled={isPrinting}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="128"
-                  height="128"
-                  viewBox="0 0 48 48"
-                >
-                  <g fill="none" stroke="currentColor" strokeWidth="4">
-                    <path
-                      strokeLinecap="round"
-                      d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
-                    />
-                    <rect width="36" height="22" x="6" y="20" rx="2" />
-                    <path
-                      fill="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M20 34h15v8H20z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 26h3"
-                    />
-                  </g>
-                </svg>
-                {/* Imprimir Cuenta */}
-              </Button>
-
-              <Button
-                onClick={handleOpenMoveDialog}
-                variant="outline"
-                disabled={isLoading}
-              >
-                <ArrowRightLeft className="h-4 w-4" />
-                {/* Mover a Otra Mesa */}
-              </Button>
-
-              {/* Discount Button/Editor */}
-              {isEditingDiscount ? (
-                <div className="flex items-center gap-1 bg-white rounded px-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={discountInput}
-                    onChange={(e) => setDiscountInput(e.target.value)}
-                    className="h-8 w-16 text-sm"
-                    placeholder="%"
-                    autoFocus
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={handleDiscountSave}
-                    disabled={isLoadingAction}
-                  >
-                    ✓
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={handleDiscountCancel}
-                    disabled={isLoadingAction}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
+              <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
                 <Button
-                  onClick={handleDiscountEdit}
-                  variant={
-                    Number(order.discountPercentage) > 0 ? "default" : "outline"
-                  }
-                  disabled={isLoading}
-                  title={
-                    Number(order.discountPercentage) > 0
-                      ? `Descuento: ${order.discountPercentage}%`
-                      : "Agregar descuento"
-                  }
+                  onClick={handlePrintCheck}
+                  variant="outline"
+                  disabled={isPrinting}
                 >
-                  <Percent className="h-4 w-4" />
-                  {Number(order.discountPercentage) > 0 && (
-                    <span className="ml-1 text-xs">
-                      -{Number(order.discountPercentage)}%
-                    </span>
-                  )}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="128"
+                    height="128"
+                    viewBox="0 0 48 48"
+                  >
+                    <g fill="none" stroke="currentColor" strokeWidth="4">
+                      <path
+                        strokeLinecap="round"
+                        d="M38 20V8a2 2 0 0 0-2-2H12a2 2 0 0 0-2 2v12"
+                      />
+                      <rect width="36" height="22" x="6" y="20" rx="2" />
+                      <path
+                        fill="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M20 34h15v8H20z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 26h3"
+                      />
+                    </g>
+                  </svg>
+                  {/* Imprimir Cuenta */}
                 </Button>
-              )}
 
-              <Button
-                onClick={handleCloseTable}
-                className="bg-red-500"
-                disabled={isLoading}
-              >
-                {!order.items || order.items.length === 0
-                  ? "Eliminar Orden Vacia"
-                  : "Cerrar Mesa"}
-              </Button>
-            </div>
+                <Button
+                  onClick={handleOpenMoveDialog}
+                  variant="outline"
+                  disabled={isLoading}
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  {/* Mover a Otra Mesa */}
+                </Button>
+
+                {/* Discount Button/Editor */}
+                {isEditingDiscount ? (
+                  <div className="flex items-center gap-1 bg-white rounded px-2">
+                    <NumberInput
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value)}
+                      className="h-8 w-16 text-sm"
+                      placeholder="%"
+                      autoFocus
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={handleDiscountSave}
+                      disabled={isLoadingAction}
+                    >
+                      ✓
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={handleDiscountCancel}
+                      disabled={isLoadingAction}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleDiscountEdit}
+                    variant={
+                      Number(order.discountPercentage) > 0
+                        ? "default"
+                        : "outline"
+                    }
+                    disabled={isLoading}
+                    title={
+                      Number(order.discountPercentage) > 0
+                        ? `Descuento: ${order.discountPercentage}%`
+                        : "Agregar descuento"
+                    }
+                  >
+                    <Percent className="h-4 w-4" />
+                    {Number(order.discountPercentage) > 0 && (
+                      <span className="ml-1 text-xs">
+                        -{Number(order.discountPercentage)}%
+                      </span>
+                    )}
+                  </Button>
+                )}
+
+                <Button
+                  onClick={handleCloseTable}
+                  className="bg-red-500"
+                  disabled={isLoading}
+                >
+                  {!order.items || order.items.length === 0
+                    ? "Eliminar Orden Vacia"
+                    : "Cerrar Mesa"}
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -796,7 +803,14 @@ export function TableOrderSidebar({
         <div className="absolute bottom-0 left-0 right-0 bg-neutral-50 border-t p-2 flex flex-col gap-2 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
           <div className="flex justify-between items-center font-bold text-base">
             <span>Total a confirmar:</span>
-            <span>{formatCurrency(preOrderItems.reduce((sum, item) => sum + item.quantity * item.price, 0))}</span>
+            <span>
+              {formatCurrency(
+                preOrderItems.reduce(
+                  (sum, item) => sum + item.quantity * item.price,
+                  0,
+                ),
+              )}
+            </span>
           </div>
           <div className="flex gap-2">
             <Button

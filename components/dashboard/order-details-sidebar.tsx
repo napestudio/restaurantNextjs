@@ -53,6 +53,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { useState } from "react";
 import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
@@ -448,6 +449,9 @@ export function OrderDetailsSidebar({
       paymentMethod: showPaymentMethod
         ? (paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod)
         : undefined,
+      orderCreatedAt: order.createdAt instanceof Date
+        ? order.createdAt.toISOString()
+        : order.createdAt,
     });
 
     if (!success) {
@@ -927,8 +931,7 @@ export function OrderDetailsSidebar({
                 <span>Descuento</span>
               </div>
               <div className="relative w-28">
-                <Input
-                  type="number"
+                <NumberInput
                   min="0"
                   max="100"
                   step="0.01"
@@ -957,8 +960,7 @@ export function OrderDetailsSidebar({
               <span>Costo de envío</span>
               <div className="relative w-28">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">$</span>
-                <Input
-                  type="number"
+                <NumberInput
                   min="0"
                   step="0.01"
                   value={currentDeliveryFee}

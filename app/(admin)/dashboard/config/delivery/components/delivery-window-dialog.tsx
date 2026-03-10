@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -216,9 +217,8 @@ export function DeliveryWindowDialog({
           {/* Max Orders */}
           <div className="space-y-2">
             <Label htmlFor="maxOrders">Máximo de Órdenes</Label>
-            <Input
+            <NumberInput
               id="maxOrders"
-              type="number"
               min="1"
               value={maxOrders}
               onChange={(e) => setMaxOrders(e.target.value)}

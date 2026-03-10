@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -100,9 +101,8 @@ export function EditMenuItemDialog({
               <Label htmlFor="customPrice">
                 Precio Personalizado (opcional)
               </Label>
-              <Input
+              <NumberInput
                 id="customPrice"
-                type="number"
                 step="0.01"
                 min="0"
                 value={customPrice}

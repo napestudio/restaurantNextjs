@@ -63,12 +63,12 @@ export function LinkDialog({
   const [isPending, startTransition] = useTransition();
 
   const [type, setType] = useState<HomePageLinkType>(
-    editingLink?.type || "RESERVATION"
+    editingLink?.type || "RESERVATION",
   );
   const [label, setLabel] = useState(editingLink?.label || "");
   const [menuId, setMenuId] = useState(editingLink?.menuId || "__none__");
   const [timeSlotId, setTimeSlotId] = useState(
-    editingLink?.timeSlotId || "__none__"
+    editingLink?.timeSlotId || "__none__",
   );
   const [customUrl, setCustomUrl] = useState(editingLink?.customUrl || "");
   const [isActive, setIsActive] = useState(editingLink?.isActive ?? true);
@@ -186,13 +186,16 @@ export function LinkDialog({
           {/* Link Type */}
           <div className="space-y-2">
             <Label htmlFor="type">Tipo de Enlace</Label>
-            <Select value={type} onValueChange={(v) => setType(v as HomePageLinkType)}>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as HomePageLinkType)}
+            >
               <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="MENU">Menú</SelectItem>
-                <SelectItem value="TIMESLOT">Horario de Reserva</SelectItem>
+                {/* <SelectItem value="TIMESLOT">Horario de Reserva</SelectItem> */}
                 <SelectItem value="RESERVATION">Reservas</SelectItem>
                 <SelectItem value="PEDIDOS">Pedidos</SelectItem>
                 <SelectItem value="CUSTOM">Personalizado</SelectItem>
@@ -262,7 +265,8 @@ export function LinkDialog({
                 placeholder="https://ejemplo.com o /ruta-interna"
               />
               <p className="text-xs text-gray-500">
-                Puede ser una URL externa (https://...) o una ruta interna (/path)
+                Puede ser una URL externa (https://...) o una ruta interna
+                (/path)
               </p>
             </div>
           )}

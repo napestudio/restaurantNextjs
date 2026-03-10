@@ -7,6 +7,7 @@
 
 import { Socket } from "net";
 import { formatCurrency } from "@/lib/currency";
+import { formatTicketDateAR, formatTicketTimeAR } from "@/lib/date-utils";
 
 export interface PrinterConfig {
   // Connection type
@@ -476,9 +477,9 @@ export async function printTestPage(
   content += separator(width) + "\n";
 
   // Date/Time
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("es-AR");
-  const timeStr = now.toLocaleTimeString("es-AR", { hour12: false });
+  const nowISO = new Date().toISOString();
+  const dateStr = formatTicketDateAR(nowISO);
+  const timeStr = formatTicketTimeAR(nowISO);
   content += formatTwoColumns("Fecha:", dateStr, width) + "\n";
   content += formatTwoColumns("Hora:", timeStr, width) + "\n";
 
@@ -583,14 +584,14 @@ export async function printOrder(
 
   content += separator(width, "=") + "\n";
 
-  const now = new Date();
+  const nowISO = new Date().toISOString();
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
   content +=
-    formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+    formatTwoColumns("Fecha:", formatTicketDateAR(nowISO), width) + "\n";
   content +=
     formatTwoColumns(
       "Hora:",
-      now.toLocaleTimeString("es-AR", { hour12: false }),
+      formatTicketTimeAR(nowISO),
       width,
     ) + "\n";
   if (order.waiterName) {
@@ -663,6 +664,7 @@ export interface FullOrderData {
   deliveryCity?: string | null;
   deliveryNotes?: string | null;
   paymentMethod?: string;
+  orderCreatedAt?: string;
 }
 
 /**
@@ -716,15 +718,21 @@ export async function printFullOrder(
   content += separator(width, "=") + "\n";
   content += addSpacing();
 
-  const now = new Date();
+  const nowISO = new Date().toISOString();
   content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
-  content +=
-    formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+  if (order.orderCreatedAt) {
+    content +=
+      formatTwoColumns(
+        "F. Pedido:",
+        `${formatTicketDateAR(order.orderCreatedAt)} ${formatTicketTimeAR(order.orderCreatedAt)}`,
+        width,
+      ) + "\n";
+  }
   content +=
     formatTwoColumns(
-      "Hora:",
-      now.toLocaleTimeString("es-AR", { hour12: false }),
+      "F. Impresion:",
+      `${formatTicketDateAR(nowISO)} ${formatTicketTimeAR(nowISO)}`,
       width,
     ) + "\n";
   if (order.waiterName) {
@@ -918,9 +926,9 @@ export function generateTestPageData(config: PrinterConfig): string {
 
   content += separator(width) + "\n";
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("es-AR");
-  const timeStr = now.toLocaleTimeString("es-AR", { hour12: false });
+  const nowISO = new Date().toISOString();
+  const dateStr = formatTicketDateAR(nowISO);
+  const timeStr = formatTicketTimeAR(nowISO);
   content += formatTwoColumns("Fecha:", dateStr, width) + "\n";
   content += formatTwoColumns("Hora:", timeStr, width) + "\n";
 
@@ -1014,14 +1022,14 @@ export function generateOrderData(
 
   content += separator(width, "=") + "\n";
 
-  const now = new Date();
+  const nowISO = new Date().toISOString();
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
   content +=
-    formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+    formatTwoColumns("Fecha:", formatTicketDateAR(nowISO), width) + "\n";
   content +=
     formatTwoColumns(
       "Hora:",
-      now.toLocaleTimeString("es-AR", { hour12: false }),
+      formatTicketTimeAR(nowISO),
       width,
     ) + "\n";
   if (order.waiterName) {
@@ -1115,15 +1123,21 @@ export function generateFullOrderData(
   content += separator(width, "=") + "\n";
   content += addSpacing();
 
-  const now = new Date();
+  const nowISO = new Date().toISOString();
   content += getControlFontSizeCommand(fontSize);
   content += formatTwoColumns("Orden:", `#${order.orderNumber}`, width) + "\n";
-  content +=
-    formatTwoColumns("Fecha:", now.toLocaleDateString("es-AR"), width) + "\n";
+  if (order.orderCreatedAt) {
+    content +=
+      formatTwoColumns(
+        "F. Pedido:",
+        `${formatTicketDateAR(order.orderCreatedAt)} ${formatTicketTimeAR(order.orderCreatedAt)}`,
+        width,
+      ) + "\n";
+  }
   content +=
     formatTwoColumns(
-      "Hora:",
-      now.toLocaleTimeString("es-AR", { hour12: false }),
+      "F. Impresion:",
+      `${formatTicketDateAR(nowISO)} ${formatTicketTimeAR(nowISO)}`,
       width,
     ) + "\n";
   if (isDineIn && order.waiterName) {

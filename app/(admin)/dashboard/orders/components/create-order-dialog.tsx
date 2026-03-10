@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -194,9 +195,8 @@ export function CreateOrderDialog({
               <Label htmlFor="party-size">
                 Personas <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <NumberInput
                 id="party-size"
-                type="number"
                 min="1"
                 value={partySize}
                 onChange={(e) => setPartySize(e.target.value)}

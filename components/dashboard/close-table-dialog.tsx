@@ -5,14 +5,14 @@ import {
   closeTableWithPayment,
   updateDiscount,
   type PaymentEntry,
-  type PaymentMethodExtended,
 } from "@/actions/Order";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
+import { PaymentSection } from "@/components/dashboard/payment-section";
 import { formatCurrency } from "@/lib/currency";
-import { PAYMENT_METHODS } from "@/types/cash-register";
-import { CreditCard, Percent, Plus, Receipt, Settings, X } from "lucide-react";
+import { usePayments } from "@/hooks/use-payments";
+import { Percent, Receipt, Settings, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
@@ -63,12 +63,6 @@ interface CloseTableDialogProps {
   tableSectorId?: string | null;
 }
 
-type PaymentLine = {
-  id: string;
-  method: PaymentMethodExtended;
-  amount: string;
-};
-
 export function CloseTableDialog({
   open,
   onOpenChange,
@@ -80,10 +74,6 @@ export function CloseTableDialog({
   tableId,
   tableSectorId,
 }: CloseTableDialogProps) {
-  const [payments, setPayments] = useState<PaymentLine[]>([
-    { id: "1", method: "CASH", amount: "" },
-  ]);
-  const [isPartialClose, setIsPartialClose] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
@@ -131,25 +121,16 @@ export function CloseTableDialog({
     setCurrentDiscount(order.discountPercentage);
   }, [order.discountPercentage]);
 
-  // Update payment amount when total changes
-  useEffect(() => {
-    setPayments((prevPayments) => {
-      if (prevPayments.length === 1) {
-        // Update the first payment amount to match the new total
-        return [{ ...prevPayments[0], amount: total.toFixed(2) }];
-      }
-      return prevPayments;
-    });
-  }, [total]);
-
-  // Calculate total payment and change
-  const totalPayment = useMemo(() => {
-    return payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-  }, [payments]);
-
-  const change = useMemo(() => {
-    return Math.max(0, totalPayment - total);
-  }, [totalPayment, total]);
+  const {
+    payments,
+    lastAddedId,
+    remainder,
+    change,
+    addPaymentLine,
+    removePaymentLine,
+    updatePaymentLine,
+    resetPayments,
+  } = usePayments(total);
 
   // Load open cash registers when dialog opens
   useEffect(() => {
@@ -182,41 +163,6 @@ export function CloseTableDialog({
       loadCashRegisters();
     }
   }, [open, branchId, tableSectorId]);
-
-  // Set initial payment amount when total changes
-  useEffect(() => {
-    if (open) {
-      setPayments((prev) => {
-        if (prev.length === 1 && prev[0].amount === "") {
-          return [{ ...prev[0], amount: total.toFixed(2) }];
-        }
-        return prev;
-      });
-    }
-  }, [open, total]);
-
-  const addPaymentLine = () => {
-    const newId = Date.now().toString();
-    setPayments([...payments, { id: newId, method: "CASH", amount: "" }]);
-  };
-
-  const removePaymentLine = (id: string) => {
-    if (payments.length > 1) {
-      setPayments(payments.filter((p) => p.id !== id));
-    }
-  };
-
-  const updatePaymentLine = (
-    id: string,
-    field: "method" | "amount",
-    value: string,
-  ) => {
-    setPayments(
-      payments.map((p) =>
-        p.id === id ? { ...p, [field]: field === "method" ? value : value } : p,
-      ),
-    );
-  };
 
   const handleDiscountEdit = () => {
     setDiscountInput(currentDiscount.toString());
@@ -277,12 +223,9 @@ export function CloseTableDialog({
       return;
     }
 
-    const paymentTotal = validPayments.reduce((sum, p) => sum + p.amount, 0);
-    if (paymentTotal < total - 0.01) {
+    if (remainder > 0.01 && total > 0.01) {
       setError(
-        `El monto pagado (${formatCurrency(
-          paymentTotal,
-        )}) es menor al total (${formatCurrency(total)})`,
+        `El monto pagado (${formatCurrency(total - remainder)}) es menor al total (${formatCurrency(total)})`,
       );
       return;
     }
@@ -291,15 +234,11 @@ export function CloseTableDialog({
     setIsLoadingAction(true);
 
     try {
-      // TODO: Get actual user ID from session
-      const userId = "system";
-
       const result = await closeTableWithPayment({
         orderId: order.id,
         payments: validPayments,
         sessionId: selectedRegister.session.id,
-        userId,
-        isPartialClose,
+        isPartialClose: false,
       });
 
       if (result.success) {
@@ -312,7 +251,8 @@ export function CloseTableDialog({
         setError(result.error || "Error al cerrar la mesa");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Error al cerrar la mesa";
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al cerrar la mesa";
       setError(errorMessage);
       console.error("Error closing table:", err);
     } finally {
@@ -322,10 +262,12 @@ export function CloseTableDialog({
   };
 
   const resetForm = () => {
-    setPayments([{ id: "1", method: "CASH", amount: "" }]);
-    setIsPartialClose(false);
+    resetPayments(total);
     setError(null);
     setSelectedRegisterId("");
+    setCurrentDiscount(order.discountPercentage);
+    setIsEditingDiscount(false);
+    setDiscountInput("");
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -354,9 +296,7 @@ export function CloseTableDialog({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-white">
           <div>
-            <h2 className="text-xl font-semibold">
-              Cerrar Mesa {tableNumber} - {branchName}
-            </h2>
+            <h2 className="text-xl font-semibold">Cerrar Mesa {tableNumber}</h2>
             {/* <p className="text-sm text-muted-foreground mt-1">
               Revisa los items de la orden y procesa el pago para cerrar la
               mesa.
@@ -448,8 +388,7 @@ export function CloseTableDialog({
                     {/* Discount Editor */}
                     {isEditingDiscount && (
                       <div className="flex items-center gap-2 text-sm">
-                        <Input
-                          type="number"
+                        <NumberInput
                           min="0"
                           max="100"
                           step="0.01"
@@ -504,133 +443,34 @@ export function CloseTableDialog({
 
               {/* Right Side - Payment */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-semibold text-lg">Pago</h3>
+                {/* Cash Register Display */}
+                <div className="flex items-center gap-1">
+                  <Label>Caja:</Label>
+                  <div className="text-sm">
+                    {isLoadingRegisters
+                      ? "Cargando..."
+                      : cashRegisters.find((r) => r.id === selectedRegisterId)
+                          ?.name || "Sin caja seleccionada"}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addPaymentLine}
-                    disabled={isLoadingAction}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Dividir pago
-                  </Button>
                 </div>
 
-                <div className="space-y-4">
-                  {/* Cash Register Display */}
-                  <div className="flex items-center gap-1">
-                    <Label>Caja:</Label>
-                    <div className="text-sm">
-                      {isLoadingRegisters
-                        ? "Cargando..."
-                        : cashRegisters.find((r) => r.id === selectedRegisterId)
-                            ?.name || "Sin caja seleccionada"}
-                    </div>
+                <PaymentSection
+                  payments={payments}
+                  lastAddedId={lastAddedId}
+                  remainder={remainder}
+                  change={change}
+                  disabled={isLoadingAction}
+                  onAdd={addPaymentLine}
+                  onRemove={removePaymentLine}
+                  onUpdate={updatePaymentLine}
+                />
+
+                {/* Error Message */}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                    {error}
                   </div>
-
-                  {/* Payment Lines */}
-                  <div className="space-y-3">
-                    {payments.map((payment) => (
-                      <div key={payment.id} className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <select
-                            value={payment.method}
-                            onChange={(e) =>
-                              updatePaymentLine(
-                                payment.id,
-                                "method",
-                                e.target.value as PaymentMethodExtended,
-                              )
-                            }
-                            disabled={isLoadingAction}
-                            className="w-48 h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {PAYMENT_METHODS.map((method) => (
-                              <option key={method.value} value={method.value}>
-                                {method.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="relative flex-1 min-w-32">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                              $
-                            </span>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={payment.amount}
-                              onChange={(e) =>
-                                updatePaymentLine(
-                                  payment.id,
-                                  "amount",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder="0.00"
-                              className="pl-7"
-                              disabled={isLoadingAction}
-                            />
-                          </div>
-                          {payments.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-muted-foreground hover:text-red-500 shrink-0"
-                              onClick={() => removePaymentLine(payment.id)}
-                              disabled={isLoadingAction}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Change Display */}
-                  {change > 0 && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="text-green-800 font-medium">
-                          Vuelto:
-                        </span>
-                        <span className="text-2xl font-bold text-green-700">
-                          {formatCurrency(change)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Partial Close Option */}
-                  {/* <div className="flex items-center gap-2 pt-2">
-                    <Checkbox
-                      id="partial-close"
-                      checked={isPartialClose}
-                      onCheckedChange={(checked) =>
-                        setIsPartialClose(checked as boolean)
-                      }
-                      disabled={isLoadingAction}
-                    />
-                    <Label
-                      htmlFor="partial-close"
-                      className="text-sm cursor-pointer"
-                    >
-                      Cierre Parcial
-                    </Label>
-                  </div> */}
-
-                  {/* Error Message */}
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                      {error}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           )}
