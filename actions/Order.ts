@@ -1987,11 +1987,11 @@ export async function closeTableWithPayment(data: {
   orderId: string;
   payments: PaymentEntry[];
   sessionId: string;
-  userId: string;
   isPartialClose?: boolean;
 }) {
   try {
-    const { orderId, payments, sessionId, userId, isPartialClose } = data;
+    const { userId } = await authorizeAction(UserRole.MANAGER);
+    const { orderId, payments, sessionId, isPartialClose } = data;
 
     const result = await prisma.$transaction(async (tx) => {
       // Get the order with items and table
@@ -2068,7 +2068,7 @@ export async function closeTableWithPayment(data: {
               type: "SALE",
               paymentMethod: payment.method,
               amount: payment.amount,
-              description: `Table ${order.table?.number || "N/A"} - Order ${
+              description: `Mesa ${order.table?.number || "S/N"} - Orden ${
                 order.publicCode
               }`,
               orderId: order.id,

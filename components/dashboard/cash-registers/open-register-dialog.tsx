@@ -90,13 +90,9 @@ export function OpenRegisterDialog({
     setError(null);
 
     try {
-      // TODO: Get actual user ID from session
-      const userId = "system";
-
       const result = await openCashRegisterSession({
         cashRegisterId,
         openingAmount: amount,
-        userId,
       });
 
       if (result.success && result.data) {

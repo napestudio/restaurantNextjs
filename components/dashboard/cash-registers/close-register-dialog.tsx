@@ -79,8 +79,6 @@ export function CloseRegisterDialog({
       return;
     }
 
-    // TODO: Get actual user ID from session
-    const userId = "system";
     const now = new Date().toISOString();
 
     // Create optimistic closed session
@@ -88,7 +86,7 @@ export function CloseRegisterDialog({
       ...session,
       status: "CLOSED",
       closedAt: now,
-      closedBy: userId,
+      closedBy: null,
       expectedCash: expectedCash,
       countedCash: amount,
       variance: amount - expectedCash,
@@ -107,7 +105,6 @@ export function CloseRegisterDialog({
         sessionId: session.id,
         countedCash: amount,
         closingNotes: closingNotes.trim() || undefined,
-        userId,
       });
 
       if (result.success && result.data) {
@@ -126,7 +123,7 @@ export function CloseRegisterDialog({
           ...session,
           status: "CLOSED",
           closedAt,
-          closedBy: result.data.closedBy || userId,
+          closedBy: result.data.closedBy || null,
           expectedCash:
             result.data.expectedCash != null
               ? Number(result.data.expectedCash)

@@ -291,14 +291,10 @@ export function CloseTableDialog({
     setIsLoadingAction(true);
 
     try {
-      // TODO: Get actual user ID from session
-      const userId = "system";
-
       const result = await closeTableWithPayment({
         orderId: order.id,
         payments: validPayments,
         sessionId: selectedRegister.session.id,
-        userId,
         isPartialClose,
       });
 

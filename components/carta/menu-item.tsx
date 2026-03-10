@@ -1,5 +1,5 @@
 import type { ProductTag } from "@/app/generated/prisma";
-import Image from "next/image";
+import { ClickableImage } from "../ui/clickable-image";
 import { ProductTagIcons } from "../ui/product-tag-icons";
 import { formatCurrency } from "@/lib/currency";
 
@@ -26,7 +26,7 @@ export function MenuItem({
     <div className="flex gap-4 group py-2 md:px-4">
       {imageUrl && (
         <div className="shrink-0">
-          <Image
+          <ClickableImage
             src={imageUrl}
             alt={name}
             width={96}
