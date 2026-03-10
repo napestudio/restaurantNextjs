@@ -81,16 +81,12 @@ export function AddMovementDialog({
     setError(null);
 
     try {
-      // TODO: Get actual user ID from session
-      const userId = "system";
-
       const result = await addManualMovement({
         sessionId,
         type,
         paymentMethod: paymentMethod as "CASH" | "CARD_DEBIT" | "CARD_CREDIT" | "ACCOUNT" | "TRANSFER" | "PAYMENT_LINK" | "QR_CODE",
         amount: parsedAmount,
         description: description.trim() || undefined,
-        userId,
       });
 
       if (result.success) {
