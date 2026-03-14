@@ -147,6 +147,11 @@ enum PermissionGrant {
   MANAGE_CONFIG
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
 //
 // NEXTAUTH MODELS
 //
@@ -757,6 +762,7 @@ model Client {
 
   // Preferences
   discountPercentage    Decimal?              @default(0) @db.Decimal(5, 2)
+  discountType          DiscountType          @default(PERCENTAGE)
   preferredPaymentMethod PaymentMethod?
   hasCurrentAccount     Boolean               @default(false)
 
@@ -808,6 +814,7 @@ model Order {
   // Payment and billing
   paymentMethod      PaymentMethod @default(CASH)
   discountPercentage Decimal       @default(0) @db.Decimal(5, 2) // Max 999.99%
+  discountType       DiscountType  @default(PERCENTAGE)
   deliveryFee        Decimal       @default(0) @db.Decimal(10, 2) // Delivery fee for DELIVERY orders
   needsInvoice       Boolean       @default(false)
 

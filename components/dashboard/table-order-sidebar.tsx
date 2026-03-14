@@ -17,7 +17,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
-import { ArrowRightLeft, Edit, Percent, RefreshCw, X } from "lucide-react";
+import { ArrowRightLeft, Check, DollarSign, Edit, Percent, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
@@ -75,6 +75,7 @@ export function TableOrderSidebar({
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
+  const [discountTypeInput, setDiscountTypeInput] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -410,6 +411,9 @@ export function TableOrderSidebar({
       discountPercentage: order.discountPercentage
         ? Number(order.discountPercentage)
         : undefined,
+      discountType: order.discountPercentage
+        ? String(order.discountType)
+        : undefined,
       orderType: order.type,
       customerName: order.client?.name,
       orderCreatedAt: order.createdAt instanceof Date
@@ -472,7 +476,8 @@ export function TableOrderSidebar({
 
   const handleDiscountEdit = () => {
     if (!order) return;
-    setDiscountInput(order.discountPercentage.toString());
+    setDiscountInput(Number(order.discountPercentage).toString());
+    setDiscountTypeInput((order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE");
     setIsEditingDiscount(true);
   };
 
@@ -480,26 +485,28 @@ export function TableOrderSidebar({
     if (!order) return;
 
     const newDiscount = parseFloat(discountInput);
-    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
-      alert("El descuento debe ser un número entre 0 y 100");
+    if (isNaN(newDiscount) || newDiscount < 0) {
+      alert("El descuento no puede ser negativo");
+      return;
+    }
+    if (discountTypeInput === "PERCENTAGE" && newDiscount > 100) {
+      alert("El descuento porcentual debe estar entre 0 y 100");
       return;
     }
 
-    // Store previous discount for rollback
-    const previousDiscount = order.discountPercentage;
+    // Store previous values for rollback
+    const previousDiscount = Number(order.discountPercentage);
+    const previousType = (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
 
-    // Optimistic update - close editor immediately
-    setIsEditingDiscount(false);
-
-    // Perform server update
-    const result = await updateDiscount(order.id, newDiscount);
+    // Perform server update (keep editor open)
+    const result = await updateDiscount(order.id, newDiscount, discountTypeInput);
 
     if (result.success) {
-      refresh(); // Refresh to get updated data
+      setIsEditingDiscount(false);
+      refresh();
     } else {
-      // On failure, reopen editor with previous value
       setDiscountInput(previousDiscount.toString());
-      setIsEditingDiscount(true);
+      setDiscountTypeInput(previousType);
       alert(result.error || "Error al actualizar el descuento");
     }
   };
@@ -507,6 +514,7 @@ export function TableOrderSidebar({
   const handleDiscountCancel = () => {
     setIsEditingDiscount(false);
     setDiscountInput("");
+    setDiscountTypeInput("PERCENTAGE");
   };
 
   if (!tableId) {
@@ -742,24 +750,45 @@ export function TableOrderSidebar({
                 {/* Discount Button/Editor */}
                 {isEditingDiscount ? (
                   <div className="flex items-center gap-1 bg-white rounded px-2">
+                    <Button
+                      type="button"
+                      variant={discountTypeInput === "PERCENTAGE" ? "default" : "outline"}
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => setDiscountTypeInput("PERCENTAGE")}
+                    >
+                      <Percent className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={discountTypeInput === "FIXED" ? "default" : "outline"}
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => setDiscountTypeInput("FIXED")}
+                    >
+                      <DollarSign className="h-3 w-3" />
+                    </Button>
                     <NumberInput
                       min="0"
-                      max="100"
+                      max={discountTypeInput === "PERCENTAGE" ? "100" : undefined}
                       step="0.01"
                       value={discountInput}
                       onChange={(e) => setDiscountInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleDiscountSave();
+                      }}
                       className="h-8 w-16 text-sm"
-                      placeholder="%"
+                      placeholder={discountTypeInput === "PERCENTAGE" ? "%" : "$"}
                       autoFocus
                     />
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-2"
+                      className="h-8 w-8 p-0"
                       onClick={handleDiscountSave}
                       disabled={isLoadingAction}
                     >
-                      ✓
+                      <Check className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -782,14 +811,16 @@ export function TableOrderSidebar({
                     disabled={isLoading}
                     title={
                       Number(order.discountPercentage) > 0
-                        ? `Descuento: ${order.discountPercentage}%`
+                        ? `Descuento: ${order.discountType === "FIXED" ? formatCurrency(Number(order.discountPercentage)) : `${Number(order.discountPercentage)}%`}`
                         : "Agregar descuento"
                     }
                   >
                     <Percent className="h-4 w-4" />
                     {Number(order.discountPercentage) > 0 && (
                       <span className="ml-1 text-xs">
-                        -{Number(order.discountPercentage)}%
+                        {order.discountType === "FIXED"
+                          ? `-${formatCurrency(Number(order.discountPercentage))}`
+                          : `-${Number(order.discountPercentage)}%`}
                       </span>
                     )}
                   </Button>
@@ -864,6 +895,7 @@ export function TableOrderSidebar({
             publicCode: order.publicCode,
             partySize: order.partySize,
             discountPercentage: Number(order.discountPercentage),
+            discountType: String(order.discountType || "PERCENTAGE"),
             items:
               order.items?.map((item) => ({
                 id: item.id,

@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { formatTimestampDateAR } from "@/lib/date-utils";
+import { calculateDiscountAmount } from "@/lib/discount";
 import { PrintJobStatus, PrinterStatus } from "@/app/generated/prisma";
 import {
   generateTestPageData,
@@ -312,7 +313,11 @@ export async function prepareControlTicketPrint(
 
     const subtotal = ticketInfo.subtotal;
     const discountAmount = ticketInfo.discountPercentage
-      ? subtotal * (ticketInfo.discountPercentage / 100)
+      ? calculateDiscountAmount(
+          subtotal,
+          ticketInfo.discountPercentage,
+          (ticketInfo.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE",
+        )
       : 0;
     const deliveryFee = ticketInfo.deliveryFee ?? 0;
     const total = subtotal - discountAmount + deliveryFee;
@@ -335,6 +340,7 @@ export async function prepareControlTicketPrint(
         })),
         subtotal,
         discountPercentage: ticketInfo.discountPercentage,
+        discountType: ticketInfo.discountType,
         discountAmount,
         deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
         payments: ticketInfo.payments,

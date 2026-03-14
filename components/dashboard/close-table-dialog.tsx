@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { PaymentSection } from "@/components/dashboard/payment-section";
+import { calculateDiscountAmount } from "@/lib/discount";
 import { formatCurrency } from "@/lib/currency";
 import { usePayments } from "@/hooks/use-payments";
-import { Percent, Receipt, Settings, X } from "lucide-react";
+import { Check, DollarSign, Percent, Receipt, Settings, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
@@ -33,6 +34,7 @@ interface Order {
   publicCode: string;
   partySize: number | null;
   discountPercentage: number;
+  discountType: string;
   items: OrderItem[];
 }
 
@@ -76,16 +78,24 @@ export function CloseTableDialog({
 }: CloseTableDialogProps) {
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
   const [cashRegisters, setCashRegisters] = useState<CashRegisterWithSession[]>(
     [],
   );
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [isLoadingRegisters, setIsLoadingRegisters] = useState(false);
-  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
-  const [discountInput, setDiscountInput] = useState("");
+  const [discountInput, setDiscountInput] = useState(
+    order.discountPercentage.toString(),
+  );
   const [currentDiscount, setCurrentDiscount] = useState(
     order.discountPercentage,
   );
+  const [currentDiscountType, setCurrentDiscountType] = useState<
+    "PERCENTAGE" | "FIXED"
+  >((order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE");
+  const [discountTypeInput, setDiscountTypeInput] = useState<
+    "PERCENTAGE" | "FIXED"
+  >((order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE");
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Open/close dialog based on open prop
@@ -109,8 +119,9 @@ export function CloseTableDialog({
   }, [order.items]);
 
   const discountAmount = useMemo(() => {
-    return subtotal * (currentDiscount / 100);
-  }, [subtotal, currentDiscount]);
+    const parsed = parseFloat(discountInput) || 0;
+    return calculateDiscountAmount(subtotal, parsed, discountTypeInput);
+  }, [subtotal, discountInput, discountTypeInput]);
 
   const total = useMemo(() => {
     return subtotal - discountAmount;
@@ -118,8 +129,12 @@ export function CloseTableDialog({
 
   // Sync current discount when order changes
   useEffect(() => {
+    const type = (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
     setCurrentDiscount(order.discountPercentage);
-  }, [order.discountPercentage]);
+    setCurrentDiscountType(type);
+    setDiscountInput(order.discountPercentage.toString());
+    setDiscountTypeInput(type);
+  }, [order.discountPercentage, order.discountType]);
 
   const {
     payments,
@@ -164,42 +179,52 @@ export function CloseTableDialog({
     }
   }, [open, branchId, tableSectorId]);
 
-  const handleDiscountEdit = () => {
-    setDiscountInput(currentDiscount.toString());
-    setIsEditingDiscount(true);
-  };
-
-  const handleDiscountSave = async () => {
+  const saveDiscount = async (): Promise<boolean> => {
     const newDiscount = parseFloat(discountInput);
-    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
-      setError("El descuento debe ser un número entre 0 y 100");
-      return;
+    if (discountTypeInput === "PERCENTAGE") {
+      if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
+        setDiscountError("El descuento debe ser entre 0 y 100");
+        return false;
+      }
+    } else {
+      if (isNaN(newDiscount) || newDiscount < 0) {
+        setDiscountError("El descuento debe ser mayor o igual a 0");
+        return false;
+      }
     }
 
-    // Store previous discount for rollback
+    setDiscountError(null);
+
     const previousDiscount = currentDiscount;
+    const previousDiscountType = currentDiscountType;
 
-    // Optimistic update - update UI immediately
     setCurrentDiscount(newDiscount);
-    setIsEditingDiscount(false);
-    setError(null);
+    setCurrentDiscountType(discountTypeInput);
 
-    // Perform server update
-    const result = await updateDiscount(order.id, newDiscount);
+    const result = await updateDiscount(order.id, newDiscount, discountTypeInput);
 
     if (!result.success) {
-      // Rollback on failure
       setCurrentDiscount(previousDiscount);
-      setError(result.error || "Error al actualizar el descuento");
+      setCurrentDiscountType(previousDiscountType);
+      setDiscountInput(previousDiscount.toString());
+      setDiscountTypeInput(previousDiscountType);
+      setDiscountError(result.error || "Error al actualizar el descuento");
+      return false;
     }
+
+    return true;
   };
 
-  const handleDiscountCancel = () => {
-    setIsEditingDiscount(false);
-    setDiscountInput("");
-  };
+  const handleDiscountSave = () => saveDiscount();
 
   const handleClose = async () => {
+    // Auto-save discount if it has unsaved changes
+    const parsedInput = parseFloat(discountInput) || 0;
+    if (parsedInput !== currentDiscount || discountTypeInput !== currentDiscountType) {
+      const saved = await saveDiscount();
+      if (!saved) return;
+    }
+
     // Validate cash register selection
     const selectedRegister = cashRegisters.find(
       (r) => r.id === selectedRegisterId,
@@ -262,12 +287,16 @@ export function CloseTableDialog({
   };
 
   const resetForm = () => {
+    const type =
+      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
     resetPayments(total);
     setError(null);
+    setDiscountError(null);
     setSelectedRegisterId("");
     setCurrentDiscount(order.discountPercentage);
-    setIsEditingDiscount(false);
-    setDiscountInput("");
+    setCurrentDiscountType(type);
+    setDiscountInput(order.discountPercentage.toString());
+    setDiscountTypeInput(type);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -357,7 +386,7 @@ export function CloseTableDialog({
 
                   {/* Totals */}
                   <div className="bg-gray-50 border-t px-4 py-4 space-y-2">
-                    {currentDiscount > 0 && (
+                    {(parseFloat(discountInput) || 0) > 0 && (
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
@@ -366,72 +395,64 @@ export function CloseTableDialog({
                           <span>{formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-green-600">
-                          <span>Descuento ({currentDiscount}%):</span>
-                          <div className="flex items-center gap-2">
-                            <span>-{formatCurrency(discountAmount)}</span>
-                            {!isEditingDiscount && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={handleDiscountEdit}
-                                disabled={isLoadingAction || isLoadingAction}
-                              >
-                                <Percent className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
+                          <span>
+                            {discountTypeInput === "FIXED"
+                              ? `Descuento (${formatCurrency(parseFloat(discountInput) || 0)}):`
+                              : `Descuento (${discountInput}%):`}
+                          </span>
+                          <span>-{formatCurrency(discountAmount)}</span>
                         </div>
                       </>
                     )}
 
-                    {/* Discount Editor */}
-                    {isEditingDiscount && (
+                    {/* Discount Editor - always visible */}
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center border rounded overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setDiscountTypeInput("PERCENTAGE")}
+                            className={`px-2 py-1 text-xs font-medium transition-colors ${discountTypeInput === "PERCENTAGE" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+                          >
+                            <Percent className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDiscountTypeInput("FIXED")}
+                            className={`px-2 py-1 text-xs font-medium transition-colors ${discountTypeInput === "FIXED" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+                          >
+                            <DollarSign className="h-3 w-3" />
+                          </button>
+                        </div>
                         <NumberInput
                           min="0"
-                          max="100"
+                          max={discountTypeInput === "PERCENTAGE" ? "100" : undefined}
                           step="0.01"
                           value={discountInput}
-                          onChange={(e) => setDiscountInput(e.target.value)}
-                          className="h-8 w-20"
-                          placeholder="%"
-                          autoFocus
+                          onChange={(e) => {
+                            setDiscountInput(e.target.value);
+                            setDiscountError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleDiscountSave();
+                          }}
+                          className={`h-8 w-20 ${discountError ? "border-red-500" : ""}`}
+                          placeholder={discountTypeInput === "PERCENTAGE" ? "%" : "$"}
                         />
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8"
+                          className="h-8 w-8 p-0"
                           onClick={handleDiscountSave}
                           disabled={isLoadingAction}
                         >
-                          Guardar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8"
-                          onClick={handleDiscountCancel}
-                          disabled={isLoadingAction}
-                        >
-                          <X className="h-4 w-4" />
+                          <Check className="h-4 w-4" />
                         </Button>
                       </div>
-                    )}
-
-                    {/* Add Discount Button */}
-                    {!isEditingDiscount && currentDiscount === 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDiscountEdit}
-                        disabled={isLoadingAction || isLoadingAction}
-                        className="w-full"
-                      >
-                        <Percent className="h-4 w-4 mr-2" />
-                        Agregar descuento
-                      </Button>
-                    )}
+                      {discountError && (
+                        <p className="text-xs text-red-500">{discountError}</p>
+                      )}
+                    </div>
 
                     <div className="flex justify-between text-xl font-bold pt-2 border-t">
                       <span>Total:</span>

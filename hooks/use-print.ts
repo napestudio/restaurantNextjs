@@ -61,6 +61,7 @@ export interface UsePrintReturn {
     }>;
     subtotal: number;
     discountPercentage?: number;
+    discountType?: string;
     deliveryFee?: number;
     payments?: Array<{ method: string; amount: number }>;
     orderType?: string;
@@ -413,6 +414,7 @@ export function usePrint(): UsePrintReturn {
       }>;
       subtotal: number;
       discountPercentage?: number;
+      discountType?: string;
       deliveryFee?: number;
       payments?: Array<{ method: string; amount: number }>;
       orderType?: string;

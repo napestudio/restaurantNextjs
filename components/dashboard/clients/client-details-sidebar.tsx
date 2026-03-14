@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Save, User } from "lucide-react";
+import { DollarSign, Percent, X, Save, User } from "lucide-react";
 import {
   updateClient,
   type ClientData,
@@ -53,6 +53,7 @@ export function ClientDetailsSidebar({
     addressApartment: "",
     addressCity: "",
     discountPercentage: 0,
+    discountType: "PERCENTAGE",
     preferredPaymentMethod: undefined,
     hasCurrentAccount: false,
   });
@@ -74,6 +75,7 @@ export function ClientDetailsSidebar({
         addressApartment: client.addressApartment || "",
         addressCity: client.addressCity || "",
         discountPercentage: client.discountPercentage,
+        discountType: client.discountType || "PERCENTAGE",
         preferredPaymentMethod: client.preferredPaymentMethod || undefined,
         hasCurrentAccount: client.hasCurrentAccount,
       });
@@ -110,6 +112,7 @@ export function ClientDetailsSidebar({
       addressApartment: formData.addressApartment || null,
       addressCity: formData.addressCity || null,
       discountPercentage: formData.discountPercentage || 0,
+      discountType: formData.discountType || "PERCENTAGE",
       preferredPaymentMethod: formData.preferredPaymentMethod || null,
       hasCurrentAccount: formData.hasCurrentAccount || false,
       updatedAt: new Date(),
@@ -156,6 +159,7 @@ export function ClientDetailsSidebar({
         addressApartment: client.addressApartment || "",
         addressCity: client.addressCity || "",
         discountPercentage: client.discountPercentage,
+        discountType: client.discountType || "PERCENTAGE",
         preferredPaymentMethod: client.preferredPaymentMethod || undefined,
         hasCurrentAccount: client.hasCurrentAccount,
       });
@@ -383,23 +387,53 @@ export function ClientDetailsSidebar({
             </h3>
 
             <div className="space-y-2">
-              <Label htmlFor="discountPercentage">Descuento (%)</Label>
+              <Label>Descuento</Label>
               {isEditing ? (
-                <NumberInput
-                  id="discountPercentage"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={formData.discountPercentage}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      discountPercentage: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant={formData.discountType === "PERCENTAGE" ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 px-2"
+                    onClick={() =>
+                      setFormData({ ...formData, discountType: "PERCENTAGE" })
+                    }
+                  >
+                    <Percent className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.discountType === "FIXED" ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 px-2"
+                    onClick={() =>
+                      setFormData({ ...formData, discountType: "FIXED" })
+                    }
+                  >
+                    <DollarSign className="h-3 w-3" />
+                  </Button>
+                  <NumberInput
+                    id="discountPercentage"
+                    min="0"
+                    max={formData.discountType === "PERCENTAGE" ? "100" : undefined}
+                    step="0.01"
+                    value={formData.discountPercentage}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        discountPercentage: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    placeholder={formData.discountType === "PERCENTAGE" ? "%" : "$"}
+                    className="flex-1"
+                  />
+                </div>
               ) : (
-                <p className="text-sm">{client.discountPercentage}%</p>
+                <p className="text-sm">
+                  {client.discountType === "FIXED"
+                    ? `$${client.discountPercentage.toFixed(2)}`
+                    : `${client.discountPercentage}%`}
+                </p>
               )}
             </div>
 

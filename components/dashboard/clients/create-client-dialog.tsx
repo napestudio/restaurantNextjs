@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UserPlus } from "lucide-react";
+import { DollarSign, Percent, UserPlus } from "lucide-react";
 import {
   createClient,
   type ClientData,
@@ -49,6 +49,7 @@ export function CreateClientDialog({
     addressApartment: "",
     addressCity: "",
     discountPercentage: 0,
+    discountType: "PERCENTAGE",
     preferredPaymentMethod: undefined,
     hasCurrentAccount: false,
   });
@@ -118,6 +119,7 @@ export function CreateClientDialog({
       addressApartment: "",
       addressCity: "",
       discountPercentage: 0,
+      discountType: "PERCENTAGE",
       preferredPaymentMethod: undefined,
       hasCurrentAccount: false,
     });
@@ -297,21 +299,46 @@ export function CreateClientDialog({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="discountPercentage">Descuento (%)</Label>
-                  <NumberInput
-                    id="discountPercentage"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={formData.discountPercentage}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        discountPercentage: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0"
-                  />
+                  <Label>Descuento</Label>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant={formData.discountType === "PERCENTAGE" ? "default" : "outline"}
+                      size="sm"
+                      className="h-9 px-2"
+                      onClick={() =>
+                        setFormData({ ...formData, discountType: "PERCENTAGE" })
+                      }
+                    >
+                      <Percent className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.discountType === "FIXED" ? "default" : "outline"}
+                      size="sm"
+                      className="h-9 px-2"
+                      onClick={() =>
+                        setFormData({ ...formData, discountType: "FIXED" })
+                      }
+                    >
+                      <DollarSign className="h-3 w-3" />
+                    </Button>
+                    <NumberInput
+                      id="discountPercentage"
+                      min="0"
+                      max={formData.discountType === "PERCENTAGE" ? "100" : undefined}
+                      step="0.01"
+                      value={formData.discountPercentage}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          discountPercentage: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder={formData.discountType === "PERCENTAGE" ? "%" : "$"}
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
