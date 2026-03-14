@@ -4,9 +4,12 @@ import {
   createReservation,
   deleteReservation,
   getFilteredReservations,
+  seatReservationWithTable,
   updateReservationStatus,
   type ReservationFilterType,
 } from "@/actions/Reservation";
+import { createTableOrder } from "@/actions/Order";
+import { getClientByEmail } from "@/actions/clients";
 import { getTimeSlots } from "@/actions/TimeSlot";
 import type {
   SerializedReservation,
@@ -14,13 +17,14 @@ import type {
 } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import { ReservationStatus } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { CreateReservationSidebar } from "./create-reservation-sidebar";
 import { DeleteReservationDialog } from "./delete-reservation-dialog";
 import LoadingToast from "./loading-toast";
 import { ReservationsTable } from "./reservations-table";
+import { SeatReservationDialog } from "./seat-reservation-dialog";
 import { ViewReservationDialog } from "./view-reservation-dialog";
 
 interface ReservationsManagerProps {
@@ -38,8 +42,6 @@ export function ReservationsManager({
   initialPagination,
   branchId,
 }: ReservationsManagerProps) {
-  const router = useRouter();
-
   // Reservations state
   const [reservations, setReservations] = useState(initialReservations);
   const [pagination, setPagination] = useState(initialPagination);
@@ -63,6 +65,13 @@ export function ReservationsManager({
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(
     null,
   );
+
+  // Seating dialog state
+  const [seatingDialogOpen, setSeatingDialogOpen] = useState(false);
+  const [reservationToSeat, setReservationToSeat] =
+    useState<SerializedReservation | null>(null);
+  const [isSeating, setIsSeating] = useState(false);
+  const { toast } = useToast();
 
   // Load time slots on demand when the Create Reservation dialog opens
   useEffect(() => {
@@ -201,27 +210,73 @@ export function ReservationsManager({
     const result = await updateReservationStatus(id, newStatus);
 
     if (!result.success) {
-      // Rollback on failure
       setReservations(previousReservations);
-      console.error("Failed to update reservation status:", result.error);
+      toast({
+        title: "No se puede cambiar el estado",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSeatingRequested = (reservation: SerializedReservation) => {
+    setReservationToSeat(reservation);
+    setSeatingDialogOpen(true);
+  };
+
+  const handleSeatingConfirm = async (
+    reservationId: string,
+    selectedTableIds: string[]
+  ) => {
+    setIsSeating(true);
+    const previousReservations = reservations;
+
+    // Optimistic update
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === reservationId ? { ...r, status: ReservationStatus.SEATED } : r
+      )
+    );
+
+    const result = await seatReservationWithTable(reservationId, selectedTableIds);
+
+    if (!result.success) {
+      setReservations(previousReservations);
+      toast({
+        title: "Error al sentar la reserva",
+        description: result.error,
+        variant: "destructive",
+      });
+      setIsSeating(false);
       return;
     }
 
-    // After seating: navigate to floor plan with the table pre-selected so
-    // staff can immediately start taking the order, with party size and client
-    // pre-filled from the reservation data.
-    if (newStatus === ReservationStatus.SEATED) {
-      const reservation = reservations.find((r) => r.id === id);
-      const tableId = reservation?.tables[0]?.table.id;
-      if (tableId) {
-        const params = new URLSearchParams({ tableId });
-        if (reservation?.people)
-          params.set("partySize", String(reservation.people));
-        if (reservation?.customerEmail)
-          params.set("customerEmail", reservation.customerEmail);
-        router.push(`/dashboard/tables?${params.toString()}`);
+    // Resolve the reservation data from pre-optimistic state
+    const seatedReservation = previousReservations.find((r) => r.id === reservationId);
+
+    // Optional: look up registered client by email to attach to the order
+    let clientId: string | null = null;
+    if (seatedReservation?.customerEmail) {
+      const clientResult = await getClientByEmail(branchId, seatedReservation.customerEmail);
+      if (clientResult.success && clientResult.data) {
+        clientId = clientResult.data.id;
       }
     }
+
+    // Create an order for the table — mirrors "open table" from the floor plan
+    await createTableOrder(
+      result.data!.tableId,
+      branchId,
+      seatedReservation?.people ?? 1,
+      clientId,
+      null,
+    );
+
+    // Refresh the list so the "Mesa" column shows the newly assigned table
+    await fetchReservations();
+    setSeatingDialogOpen(false);
+    setIsSeating(false);
+    toast({ title: "Reserva sentada correctamente" });
   };
 
   const handleView = (reservation: SerializedReservation) => {
@@ -422,6 +477,8 @@ export function ReservationsManager({
           handleFilterChange("dateRange", from, to)
         }
         onStatusUpdate={handleStatusUpdate}
+        onSeatingRequested={handleSeatingRequested}
+        seatingReservationId={isSeating ? (reservationToSeat?.id ?? null) : null}
         onView={handleView}
         onDelete={handleDeleteClick}
         onLoadMore={handleLoadMore}
@@ -447,6 +504,17 @@ export function ReservationsManager({
         onConfirm={handleDeleteConfirm}
         isPending={isPending}
       />
+
+      {reservationToSeat && (
+        <SeatReservationDialog
+          open={seatingDialogOpen}
+          onOpenChange={setSeatingDialogOpen}
+          reservation={reservationToSeat}
+          branchId={branchId}
+          onConfirm={handleSeatingConfirm}
+          isLoading={isSeating}
+        />
+      )}
     </div>
   );
 }
