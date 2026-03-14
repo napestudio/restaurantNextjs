@@ -69,24 +69,23 @@ export function MoveOrderDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Current and target table display */}
-          {selectedTableId && (
-            <div className="flex items-center justify-center gap-4 py-2 px-4 bg-muted rounded-lg">
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Desde</div>
-                <div className="text-lg font-bold">
-                  Mesa {currentTableNumber}
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-muted-foreground" />
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Hacia</div>
-                <div className="text-lg font-bold">
-                  Mesa {selectedTable?.number}
-                </div>
+          <div className="flex items-center justify-center gap-4 py-2 px-4 bg-muted rounded-lg">
+            <div
+              className={`text-center ${!selectedTableId ? "opacity-50" : ""}`}
+            >
+              <div className="text-sm text-muted-foreground">Desde</div>
+              <div className="text-lg font-bold">Mesa {currentTableNumber}</div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+            <div
+              className={`text-center ${!selectedTableId ? "opacity-50" : ""}`}
+            >
+              <div className="text-sm text-muted-foreground">Hacia</div>
+              <div className="text-lg font-bold">
+                Mesa {selectedTable?.number}
               </div>
             </div>
-          )}
+          </div>
 
           <div className="space-y-2">
             <Label>Mesas Disponibles ({availableTables.length})</Label>

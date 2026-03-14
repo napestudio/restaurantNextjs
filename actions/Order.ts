@@ -454,6 +454,7 @@ export async function createTableOrder(
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      deliveryFee: Number(order.deliveryFee),
       client: order.client ? serializeClient(order.client) : null,
       items: order.items.map((item) => ({
         ...item,
@@ -862,6 +863,7 @@ export async function updatePartySize(orderId: string, partySize: number) {
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -932,6 +934,7 @@ export async function closeTable(orderId: string) {
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      deliveryFee: Number(order.deliveryFee),
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -1327,13 +1330,6 @@ export async function getAvailableTablesForMove(branchId: string) {
       where: {
         branchId,
         isActive: true,
-        OR: [
-          { status: "EMPTY" },
-          { status: null }, // Tables with no manual status override
-          {
-            AND: [{ isShared: true }, { status: "OCCUPIED" }],
-          }, // Include occupied shared tables
-        ],
       },
       include: {
         reservations: {
@@ -1756,6 +1752,7 @@ export async function updatePaymentMethod(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1797,6 +1794,7 @@ export async function updateDiscount(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1865,6 +1863,7 @@ export async function assignStaffToOrder(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1898,6 +1897,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1940,6 +1940,7 @@ export async function assignClientToOrder(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1964,6 +1965,7 @@ export async function setNeedsInvoice(orderId: string, needsInvoice: boolean) {
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {

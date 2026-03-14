@@ -513,7 +513,12 @@ export function TableOrderSidebar({
             {tableIsShared && (
               <span className="ml-2 text-sm font-norma">(Compartida)</span>
             )}
+            {order?.client?.name && (
+              <span className="ml-2 text-sm font-normal opacity-90">— {order.client.name}</span>
+            )}
           </div>
+        </div>
+        <div className="flex items-center gap-2 px-2">
           <Button
             variant="ghost"
             size="icon"
@@ -525,8 +530,6 @@ export function TableOrderSidebar({
               className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
             />
           </Button>
-        </div>
-        <div className="flex items-center gap-2 px-2">
           {order && (
             <button
               onClick={() => setShowEditOrderDialog(true)}

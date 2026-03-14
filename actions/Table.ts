@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { todayBoundsARDate } from "@/lib/date-utils";
-import { ReservationStatus, Table } from "@/app/generated/prisma";
+import { OrderStatus, ReservationStatus, Table } from "@/app/generated/prisma";
 import { TableShapeType } from "@/types/table";
 
 /**
@@ -1171,15 +1171,114 @@ export async function setTablesEmpty(tableIds: string[]) {
 }
 
 /**
- * Automatically manage table status based on reservation status change
- * This is a convenience function to handle all status transitions
+ * Recalculate table status by deriving it from all active reservations.
+ * Respects CLEANING status (manual staff override — never overwritten).
+ *
+ * Priority: OCCUPIED > RESERVED > EMPTY
+ * - Any SEATED reservation  → OCCUPIED
+ * - Any PENDING/CONFIRMED   → RESERVED
+ * - No active reservations  → EMPTY
+ */
+export async function recalculateTableStatus(tableIds: string[]) {
+  try {
+    if (tableIds.length === 0) return { success: true };
+
+    // Preserve CLEANING tables — they are manual staff overrides
+    const cleaningTables = await prisma.table.findMany({
+      where: { id: { in: tableIds }, status: "CLEANING" },
+      select: { id: true },
+    });
+    const cleaningIds = new Set(cleaningTables.map((t) => t.id));
+    const idsToRecalculate = tableIds.filter((id) => !cleaningIds.has(id));
+
+    if (idsToRecalculate.length === 0) return { success: true };
+
+    // Fetch active reservations AND active orders for the affected tables in parallel
+    const [activeLinks, activeOrders] = await Promise.all([
+      prisma.reservationTable.findMany({
+        where: {
+          tableId: { in: idsToRecalculate },
+          reservation: {
+            status: {
+              notIn: [
+                ReservationStatus.COMPLETED,
+                ReservationStatus.CANCELED,
+                ReservationStatus.NO_SHOW,
+              ],
+            },
+          },
+        },
+        select: {
+          tableId: true,
+          reservation: { select: { status: true } },
+        },
+      }),
+      // Active orders keep a table OCCUPIED regardless of reservation state
+      prisma.order.findMany({
+        where: {
+          tableId: { in: idsToRecalculate },
+          status: { in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS] },
+        },
+        select: { tableId: true },
+      }),
+    ]);
+
+    const tablesWithActiveOrders = new Set(
+      activeOrders.map((o) => o.tableId).filter(Boolean) as string[]
+    );
+
+    const occupied: string[] = [];
+    const reserved: string[] = [];
+    const empty: string[] = [];
+
+    for (const tableId of idsToRecalculate) {
+      const links = activeLinks.filter((l) => l.tableId === tableId);
+      if (
+        tablesWithActiveOrders.has(tableId) ||
+        links.some((l) => l.reservation.status === ReservationStatus.SEATED)
+      ) {
+        occupied.push(tableId);
+      } else if (links.length > 0) {
+        reserved.push(tableId);
+      } else {
+        empty.push(tableId);
+      }
+    }
+
+    await Promise.all([
+      occupied.length &&
+        prisma.table.updateMany({
+          where: { id: { in: occupied } },
+          data: { status: "OCCUPIED" },
+        }),
+      reserved.length &&
+        prisma.table.updateMany({
+          where: { id: { in: reserved } },
+          data: { status: "RESERVED" },
+        }),
+      empty.length &&
+        prisma.table.updateMany({
+          where: { id: { in: empty } },
+          data: { status: "EMPTY" },
+        }),
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error recalculating table status:", error);
+    return { success: false, error: "Failed to recalculate table status" };
+  }
+}
+
+/**
+ * Automatically manage table status based on reservation status change.
+ * Derives table status from all active reservations (not just this one).
  */
 export async function updateTableStatusForReservation(
   reservationId: string,
   newStatus: ReservationStatus
 ) {
   try {
-    // Get all tables for this reservation
     const reservationTables = await prisma.reservationTable.findMany({
       where: { reservationId },
       select: { tableId: true },
@@ -1191,26 +1290,7 @@ export async function updateTableStatusForReservation(
       return { success: true, message: "No tables to update" };
     }
 
-    // Update table status based on reservation status
-    switch (newStatus) {
-      case ReservationStatus.CONFIRMED:
-      case ReservationStatus.PENDING:
-        await setTablesReserved(tableIds);
-        break;
-
-      case ReservationStatus.SEATED:
-        await setTablesOccupied(tableIds);
-        break;
-
-      case ReservationStatus.COMPLETED:
-      case ReservationStatus.CANCELED:
-      case ReservationStatus.NO_SHOW:
-        await setTablesEmpty(tableIds);
-        break;
-
-      default:
-        console.warn(`Unhandled reservation status: ${newStatus}`);
-    }
+    await recalculateTableStatus(tableIds);
 
     return { success: true };
   } catch (error) {
@@ -1219,5 +1299,114 @@ export async function updateTableStatusForReservation(
       success: false,
       error: "Failed to update table status for reservation",
     };
+  }
+}
+
+export type TableForSeating = {
+  id: string;
+  number: number;
+  name: string | null;
+  capacity: number;
+  isShared: boolean;
+  status: "EMPTY" | "RESERVED" | "OCCUPIED" | "CLEANING" | null;
+  sectorId: string | null;
+  isAssignedToThisReservation: boolean;
+};
+
+/**
+ * Fetch tables available for seating a specific reservation.
+ * Returns ALL active tables. Occupancy is computed dynamically from active
+ * orders and SEATED reservations — mirroring the floor-plan approach — so
+ * tables with a stale OCCUPIED status in the DB are not incorrectly hidden.
+ * Truly occupied tables are included but flagged so the UI can display them
+ * grayed-out and non-selectable.
+ */
+export async function getTablesForSeating(
+  branchId: string,
+  reservationId: string
+): Promise<{ success: boolean; data?: TableForSeating[]; error?: string }> {
+  try {
+    const { start: today, end: tomorrow } = todayBoundsARDate();
+
+    const [tables, reservationTables] = await Promise.all([
+      prisma.table.findMany({
+        where: { branchId, isActive: true },
+        select: {
+          id: true,
+          number: true,
+          name: true,
+          capacity: true,
+          isShared: true,
+          status: true,
+          sectorId: true,
+        },
+        orderBy: { number: "asc" },
+      }),
+      prisma.reservationTable.findMany({
+        where: { reservationId },
+        select: { tableId: true },
+      }),
+    ]);
+
+    const assignedTableIds = new Set(reservationTables.map((rt) => rt.tableId));
+    const tableIds = tables.map((t) => t.id);
+
+    // Dynamically compute which tables are truly occupied right now.
+    // Mirrors the floor-plan approach: active orders (any date, inherently current)
+    // + today's SEATED reservations (date-filtered to avoid stale historical data).
+    const [activeOrders, seatedLinks] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          tableId: { in: tableIds },
+          status: { in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS] },
+        },
+        select: { tableId: true },
+      }),
+      prisma.reservationTable.findMany({
+        where: {
+          tableId: { in: tableIds },
+          reservation: {
+            status: ReservationStatus.SEATED,
+            date: { gte: today, lt: tomorrow },
+          },
+          // Exclude this reservation itself so pre-assigned tables still appear selectable
+          NOT: { reservationId },
+        },
+        select: { tableId: true },
+      }),
+    ]);
+
+    const dynamicallyOccupiedIds = new Set<string>([
+      ...(activeOrders.map((o) => o.tableId).filter(Boolean) as string[]),
+      ...seatedLinks.map((rt) => rt.tableId),
+    ]);
+
+    const result: TableForSeating[] = tables.map((t) => {
+      let effectiveStatus: TableForSeating["status"];
+      if (dynamicallyOccupiedIds.has(t.id)) {
+        effectiveStatus = "OCCUPIED";
+      } else if (t.status === "OCCUPIED") {
+        // Stored status is stale — table has no active orders or seated reservations
+        effectiveStatus = "EMPTY";
+      } else {
+        effectiveStatus = t.status as TableForSeating["status"];
+      }
+
+      return {
+        id: t.id,
+        number: t.number,
+        name: t.name,
+        capacity: t.capacity,
+        isShared: t.isShared,
+        status: effectiveStatus,
+        sectorId: t.sectorId,
+        isAssignedToThisReservation: assignedTableIds.has(t.id),
+      };
+    });
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error fetching tables for seating:", error);
+    return { success: false, error: "Failed to fetch tables for seating" };
   }
 }

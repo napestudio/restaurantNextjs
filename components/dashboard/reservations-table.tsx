@@ -3,6 +3,7 @@
 import type { ReservationFilterType } from "@/actions/Reservation";
 import type { SerializedReservation } from "@/app/(admin)/dashboard/reservations/lib/reservations";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -57,6 +58,8 @@ interface ReservationsTableProps {
   onStatusFilterChange: (status: string) => void;
   onDateRangeChange: (dateFrom: string, dateTo: string) => void;
   onStatusUpdate: (id: string, status: string) => void;
+  onSeatingRequested: (reservation: SerializedReservation) => void;
+  seatingReservationId: string | null;
   onView: (reservation: SerializedReservation) => void;
   onDelete: (id: string) => void;
   onLoadMore: () => void;
@@ -74,6 +77,8 @@ export function ReservationsTable({
   onStatusFilterChange,
   onDateRangeChange,
   onStatusUpdate,
+  onSeatingRequested,
+  seatingReservationId,
   onView,
   onDelete,
   onLoadMore,
@@ -251,7 +256,7 @@ export function ReservationsTable({
               <TableHead>Contacto</TableHead>
               <TableHead>Fecha y hora</TableHead>
               <TableHead>Personas</TableHead>
-              <TableHead>Mesas</TableHead>
+              <TableHead>Mesa</TableHead>
               <TableHead>Creada</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Acciones</TableHead>
@@ -317,13 +322,17 @@ export function ReservationsTable({
                     {reservation.tables && reservation.tables.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {reservation.tables.map((rt) => (
-                          <Badge
+                          <Link
                             key={rt.tableId}
-                            variant="outline"
-                            className="text-xs font-semibold"
+                            href={`/dashboard/tables?tableId=${rt.tableId}`}
                           >
-                            {rt.table.name ?? `Mesa ${rt.table.number}`}
-                          </Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-xs font-semibold cursor-pointer hover:bg-accent"
+                            >
+                              {rt.table.name ?? `Mesa ${rt.table.number}`}
+                            </Badge>
+                          </Link>
                         ))}
                       </div>
                     ) : (
@@ -349,10 +358,17 @@ export function ReservationsTable({
                       <SelectContent>
                         <SelectItem value="pending">Pendiente</SelectItem>
                         <SelectItem value="confirmed">Confirmada</SelectItem>
-                        <SelectItem value="seated">Sentada</SelectItem>
-                        <SelectItem value="completed">Completada</SelectItem>
+                        <SelectItem value="seated" disabled>
+                          Sentada
+                        </SelectItem>
+                        <SelectItem
+                          value="completed"
+                          disabled={reservation.status === "SEATED"}
+                        >
+                          Completada
+                        </SelectItem>
                         <SelectItem value="canceled">Cancelada</SelectItem>
-                        <SelectItem value="no_show">No Show</SelectItem>
+                        <SelectItem value="no_show">No se presentó</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -363,12 +379,15 @@ export function ReservationsTable({
                           size="sm"
                           variant="default"
                           className="bg-green-600 hover:bg-green-700"
-                          onClick={() =>
-                            onStatusUpdate(reservation.id, "seated")
-                          }
+                          onClick={() => onSeatingRequested(reservation)}
+                          disabled={seatingReservationId === reservation.id}
                           title="Marcar como Sentada"
                         >
-                          <UserCheck className="h-4 w-4" />
+                          {seatingReservationId === reservation.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <UserCheck className="h-4 w-4" />
+                          )}
                         </Button>
                       )}
                       <Button
