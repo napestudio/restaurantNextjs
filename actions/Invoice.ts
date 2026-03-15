@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { UserRole, InvoiceStatus } from "@/app/generated/prisma";
+import { calculateDiscountAmount } from "@/lib/discount";
 import type { Prisma } from "@/app/generated/prisma";
 import { authorizeAction } from "@/lib/permissions/middleware";
 import { emitTestInvoice, getLastInvoiceNumber } from "./Arca";
@@ -130,6 +131,7 @@ function calculateVatBreakdown(
   orderItems: Array<{ price: unknown; quantity: number }>,
   discountPercentage: unknown,
   invoiceType: number,
+  discountType: "PERCENTAGE" | "FIXED" = "PERCENTAGE",
 ): CalculatedTotals {
   const discount = Number(discountPercentage) || 0;
 
@@ -142,7 +144,8 @@ function calculateVatBreakdown(
   }
 
   // Apply discount
-  const discountedTotal = itemsTotal * (1 - discount / 100);
+  const discountedTotal =
+    itemsTotal - calculateDiscountAmount(itemsTotal, discount, discountType);
 
   // Factura C (Type 11) is IVA-exempt - no VAT calculation
   if (invoiceType === 11) {
@@ -185,6 +188,7 @@ function calculateVatBreakdown(
 interface OrderWithItems {
   id: string;
   discountPercentage: unknown;
+  discountType: unknown;
   items: Array<{
     price: unknown;
     quantity: number;
@@ -365,7 +369,12 @@ export async function generateInvoiceForOrder(
     const nextInvoiceNumber = (lastInvoiceResult.data?.cbteNro || 0) + 1;
 
     // Calculate VAT breakdown
-    const totals = calculateVatBreakdown(order.items, order.discountPercentage, invoiceType);
+    const totals = calculateVatBreakdown(
+      order.items,
+      order.discountPercentage,
+      invoiceType,
+      String(order.discountType) as "PERCENTAGE" | "FIXED",
+    );
 
     // Build ARCA payload
     const afipPayload = await buildAfipInvoicePayload(

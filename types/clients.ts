@@ -12,6 +12,7 @@ export type ClientInput = {
   addressApartment?: string;
   addressCity?: string;
   discountPercentage?: number;
+  discountType?: string;
   preferredPaymentMethod?: PaymentMethod;
   hasCurrentAccount?: boolean;
 };
