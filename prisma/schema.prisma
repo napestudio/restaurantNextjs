@@ -252,6 +252,7 @@ model Branch {
   slug String? @db.Citext
 
   notificationEmail String? // Email address to receive reservation notifications
+  printerServerUrl  String? // wss:// URL of the gg-ez-print server on the local network (e.g. wss://192.168.1.100:8443/ws)
 
   reservations   Reservation[]
   orders         Order[]

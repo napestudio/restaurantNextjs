@@ -3,7 +3,7 @@
 import { useGgEzPrintOptional } from "@/contexts/gg-ez-print-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, RefreshCw, Loader2, X } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, Loader2, X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function GgEzPrintConnectionStatus() {
@@ -25,6 +25,7 @@ export function GgEzPrintConnectionStatus() {
     isReconnecting,
     nextRetryIn,
     maxAttempts,
+    certUrl,
     connect,
     disconnect,
     cancelReconnection,
@@ -85,28 +86,43 @@ export function GgEzPrintConnectionStatus() {
 
   // Disconnected state
   return (
-    <div className="flex items-center gap-2">
-      <Badge
-        variant="destructive"
-        className="gap-2"
-      >
-        <WifiOff className="h-3 w-3" />
-        <span className="text-xs">Desconectado</span>
-      </Badge>
-      {connectionError && (
-        <span className="text-xs text-muted-foreground">
-          {connectionError}
-        </span>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Badge variant="destructive" className="gap-2">
+          <WifiOff className="h-3 w-3" />
+          <span className="text-xs">Desconectado</span>
+        </Badge>
+        {connectionError && (
+          <span className="text-xs text-muted-foreground">
+            {connectionError}
+          </span>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={connect}
+          className="h-7 gap-1"
+        >
+          <RefreshCw className="h-3 w-3" />
+          <span className="text-xs">Reconectar</span>
+        </Button>
+      </div>
+      {certUrl && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          <span className="font-medium">¿Primera vez en este dispositivo?</span>{" "}
+          Visitá{" "}
+          <a
+            href={certUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-0.5 font-mono underline underline-offset-2 hover:text-amber-600"
+          >
+            {certUrl}
+            <ExternalLink className="h-2.5 w-2.5" />
+          </a>{" "}
+          y aceptá el certificado (solo una vez).
+        </div>
       )}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={connect}
-        className="h-7 gap-1"
-      >
-        <RefreshCw className="h-3 w-3" />
-        <span className="text-xs">Reconectar</span>
-      </Button>
     </div>
   );
 }

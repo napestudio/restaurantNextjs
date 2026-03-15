@@ -6,6 +6,7 @@ import { GgEzPrintProvider } from "@/contexts/gg-ez-print-context";
 interface ConditionalGgEzPrintProviderProps {
   children: React.ReactNode;
   hasPrinters: boolean;
+  wsUrl?: string;
 }
 
 /**
@@ -20,6 +21,7 @@ interface ConditionalGgEzPrintProviderProps {
 export function ConditionalGgEzPrintProvider({
   children,
   hasPrinters,
+  wsUrl,
 }: ConditionalGgEzPrintProviderProps) {
   const pathname = usePathname();
 
@@ -38,7 +40,7 @@ export function ConditionalGgEzPrintProvider({
   const shouldLoadProvider = isPrinterConfigPage || (isOrderPage && hasPrinters);
 
   if (shouldLoadProvider) {
-    return <GgEzPrintProvider>{children}</GgEzPrintProvider>;
+    return <GgEzPrintProvider wsUrl={wsUrl}>{children}</GgEzPrintProvider>;
   }
 
   // Don't load provider - no printing needed

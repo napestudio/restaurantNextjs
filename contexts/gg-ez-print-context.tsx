@@ -21,6 +21,9 @@ interface GgEzPrintContextValue {
   nextRetryIn: number | undefined;
   maxAttempts: number | undefined;
 
+  // Printer server config
+  certUrl: string | null; // https:// URL to visit to trust the self-signed cert
+
   // Printer management
   printers: DiscoveredPrinter[];
   isDiscovering: boolean;
@@ -47,8 +50,25 @@ const GgEzPrintContext = createContext<GgEzPrintContextValue | null>(null);
 // PROVIDER
 // ============================================================================
 
-export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
-  const [client] = useState(() => new GgEzPrintClient());
+function deriveCertUrl(wsUrl?: string): string | null {
+  if (!wsUrl) return null;
+  try {
+    const url = new URL(wsUrl);
+    return `https://${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+export function GgEzPrintProvider({
+  children,
+  wsUrl,
+}: {
+  children: React.ReactNode;
+  wsUrl?: string;
+}) {
+  const [client] = useState(() => new GgEzPrintClient(wsUrl));
+  const certUrl = deriveCertUrl(wsUrl);
 
   // Connection state
   const [isConnected, setIsConnected] = useState(false);
@@ -145,6 +165,9 @@ export function GgEzPrintProvider({ children }: { children: React.ReactNode }) {
     isReconnecting,
     nextRetryIn,
     maxAttempts,
+
+    // Printer server config
+    certUrl,
 
     // Printer management
     printers,
