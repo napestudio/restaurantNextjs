@@ -78,6 +78,7 @@ export function CreateClientDialog({
       addressApartment: formData.addressApartment || null,
       addressCity: formData.addressCity || null,
       discountPercentage: formData.discountPercentage || 0,
+      discountType: formData.discountType || "PERCENTAGE",
       preferredPaymentMethod: formData.preferredPaymentMethod || null,
       hasCurrentAccount: formData.hasCurrentAccount || false,
       createdAt: now,
