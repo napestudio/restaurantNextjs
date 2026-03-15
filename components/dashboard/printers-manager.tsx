@@ -205,7 +205,7 @@ export function PrintersManager({
   return (
     <div className="p-6">
       <Tabs defaultValue="printers" className="w-full">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex md:flex-row flex-col md:items-center gap-2 justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Impresoras y Estaciones</h1>
             <p className="text-muted-foreground">
@@ -227,7 +227,7 @@ export function PrintersManager({
           </div>
 
           {/* Printers Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex md:flex-row flex-col gap-2 md:items-center justify-between">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -237,17 +237,17 @@ export function PrintersManager({
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-4 items-center">
-              <Link
+            <div className="flex gap-4 items-center w-full md:w-max">
+              {/* <Link
                 href="/dashboard/ayuda/gg-ez-print"
                 className="flex items-center gap-2"
               >
                 <HelpCircle className="h-4 w-4 " />
                 Guía de instalación
-              </Link>
+              </Link> */}
               <Button
                 onClick={() => setCreatePrinterOpen(true)}
-                className="bg-red-500 hover:bg-red-600"
+                className="bg-red-500 hover:bg-red-600 w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Impresora
