@@ -18,45 +18,58 @@ import {
   PAYMENT_METHOD_LABELS,
 } from "@/types/cash-register";
 import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
+  ArrowUpDown,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
   History,
-  RefreshCw,
+  Search,
   TrendingDown,
   TrendingUp,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AddMovementDialog } from "./add-movement-dialog";
-import { MovementDetailsDialog } from "./movement-details-dialog";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AddMovementDialog,
+  type OptimisticMovement,
+} from "./add-movement-dialog";
+import { MovementDetailsSidebar } from "./movement-details-sidebar";
 
 interface Movement {
   id: string;
-  type: "INCOME" | "EXPENSE";
+  type: "INCOME" | "EXPENSE" | "CORRECTION";
   paymentMethod: string;
   amount: number;
   description: string | null;
   createdAt: string;
   createdBy: string;
+  createdByName: string;
   sessionId: string;
   cashRegister: {
     id: string;
     name: string;
   };
+  isOptimistic?: boolean;
 }
 
 interface MovimientosCajaProps {
   branchId: string;
   cashRegisters: CashRegisterWithStatus[];
+  userRole: string;
 }
 
 type FilterType = "today" | "history" | "dateRange";
+type SortBy = "date" | "amount";
+type SortOrder = "asc" | "desc";
 
 export function MovimientosCaja({
   branchId,
   cashRegisters,
+  userRole,
 }: MovimientosCajaProps) {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,10 +78,13 @@ export function MovimientosCaja({
   const [dateTo, setDateTo] = useState("");
   const [filterCashRegister, setFilterCashRegister] = useState<string>("all");
   const [filterMovementType, setFilterMovementType] = useState<string>("all");
+  const [searchDescription, setSearchDescription] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("date");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(
     null,
   );
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsSidebarOpen, setDetailsSidebarOpen] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(0);
@@ -76,13 +92,16 @@ export function MovimientosCaja({
   const [hasMore, setHasMore] = useState(false);
   const pageSize = 50;
 
+  // Debounce timer ref
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Calculate today's date for filters
   const today = useMemo(() => {
     const date = new Date();
     return date.toISOString().split("T")[0];
   }, []);
 
-  // Load movements based on filter
+  // Load movements based on current filter state
   const loadMovements = useCallback(
     async (pageNum: number = 0) => {
       setIsLoading(true);
@@ -97,7 +116,6 @@ export function MovimientosCaja({
           fromDate = dateFrom;
           toDate = dateTo;
         }
-        // For "history" mode, no date filter (show all)
 
         const result = await getManualMovements({
           branchId,
@@ -107,8 +125,11 @@ export function MovimientosCaja({
             filterCashRegister !== "all" ? filterCashRegister : undefined,
           type:
             filterMovementType !== "all"
-              ? (filterMovementType as "INCOME" | "EXPENSE")
+              ? (filterMovementType as "INCOME" | "EXPENSE" | "CORRECTION")
               : undefined,
+          description: searchDescription.trim() || undefined,
+          sortBy,
+          sortOrder,
           limit: pageSize,
           offset: pageNum * pageSize,
         });
@@ -132,16 +153,38 @@ export function MovimientosCaja({
       filterCashRegister,
       filterMovementType,
       filterType,
-      pageSize,
+      searchDescription,
+      sortBy,
+      sortOrder,
       today,
     ],
   );
 
-  // Load today's movements on mount only
+  // Auto-trigger loadMovements with debounce when filters change
   useEffect(() => {
-    loadMovements();
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      loadMovements(0);
+    }, 300);
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    filterType,
+    dateFrom,
+    dateTo,
+    filterCashRegister,
+    filterMovementType,
+    searchDescription,
+    sortBy,
+    sortOrder,
+  ]);
 
   // Handle filter type change
   const handleSetToday = () => {
@@ -158,7 +201,6 @@ export function MovimientosCaja({
 
   const handleSetDateRange = () => {
     setFilterType("dateRange");
-    // Set default range to last 7 days
     const from = new Date();
     from.setDate(from.getDate() - 7);
     setDateFrom(from.toISOString().split("T")[0]);
@@ -171,11 +213,46 @@ export function MovimientosCaja({
     setDateTo("");
     setFilterCashRegister("all");
     setFilterMovementType("all");
+    setSearchDescription("");
   };
 
   const handleRowClick = (movement: Movement) => {
+    if (movement.isOptimistic) return;
     setSelectedMovement(movement);
-    setDetailsDialogOpen(true);
+    setDetailsSidebarOpen(true);
+  };
+
+  const handleSortColumn = (column: SortBy) => {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortOrder("desc");
+    }
+  };
+
+  // Optimistic update handlers
+  const handleMovementAdded = (optimistic: OptimisticMovement) => {
+    setMovements((prev) => [optimistic as Movement, ...prev]);
+    setTotal((prev) => prev + 1);
+  };
+
+  const handleMovementFailed = (tempId: string) => {
+    setMovements((prev) => prev.filter((m) => m.id !== tempId));
+    setTotal((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleMovementConfirmed = (
+    tempId: string,
+    real: OptimisticMovement,
+  ) => {
+    setMovements((prev) =>
+      prev.map((m) =>
+        m.id === tempId ? { ...real, isOptimistic: false } : m,
+      ),
+    );
+    // Reload to get fresh data from server
+    loadMovements(0);
   };
 
   // Format helpers
@@ -193,7 +270,81 @@ export function MovimientosCaja({
   const hasActiveFilters =
     filterType !== "today" ||
     filterCashRegister !== "all" ||
-    filterMovementType !== "all";
+    filterMovementType !== "all" ||
+    searchDescription !== "";
+
+  const SortIcon = ({ column }: { column: SortBy }) => {
+    if (sortBy !== column)
+      return <ArrowUpDown className="h-3.5 w-3.5 ml-1 opacity-40" />;
+    return sortOrder === "asc" ? (
+      <ArrowUp className="h-3.5 w-3.5 ml-1" />
+    ) : (
+      <ArrowDown className="h-3.5 w-3.5 ml-1" />
+    );
+  };
+
+  const getMovementBadge = (movement: Movement) => {
+    if (movement.type === "CORRECTION") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+          <ArrowLeftRight className="h-3 w-3" />
+          {MOVEMENT_TYPE_LABELS.CORRECTION}
+        </span>
+      );
+    }
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+          movement.type === "INCOME"
+            ? "bg-green-100 text-green-700"
+            : "bg-red-100 text-red-700",
+        )}
+      >
+        {movement.type === "INCOME" ? (
+          <TrendingUp className="h-3 w-3" />
+        ) : (
+          <TrendingDown className="h-3 w-3" />
+        )}
+        {MOVEMENT_TYPE_LABELS[movement.type]}
+      </span>
+    );
+  };
+
+  const getAmountDisplay = (movement: Movement) => {
+    if (movement.type === "CORRECTION") {
+      const isPositive = movement.amount >= 0;
+      return (
+        <span
+          className={cn(
+            "font-medium",
+            isPositive ? "text-green-600" : "text-red-600",
+          )}
+        >
+          {isPositive ? "+" : ""}
+          {formatCurrency(movement.amount)}
+        </span>
+      );
+    }
+    return (
+      <span
+        className={cn(
+          "font-medium",
+          movement.type === "INCOME" ? "text-green-600" : "text-red-600",
+        )}
+      >
+        {movement.type === "INCOME" ? "+" : "-"}
+        {formatCurrency(movement.amount)}
+      </span>
+    );
+  };
+
+  const getRowBorderClass = (movement: Movement) => {
+    if (movement.type === "CORRECTION") return "border-l-4 border-l-yellow-400";
+    return movement.type === "INCOME"
+      ? "border-l-4 border-l-green-500"
+      : "border-l-4 border-l-red-500";
+  };
 
   return (
     <div>
@@ -204,11 +355,16 @@ export function MovimientosCaja({
             Movimientos de Caja
           </h2>
         </div>
-        <AddMovementDialog cashRegisters={cashRegisters} />
+        <AddMovementDialog
+          cashRegisters={cashRegisters}
+          onMovementAdded={handleMovementAdded}
+          onMovementFailed={handleMovementFailed}
+          onMovementConfirmed={handleMovementConfirmed}
+        />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Date Filter Tabs */}
         <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
           <Button
@@ -288,36 +444,40 @@ export function MovimientosCaja({
           value={filterMovementType}
           onValueChange={setFilterMovementType}
         >
-          <SelectTrigger className="w-35">
+          <SelectTrigger className="w-38">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="INCOME">Ingresos</SelectItem>
             <SelectItem value="EXPENSE">Egresos</SelectItem>
+            <SelectItem value="CORRECTION">Correcciones</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* Clear Filters & Refresh */}
-        <div className="flex items-center gap-2 ml-auto">
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Limpiar filtros
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadMovements(0)}
-            disabled={isLoading}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4 mr-1", isLoading && "animate-spin")}
-            />
-            Actualizar
-          </Button>
+        {/* Description Search */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchDescription}
+            onChange={(e) => setSearchDescription(e.target.value)}
+            placeholder="Buscar descripción..."
+            className="pl-8 w-48"
+          />
         </div>
+
+        {/* Clear Filters */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearFilters}
+            className="ml-auto"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Limpiar filtros
+          </Button>
+        )}
       </div>
 
       {/* Movements Table */}
@@ -333,7 +493,13 @@ export function MovimientosCaja({
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                Fecha y Hora
+                <button
+                  className="flex items-center hover:text-gray-900 transition-colors"
+                  onClick={() => handleSortColumn("date")}
+                >
+                  Fecha y Hora
+                  <SortIcon column="date" />
+                </button>
               </th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                 Tipo
@@ -348,7 +514,13 @@ export function MovimientosCaja({
                 Descripción
               </th>
               <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">
-                Monto
+                <button
+                  className="flex items-center ml-auto hover:text-gray-900 transition-colors"
+                  onClick={() => handleSortColumn("amount")}
+                >
+                  Monto
+                  <SortIcon column="amount" />
+                </button>
               </th>
             </tr>
           </thead>
@@ -356,7 +528,7 @@ export function MovimientosCaja({
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center">
-                  <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-400 mb-2" />
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 mx-auto mb-2" />
                   <p className="text-gray-500">Cargando movimientos...</p>
                 </td>
               </tr>
@@ -377,10 +549,11 @@ export function MovimientosCaja({
                   key={movement.id}
                   onClick={() => handleRowClick(movement)}
                   className={cn(
-                    "hover:bg-gray-50 transition-colors cursor-pointer",
-                    movement.type === "INCOME"
-                      ? "border-l-4 border-l-green-500"
-                      : "border-l-4 border-l-red-500",
+                    "transition-colors",
+                    getRowBorderClass(movement),
+                    movement.isOptimistic
+                      ? "opacity-60 cursor-default"
+                      : "hover:bg-gray-50 cursor-pointer",
                   )}
                 >
                   {/* Date/Time */}
@@ -389,23 +562,7 @@ export function MovimientosCaja({
                   </td>
 
                   {/* Type */}
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-                        movement.type === "INCOME"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700",
-                      )}
-                    >
-                      {movement.type === "INCOME" ? (
-                        <TrendingUp className="h-3 w-3" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3" />
-                      )}
-                      {MOVEMENT_TYPE_LABELS[movement.type]}
-                    </span>
-                  </td>
+                  <td className="px-4 py-3">{getMovementBadge(movement)}</td>
 
                   {/* Payment Method */}
                   <td className="px-4 py-3 text-sm">
@@ -426,17 +583,7 @@ export function MovimientosCaja({
 
                   {/* Amount */}
                   <td className="px-4 py-3 text-right">
-                    <span
-                      className={cn(
-                        "font-medium",
-                        movement.type === "INCOME"
-                          ? "text-green-600"
-                          : "text-red-600",
-                      )}
-                    >
-                      {movement.type === "INCOME" ? "+" : "-"}
-                      {formatCurrency(movement.amount)}
-                    </span>
+                    {getAmountDisplay(movement)}
                   </td>
                 </tr>
               ))
@@ -474,11 +621,14 @@ export function MovimientosCaja({
         )}
       </div>
 
-      {/* Movement Details Dialog */}
-      <MovementDetailsDialog
-        open={detailsDialogOpen}
-        onOpenChange={setDetailsDialogOpen}
+      {/* Movement Details Sidebar */}
+      <MovementDetailsSidebar
+        open={detailsSidebarOpen}
+        onClose={() => setDetailsSidebarOpen(false)}
         movement={selectedMovement}
+        cashRegisters={cashRegisters}
+        onMovementUpdated={() => loadMovements(0)}
+        userRole={userRole}
       />
     </div>
   );

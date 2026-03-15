@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getRestaurant } from "@/actions/Restaurant";
 import { getActiveHomePageLinks } from "@/actions/HomePageLinks";
 import Avatar from "@/components/avatar";
@@ -5,6 +6,12 @@ import WhatsappIcon from "@/components/ui/icons/Whatsapp";
 import { MapPin } from "lucide-react";
 import Link from "next/link";
 import type { SerializedHomePageLink } from "@/actions/HomePageLinks";
+
+export const metadata: Metadata = {
+  openGraph: {
+    images: [{ url: "https://res.cloudinary.com/dujkztmkx/image/upload/v1764695269/LOGO_sbz1rh.svg" }],
+  },
+};
 
 export default async function Home() {
   const restaurantId = process.env.RESTAURANT_ID || "";

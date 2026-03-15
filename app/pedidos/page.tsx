@@ -1,7 +1,22 @@
+import type { Metadata } from "next";
 import {
   getDeliveryConfig,
   isDeliveryAvailable,
 } from "@/actions/DeliveryConfig";
+
+export const metadata: Metadata = {
+  title: "Pedidos",
+  description: "Realizá tu pedido para delivery o takeaway",
+  openGraph: {
+    title: "Pedidos",
+    description: "Realizá tu pedido para delivery o takeaway",
+    images: [
+      {
+        url: "https://res.cloudinary.com/dujkztmkx/image/upload/v1764695269/LOGO_sbz1rh.svg",
+      },
+    ],
+  },
+};
 import { getProductsForDeliveryMenu } from "@/actions/Order";
 import { getRestaurantByBranchId } from "@/actions/Restaurant";
 import { OrderType } from "@/app/generated/prisma";
@@ -47,29 +62,53 @@ export default async function PedidosPage() {
 
   // Fetch product sets for each enabled order type.
   // When both are enabled we need both price sets since prices can differ per type.
-  let products: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["products"] = [];
-  let sections: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["sections"] = [];
-  let takeawayProducts: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["products"] = [];
-  let takeawaySections: Awaited<ReturnType<typeof getProductsForDeliveryMenu>>["sections"] = [];
+  let products: Awaited<
+    ReturnType<typeof getProductsForDeliveryMenu>
+  >["products"] = [];
+  let sections: Awaited<
+    ReturnType<typeof getProductsForDeliveryMenu>
+  >["sections"] = [];
+  let takeawayProducts: Awaited<
+    ReturnType<typeof getProductsForDeliveryMenu>
+  >["products"] = [];
+  let takeawaySections: Awaited<
+    ReturnType<typeof getProductsForDeliveryMenu>
+  >["sections"] = [];
 
   if (config.menuId) {
     if (allowDelivery && allowTakeAway) {
       // Fetch both price sets in parallel
       const [deliveryResult, takeawayResult] = await Promise.all([
-        getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY),
-        getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.TAKE_AWAY),
+        getProductsForDeliveryMenu(
+          BRANCH_ID,
+          config.menuId,
+          OrderType.DELIVERY,
+        ),
+        getProductsForDeliveryMenu(
+          BRANCH_ID,
+          config.menuId,
+          OrderType.TAKE_AWAY,
+        ),
       ]);
       products = deliveryResult.products;
       sections = deliveryResult.sections;
       takeawayProducts = takeawayResult.products;
       takeawaySections = takeawayResult.sections;
     } else if (allowTakeAway) {
-      const result = await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.TAKE_AWAY);
+      const result = await getProductsForDeliveryMenu(
+        BRANCH_ID,
+        config.menuId,
+        OrderType.TAKE_AWAY,
+      );
       products = result.products;
       sections = result.sections;
     } else {
       // Default: delivery only
-      const result = await getProductsForDeliveryMenu(BRANCH_ID, config.menuId, OrderType.DELIVERY);
+      const result = await getProductsForDeliveryMenu(
+        BRANCH_ID,
+        config.menuId,
+        OrderType.DELIVERY,
+      );
       products = result.products;
       sections = result.sections;
     }

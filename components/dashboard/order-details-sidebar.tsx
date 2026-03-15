@@ -1,30 +1,27 @@
 "use client";
 
-import { formatCurrency } from "@/lib/currency";
-import { calculateDiscountAmount } from "@/lib/discount";
-import React from "react";
 import type { ClientData } from "@/actions/clients";
+import { getDeliveryConfig } from "@/actions/DeliveryConfig";
 import {
+  addOrderItems,
   assignClientToOrder,
   assignStaffToOrder,
-  updateOrderStatus,
+  getAvailableProductsForOrder,
   updateDeliveryFee,
   updateDiscount,
-  addOrderItems,
-  getAvailableProductsForOrder,
+  updateOrderStatus,
   updateOrderType,
 } from "@/actions/Order";
+import { OrderStatus, OrderType } from "@/app/generated/prisma";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { getDeliveryConfig } from "@/actions/DeliveryConfig";
-import { usePrint } from "@/hooks/use-print";
-import { OrderStatus, OrderType } from "@/app/generated/prisma";
-import { Button } from "@/components/ui/button";
+import { NumberInput } from "@/components/ui/number-input";
 import {
   Select,
   SelectContent,
@@ -32,11 +29,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePrint } from "@/hooks/use-print";
+import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency";
+import { calculateDiscountAmount } from "@/lib/discount";
 import { cn } from "@/lib/utils";
+import type { OrderProduct } from "@/types/products";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   ArrowLeftRight,
+  Banknote,
   Clock,
   CreditCard,
   DollarSign,
@@ -51,21 +54,16 @@ import {
   User,
   UtensilsCrossed,
   X,
-  Banknote,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/ui/number-input";
-import { useState } from "react";
+import React, { useState } from "react";
 import TableIcon from "../ui/icons/TableIcon";
 import { ClientPicker } from "./client-picker";
-import { WaiterPicker } from "./waiter-picker";
 import { CloseOrderDialog } from "./close-order-dialog";
 import { CreateClientDialog } from "./create-client-dialog";
 import { GenerateInvoiceDialog } from "./generate-invoice-dialog";
-import { ProductPicker } from "./product-picker";
 import { PreOrderItemsList, type PreOrderItem } from "./pre-order-items-list";
-import { useToast } from "@/hooks/use-toast";
-import type { OrderProduct } from "@/types/products";
+import { ProductPicker } from "./product-picker";
+import { WaiterPicker } from "./waiter-picker";
 
 type Order = {
   id: string;
@@ -176,7 +174,9 @@ export function OrderDetailsSidebar({
   const [isEditing, setIsEditing] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [discountInput, setDiscountInput] = useState("");
-  const [discountTypeInput, setDiscountTypeInput] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
+  const [discountTypeInput, setDiscountTypeInput] = useState<
+    "PERCENTAGE" | "FIXED"
+  >("PERCENTAGE");
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -184,7 +184,9 @@ export function OrderDetailsSidebar({
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
-  const [currentDeliveryFee, setCurrentDeliveryFee] = useState(order?.deliveryFee ?? 0);
+  const [currentDeliveryFee, setCurrentDeliveryFee] = useState(
+    order?.deliveryFee ?? 0,
+  );
 
   // Type change state
   const [typeChangeConfirmOpen, setTypeChangeConfirmOpen] = useState(false);
@@ -193,12 +195,19 @@ export function OrderDetailsSidebar({
 
   // Add items state
   const [preOrderItems, setPreOrderItems] = useState<PreOrderItem[]>([]);
-  const [availableProducts, setAvailableProducts] = useState<OrderProduct[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<OrderProduct[]>(
+    [],
+  );
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isConfirmingItems, setIsConfirmingItems] = useState(false);
 
   // GG EZ Print printing
-  const { printControlTicket, printPreOrderTicket, printOrderItems, isPrinting } = usePrint();
+  const {
+    printControlTicket,
+    printPreOrderTicket,
+    printOrderItems,
+    isPrinting,
+  } = usePrint();
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -217,7 +226,8 @@ export function OrderDetailsSidebar({
   }, [order?.id, order?.type, branchId]);
 
   React.useEffect(() => {
-    if (order?.type !== OrderType.DELIVERY || (order?.deliveryFee ?? 0) !== 0) return;
+    if (order?.type !== OrderType.DELIVERY || (order?.deliveryFee ?? 0) !== 0)
+      return;
     getDeliveryConfig(branchId).then((config) => {
       const fee = config?.data?.deliveryFee;
       if (fee && fee > 0) {
@@ -235,13 +245,18 @@ export function OrderDetailsSidebar({
     0,
   );
   const effectiveDiscount = isEditing
-    ? (parseFloat(discountInput) || 0)
+    ? parseFloat(discountInput) || 0
     : order.discountPercentage;
   const effectiveDiscountType = isEditing
     ? discountTypeInput
     : (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
-  const discount = calculateDiscountAmount(subtotal, effectiveDiscount, effectiveDiscountType);
-  const deliveryFeeValue = order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
+  const discount = calculateDiscountAmount(
+    subtotal,
+    effectiveDiscount,
+    effectiveDiscountType,
+  );
+  const deliveryFeeValue =
+    order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
   const total = subtotal - discount + deliveryFeeValue;
 
   const handleClientSelect = (client: ClientData | null) => {
@@ -325,7 +340,10 @@ export function OrderDetailsSidebar({
         })),
       );
     } else {
-      toast({ variant: "destructive", title: result.error || "Error al agregar productos" });
+      toast({
+        variant: "destructive",
+        title: result.error || "Error al agregar productos",
+      });
     }
     setIsConfirmingItems(false);
   };
@@ -333,7 +351,10 @@ export function OrderDetailsSidebar({
   const handleDeliveryFeeBlur = async () => {
     const result = await updateDeliveryFee(order.id, currentDeliveryFee);
     if (!result.success) {
-      toast({ variant: "destructive", title: "Error al actualizar el costo de envío" });
+      toast({
+        variant: "destructive",
+        title: "Error al actualizar el costo de envío",
+      });
     } else {
       onOrderUpdated?.();
     }
@@ -480,22 +501,32 @@ export function OrderDetailsSidebar({
         order.discountPercentage > 0 ? order.discountPercentage : undefined,
       discountType:
         order.discountPercentage > 0 ? order.discountType : undefined,
-      deliveryFee: isDelivery && currentDeliveryFee > 0 ? currentDeliveryFee : undefined,
+      deliveryFee:
+        isDelivery && currentDeliveryFee > 0 ? currentDeliveryFee : undefined,
       orderType: order.type,
       customerName: order.client?.name || order.customerName || undefined,
       clientPhone: isDelivery ? (order.client?.phone ?? undefined) : undefined,
       deliveryAddress: isDelivery ? deliveryAddress : undefined,
-      deliveryCity: isDelivery ? (order.client?.addressCity ?? undefined) : undefined,
-      deliveryNotes: isDelivery ? (order.client?.notes ?? undefined) : undefined,
-      payments: order.cashMovements && order.cashMovements.length > 0
-        ? order.cashMovements.map((m) => ({ method: m.paymentMethod, amount: m.amount }))
+      deliveryCity: isDelivery
+        ? (order.client?.addressCity ?? undefined)
         : undefined,
+      deliveryNotes: isDelivery
+        ? (order.client?.notes ?? undefined)
+        : undefined,
+      payments:
+        order.cashMovements && order.cashMovements.length > 0
+          ? order.cashMovements.map((m) => ({
+              method: m.paymentMethod,
+              amount: m.amount,
+            }))
+          : undefined,
       paymentMethod: showPaymentMethod
         ? (paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod)
         : undefined,
-      orderCreatedAt: order.createdAt instanceof Date
-        ? order.createdAt.toISOString()
-        : order.createdAt,
+      orderCreatedAt:
+        order.createdAt instanceof Date
+          ? order.createdAt.toISOString()
+          : order.createdAt,
     });
 
     if (!success) {
@@ -569,7 +600,9 @@ export function OrderDetailsSidebar({
     order.status !== OrderStatus.CANCELED;
 
   const oppositeType =
-    order.type === OrderType.TAKE_AWAY ? OrderType.DELIVERY : OrderType.TAKE_AWAY;
+    order.type === OrderType.TAKE_AWAY
+      ? OrderType.DELIVERY
+      : OrderType.TAKE_AWAY;
 
   // Check if order can be finalized (not already completed or canceled)
   const canFinalizeOrder =
@@ -938,7 +971,8 @@ export function OrderDetailsSidebar({
                     {item.originalPrice &&
                       item.originalPrice !== item.price && (
                         <div className="text-xs text-orange-600">
-                          Precio modificado (Original: {formatCurrency(item.originalPrice)})
+                          Precio modificado (Original:{" "}
+                          {formatCurrency(item.originalPrice)})
                         </div>
                       )}
                   </div>
@@ -947,8 +981,7 @@ export function OrderDetailsSidebar({
                       {formatCurrency(item.quantity * item.price)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {formatCurrency(item.price)}{" "}
-                      c/u
+                      {formatCurrency(item.price)} c/u
                     </div>
                   </div>
                 </div>
@@ -962,9 +995,7 @@ export function OrderDetailsSidebar({
           {/* Subtotal */}
           <div className="flex justify-between px-4 py-3">
             <span className="text-gray-600">Subtotal</span>
-            <span className="font-medium">
-              {formatCurrency(subtotal)}
-            </span>
+            <span className="font-medium">{formatCurrency(subtotal)}</span>
           </div>
 
           {/* Discount */}
@@ -976,7 +1007,9 @@ export function OrderDetailsSidebar({
               <div className="flex items-center gap-1">
                 <Button
                   type="button"
-                  variant={discountTypeInput === "PERCENTAGE" ? "default" : "outline"}
+                  variant={
+                    discountTypeInput === "PERCENTAGE" ? "default" : "outline"
+                  }
                   size="sm"
                   className="h-7 px-2"
                   onClick={() => setDiscountTypeInput("PERCENTAGE")}
@@ -985,7 +1018,9 @@ export function OrderDetailsSidebar({
                 </Button>
                 <Button
                   type="button"
-                  variant={discountTypeInput === "FIXED" ? "default" : "outline"}
+                  variant={
+                    discountTypeInput === "FIXED" ? "default" : "outline"
+                  }
                   size="sm"
                   className="h-7 px-2"
                   onClick={() => setDiscountTypeInput("FIXED")}
@@ -1028,12 +1063,16 @@ export function OrderDetailsSidebar({
             <div className="px-4 py-3 flex justify-between items-center text-blue-600">
               <span>Costo de envío</span>
               <div className="relative w-28">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+                  $
+                </span>
                 <NumberInput
                   min="0"
                   step="0.01"
                   value={currentDeliveryFee}
-                  onChange={(e) => setCurrentDeliveryFee(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setCurrentDeliveryFee(parseFloat(e.target.value) || 0)
+                  }
                   onBlur={handleDeliveryFeeBlur}
                   disabled={order.status === OrderStatus.COMPLETED}
                   className="h-8 pl-6 text-right"
@@ -1045,9 +1084,7 @@ export function OrderDetailsSidebar({
           {/* Total */}
           <div className="flex justify-between px-4 py-4 bg-gray-100 font-semibold text-lg">
             <span>Total</span>
-            <span className="text-red-600">
-              {formatCurrency(total)}
-            </span>
+            <span className="text-red-600">{formatCurrency(total)}</span>
           </div>
 
           {/* Payment breakdown — shown below total for completed orders */}
@@ -1055,10 +1092,16 @@ export function OrderDetailsSidebar({
             <div className="border-t">
               {order.cashMovements && order.cashMovements.length > 0 ? (
                 order.cashMovements.map((m, i) => (
-                  <div key={i} className="flex justify-between items-center px-4 py-2 text-sm">
+                  <div
+                    key={i}
+                    className="flex justify-between items-center px-4 py-2 text-sm"
+                  >
                     <div className="flex items-center gap-2 text-gray-500">
                       <CreditCard className="h-3.5 w-3.5" />
-                      <span>{paymentMethodLabels[m.paymentMethod] ?? m.paymentMethod}</span>
+                      <span>
+                        {paymentMethodLabels[m.paymentMethod] ??
+                          m.paymentMethod}
+                      </span>
                     </div>
                     <span className="font-medium text-gray-700">
                       {formatCurrency(m.amount)}
@@ -1068,7 +1111,10 @@ export function OrderDetailsSidebar({
               ) : (
                 <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500">
                   <CreditCard className="h-3.5 w-3.5" />
-                  <span>{paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod}</span>
+                  <span>
+                    {paymentMethodLabels[order.paymentMethod] ??
+                      order.paymentMethod}
+                  </span>
                 </div>
               )}
             </div>
@@ -1155,7 +1201,10 @@ export function OrderDetailsSidebar({
       />
 
       {/* Change Order Type Confirmation Dialog */}
-      <Dialog open={typeChangeConfirmOpen} onOpenChange={setTypeChangeConfirmOpen}>
+      <Dialog
+        open={typeChangeConfirmOpen}
+        onOpenChange={setTypeChangeConfirmOpen}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Cambiar tipo de orden</DialogTitle>
@@ -1166,10 +1215,14 @@ export function OrderDetailsSidebar({
                 ¿Cambiar de{" "}
                 <span className="font-semibold">{typeLabels[order.type]}</span>{" "}
                 a{" "}
-                <span className="font-semibold">{typeLabels[pendingNewType]}</span>?
+                <span className="font-semibold">
+                  {typeLabels[pendingNewType]}
+                </span>
+                ?
               </p>
               <p className="text-xs text-gray-500">
-                Los precios de los productos se recalcularán según el nuevo tipo.
+                Los precios de los productos se recalcularán según el nuevo
+                tipo.
                 {pendingNewType === OrderType.DELIVERY
                   ? " Se aplicará el costo de envío configurado."
                   : " Se eliminará el costo de envío."}

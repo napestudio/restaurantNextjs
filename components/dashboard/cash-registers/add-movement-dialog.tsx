@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,28 +21,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, DollarSign } from "lucide-react";
+import { Plus, DollarSign, Minus } from "lucide-react";
 import { addManualMovement } from "@/actions/CashRegister";
 import {
   CashRegisterWithStatus,
   PAYMENT_METHODS,
   MOVEMENT_TYPE_LABELS,
 } from "@/types/cash-register";
+import { cn } from "@/lib/utils";
+
+export interface OptimisticMovement {
+  id: string;
+  type: "INCOME" | "EXPENSE" | "CORRECTION";
+  paymentMethod: string;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+  createdBy: string;
+  createdByName: string;
+  sessionId: string;
+  cashRegister: { id: string; name: string };
+  isOptimistic: true;
+}
 
 interface AddMovementDialogProps {
   cashRegisters: CashRegisterWithStatus[];
+  onMovementAdded?: (movement: OptimisticMovement) => void;
+  onMovementFailed?: (tempId: string) => void;
+  onMovementConfirmed?: (tempId: string, realMovement: OptimisticMovement) => void;
 }
 
 export function AddMovementDialog({
   cashRegisters,
+  onMovementAdded,
+  onMovementFailed,
+  onMovementConfirmed,
 }: AddMovementDialogProps) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState<"INCOME" | "EXPENSE">("INCOME");
+  const [type, setType] = useState<"INCOME" | "EXPENSE" | "CORRECTION">("INCOME");
+  const [correctionSign, setCorrectionSign] = useState<"positive" | "negative">("positive");
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [cashRegisterId, setCashRegisterId] = useState("");
   const [description, setDescription] = useState("");
-  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Get only registers with open sessions
@@ -51,12 +71,26 @@ export function AddMovementDialog({
     (r) => r.hasOpenSession && r.isActive
   );
 
+  // Default to the first open register when dialog opens
+  useEffect(() => {
+    if (open && !cashRegisterId && registersWithOpenSessions.length > 0) {
+      setCashRegisterId(registersWithOpenSessions[0].id);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Get the session ID for the selected register
   const getSessionId = () => {
     const register = registersWithOpenSessions.find(
       (r) => r.id === cashRegisterId
     );
     return register?.sessions[0]?.id;
+  };
+
+  const getSelectedRegisterName = () => {
+    const register = registersWithOpenSessions.find(
+      (r) => r.id === cashRegisterId
+    );
+    return register?.name ?? cashRegisterId;
   };
 
   const handleSubmit = async () => {
@@ -77,39 +111,92 @@ export function AddMovementDialog({
       return;
     }
 
-    setIsPending(true);
-    setError(null);
+    if (type === "CORRECTION" && !description.trim()) {
+      setError("La descripción es requerida para correcciones");
+      return;
+    }
 
+    const finalAmount =
+      type === "CORRECTION" && correctionSign === "negative"
+        ? -parsedAmount
+        : parsedAmount;
+
+    // Capture all values before resetting the form
+    const capturedType = type;
+    const capturedPaymentMethod = paymentMethod;
+    const capturedCashRegisterId = cashRegisterId;
+    const capturedDescription = description.trim();
+    const capturedRegisterName = getSelectedRegisterName();
+
+    const tempId = crypto.randomUUID();
+    const optimisticMovement: OptimisticMovement = {
+      id: tempId,
+      type: capturedType,
+      paymentMethod: capturedPaymentMethod,
+      amount: finalAmount,
+      description: capturedDescription || null,
+      createdAt: new Date().toISOString(),
+      createdBy: "",
+      createdByName: "Tú",
+      sessionId,
+      cashRegister: { id: capturedCashRegisterId, name: capturedRegisterName },
+      isOptimistic: true,
+    };
+
+    // Optimistic update — update UI immediately and close dialog
+    onMovementAdded?.(optimisticMovement);
+    resetForm();
+    setOpen(false);
+
+    // Run server action in background
     try {
       const result = await addManualMovement({
         sessionId,
-        type,
-        paymentMethod: paymentMethod as "CASH" | "CARD_DEBIT" | "CARD_CREDIT" | "ACCOUNT" | "TRANSFER" | "PAYMENT_LINK" | "QR_CODE",
-        amount: parsedAmount,
-        description: description.trim() || undefined,
+        type: capturedType,
+        paymentMethod: capturedPaymentMethod as
+          | "CASH"
+          | "CARD_DEBIT"
+          | "CARD_CREDIT"
+          | "ACCOUNT"
+          | "TRANSFER"
+          | "PAYMENT_LINK"
+          | "QR_CODE",
+        amount: finalAmount,
+        description: capturedDescription || undefined,
       });
 
-      if (result.success) {
-        resetForm();
-        setOpen(false);
+      if (result.success && result.data) {
+        const real = result.data as unknown as {
+          id: string;
+          createdAt: string;
+          createdBy: string;
+        };
+        onMovementConfirmed?.(tempId, {
+          ...optimisticMovement,
+          id: real.id,
+          createdAt: real.createdAt,
+          createdBy: real.createdBy,
+          isOptimistic: true,
+        });
       } else {
-        setError(result.error || "Error al agregar el movimiento");
+        onMovementFailed?.(tempId);
       }
     } catch {
-      setError("Error al agregar el movimiento");
-    } finally {
-      setIsPending(false);
+      onMovementFailed?.(tempId);
     }
   };
 
   const resetForm = () => {
     setAmount("");
     setType("INCOME");
+    setCorrectionSign("positive");
     setPaymentMethod("CASH");
     setCashRegisterId("");
     setDescription("");
     setError(null);
   };
+
+  const isSubmitDisabled = !amount || !cashRegisterId;
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -133,7 +220,7 @@ export function AddMovementDialog({
         <DialogHeader>
           <DialogTitle>Nuevo Movimiento de Caja</DialogTitle>
           <DialogDescription>
-            Registra un ingreso o egreso manual en la caja.
+            Registra un ingreso, egreso o corrección manual en la caja.
           </DialogDescription>
         </DialogHeader>
 
@@ -151,8 +238,7 @@ export function AddMovementDialog({
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 className="pl-10"
-                disabled={isPending}
-              />
+                              />
             </div>
           </div>
 
@@ -161,9 +247,10 @@ export function AddMovementDialog({
             <Label htmlFor="type">Tipo *</Label>
             <Select
               value={type}
-              onValueChange={(value) => setType(value as "INCOME" | "EXPENSE")}
-              disabled={isPending}
-            >
+              onValueChange={(value) =>
+                setType(value as "INCOME" | "EXPENSE" | "CORRECTION")
+              }
+                          >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
@@ -174,9 +261,47 @@ export function AddMovementDialog({
                 <SelectItem value="EXPENSE">
                   {MOVEMENT_TYPE_LABELS.EXPENSE}
                 </SelectItem>
+                <SelectItem value="CORRECTION">
+                  {MOVEMENT_TYPE_LABELS.CORRECTION}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Correction direction toggle */}
+          {type === "CORRECTION" && (
+            <div className="space-y-2">
+              <Label>Dirección *</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCorrectionSign("positive")}
+                                    className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors",
+                    correctionSign === "positive"
+                      ? "bg-green-100 border-green-400 text-green-700"
+                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Positivo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCorrectionSign("negative")}
+                                    className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors",
+                    correctionSign === "negative"
+                      ? "bg-red-100 border-red-400 text-red-700"
+                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                  Negativo
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Payment Method */}
           <div className="space-y-2">
@@ -184,8 +309,7 @@ export function AddMovementDialog({
             <Select
               value={paymentMethod}
               onValueChange={setPaymentMethod}
-              disabled={isPending}
-            >
+                          >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar medio de pago" />
               </SelectTrigger>
@@ -205,8 +329,7 @@ export function AddMovementDialog({
             <Select
               value={cashRegisterId}
               onValueChange={setCashRegisterId}
-              disabled={isPending}
-            >
+                          >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar caja" />
               </SelectTrigger>
@@ -233,15 +356,20 @@ export function AddMovementDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Comentario (Opcional)</Label>
+            <Label htmlFor="description">
+              Comentario {type === "CORRECTION" ? "*" : "(Opcional)"}
+            </Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descripción del movimiento..."
+              placeholder={
+                type === "CORRECTION"
+                  ? "Describe la razón de la corrección..."
+                  : "Descripción del movimiento..."
+              }
               rows={3}
-              disabled={isPending}
-            />
+                          />
           </div>
 
           {/* Error */}
@@ -256,16 +384,15 @@ export function AddMovementDialog({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={isPending}
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSubmit}
             className="bg-red-600 hover:bg-red-700"
-            disabled={isPending || !amount || !cashRegisterId}
+            disabled={isSubmitDisabled}
           >
-            {isPending ? "Guardando..." : "Agregar Movimiento"}
+            Agregar Movimiento
           </Button>
         </DialogFooter>
       </DialogContent>

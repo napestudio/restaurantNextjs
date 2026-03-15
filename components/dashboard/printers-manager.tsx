@@ -1,27 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Plus,
-  Search,
-  Printer as PrinterIcon,
-  Settings,
-  Trash2,
-  HelpCircle,
-} from "lucide-react";
-import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import type { Printer, Station } from "@/app/generated/prisma";
-import { CreatePrinterDialog } from "./printers/create-printer-dialog";
-import { PrinterDetailsSidebar } from "./printers/printer-details-sidebar";
-import { CreateStationDialog } from "./printers/create-station-dialog";
-import { StationDetailsSidebar } from "./printers/station-details-sidebar";
-import { PrintersTable } from "./printers/printers-table";
-import { GgEzPrintConnectionStatus } from "./printers/gg-ez-print-connection-status";
 import { deleteStation } from "@/actions/Station";
+import type { Printer, Station } from "@/app/generated/prisma";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +12,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Plus,
+  Printer as PrinterIcon,
+  Search,
+  Settings,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import { CreatePrinterDialog } from "./printers/create-printer-dialog";
+import { CreateStationDialog } from "./printers/create-station-dialog";
+import { GgEzPrintConnectionStatus } from "./printers/gg-ez-print-connection-status";
+import { PrinterDetailsSidebar } from "./printers/printer-details-sidebar";
+import { PrintersTable } from "./printers/printers-table";
+import { StationDetailsSidebar } from "./printers/station-details-sidebar";
 
 type PrinterWithStation = Printer & {
   station: { id: string; name: string; color: string } | null;

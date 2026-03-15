@@ -432,7 +432,7 @@ export function CashRegistersClient({
 
         {/* Movimientos Tab */}
         <TabsContent value="movimientos">
-          <MovimientosCaja branchId={branchId} cashRegisters={cashRegisters} />
+          <MovimientosCaja branchId={branchId} cashRegisters={cashRegisters} userRole={userRole} />
         </TabsContent>
       </Tabs>
 
