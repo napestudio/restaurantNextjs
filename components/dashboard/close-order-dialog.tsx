@@ -21,10 +21,11 @@ import {
 } from "@/components/ui/select";
 import { usePrint } from "@/hooks/use-print";
 import { formatCurrency } from "@/lib/currency";
+import { calculateDiscountAmount } from "@/lib/discount";
 import { PAYMENT_METHODS } from "@/types/cash-register";
 import { PaymentSection } from "@/components/dashboard/payment-section";
 import { usePayments } from "@/hooks/use-payments";
-import { Percent, Receipt, Settings, X } from "lucide-react";
+import { Check, DollarSign, Percent, Receipt, Settings, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
@@ -45,6 +46,7 @@ interface Order {
   type: OrderType;
   partySize: number | null;
   discountPercentage: number;
+  discountType: string;
   deliveryFee: number;
   tableId: string | null;
   customerName: string | null;
@@ -117,6 +119,9 @@ export function CloseOrderDialog({
   const [currentDiscount, setCurrentDiscount] = useState(
     order.discountPercentage,
   );
+  const [currentDiscountType, setCurrentDiscountType] = useState<
+    "PERCENTAGE" | "FIXED"
+  >((order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE");
   const [currentDeliveryFee, setCurrentDeliveryFee] = useState(
     order.deliveryFee,
   );
@@ -144,8 +149,8 @@ export function CloseOrderDialog({
   }, [order.items]);
 
   const discountAmount = useMemo(() => {
-    return subtotal * (currentDiscount / 100);
-  }, [subtotal, currentDiscount]);
+    return calculateDiscountAmount(subtotal, currentDiscount, currentDiscountType);
+  }, [subtotal, currentDiscount, currentDiscountType]);
 
   const deliveryFeeValue =
     order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
@@ -157,7 +162,10 @@ export function CloseOrderDialog({
   // Sync current discount when order changes
   useEffect(() => {
     setCurrentDiscount(order.discountPercentage);
-  }, [order.discountPercentage]);
+    setCurrentDiscountType(
+      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE",
+    );
+  }, [order.discountPercentage, order.discountType]);
 
   // Sync current delivery fee when order changes
   useEffect(() => {
@@ -237,25 +245,34 @@ export function CloseOrderDialog({
 
   const handleDiscountSave = async () => {
     const newDiscount = parseFloat(discountInput);
-    if (isNaN(newDiscount) || newDiscount < 0 || newDiscount > 100) {
-      setError("El descuento debe ser un número entre 0 y 100");
+    if (isNaN(newDiscount) || newDiscount < 0) {
+      setError("El descuento no puede ser negativo");
+      return;
+    }
+    if (currentDiscountType === "PERCENTAGE" && newDiscount > 100) {
+      setError("El descuento porcentual debe estar entre 0 y 100");
       return;
     }
 
-    // Store previous discount for rollback
+    // Store previous values for rollback
     const previousDiscount = currentDiscount;
+    const previousDiscountType = currentDiscountType;
 
-    // Optimistic update - update UI immediately
+    // Optimistic update - update UI immediately (keep editor open)
     setCurrentDiscount(newDiscount);
-    setIsEditingDiscount(false);
     setError(null);
 
     // Perform server update
-    const result = await updateDiscount(order.id, newDiscount);
+    const result = await updateDiscount(
+      order.id,
+      newDiscount,
+      currentDiscountType,
+    );
 
     if (!result.success) {
       // Rollback on failure
       setCurrentDiscount(previousDiscount);
+      setCurrentDiscountType(previousDiscountType);
       setError(result.error || "Error al actualizar el descuento");
     }
   };
@@ -341,6 +358,7 @@ export function CloseOrderDialog({
           })),
           subtotal,
           discountPercentage: currentDiscount > 0 ? currentDiscount : undefined,
+          discountType: currentDiscount > 0 ? currentDiscountType : undefined,
           deliveryFee:
             isDelivery && currentDeliveryFee > 0
               ? currentDeliveryFee
@@ -394,6 +412,9 @@ export function CloseOrderDialog({
     setError(null);
     setSelectedRegisterId("");
     setCurrentDiscount(order.discountPercentage);
+    setCurrentDiscountType(
+      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE",
+    );
     setIsEditingDiscount(false);
     setDiscountInput("");
   };
@@ -502,7 +523,13 @@ export function CloseOrderDialog({
                           <span>{formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-green-600">
-                          <span>Descuento ({currentDiscount}%):</span>
+                          <span>
+                            Descuento (
+                            {currentDiscountType === "FIXED"
+                              ? formatCurrency(currentDiscount)
+                              : `${currentDiscount}%`}
+                            ):
+                          </span>
                           <div className="flex items-center gap-2">
                             <span>-{formatCurrency(discountAmount)}</span>
                             {!isEditingDiscount && (
@@ -511,7 +538,7 @@ export function CloseOrderDialog({
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={handleDiscountEdit}
-                                disabled={isLoadingAction || isLoadingAction}
+                                disabled={isLoadingAction}
                               >
                                 <Percent className="h-3 w-3" />
                               </Button>
@@ -523,35 +550,58 @@ export function CloseOrderDialog({
 
                     {/* Discount Editor */}
                     {isEditingDiscount && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <NumberInput
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          value={discountInput}
-                          onChange={(e) => setDiscountInput(e.target.value)}
-                          className="h-8 w-20"
-                          placeholder="%"
-                          autoFocus
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8"
-                          onClick={handleDiscountSave}
-                          disabled={isLoadingAction}
-                        >
-                          Guardar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8"
-                          onClick={handleDiscountCancel}
-                          disabled={isLoadingAction}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant={currentDiscountType === "PERCENTAGE" ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => setCurrentDiscountType("PERCENTAGE")}
+                          >
+                            <Percent className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={currentDiscountType === "FIXED" ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => setCurrentDiscountType("FIXED")}
+                          >
+                            <DollarSign className="h-3 w-3" />
+                          </Button>
+                          <NumberInput
+                            min="0"
+                            max={currentDiscountType === "PERCENTAGE" ? "100" : undefined}
+                            step="0.01"
+                            value={discountInput}
+                            onChange={(e) => setDiscountInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleDiscountSave();
+                            }}
+                            className="h-8 w-24"
+                            placeholder={currentDiscountType === "PERCENTAGE" ? "%" : "$"}
+                            autoFocus
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={handleDiscountSave}
+                            disabled={isLoadingAction}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8"
+                            onClick={handleDiscountCancel}
+                            disabled={isLoadingAction}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     )}
 
@@ -561,7 +611,7 @@ export function CloseOrderDialog({
                         variant="outline"
                         size="sm"
                         onClick={handleDiscountEdit}
-                        disabled={isLoadingAction || isLoadingAction}
+                        disabled={isLoadingAction}
                         className="w-full"
                       >
                         <Percent className="h-4 w-4 mr-2" />

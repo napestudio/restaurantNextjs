@@ -160,7 +160,9 @@ export function CreateReservationSidebar({
     status: "confirmed",
   });
 
-  const [allTimeSlots, setAllTimeSlots] = useState<{ daysOfWeek: string[] }[]>([]);
+  const [allTimeSlots, setAllTimeSlots] = useState<{ daysOfWeek: string[] }[]>(
+    [],
+  );
   const [availableSlots, setAvailableSlots] = useState<
     {
       id: string;
@@ -455,14 +457,14 @@ export function CreateReservationSidebar({
             </div>
 
             {/* Time Slot Selection */}
-            <div className="space-y-2">
+            <div className="space-y-2 ">
               <Label htmlFor="new-time">Turno</Label>
               <Select
                 value={newReservation.time}
                 onValueChange={handleTimeSlotChange}
                 disabled={!newReservation.date}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full focus-visible:ring-red-500 focus-visible:border-red-400">
                   <SelectValue
                     placeholder={
                       newReservation.date
@@ -473,13 +475,13 @@ export function CreateReservationSidebar({
                 </SelectTrigger>
                 <SelectContent>
                   {availableSlots.length === 0 ? (
-                    <div className="p-2 text-sm text-gray-500 text-center">
+                    <div className="p-2 text-sm text-gray-500 text-center w-full flex-1">
                       No hay turnos disponibles
                     </div>
                   ) : (
                     availableSlots.map((slot) => (
                       <SelectItem key={slot.id} value={slot.id}>
-                        <div className="flex items-center justify-between w-full gap-4">
+                        <div className="flex items-center flex-1 justify-between w-full gap-4 font-bold">
                           <span>
                             {formatTime(slot.startTime)} -{" "}
                             {formatTime(slot.endTime)}
@@ -603,7 +605,7 @@ export function CreateReservationSidebar({
                   setNewReservation((prev) => ({ ...prev, status: value }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full focus-visible:ring-red-500 focus-visible:border-red-400">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

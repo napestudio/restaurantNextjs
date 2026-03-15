@@ -18,7 +18,7 @@ export async function getBranch(branchId: string) {
 
 export async function updateBranch(
   branchId: string,
-  data: { notificationEmail?: string }
+  data: { notificationEmail?: string; printerServerUrl?: string | null }
 ) {
   try {
     const branch = await prisma.branch.update({
@@ -27,10 +27,14 @@ export async function updateBranch(
         ...(data.notificationEmail !== undefined && {
           notificationEmail: data.notificationEmail || null,
         }),
+        ...(data.printerServerUrl !== undefined && {
+          printerServerUrl: data.printerServerUrl || null,
+        }),
       },
     });
 
     revalidatePath("/dashboard/config/slots");
+    revalidatePath("/dashboard/config/printers");
 
     return { success: true, data: branch };
   } catch (error) {

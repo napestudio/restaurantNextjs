@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/currency";
+import { calculateDiscountAmount } from "@/lib/discount";
 import React from "react";
 import type { ClientData } from "@/actions/clients";
 import {
@@ -80,6 +81,7 @@ type Order = {
   tableId: string | null;
   paymentMethod: string;
   discountPercentage: number;
+  discountType: string;
   deliveryFee: number;
   needsInvoice: boolean;
   assignedToId: string | null;
@@ -174,6 +176,7 @@ export function OrderDetailsSidebar({
   const [isEditing, setIsEditing] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [discountInput, setDiscountInput] = useState("");
+  const [discountTypeInput, setDiscountTypeInput] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -234,18 +237,27 @@ export function OrderDetailsSidebar({
   const effectiveDiscount = isEditing
     ? (parseFloat(discountInput) || 0)
     : order.discountPercentage;
-  const discount = (subtotal * effectiveDiscount) / 100;
+  const effectiveDiscountType = isEditing
+    ? discountTypeInput
+    : (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
+  const discount = calculateDiscountAmount(subtotal, effectiveDiscount, effectiveDiscountType);
   const deliveryFeeValue = order.type === OrderType.DELIVERY ? currentDeliveryFee : 0;
   const total = subtotal - discount + deliveryFeeValue;
 
   const handleClientSelect = (client: ClientData | null) => {
     setSelectedClient(client);
     setDiscountInput((client?.discountPercentage ?? 0).toString());
+    setDiscountTypeInput(
+      (client?.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE",
+    );
   };
 
   const handleEditClick = () => {
     setIsEditing(true);
     setDiscountInput(order.discountPercentage.toString());
+    setDiscountTypeInput(
+      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE",
+    );
     // Set current values
     if (order.client) {
       setSelectedClient(order.client);
@@ -260,6 +272,7 @@ export function OrderDetailsSidebar({
     setSelectedClient(null);
     setSelectedWaiterId(null);
     setDiscountInput("");
+    setDiscountTypeInput("PERCENTAGE");
   };
 
   const handleCreateNewClient = (searchQuery: string) => {
@@ -330,9 +343,21 @@ export function OrderDetailsSidebar({
       }
 
       // Update discount if changed (user's input wins over client's auto-discount)
-      const finalDiscount = Math.max(0, Math.min(100, parseFloat(discountInput) || 0));
-      if (finalDiscount !== order.discountPercentage || clientId !== currentClientId) {
-        const result = await updateDiscount(order.id, finalDiscount);
+      const rawDiscount = parseFloat(discountInput) || 0;
+      const finalDiscount =
+        discountTypeInput === "PERCENTAGE"
+          ? Math.max(0, Math.min(100, rawDiscount))
+          : Math.max(0, rawDiscount);
+      if (
+        finalDiscount !== order.discountPercentage ||
+        discountTypeInput !== order.discountType ||
+        clientId !== currentClientId
+      ) {
+        const result = await updateDiscount(
+          order.id,
+          finalDiscount,
+          discountTypeInput,
+        );
         if (!result.success) {
           console.error("Failed to update discount:", result.error);
         }
@@ -436,6 +461,8 @@ export function OrderDetailsSidebar({
       subtotal,
       discountPercentage:
         order.discountPercentage > 0 ? order.discountPercentage : undefined,
+      discountType:
+        order.discountPercentage > 0 ? order.discountType : undefined,
       deliveryFee: isDelivery && currentDeliveryFee > 0 ? currentDeliveryFee : undefined,
       orderType: order.type,
       customerName: order.client?.name || order.customerName || undefined,
@@ -927,29 +954,54 @@ export function OrderDetailsSidebar({
           {isEditing ? (
             <div className="flex justify-between items-center px-4 py-3 text-orange-600">
               <div className="flex items-center gap-1">
-                <Percent className="h-4 w-4" />
                 <span>Descuento</span>
               </div>
-              <div className="relative w-28">
-                <NumberInput
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={discountInput}
-                  onChange={(e) => setDiscountInput(e.target.value)}
-                  className="h-8 pr-6 text-right"
-                  placeholder="0"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-orange-600">%</span>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant={discountTypeInput === "PERCENTAGE" ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => setDiscountTypeInput("PERCENTAGE")}
+                >
+                  <Percent className="h-3 w-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant={discountTypeInput === "FIXED" ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => setDiscountTypeInput("FIXED")}
+                >
+                  <DollarSign className="h-3 w-3" />
+                </Button>
+                <div className="relative w-24">
+                  <NumberInput
+                    min="0"
+                    max={discountTypeInput === "PERCENTAGE" ? "100" : undefined}
+                    step="0.01"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    className="h-8 pr-6 text-right"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-orange-600">
+                    {discountTypeInput === "PERCENTAGE" ? "%" : "$"}
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
             order.discountPercentage > 0 && (
               <div className="flex justify-between px-4 py-3 text-orange-600">
-                <span>Descuento ({order.discountPercentage}%)</span>
                 <span>
-                  -{formatCurrency(discount)}
+                  Descuento (
+                  {order.discountType === "FIXED"
+                    ? formatCurrency(order.discountPercentage)
+                    : `${order.discountPercentage}%`}
+                  )
                 </span>
+                <span>-{formatCurrency(discount)}</span>
               </div>
             )
           )}

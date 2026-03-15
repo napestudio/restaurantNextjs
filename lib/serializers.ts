@@ -13,6 +13,7 @@ export type ClientData = {
   addressApartment: string | null;
   addressCity: string | null;
   discountPercentage: number;
+  discountType: string;
   preferredPaymentMethod: PaymentMethod | null;
   hasCurrentAccount: boolean;
   createdAt: Date;
@@ -33,6 +34,7 @@ export function serializeClient(client: {
   addressApartment: string | null;
   addressCity: string | null;
   discountPercentage: unknown;
+  discountType: unknown;
   preferredPaymentMethod: PaymentMethod | null;
   hasCurrentAccount: boolean;
   createdAt: Date;
@@ -51,6 +53,7 @@ export function serializeClient(client: {
     addressApartment: client.addressApartment,
     addressCity: client.addressCity,
     discountPercentage: Number(client.discountPercentage || 0),
+    discountType: String(client.discountType || "PERCENTAGE"),
     preferredPaymentMethod: client.preferredPaymentMethod,
     hasCurrentAccount: client.hasCurrentAccount,
     createdAt: client.createdAt,

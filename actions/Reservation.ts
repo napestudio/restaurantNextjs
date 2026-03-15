@@ -2,9 +2,10 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { ReservationStatus } from "@/app/generated/prisma";
+import { OrderStatus, ReservationStatus } from "@/app/generated/prisma";
 import {
   findAvailableTables,
+  recalculateTableStatus,
   setTablesReserved,
   updateTableStatusForReservation,
 } from "./Table";
@@ -365,6 +366,43 @@ export async function updateReservationStatus(
   status: ReservationStatus
 ) {
   try {
+    // SEATED must go through the SeatReservationDialog (seatReservationWithTable)
+    // which creates the order atomically. Direct dropdown change leaves the table
+    // OCCUPIED with no order, blocking both the floor plan and other reservations.
+    if (status === ReservationStatus.SEATED) {
+      return {
+        success: false,
+        error:
+          "Para sentar una reserva usá el botón 'Sentar'. Esto garantiza que la mesa quede correctamente asignada.",
+      };
+    }
+
+    // Block COMPLETED if the reservation's tables have active orders
+    if (status === ReservationStatus.COMPLETED) {
+      const reservationTables = await prisma.reservationTable.findMany({
+        where: { reservationId: id },
+        select: { tableId: true },
+      });
+      const tableIds = reservationTables.map((rt) => rt.tableId);
+
+      if (tableIds.length > 0) {
+        const activeOrderCount = await prisma.order.count({
+          where: {
+            tableId: { in: tableIds },
+            status: { in: [OrderStatus.PENDING, OrderStatus.IN_PROGRESS] },
+          },
+        });
+
+        if (activeOrderCount > 0) {
+          return {
+            success: false,
+            error:
+              "La mesa tiene pedidos activos. Cerrá la mesa desde la vista de mesas para cobrar antes de completar la reserva.",
+          };
+        }
+      }
+    }
+
     const reservation = await prisma.reservation.update({
       where: { id },
       data: { status },
@@ -425,6 +463,8 @@ export async function cancelReservation(id: string) {
         branch: true,
       },
     });
+
+    await updateTableStatusForReservation(id, ReservationStatus.CANCELED);
 
     revalidatePath("/dashboard/reservations");
     return { success: true, data: serializeReservation(reservation) };
@@ -676,5 +716,70 @@ export async function assignTablesToReservation(
       success: false,
       error: "Failed to assign tables to reservation",
     };
+  }
+}
+
+/**
+ * Atomically seat a reservation: update status, reassign tables if changed, and
+ * update table statuses — all in a single transaction to prevent partial failures.
+ */
+export async function seatReservationWithTable(
+  reservationId: string,
+  selectedTableIds: string[]
+): Promise<{
+  success: boolean;
+  data?: { tableId: string; tableNumber: number };
+  error?: string;
+}> {
+  try {
+    // Fetch old table assignments before the transaction
+    const oldAssignments = await prisma.reservationTable.findMany({
+      where: { reservationId },
+      select: { tableId: true },
+    });
+    const oldTableIds = oldAssignments.map((a) => a.tableId);
+
+    const freedTableIds = oldTableIds.filter(
+      (id) => !selectedTableIds.includes(id)
+    );
+
+    await prisma.$transaction(async (tx) => {
+      await tx.reservation.update({
+        where: { id: reservationId },
+        data: { status: "SEATED" },
+      });
+      await tx.reservationTable.deleteMany({ where: { reservationId } });
+      await tx.reservationTable.createMany({
+        data: selectedTableIds.map((tableId) => ({ reservationId, tableId })),
+      });
+      await tx.table.updateMany({
+        where: { id: { in: selectedTableIds } },
+        data: { status: "OCCUPIED" },
+      });
+    });
+
+    // Free previously-assigned tables using recalculation so active orders are respected
+    if (freedTableIds.length > 0) {
+      await recalculateTableStatus(freedTableIds);
+    }
+
+    // Fetch the first selected table number for navigation
+    const primaryTable = await prisma.table.findUnique({
+      where: { id: selectedTableIds[0] },
+      select: { id: true, number: true },
+    });
+
+    revalidatePath("/dashboard/reservations");
+
+    return {
+      success: true,
+      data: {
+        tableId: primaryTable?.id ?? selectedTableIds[0],
+        tableNumber: primaryTable?.number ?? 0,
+      },
+    };
+  } catch (error) {
+    console.error("Error seating reservation:", error);
+    return { success: false, error: "Error al sentar la reserva" };
   }
 }

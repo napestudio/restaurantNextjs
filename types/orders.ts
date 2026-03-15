@@ -26,6 +26,7 @@ export type Order = {
   // Billing
   paymentMethod: string;
   discountPercentage: number;
+  discountType: string;
   deliveryFee: number;
   needsInvoice: boolean;
 

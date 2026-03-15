@@ -9,6 +9,7 @@ import {
   InvoiceStatus,
   type Product,
 } from "@/app/generated/prisma";
+import { calculateDiscountAmount } from "@/lib/discount";
 import { serializeClient } from "@/lib/serializers";
 import { serializeForClient } from "@/lib/serialize";
 import { todayBoundsARDate, dateStringToTimestampBoundsAR } from "@/lib/date-utils";
@@ -66,20 +67,26 @@ async function validateTableForOrder(
 }
 
 /**
- * Get client discount percentage
- * Returns 0 if client not found or no discount set
+ * Get client discount percentage and type
+ * Returns 0 / PERCENTAGE defaults if client not found or no discount set
  */
 async function getClientDiscount(
   clientId: string | null | undefined,
-): Promise<number> {
-  if (!clientId) return 0;
+): Promise<{ discountPercentage: number; discountType: string }> {
+  if (!clientId)
+    return { discountPercentage: 0, discountType: "PERCENTAGE" };
 
   const client = await prisma.client.findUnique({
     where: { id: clientId },
-    select: { discountPercentage: true },
+    select: { discountPercentage: true, discountType: true },
   });
 
-  return client?.discountPercentage ? Number(client.discountPercentage) : 0;
+  return {
+    discountPercentage: client?.discountPercentage
+      ? Number(client.discountPercentage)
+      : 0,
+    discountType: String(client?.discountType || "PERCENTAGE"),
+  };
 }
 
 // ============================================================================
@@ -173,7 +180,8 @@ export async function createOrder(data: {
           status: OrderStatus.PENDING,
           clientId: clientId || null,
           assignedToId: assignedToId || null,
-          discountPercentage: clientDiscount,
+          discountPercentage: clientDiscount.discountPercentage,
+          discountType: clientDiscount.discountType as "PERCENTAGE" | "FIXED",
           description: description || null,
         },
         include: {
@@ -302,7 +310,8 @@ export async function createOrderWithItems(data: {
           status: OrderStatus.PENDING,
           clientId: clientId || null,
           assignedToId: assignedToId || null,
-          discountPercentage: clientDiscount,
+          discountPercentage: clientDiscount.discountPercentage,
+          discountType: clientDiscount.discountType as "PERCENTAGE" | "FIXED",
           deliveryFee: deliveryFee ?? 0,
           description: description || null,
         },
@@ -419,7 +428,8 @@ export async function createTableOrder(
           status: OrderStatus.PENDING,
           clientId: clientId || null,
           assignedToId: assignedToId || null,
-          discountPercentage: clientDiscount,
+          discountPercentage: clientDiscount.discountPercentage,
+          discountType: clientDiscount.discountType as "PERCENTAGE" | "FIXED",
         },
         include: {
           items: {
@@ -863,6 +873,7 @@ export async function updatePartySize(orderId: string, partySize: number) {
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -933,6 +944,7 @@ export async function closeTable(orderId: string) {
     const serializedOrder = {
       ...order,
       discountPercentage: Number(order.discountPercentage),
+      deliveryFee: Number(order.deliveryFee),
       items: order.items.map((item) => ({
         ...item,
         price: Number(item.price),
@@ -1328,13 +1340,6 @@ export async function getAvailableTablesForMove(branchId: string) {
       where: {
         branchId,
         isActive: true,
-        OR: [
-          { status: "EMPTY" },
-          { status: null }, // Tables with no manual status override
-          {
-            AND: [{ isShared: true }, { status: "OCCUPIED" }],
-          }, // Include occupied shared tables
-        ],
       },
       include: {
         reservations: {
@@ -1757,6 +1762,7 @@ export async function updatePaymentMethod(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1768,10 +1774,11 @@ export async function updatePaymentMethod(
   }
 }
 
-// Update discount percentage
+// Update discount
 export async function updateDiscount(
   orderId: string,
   discountPercentage: number,
+  discountType: "PERCENTAGE" | "FIXED" = "PERCENTAGE",
 ) {
   try {
     // Authorization check - only MANAGER and above can apply discounts
@@ -1780,17 +1787,23 @@ export async function updateDiscount(
       "Solo gerentes y superiores pueden aplicar descuentos",
     );
 
-    // Validate discount percentage (0-100)
-    if (discountPercentage < 0 || discountPercentage > 100) {
+    // Validate discount value
+    if (discountType === "PERCENTAGE" && (discountPercentage < 0 || discountPercentage > 100)) {
       return {
         success: false,
-        error: "El descuento debe estar entre 0 y 100",
+        error: "El descuento porcentual debe estar entre 0 y 100",
+      };
+    }
+    if (discountPercentage < 0) {
+      return {
+        success: false,
+        error: "El descuento no puede ser negativo",
       };
     }
 
     const order = await prisma.order.update({
       where: { id: orderId },
-      data: { discountPercentage },
+      data: { discountPercentage, discountType },
     });
 
     return {
@@ -1798,6 +1811,8 @@ export async function updateDiscount(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        discountType: String(order.discountType),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1866,6 +1881,7 @@ export async function assignStaffToOrder(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1899,6 +1915,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1923,7 +1940,8 @@ export async function assignClientToOrder(
       where: { id: orderId },
       data: {
         clientId: clientId,
-        discountPercentage: clientDiscount,
+        discountPercentage: clientDiscount.discountPercentage,
+        discountType: clientDiscount.discountType as "PERCENTAGE" | "FIXED",
       },
       include: {
         client: {
@@ -1941,6 +1959,7 @@ export async function assignClientToOrder(
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -1965,6 +1984,7 @@ export async function setNeedsInvoice(orderId: string, needsInvoice: boolean) {
       data: {
         ...order,
         discountPercentage: Number(order.discountPercentage),
+        deliveryFee: Number(order.deliveryFee),
       },
     };
   } catch (error) {
@@ -2038,8 +2058,11 @@ export async function closeTableWithPayment(data: {
         (sum, item) => sum + Number(item.price) * item.quantity,
         0,
       );
-      const discountAmount =
-        subtotal * (Number(order.discountPercentage) / 100);
+      const discountAmount = calculateDiscountAmount(
+        subtotal,
+        Number(order.discountPercentage),
+        String(order.discountType) as "PERCENTAGE" | "FIXED",
+      );
       const deliveryFeeAmount = Number(order.deliveryFee);
       const total = subtotal - discountAmount + deliveryFeeAmount;
 

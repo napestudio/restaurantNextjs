@@ -36,6 +36,7 @@ export function GgEzPrintConnectionStatusCompact({
     reconnectAttempts,
     maxAttempts,
     nextRetryIn,
+    certUrl,
     connect,
     cancelReconnection,
   } = ggEzPrint;
@@ -108,9 +109,21 @@ export function GgEzPrintConnectionStatusCompact({
         {connectionError && (
           <p className="text-xs text-muted-foreground">{connectionError}</p>
         )}
-        <p className="text-xs text-muted-foreground">
-          Click para reconectar
-        </p>
+        <p className="text-xs text-muted-foreground">Click para reconectar</p>
+        {certUrl && (
+          <p className="text-xs text-amber-600">
+            ¿Primera vez?{" "}
+            <a
+              href={certUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Aceptá el certificado
+            </a>
+          </p>
+        )}
       </div>
     );
   };

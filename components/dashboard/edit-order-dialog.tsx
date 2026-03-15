@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { type ClientData } from "@/actions/clients";
+import {
+  assignClientToOrder,
+  assignStaffToOrder,
+  updatePartySize,
+} from "@/actions/Order";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,16 +14,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
+import { useEffect, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { WaiterPicker } from "./waiter-picker";
-import { type ClientData } from "@/actions/clients";
-import {
-  assignClientToOrder,
-  assignStaffToOrder,
-  updatePartySize,
-} from "@/actions/Order";
 
 interface EditOrderDialogProps {
   open: boolean;
@@ -61,15 +60,16 @@ export function EditOrderDialog({
           addressApartment: null,
           addressCity: null,
           discountPercentage: 0,
+          discountType: "PERCENTAGE",
           preferredPaymentMethod: null,
           hasCurrentAccount: false,
           createdAt: new Date(),
           updatedAt: new Date(),
         }
-      : null
+      : null,
   );
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(
-    currentWaiterId || null
+    currentWaiterId || null,
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -92,12 +92,13 @@ export function EditOrderDialog({
               addressApartment: null,
               addressCity: null,
               discountPercentage: 0,
+              discountType: "PERCENTAGE",
               preferredPaymentMethod: null,
               hasCurrentAccount: false,
               createdAt: new Date(),
               updatedAt: new Date(),
             }
-          : null
+          : null,
       );
       setSelectedWaiterId(currentWaiterId || null);
     }
