@@ -470,7 +470,7 @@ export class GgEzPrintClient {
       const timeout = setTimeout(() => {
         cleanup();
         reject(new Error("Timeout esperando respuesta de impresión"));
-      }, 8000); // 8s — gg-ez-print responds once job is queued, not after paper finishes
+      }, 20000); // 20s — allow time for real WiFi round-trip + gg-ez-print processing
 
       const handler = (response: GgEzPrintResponse) => {
         if ("status" in response) {

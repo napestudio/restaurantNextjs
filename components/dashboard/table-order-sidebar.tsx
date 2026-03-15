@@ -17,7 +17,15 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { useProducts } from "@/contexts/products-context";
 import { useOrdersData } from "@/hooks/use-orders-data";
-import { ArrowRightLeft, Check, DollarSign, Edit, Percent, RefreshCw, X } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Check,
+  DollarSign,
+  Edit,
+  Percent,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ClientPicker } from "./client-picker";
 import { CloseTableDialog } from "./close-table-dialog";
@@ -75,7 +83,9 @@ export function TableOrderSidebar({
   const [selectedWaiterId, setSelectedWaiterId] = useState<string | null>(null);
   const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
-  const [discountTypeInput, setDiscountTypeInput] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
+  const [discountTypeInput, setDiscountTypeInput] = useState<
+    "PERCENTAGE" | "FIXED"
+  >("PERCENTAGE");
   const [availableTables, setAvailableTables] = useState<
     Array<{
       id: string;
@@ -416,9 +426,10 @@ export function TableOrderSidebar({
         : undefined,
       orderType: order.type,
       customerName: order.client?.name,
-      orderCreatedAt: order.createdAt instanceof Date
-        ? order.createdAt.toISOString()
-        : order.createdAt,
+      orderCreatedAt:
+        order.createdAt instanceof Date
+          ? order.createdAt.toISOString()
+          : order.createdAt,
     });
 
     if (success) {
@@ -477,7 +488,9 @@ export function TableOrderSidebar({
   const handleDiscountEdit = () => {
     if (!order) return;
     setDiscountInput(Number(order.discountPercentage).toString());
-    setDiscountTypeInput((order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE");
+    setDiscountTypeInput(
+      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE",
+    );
     setIsEditingDiscount(true);
   };
 
@@ -496,10 +509,15 @@ export function TableOrderSidebar({
 
     // Store previous values for rollback
     const previousDiscount = Number(order.discountPercentage);
-    const previousType = (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
+    const previousType =
+      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
 
     // Perform server update (keep editor open)
-    const result = await updateDiscount(order.id, newDiscount, discountTypeInput);
+    const result = await updateDiscount(
+      order.id,
+      newDiscount,
+      discountTypeInput,
+    );
 
     if (result.success) {
       setIsEditingDiscount(false);
@@ -531,7 +549,9 @@ export function TableOrderSidebar({
               <span className="ml-2 text-sm font-norma">(Compartida)</span>
             )}
             {order?.client?.name && (
-              <span className="ml-2 text-sm font-normal opacity-90">— {order.client.name}</span>
+              <span className="ml-2 text-base font-normal opacity-90">
+                — {order.client.name}
+              </span>
             )}
           </div>
         </div>
@@ -542,6 +562,7 @@ export function TableOrderSidebar({
             onClick={() => refresh()}
             disabled={isLoading}
             title="Actualizar datos"
+            className="text-white"
           >
             <RefreshCw
               className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -752,7 +773,11 @@ export function TableOrderSidebar({
                   <div className="flex items-center gap-1 bg-white rounded px-2">
                     <Button
                       type="button"
-                      variant={discountTypeInput === "PERCENTAGE" ? "default" : "outline"}
+                      variant={
+                        discountTypeInput === "PERCENTAGE"
+                          ? "default"
+                          : "outline"
+                      }
                       size="sm"
                       className="h-8 px-2"
                       onClick={() => setDiscountTypeInput("PERCENTAGE")}
@@ -761,7 +786,9 @@ export function TableOrderSidebar({
                     </Button>
                     <Button
                       type="button"
-                      variant={discountTypeInput === "FIXED" ? "default" : "outline"}
+                      variant={
+                        discountTypeInput === "FIXED" ? "default" : "outline"
+                      }
                       size="sm"
                       className="h-8 px-2"
                       onClick={() => setDiscountTypeInput("FIXED")}
@@ -770,7 +797,9 @@ export function TableOrderSidebar({
                     </Button>
                     <NumberInput
                       min="0"
-                      max={discountTypeInput === "PERCENTAGE" ? "100" : undefined}
+                      max={
+                        discountTypeInput === "PERCENTAGE" ? "100" : undefined
+                      }
                       step="0.01"
                       value={discountInput}
                       onChange={(e) => setDiscountInput(e.target.value)}
@@ -778,7 +807,9 @@ export function TableOrderSidebar({
                         if (e.key === "Enter") handleDiscountSave();
                       }}
                       className="h-8 w-16 text-sm"
-                      placeholder={discountTypeInput === "PERCENTAGE" ? "%" : "$"}
+                      placeholder={
+                        discountTypeInput === "PERCENTAGE" ? "%" : "$"
+                      }
                       autoFocus
                     />
                     <Button

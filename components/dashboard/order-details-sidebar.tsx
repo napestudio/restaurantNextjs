@@ -198,7 +198,7 @@ export function OrderDetailsSidebar({
   const [isConfirmingItems, setIsConfirmingItems] = useState(false);
 
   // GG EZ Print printing
-  const { printControlTicket, printPreOrderTicket, isPrinting } = usePrint();
+  const { printControlTicket, printPreOrderTicket, printOrderItems, isPrinting } = usePrint();
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -303,10 +303,27 @@ export function OrderDetailsSidebar({
   const handleConfirmAddItems = async () => {
     if (!order || preOrderItems.length === 0) return;
     setIsConfirmingItems(true);
+
+    // Capture before clearing
+    const itemsToPrint = [...preOrderItems];
+
     const result = await addOrderItems(order.id, preOrderItems);
     if (result.success) {
       setPreOrderItems([]);
       onOrderUpdated?.();
+
+      // Auto-print station comandas (fire and forget)
+      const tableName = order.table?.number?.toString() || "—";
+      printOrderItems(
+        { orderId: order.id, orderCode: order.publicCode, tableName, branchId },
+        itemsToPrint.map((item) => ({
+          productId: item.productId,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          notes: item.notes ?? null,
+          categoryId: item.categoryId,
+        })),
+      );
     } else {
       toast({ variant: "destructive", title: result.error || "Error al agregar productos" });
     }
