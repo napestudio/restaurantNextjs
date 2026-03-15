@@ -159,6 +159,7 @@ export const MOVEMENT_TYPE_LABELS: Record<CashMovementType, string> = {
   EXPENSE: "Egreso",
   SALE: "Venta",
   REFUND: "Devolución",
+  CORRECTION: "Corrección",
 };
 
 // Cash register status labels in Spanish

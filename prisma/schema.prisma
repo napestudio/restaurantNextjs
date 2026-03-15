@@ -104,6 +104,7 @@ enum CashMovementType {
   EXPENSE // Manual expense (payouts, purchases)
   SALE // From completed orders
   REFUND // Order refund
+  CORRECTION // Accounting correction (amount can be negative)
 }
 
 enum PaymentMethodExtended {

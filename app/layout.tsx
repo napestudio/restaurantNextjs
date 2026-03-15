@@ -21,11 +21,6 @@ export const metadata: Metadata = {
   title: "Kiku Sushi",
   description: "Kiku Sushi - Rosario, Argentina",
   // manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Restaurant",
-  },
   icons: {
     icon: [
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },

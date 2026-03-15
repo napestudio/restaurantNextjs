@@ -1,8 +1,19 @@
+import type { Metadata } from "next";
 import Avatar from "@/components/avatar";
 import { ReservationWizard } from "@/components/home/reservation-wizard";
 import { BRANCH_ID } from "@/lib/constants";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Reservas",
+  description: "Reservá tu mesa online",
+  openGraph: {
+    title: "Reservas",
+    description: "Reservá tu mesa online",
+    images: [{ url: "https://res.cloudinary.com/dujkztmkx/image/upload/v1764695269/LOGO_sbz1rh.svg" }],
+  },
+};
 
 export default function ReservationPage() {
   if (!BRANCH_ID) {

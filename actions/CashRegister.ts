@@ -40,9 +40,35 @@ const reopenSessionSchema = z.object({
   notes: z.string().optional(),
 });
 
-const addMovementSchema = z.object({
-  sessionId: z.string().min(1, "La sesión es requerida"),
-  type: z.enum(["INCOME", "EXPENSE", "SALE", "REFUND"]),
+const addMovementSchema = z
+  .object({
+    sessionId: z.string().min(1, "La sesión es requerida"),
+    type: z.enum(["INCOME", "EXPENSE", "SALE", "REFUND", "CORRECTION"]),
+    paymentMethod: z.enum([
+      "CASH",
+      "CARD_DEBIT",
+      "CARD_CREDIT",
+      "ACCOUNT",
+      "TRANSFER",
+      "PAYMENT_LINK",
+      "QR_CODE",
+    ]),
+    amount: z.number().refine((v) => v !== 0, "El monto no puede ser cero"),
+    description: z.string().optional(),
+    orderId: z.string().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type !== "CORRECTION" && data.amount < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "El monto debe ser positivo",
+        path: ["amount"],
+      });
+    }
+  });
+
+const updateMovementSchema = z.object({
+  movementId: z.string().min(1, "El movimiento es requerido"),
   paymentMethod: z.enum([
     "CASH",
     "CARD_DEBIT",
@@ -52,9 +78,8 @@ const addMovementSchema = z.object({
     "PAYMENT_LINK",
     "QR_CODE",
   ]),
-  amount: z.number().positive("El monto debe ser positivo"),
+  cashRegisterId: z.string().min(1, "La caja es requerida"),
   description: z.string().optional(),
-  orderId: z.string().optional().nullable(),
 });
 
 // =============================================================================
@@ -828,6 +853,67 @@ export async function addManualMovement(
   }
 }
 
+export async function updateManualMovement(
+  data: z.infer<typeof updateMovementSchema>
+) {
+  try {
+    await authorizeAction(UserRole.MANAGER);
+    const validatedData = updateMovementSchema.parse(data);
+
+    await prisma.$transaction(async (tx) => {
+      const movement = await tx.cashMovement.findUnique({
+        where: { id: validatedData.movementId },
+      });
+
+      if (!movement) {
+        throw new Error("Movimiento no encontrado");
+      }
+
+      if (
+        movement.type !== "INCOME" &&
+        movement.type !== "EXPENSE" &&
+        movement.type !== "CORRECTION"
+      ) {
+        throw new Error("Solo se pueden editar movimientos manuales");
+      }
+
+      const session = await tx.cashRegisterSession.findFirst({
+        where: {
+          cashRegisterId: validatedData.cashRegisterId,
+          status: "OPEN",
+        },
+      });
+
+      if (!session) {
+        throw new Error("La caja seleccionada no tiene una sesión abierta");
+      }
+
+      await tx.cashMovement.update({
+        where: { id: validatedData.movementId },
+        data: {
+          paymentMethod: validatedData.paymentMethod,
+          sessionId: session.id,
+          description: validatedData.description || null,
+        },
+      });
+    });
+
+    revalidatePath("/dashboard/config/cash-registers");
+    revalidatePath("/dashboard/cash-registers");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating movement:", error);
+    if (error instanceof ZodError) {
+      return { success: false, error: error.issues[0].message };
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al actualizar el movimiento" };
+  }
+}
+
 export async function recordSaleFromOrder(data: {
   sessionId: string;
   orderId: string;
@@ -1031,18 +1117,32 @@ export async function calculateExpectedCash(sessionId: string) {
   }
 }
 
-// Get manual movements (INCOME/EXPENSE only, not SALE/REFUND from orders) with date filters
+// Get manual movements (INCOME/EXPENSE/CORRECTION only, not SALE/REFUND from orders) with date filters
 export async function getManualMovements(params: {
   branchId: string;
   dateFrom?: string;
   dateTo?: string;
   cashRegisterId?: string;
-  type?: "INCOME" | "EXPENSE";
+  type?: "INCOME" | "EXPENSE" | "CORRECTION";
+  description?: string;
+  sortBy?: "date" | "amount";
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }) {
   try {
-    const { branchId, dateFrom, dateTo, cashRegisterId, type, limit = 50, offset = 0 } = params;
+    const {
+      branchId,
+      dateFrom,
+      dateTo,
+      cashRegisterId,
+      type,
+      description,
+      sortBy = "date",
+      sortOrder = "desc",
+      limit = 50,
+      offset = 0,
+    } = params;
 
     // Build date filter — use Argentina-aware boundaries (midnight AR = 03:00 UTC)
     const dateFilter: { gte?: Date; lte?: Date; lt?: Date } = {};
@@ -1054,8 +1154,16 @@ export async function getManualMovements(params: {
     }
 
     const whereClause = {
-      // Only manual movements (INCOME/EXPENSE), not SALE/REFUND from orders
-      type: type ? type : { in: ["INCOME", "EXPENSE"] as ("INCOME" | "EXPENSE")[] },
+      // Only manual movements (INCOME/EXPENSE/CORRECTION), not SALE/REFUND from orders
+      type: type
+        ? type
+        : {
+            in: ["INCOME", "EXPENSE", "CORRECTION"] as (
+              | "INCOME"
+              | "EXPENSE"
+              | "CORRECTION"
+            )[],
+          },
       // Filter by branch through session -> cashRegister
       session: {
         cashRegister: {
@@ -1065,7 +1173,16 @@ export async function getManualMovements(params: {
       },
       // Date filter
       ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+      // Description search
+      ...(description && {
+        description: { contains: description, mode: "insensitive" as const },
+      }),
     };
+
+    const orderBy =
+      sortBy === "amount"
+        ? { amount: sortOrder }
+        : { createdAt: sortOrder };
 
     // Get total count and movements in parallel
     const [movements, total] = await Promise.all([
@@ -1083,14 +1200,22 @@ export async function getManualMovements(params: {
             },
           },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy,
         take: limit,
         skip: offset,
       }),
       prisma.cashMovement.count({ where: whereClause }),
     ]);
+
+    // Fetch user names for "Registrado por" display
+    const userIds = [...new Set(movements.map((m) => m.createdBy))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, username: true },
+    });
+    const userMap = Object.fromEntries(
+      users.map((u) => [u.id, u.name || u.username || u.id])
+    );
 
     // Serialize for client
     const serializedMovements = movements.map((movement) => ({
@@ -1101,6 +1226,7 @@ export async function getManualMovements(params: {
       description: movement.description,
       createdAt: movement.createdAt.toISOString(),
       createdBy: movement.createdBy,
+      createdByName: userMap[movement.createdBy] ?? movement.createdBy,
       sessionId: movement.sessionId,
       cashRegister: movement.session.cashRegister,
     }));
