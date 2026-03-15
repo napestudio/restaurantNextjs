@@ -171,7 +171,7 @@ export function ProductPicker({
                   }}
                   type="button"
                   onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent blur
+                    e.preventDefault();
                     handleSelectProduct(product);
                   }}
                   onMouseEnter={() => setHighlightedIndex(index)}

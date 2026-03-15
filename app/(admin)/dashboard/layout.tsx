@@ -1,4 +1,5 @@
 import { hasBranchPrinters } from "@/actions/PrinterActions";
+import { getBranch } from "@/actions/Branch";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { ConditionalGgEzPrintProvider } from "@/components/providers/conditional-gg-ez-print-provider";
 import { auth } from "@/lib/auth";
@@ -48,11 +49,18 @@ export default async function DashboardLayout({
   // Get filtered nav items on server (includes grant-based overrides)
   const navItems = await getNavItems(userRole, session.user.id, branchId ?? "");
 
-  // Check if branch has printers (for conditional loading of gg-ez-print)
-  const hasPrinters = branchId ? await hasBranchPrinters(branchId) : false;
+  // Check if branch has printers and get printer server URL (for conditional loading of gg-ez-print)
+  const [hasPrinters, branchResult] = await Promise.all([
+    branchId ? hasBranchPrinters(branchId) : Promise.resolve(false),
+    branchId ? getBranch(branchId) : Promise.resolve({ success: false, data: null }),
+  ]);
+  const printerServerUrl =
+    branchResult.success && branchResult.data?.printerServerUrl
+      ? branchResult.data.printerServerUrl
+      : undefined;
 
   return (
-    <ConditionalGgEzPrintProvider hasPrinters={hasPrinters}>
+    <ConditionalGgEzPrintProvider hasPrinters={hasPrinters} wsUrl={printerServerUrl}>
       <div className="min-h-svh bg-gray-50 w-full">
         <DashboardNav
           userName={session.user.name || session.user.email || ""}
