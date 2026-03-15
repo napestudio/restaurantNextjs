@@ -14,11 +14,6 @@ export const metadata: Metadata = {
   description:
     "Panel de administración para gestionar el restaurante Kiku Sushi.",
   // manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Restaurant",
-  },
   icons: {
     icon: [
       { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
