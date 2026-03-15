@@ -596,7 +596,6 @@ export function OrderDetailsSidebar({
   const canChangeType =
     canChangeOrderType &&
     (order.type === OrderType.TAKE_AWAY || order.type === OrderType.DELIVERY) &&
-    order.status !== OrderStatus.COMPLETED &&
     order.status !== OrderStatus.CANCELED;
 
   const oppositeType =
@@ -1211,6 +1210,11 @@ export function OrderDetailsSidebar({
           </DialogHeader>
           {pendingNewType && (
             <div className="py-2 space-y-3">
+              {order.status === OrderStatus.COMPLETED && (
+                <p className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                  Esta orden ya está cerrada. ¿Estás seguro de que querés cambiar el tipo de todas formas?
+                </p>
+              )}
               <p className="text-sm text-gray-700">
                 ¿Cambiar de{" "}
                 <span className="font-semibold">{typeLabels[order.type]}</span>{" "}

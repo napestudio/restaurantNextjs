@@ -2333,13 +2333,10 @@ export async function updateOrderType(
     if (!order) {
       return { success: false, error: "Orden no encontrada" };
     }
-    if (
-      order.status === OrderStatus.COMPLETED ||
-      order.status === OrderStatus.CANCELED
-    ) {
+    if (order.status === OrderStatus.CANCELED) {
       return {
         success: false,
-        error: "No se puede cambiar el tipo de una orden finalizada",
+        error: "No se puede cambiar el tipo de una orden cancelada",
       };
     }
     if (order.type === newType) {
