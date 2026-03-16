@@ -70,6 +70,34 @@ export function GenerateInvoiceDialog({
 
   const isConsumidorFinal = docType === "99";
 
+  // Filter available document types based on invoice type
+  const availableDocTypes = DOCUMENT_TYPES.filter((type) => {
+    if (invoiceType === "1") return type.value === "80"; // Factura A: only CUIT
+    if (invoiceType === "6") return type.value !== "80"; // Factura B: no CUIT
+    return true; // Factura C: all types allowed
+  });
+
+  const handleInvoiceTypeChange = (value: string) => {
+    setInvoiceType(value);
+    if (value === "1" && docType !== "80") {
+      setDocType("80");
+      setDocNumber("");
+    } else if (value === "6" && docType === "80") {
+      setDocType("99");
+      setDocNumber("");
+    }
+  };
+
+  const handleDocTypeChange = (value: string) => {
+    setDocType(value);
+    setDocNumber("");
+    if (value === "80" && invoiceType !== "1") {
+      setInvoiceType("1");
+    } else if (value !== "80" && invoiceType === "1") {
+      setInvoiceType("6");
+    }
+  };
+
   const resetForm = () => {
     setInvoiceType("6");
     setCustomerName("");
@@ -99,33 +127,12 @@ export function GenerateInvoiceDialog({
       return;
     }
 
-    // Validate invoice type compatibility with document type
-    const invoiceTypeNum = parseInt(invoiceType);
-    const docTypeNum = parseInt(docType);
-
-    // Factura A (type 1) requires CUIT (80)
-    if (invoiceTypeNum === 1 && docTypeNum !== 80) {
-      toast({
-        title: "Error",
-        description: "Factura A requiere CUIT del cliente",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Factura B (type 6) cannot be issued to CUIT holders (they need Factura A)
-    if (invoiceTypeNum === 6 && docTypeNum === 80) {
-      toast({
-        title: "Error",
-        description: "Para CUIT debe emitir Factura A",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsPending(true);
 
     try {
+      const invoiceTypeNum = parseInt(invoiceType);
+      const docTypeNum = parseInt(docType);
+
       const result = await generateInvoiceForOrder(orderId, invoiceTypeNum, {
         name: customerName.trim(),
         docType: docTypeNum,
@@ -194,7 +201,7 @@ export function GenerateInvoiceDialog({
               <Label htmlFor="invoiceType">Tipo de Factura</Label>
               <Select
                 value={invoiceType}
-                onValueChange={setInvoiceType}
+                onValueChange={handleInvoiceTypeChange}
                 disabled={isPending}
               >
                 <SelectTrigger id="invoiceType">
@@ -235,14 +242,14 @@ export function GenerateInvoiceDialog({
               <Label htmlFor="docType">Tipo de Documento</Label>
               <Select
                 value={docType}
-                onValueChange={setDocType}
+                onValueChange={handleDocTypeChange}
                 disabled={isPending}
               >
                 <SelectTrigger id="docType">
                   <SelectValue placeholder="Seleccione tipo de documento" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DOCUMENT_TYPES.map((type) => (
+                  {availableDocTypes.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
@@ -251,35 +258,30 @@ export function GenerateInvoiceDialog({
               </Select>
             </div>
 
-            {/* Document Number */}
-            <div className="grid gap-2">
-              <Label htmlFor="docNumber">
-                Número de Documento{" "}
-                {!isConsumidorFinal && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="docNumber"
-                placeholder={
-                  isConsumidorFinal
-                    ? "No aplica"
-                    : "Número sin guiones ni puntos"
-                }
-                value={isConsumidorFinal ? "" : docNumber}
-                onChange={(e) =>
-                  setDocNumber(e.target.value.replace(/\D/g, ""))
-                }
-                disabled={isPending || isConsumidorFinal}
-                required={!isConsumidorFinal}
-                maxLength={11}
-              />
-              {!isConsumidorFinal && (
+            {/* Document Number - hidden for Consumidor Final */}
+            {!isConsumidorFinal && (
+              <div className="grid gap-2">
+                <Label htmlFor="docNumber">
+                  Número de Documento <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="docNumber"
+                  placeholder="Número sin guiones ni puntos"
+                  value={docNumber}
+                  onChange={(e) =>
+                    setDocNumber(e.target.value.replace(/\D/g, ""))
+                  }
+                  disabled={isPending}
+                  required
+                  maxLength={11}
+                />
                 <p className="text-xs text-muted-foreground">
                   {docType === "80" && "CUIT: 11 dígitos (ej: 20123456789)"}
                   {docType === "86" && "CUIL: 11 dígitos (ej: 20123456789)"}
                   {docType === "96" && "DNI: 7-8 dígitos"}
                 </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Help text */}
             <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">

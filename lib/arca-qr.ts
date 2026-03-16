@@ -90,7 +90,7 @@ export function generateAfipQrData(params: {
     tipoDocRec: params.tipoDocRec,
     nroDocRec: params.nroDocRec,
     tipoCodAut: "E", // Always "E" for CAE
-    codAut: params.cae,
+    codAut: Number(params.cae), // AFIP spec (RG 4892/2020) requires numeric type
   };
 }
 

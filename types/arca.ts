@@ -139,7 +139,7 @@ export type AfipQrData = {
   tipoDocRec: number; // Recipient doc type
   nroDocRec: number; // Recipient document number
   tipoCodAut: string; // Auth type ("E" for CAE)
-  codAut: string; // CAE code (14 digits)
+  codAut: number; // CAE code (14 digits) - AFIP spec (RG 4892/2020) requires numeric type
 };
 
 // ============================================================================
