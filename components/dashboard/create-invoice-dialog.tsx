@@ -96,6 +96,39 @@ export function CreateInvoiceDialog({
   >([{ id: "1", description: "", quantity: 1, unitPrice: 0, vatRate: 21 }]);
 
   const isConsumidorFinal = docType === "99";
+  const isFacturaC = invoiceType === "11";
+
+  // Filter available document types based on invoice type
+  const availableDocTypes = DOCUMENT_TYPES.filter((type) => {
+    if (invoiceType === "1") return type.value === "80"; // Factura A: only CUIT
+    if (invoiceType === "6") return type.value !== "80"; // Factura B: no CUIT
+    return true; // Factura C: all types allowed
+  });
+
+  const handleInvoiceTypeChange = (value: string) => {
+    setInvoiceType(value);
+    if (value === "1" && docType !== "80") {
+      setDocType("80");
+      setDocNumber("");
+    } else if (value === "6" && docType === "80") {
+      setDocType("99");
+      setDocNumber("");
+    }
+    // For Factura C, force all line item VAT rates to 0
+    if (value === "11") {
+      setLineItems((items) => items.map((item) => ({ ...item, vatRate: 0 })));
+    }
+  };
+
+  const handleDocTypeChange = (value: string) => {
+    setDocType(value);
+    setDocNumber("");
+    if (value === "80" && invoiceType !== "1") {
+      setInvoiceType("1");
+    } else if (value !== "80" && invoiceType === "1") {
+      setInvoiceType("6");
+    }
+  };
 
   const resetForm = () => {
     setInvoiceType("6");
@@ -147,7 +180,13 @@ export function CreateInvoiceDialog({
     ).toString();
     setLineItems([
       ...lineItems,
-      { id: newId, description: "", quantity: 1, unitPrice: 0, vatRate: 21 },
+      {
+        id: newId,
+        description: "",
+        quantity: 1,
+        unitPrice: 0,
+        vatRate: isFacturaC ? 0 : 21,
+      },
     ]);
   };
 
@@ -185,29 +224,6 @@ export function CreateInvoiceDialog({
       toast({
         title: "Error",
         description: "Debe ingresar el número de documento",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    const invoiceTypeNum = parseInt(invoiceType);
-    const docTypeNum = parseInt(docType);
-
-    // Factura A requires CUIT
-    if (invoiceTypeNum === 1 && docTypeNum !== 80) {
-      toast({
-        title: "Error",
-        description: "Factura A requiere CUIT del cliente",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // Factura B cannot be issued to CUIT holders
-    if (invoiceTypeNum === 6 && docTypeNum === 80) {
-      toast({
-        title: "Error",
-        description: "Para CUIT debe emitir Factura A",
         variant: "destructive",
       });
       return false;
@@ -379,6 +395,13 @@ export function CreateInvoiceDialog({
             </TabsContent>
 
             <TabsContent value="manual" className="space-y-4 mt-4">
+              {isFacturaC && (
+                <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+                  Factura C: operación exenta de IVA. Todos los ítems se
+                  facturan sin IVA.
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Ítems de la Factura</Label>
@@ -446,7 +469,7 @@ export function CreateInvoiceDialog({
                         onValueChange={(v) =>
                           updateLineItem(item.id, "vatRate", parseFloat(v))
                         }
-                        disabled={isPending}
+                        disabled={isPending || isFacturaC}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -504,7 +527,7 @@ export function CreateInvoiceDialog({
               <Label htmlFor="invoiceType">Tipo de Factura</Label>
               <Select
                 value={invoiceType}
-                onValueChange={setInvoiceType}
+                onValueChange={handleInvoiceTypeChange}
                 disabled={isPending}
               >
                 <SelectTrigger id="invoiceType">
@@ -543,14 +566,14 @@ export function CreateInvoiceDialog({
               <Label htmlFor="docType">Tipo de Documento</Label>
               <Select
                 value={docType}
-                onValueChange={setDocType}
+                onValueChange={handleDocTypeChange}
                 disabled={isPending}
               >
                 <SelectTrigger id="docType">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DOCUMENT_TYPES.map((type) => (
+                  {availableDocTypes.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
@@ -559,27 +582,30 @@ export function CreateInvoiceDialog({
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="docNumber">
-                Número de Documento{" "}
-                {!isConsumidorFinal && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="docNumber"
-                placeholder={
-                  isConsumidorFinal
-                    ? "No aplica"
-                    : "Número sin guiones ni puntos"
-                }
-                value={isConsumidorFinal ? "" : docNumber}
-                onChange={(e) =>
-                  setDocNumber(e.target.value.replace(/\D/g, ""))
-                }
-                disabled={isPending || isConsumidorFinal}
-                required={!isConsumidorFinal}
-                maxLength={11}
-              />
-            </div>
+            {/* Document Number - hidden for Consumidor Final */}
+            {!isConsumidorFinal && (
+              <div className="grid gap-2">
+                <Label htmlFor="docNumber">
+                  Número de Documento <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="docNumber"
+                  placeholder="Número sin guiones ni puntos"
+                  value={docNumber}
+                  onChange={(e) =>
+                    setDocNumber(e.target.value.replace(/\D/g, ""))
+                  }
+                  disabled={isPending}
+                  required
+                  maxLength={11}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {docType === "80" && "CUIT: 11 dígitos (ej: 20123456789)"}
+                  {docType === "86" && "CUIL: 11 dígitos (ej: 20123456789)"}
+                  {docType === "96" && "DNI: 7-8 dígitos"}
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
