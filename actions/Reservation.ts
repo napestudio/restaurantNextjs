@@ -99,6 +99,27 @@ export async function createReservation(data: {
       },
     });
 
+    // Auto-create client if not already registered for this branch
+    if (data.customerEmail) {
+      try {
+        const existingClient = await prisma.client.findFirst({
+          where: { branchId: data.branchId, email: data.customerEmail.trim() },
+        });
+        if (!existingClient) {
+          await prisma.client.create({
+            data: {
+              branchId: data.branchId,
+              name: data.customerName,
+              email: data.customerEmail.trim(),
+              phone: data.customerPhone?.trim() || null,
+            },
+          });
+        }
+      } catch (clientError) {
+        console.error("Error auto-creating client from reservation:", clientError);
+      }
+    }
+
     // Step 2: Determine status based on payment — free reservations confirm immediately.
     // Capacity was already validated upstream in getAvailableTimeSlotsForDate(),
     // so table assignment success/failure does not gate confirmation for free slots.
