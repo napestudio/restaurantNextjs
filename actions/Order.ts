@@ -2453,3 +2453,99 @@ export async function getActiveOrderCounts(branchId: string) {
     };
   }
 }
+
+// ============================================================================
+// Reopen Order
+// ============================================================================
+
+export async function reopenOrder(data: {
+  orderId: string;
+  notes?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { userId } = await authorizeAction(UserRole.ADMIN);
+    const { orderId, notes } = data;
+
+    await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          invoices: true,
+          cashMovements: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error("Orden no encontrada");
+      }
+
+      if (order.status !== OrderStatus.COMPLETED) {
+        throw new Error("La orden no está completada");
+      }
+
+      if (
+        order.type !== OrderType.TAKE_AWAY &&
+        order.type !== OrderType.DELIVERY
+      ) {
+        throw new Error(
+          "Solo se pueden reabrir órdenes de take-away o delivery",
+        );
+      }
+
+      const hasEmittedInvoice = order.invoices.some(
+        (inv) => inv.status === InvoiceStatus.EMITTED,
+      );
+      if (hasEmittedInvoice) {
+        throw new Error("No se puede reabrir una orden con factura emitida");
+      }
+
+      // Find an open cash session for this branch
+      const openSession = await tx.cashRegisterSession.findFirst({
+        where: {
+          cashRegister: { branchId: order.branchId },
+          status: "OPEN",
+        },
+      });
+
+      if (!openSession) {
+        throw new Error("No hay una sesión de caja abierta");
+      }
+
+      // Create REFUND movements for each original SALE movement
+      const saleMoves = order.cashMovements.filter((m) => m.type === "SALE");
+      for (const move of saleMoves) {
+        await tx.cashMovement.create({
+          data: {
+            sessionId: openSession.id,
+            type: "REFUND",
+            paymentMethod: move.paymentMethod,
+            amount: move.amount,
+            description: `Reapertura orden ${order.publicCode}`,
+            orderId: order.id,
+            createdBy: userId,
+          },
+        });
+      }
+
+      // Reopen the order
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.IN_PROGRESS,
+          reopenedAt: new Date(),
+          reopenedBy: userId,
+          reopenNotes: notes ?? null,
+          updatedBy: userId,
+        },
+      });
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error reopening order:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error al reabrir la orden",
+    };
+  }
+}
