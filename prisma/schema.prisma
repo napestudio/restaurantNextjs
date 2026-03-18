@@ -829,6 +829,11 @@ model Order {
   createdBy String?
   updatedBy String?
 
+  // Reopen audit trail
+  reopenedAt  DateTime?
+  reopenedBy  String?
+  reopenNotes String?
+
   items         OrderItem[]
   invoices      Invoice[]
   cashMovements CashMovement[]

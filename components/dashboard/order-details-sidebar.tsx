@@ -12,6 +12,7 @@ import {
   updateOrderStatus,
   updateOrderType,
 } from "@/actions/Order";
+import { ReopenOrderDialog } from "./reopen-order-dialog";
 import { OrderStatus, OrderType } from "@/app/generated/prisma";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +50,7 @@ import {
   Package,
   Percent,
   Printer,
+  RotateCcw,
   Save,
   Truck,
   User,
@@ -182,6 +184,7 @@ export function OrderDetailsSidebar({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isCloseOrderDialogOpen, setIsCloseOrderDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [isReopenOrderDialogOpen, setIsReopenOrderDialogOpen] = useState(false);
   const [showCreateClientDialog, setShowCreateClientDialog] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [currentDeliveryFee, setCurrentDeliveryFee] = useState(
@@ -612,6 +615,10 @@ export function OrderDetailsSidebar({
   const canAddItems =
     order.status !== OrderStatus.COMPLETED &&
     order.status !== OrderStatus.CANCELED;
+
+  const canReopenOrder =
+    order.status === OrderStatus.COMPLETED &&
+    order.type !== OrderType.DINE_IN;
 
   return (
     <>
@@ -1131,6 +1138,16 @@ export function OrderDetailsSidebar({
               Finalizar Venta
             </Button>
           )}
+          {canReopenOrder && (
+            <Button
+              onClick={() => setIsReopenOrderDialogOpen(true)}
+              variant="outline"
+              className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reabrir Orden
+            </Button>
+          )}
           {order.status === OrderStatus.COMPLETED &&
             !order.invoices?.some(
               (invoice) => invoice.status === "EMITTED",
@@ -1182,6 +1199,17 @@ export function OrderDetailsSidebar({
         branchId={branchId}
         onSuccess={handleClientCreated}
         initialName={clientSearchQuery}
+      />
+
+      {/* Reopen Order Dialog */}
+      <ReopenOrderDialog
+        open={isReopenOrderDialogOpen}
+        onOpenChange={setIsReopenOrderDialogOpen}
+        order={order}
+        onSuccess={() => {
+          setIsReopenOrderDialogOpen(false);
+          onOrderUpdated?.();
+        }}
       />
 
       {/* Generate Invoice Dialog */}
