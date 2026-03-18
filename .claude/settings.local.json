@@ -39,7 +39,8 @@
       "Bash(xargs grep -l -E \"\\(ticket|comanda|print|receipt\\)\")",
       "Bash(xargs grep -l \"toLocaleString\\\\|toLocaleDateString\\\\|toLocaleTimeString\\\\|getHours\\\\|getMinutes\\\\|getSeconds\\\\|toISOString\\\\|format.*Date\")",
       "Bash(head -20 /c/dev/RestaurantesNextjs/restaurantNextjs/app/'\\(admin\\)'/dashboard/tables/page.tsx)",
-      "Bash(head -20 /c/dev/RestaurantesNextjs/restaurantNextjs/app/'\\(admin\\)'/dashboard/config/tables/page.tsx)"
+      "Bash(head -20 /c/dev/RestaurantesNextjs/restaurantNextjs/app/'\\(admin\\)'/dashboard/config/tables/page.tsx)",
+      "Bash(xargs grep -l \"reopen\\\\|closed.*order\\\\|Reabierta\\\\|Reabrir\")"
     ],
     "deny": [],
     "ask": []
