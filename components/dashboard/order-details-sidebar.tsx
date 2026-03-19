@@ -617,8 +617,7 @@ export function OrderDetailsSidebar({
     order.status !== OrderStatus.CANCELED;
 
   const canReopenOrder =
-    order.status === OrderStatus.COMPLETED &&
-    order.type !== OrderType.DINE_IN;
+    order.status === OrderStatus.COMPLETED && order.type !== OrderType.DINE_IN;
 
   return (
     <>
@@ -1018,7 +1017,7 @@ export function OrderDetailsSidebar({
                   }
                   size="sm"
                   className="h-7 px-2"
-                  onClick={() => setDiscountTypeInput("PERCENTAGE")}
+                  onClick={() => { setDiscountTypeInput("PERCENTAGE"); setDiscountInput("0"); }}
                 >
                   <Percent className="h-3 w-3" />
                 </Button>
@@ -1029,14 +1028,14 @@ export function OrderDetailsSidebar({
                   }
                   size="sm"
                   className="h-7 px-2"
-                  onClick={() => setDiscountTypeInput("FIXED")}
+                  onClick={() => { setDiscountTypeInput("FIXED"); setDiscountInput("0"); }}
                 >
                   <DollarSign className="h-3 w-3" />
                 </Button>
                 <div className="relative w-24">
                   <NumberInput
                     min="0"
-                    max={discountTypeInput === "PERCENTAGE" ? "100" : undefined}
+                    max={discountTypeInput === "PERCENTAGE" ? "100" : "1000000"}
                     step="0.01"
                     value={discountInput}
                     onChange={(e) => setDiscountInput(e.target.value)}
@@ -1240,7 +1239,8 @@ export function OrderDetailsSidebar({
             <div className="py-2 space-y-3">
               {order.status === OrderStatus.COMPLETED && (
                 <p className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
-                  Esta orden ya está cerrada. ¿Estás seguro de que querés cambiar el tipo de todas formas?
+                  Esta orden ya está cerrada. ¿Estás seguro de que querés
+                  cambiar el tipo de todas formas?
                 </p>
               )}
               <p className="text-sm text-gray-700">

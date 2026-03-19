@@ -75,14 +75,6 @@ export function CommittedOrderItemsList({
         ))}
       </div>
 
-      <div className="border-t pt-3">
-        <div className="flex justify-between items-center text-lg font-bold">
-          <span>Total:</span>
-          <span>
-            {formatCurrency(calculateTotal())}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

@@ -1781,10 +1781,9 @@ export async function updateDiscount(
   discountType: "PERCENTAGE" | "FIXED" = "PERCENTAGE",
 ) {
   try {
-    // Authorization check - only MANAGER and above can apply discounts
     await authorizeAction(
-      UserRole.MANAGER,
-      "Solo gerentes y superiores pueden aplicar descuentos",
+      UserRole.WAITER,
+      "Debes iniciar sesión para aplicar descuentos",
     );
 
     // Validate discount value
@@ -1817,10 +1816,11 @@ export async function updateDiscount(
     };
   } catch (error) {
     console.error("Error updating discount:", error);
-    return {
-      success: false,
-      error: "Error al actualizar el descuento",
-    };
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Error al actualizar el descuento";
+    return { success: false, error: message };
   }
 }
 
