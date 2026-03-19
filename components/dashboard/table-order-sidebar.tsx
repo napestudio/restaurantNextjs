@@ -40,6 +40,7 @@ import { WaiterPicker } from "./waiter-picker";
 import { useToast } from "@/hooks/use-toast";
 import { OrderProduct } from "@/types/products";
 import { formatCurrency } from "@/lib/currency";
+import { calculateDiscountAmount } from "@/lib/discount";
 
 interface TableOrderSidebarProps {
   tableId: string | null;
@@ -723,6 +724,50 @@ export function TableOrderSidebar({
               </div>
             )}
 
+            {/* Order Totals Summary */}
+            {preOrderItems.length === 0 &&
+              order.items?.length > 0 &&
+              (() => {
+                const subtotal = order.items.reduce(
+                  (sum, item) => sum + item.price * item.quantity,
+                  0,
+                );
+                const discount = Number(order.discountPercentage) || 0;
+                const discountType =
+                  (order.discountType as "PERCENTAGE" | "FIXED") ||
+                  "PERCENTAGE";
+                const discountAmount = calculateDiscountAmount(
+                  subtotal,
+                  discount,
+                  discountType,
+                );
+                const total = subtotal - discountAmount;
+                return (
+                  <div className="border-t pt-3 space-y-1 text-sm shrink-0">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Subtotal</span>
+                      <span>{formatCurrency(subtotal)}</span>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>
+                          Descuento (
+                          {discountType === "FIXED"
+                            ? formatCurrency(discount)
+                            : `${discount}%`}
+                          )
+                        </span>
+                        <span>-{formatCurrency(discountAmount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-2xl">
+                      <span>Total</span>
+                      <span>{formatCurrency(total)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
             {/* Action Buttons - Fixed at bottom */}
             {preOrderItems.length === 0 && (
               <div className="flex gap-2 pt-4 border-t flex-wrap shrink-0">
@@ -780,7 +825,10 @@ export function TableOrderSidebar({
                       }
                       size="sm"
                       className="h-8 px-2"
-                      onClick={() => setDiscountTypeInput("PERCENTAGE")}
+                      onClick={() => {
+                        setDiscountTypeInput("PERCENTAGE");
+                        setDiscountInput("0");
+                      }}
                     >
                       <Percent className="h-3 w-3" />
                     </Button>
@@ -791,14 +839,17 @@ export function TableOrderSidebar({
                       }
                       size="sm"
                       className="h-8 px-2"
-                      onClick={() => setDiscountTypeInput("FIXED")}
+                      onClick={() => {
+                        setDiscountTypeInput("FIXED");
+                        setDiscountInput("0");
+                      }}
                     >
                       <DollarSign className="h-3 w-3" />
                     </Button>
                     <NumberInput
                       min="0"
                       max={
-                        discountTypeInput === "PERCENTAGE" ? "100" : undefined
+                        discountTypeInput === "PERCENTAGE" ? "100" : "1000000"
                       }
                       step="0.01"
                       value={discountInput}

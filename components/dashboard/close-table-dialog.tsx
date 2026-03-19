@@ -201,7 +201,11 @@ export function CloseTableDialog({
     setCurrentDiscount(newDiscount);
     setCurrentDiscountType(discountTypeInput);
 
-    const result = await updateDiscount(order.id, newDiscount, discountTypeInput);
+    const result = await updateDiscount(
+      order.id,
+      newDiscount,
+      discountTypeInput,
+    );
 
     if (!result.success) {
       setCurrentDiscount(previousDiscount);
@@ -220,7 +224,10 @@ export function CloseTableDialog({
   const handleClose = async () => {
     // Auto-save discount if it has unsaved changes
     const parsedInput = parseFloat(discountInput) || 0;
-    if (parsedInput !== currentDiscount || discountTypeInput !== currentDiscountType) {
+    if (
+      parsedInput !== currentDiscount ||
+      discountTypeInput !== currentDiscountType
+    ) {
       const saved = await saveDiscount();
       if (!saved) return;
     }
@@ -287,8 +294,7 @@ export function CloseTableDialog({
   };
 
   const resetForm = () => {
-    const type =
-      (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
+    const type = (order.discountType as "PERCENTAGE" | "FIXED") || "PERCENTAGE";
     resetPayments(total);
     setError(null);
     setDiscountError(null);
@@ -411,14 +417,14 @@ export function CloseTableDialog({
                         <div className="flex items-center border rounded overflow-hidden">
                           <button
                             type="button"
-                            onClick={() => setDiscountTypeInput("PERCENTAGE")}
+                            onClick={() => { setDiscountTypeInput("PERCENTAGE"); setDiscountInput("0"); }}
                             className={`px-2 py-1 text-xs font-medium transition-colors ${discountTypeInput === "PERCENTAGE" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
                           >
                             <Percent className="h-3 w-3" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => setDiscountTypeInput("FIXED")}
+                            onClick={() => { setDiscountTypeInput("FIXED"); setDiscountInput("0"); }}
                             className={`px-2 py-1 text-xs font-medium transition-colors ${discountTypeInput === "FIXED" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
                           >
                             <DollarSign className="h-3 w-3" />
@@ -426,7 +432,11 @@ export function CloseTableDialog({
                         </div>
                         <NumberInput
                           min="0"
-                          max={discountTypeInput === "PERCENTAGE" ? "100" : undefined}
+                          max={
+                            discountTypeInput === "PERCENTAGE"
+                              ? "100"
+                              : "1000000"
+                          }
                           step="0.01"
                           value={discountInput}
                           onChange={(e) => {
@@ -437,7 +447,9 @@ export function CloseTableDialog({
                             if (e.key === "Enter") handleDiscountSave();
                           }}
                           className={`h-8 w-20 ${discountError ? "border-red-500" : ""}`}
-                          placeholder={discountTypeInput === "PERCENTAGE" ? "%" : "$"}
+                          placeholder={
+                            discountTypeInput === "PERCENTAGE" ? "%" : "$"
+                          }
                         />
                         <Button
                           variant="ghost"
