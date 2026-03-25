@@ -27,7 +27,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, MapPin, Settings2 } from "lucide-react";
-import { createClient, type ClientInput, type ClientData } from "@/actions/clients";
+import {
+  createClient,
+  type ClientInput,
+  type ClientData,
+} from "@/actions/clients";
 import { PaymentMethod } from "@/app/generated/prisma";
 
 interface CreateClientDialogProps {
@@ -98,7 +102,7 @@ export function CreateClientDialog({
 
   const updateField = <K extends keyof ClientInput>(
     field: K,
-    value: ClientInput[K]
+    value: ClientInput[K],
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -107,7 +111,9 @@ export function CreateClientDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md max-h-[90svh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="uppercase font-bold">Nuevo Cliente</DialogTitle>
+          <DialogTitle className="uppercase font-bold">
+            Nuevo Cliente
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -202,7 +208,9 @@ export function CreateClientDialog({
                   <Input
                     id="client-street"
                     value={formData.addressStreet || ""}
-                    onChange={(e) => updateField("addressStreet", e.target.value)}
+                    onChange={(e) =>
+                      updateField("addressStreet", e.target.value)
+                    }
                     placeholder=""
                   />
 
@@ -210,7 +218,9 @@ export function CreateClientDialog({
                   <Input
                     id="client-number"
                     value={formData.addressNumber || ""}
-                    onChange={(e) => updateField("addressNumber", e.target.value)}
+                    onChange={(e) =>
+                      updateField("addressNumber", e.target.value)
+                    }
                     placeholder=""
                   />
 
@@ -252,7 +262,7 @@ export function CreateClientDialog({
                     onChange={(e) =>
                       updateField(
                         "discountPercentage",
-                        e.target.value ? parseFloat(e.target.value) : 0
+                        e.target.value ? parseFloat(e.target.value) : 0,
                       )
                     }
                     placeholder=""
@@ -264,7 +274,7 @@ export function CreateClientDialog({
                     onValueChange={(value) =>
                       updateField(
                         "preferredPaymentMethod",
-                        value ? (value as PaymentMethod) : undefined
+                        value ? (value as PaymentMethod) : undefined,
                       )
                     }
                   >
@@ -307,7 +317,7 @@ export function CreateClientDialog({
           <Button
             onClick={handleSubmit}
             disabled={isPending || !formData.name.trim()}
-            className="bg-orange-300 hover:bg-orange-400 text-black"
+            className="bg-red-300 hover:bg-red-400 text-black"
           >
             Guardar
           </Button>

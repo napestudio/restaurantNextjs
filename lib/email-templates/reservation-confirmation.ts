@@ -20,7 +20,7 @@ export function generateReservationConfirmationEmail(
 ): string {
   const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.slice(0, 10).split("-").map(Number);
-    return new Intl.DateTimeFormat("es-ES", {
+    return new Intl.DateTimeFormat("es-AR", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -31,7 +31,7 @@ export function generateReservationConfirmationEmail(
   const formatTime = (timeString?: string) => {
     if (!timeString) return data.time;
     const time = new Date(timeString);
-    return new Intl.DateTimeFormat("es-ES", {
+    return new Intl.DateTimeFormat("es-AR", {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "America/Argentina/Buenos_Aires",

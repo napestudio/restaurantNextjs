@@ -98,6 +98,7 @@ export default async function OrdersPage({
     discountPercentage: Number(order.discountPercentage),
     deliveryFee: Number(order.deliveryFee),
     cashMovements: order.cashMovements?.map((m) => ({
+      type: m.type,
       paymentMethod: m.paymentMethod,
       amount: Number(m.amount),
     })),

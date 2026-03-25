@@ -10,7 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatDateLongAR, formatTimeAR, formatDateTimeAR } from "@/lib/date-utils";
+import {
+  formatDateLongAR,
+  formatTimeAR,
+  formatDateTimeAR,
+} from "@/lib/date-utils";
 
 interface ViewReservationDialogProps {
   reservation: SerializedReservation | null;
@@ -101,7 +105,7 @@ export function ViewReservationDialog({
                   {reservation.timeSlot
                     ? `${reservation.timeSlot.startTime.slice(
                         11,
-                        16
+                        16,
                       )} - ${reservation.timeSlot.endTime.slice(11, 16)}`
                     : "No time slot"}
                 </p>
@@ -133,8 +137,8 @@ export function ViewReservationDialog({
                       variant="outline"
                       className="text-sm font-semibold bg-blue-50 border-blue-300"
                     >
-                      {rt.table.name ?? `Mesa ${rt.table.number}`}
-                      {" "}(cap. {rt.table.capacity})
+                      {rt.table.name ?? `Mesa ${rt.table.number}`} (cap.{" "}
+                      {rt.table.capacity})
                     </Badge>
                   ))}
                 </div>
@@ -150,7 +154,7 @@ export function ViewReservationDialog({
                 <h3 className="text-sm font-medium text-gray-500 mb-1">
                   Restricciones alimentarias
                 </h3>
-                <p className="text-sm bg-orange-50 p-3 rounded-md border border-orange-200">
+                <p className="text-sm bg-red-50 p-3 rounded-md border border-red-200">
                   {reservation.dietaryRestrictions || "Ninguna"}
                 </p>
               </div>

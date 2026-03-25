@@ -61,6 +61,8 @@ export function CashRegistersClient({
 }: CashRegistersClientProps) {
   const [sessions, setSessions] =
     useState<SerializedSession[]>(initialSessions);
+  const [registersState, setRegistersState] =
+    useState<CashRegisterWithStatus[]>(cashRegisters);
   const [openDialogOpen, setOpenDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -92,12 +94,24 @@ export function CashRegistersClient({
 
   const handleSessionOpened = (newSession: SerializedSession) => {
     setSessions((prev) => [newSession, ...prev]);
+    setRegistersState((prev) =>
+      prev.map((r) =>
+        r.id === newSession.cashRegisterId ? { ...r, hasOpenSession: true } : r
+      )
+    );
     setOpenDialogOpen(false);
   };
 
   const handleSessionClosed = (closedSession: SerializedSession) => {
     setSessions((prev) =>
       prev.map((s) => (s.id === closedSession.id ? closedSession : s))
+    );
+    setRegistersState((prev) =>
+      prev.map((r) =>
+        r.id === closedSession.cashRegisterId
+          ? { ...r, hasOpenSession: false }
+          : r
+      )
     );
     setCloseDialogOpen(false);
     setSelectedSession(null);
@@ -122,18 +136,33 @@ export function CashRegistersClient({
     setSessions((prev) =>
       prev.map((s) => (s.id === closedSession.id ? closedSession : s))
     );
+    setRegistersState((prev) =>
+      prev.map((r) =>
+        r.id === closedSession.cashRegisterId
+          ? { ...r, hasOpenSession: false }
+          : r
+      )
+    );
   };
 
   const handleSessionReopened = (reopenedSession: SerializedSession) => {
     setSessions((prev) =>
       prev.map((s) => (s.id === reopenedSession.id ? reopenedSession : s))
     );
+    setRegistersState((prev) =>
+      prev.map((r) =>
+        r.id === reopenedSession.cashRegisterId
+          ? { ...r, hasOpenSession: true }
+          : r
+      )
+    );
     setSelectedSession(reopenedSession);
   };
 
   // Get registers that can be opened (active and no open session)
-  const availableRegisters = cashRegisters.filter(
-    (r) => r.isActive && !r.hasOpenSession
+  const availableRegisters = useMemo(
+    () => registersState.filter((r) => r.isActive && !r.hasOpenSession),
+    [registersState]
   );
 
   // Format date/time
@@ -264,7 +293,7 @@ export function CashRegistersClient({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas las cajas</SelectItem>
-                  {cashRegisters.map((register) => (
+                  {registersState.map((register) => (
                     <SelectItem key={register.id} value={register.id}>
                       {register.name}
                     </SelectItem>
@@ -464,6 +493,7 @@ export function CashRegistersClient({
         onSessionClosed={handleSidebarSessionClosed}
         onSessionReopened={handleSessionReopened}
         userRole={userRole}
+        cashRegisters={registersState}
       />
     </div>
   );

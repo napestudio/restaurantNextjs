@@ -33,6 +33,7 @@ interface ReopenOrderDialogProps {
     id: string;
     publicCode: string;
     cashMovements?: Array<{
+      type: string;
       paymentMethod: string;
       amount: number;
     }>;
@@ -83,7 +84,16 @@ export function ReopenOrderDialog({
     onOpenChange(value);
   };
 
-  const movements = order.cashMovements ?? [];
+  // Net SALE - REFUND per payment method to show only current effective payments
+  const netByMethod: Record<string, number> = {};
+  (order.cashMovements ?? []).forEach((m) => {
+    if (!netByMethod[m.paymentMethod]) netByMethod[m.paymentMethod] = 0;
+    if (m.type === "SALE") netByMethod[m.paymentMethod] += m.amount;
+    else if (m.type === "REFUND") netByMethod[m.paymentMethod] -= m.amount;
+  });
+  const movements = Object.entries(netByMethod)
+    .filter(([, v]) => v > 0)
+    .map(([paymentMethod, amount]) => ({ paymentMethod, amount }));
   const total = movements.reduce((sum, m) => sum + m.amount, 0);
 
   return (

@@ -1685,8 +1685,9 @@ export async function getOrders(filters: OrderFilters) {
             // Removed orderBy - reduces query complexity, order list only needs existence/status
           },
           cashMovements: {
-            where: { type: "SALE" },
+            where: { type: { in: ["SALE", "REFUND"] } },
             select: {
+              type: true,
               paymentMethod: true,
               amount: true,
             },
@@ -1713,6 +1714,7 @@ export async function getOrders(filters: OrderFilters) {
       })),
       invoices: order.invoices || [],
       cashMovements: order.cashMovements.map((m) => ({
+        type: m.type,
         paymentMethod: m.paymentMethod,
         amount: Number(m.amount),
       })),
@@ -2082,6 +2084,12 @@ export async function closeTableWithPayment(data: {
           )}) es menor al total de la orden ($${total.toFixed(2)})`,
         );
       }
+
+      // Clean up existing cash movements for this order before re-recording payment.
+      // This handles reopened orders being re-closed: removes the REFUND movements
+      // created by reopenOrder() and any prior SALE movements, so the session total
+      // only reflects the final payment.
+      await tx.cashMovement.deleteMany({ where: { orderId: orderId } });
 
       // Create cash movements for each payment
       if (payments && payments.length > 0) {
@@ -2483,15 +2491,6 @@ export async function reopenOrder(data: {
         throw new Error("La orden no está completada");
       }
 
-      if (
-        order.type !== OrderType.TAKE_AWAY &&
-        order.type !== OrderType.DELIVERY
-      ) {
-        throw new Error(
-          "Solo se pueden reabrir órdenes de take-away o delivery",
-        );
-      }
-
       const hasEmittedInvoice = order.invoices.some(
         (inv) => inv.status === InvoiceStatus.EMITTED,
       );
@@ -2538,6 +2537,16 @@ export async function reopenOrder(data: {
           updatedBy: userId,
         },
       });
+
+      // For DINE_IN: restore the table to OCCUPIED only if currently EMPTY.
+      // If already OCCUPIED (new party seated), leave it — the reopened order
+      // will coexist as a shared order on the same table.
+      if (order.type === OrderType.DINE_IN && order.tableId) {
+        await tx.table.updateMany({
+          where: { id: order.tableId, status: "EMPTY" },
+          data: { status: "OCCUPIED" },
+        });
+      }
     });
 
     return { success: true };

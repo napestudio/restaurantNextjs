@@ -81,9 +81,7 @@ export function MovimientosCaja({
   const [searchDescription, setSearchDescription] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
-  const [selectedMovement, setSelectedMovement] = useState<Movement | null>(
-    null,
-  );
+  const [selectedMovementId, setSelectedMovementId] = useState<string | null>(null);
   const [detailsSidebarOpen, setDetailsSidebarOpen] = useState(false);
 
   // Pagination state
@@ -218,7 +216,7 @@ export function MovimientosCaja({
 
   const handleRowClick = (movement: Movement) => {
     if (movement.isOptimistic) return;
-    setSelectedMovement(movement);
+    setSelectedMovementId(movement.id);
     setDetailsSidebarOpen(true);
   };
 
@@ -625,7 +623,7 @@ export function MovimientosCaja({
       <MovementDetailsSidebar
         open={detailsSidebarOpen}
         onClose={() => setDetailsSidebarOpen(false)}
-        movement={selectedMovement}
+        movementId={selectedMovementId}
         cashRegisters={cashRegisters}
         onMovementUpdated={() => loadMovements(0)}
         userRole={userRole}

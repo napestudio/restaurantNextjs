@@ -26,9 +26,10 @@ export default async function CashRegistersPage() {
       cashRegister: {
         branchId,
       },
-      openedAt: {
-        gte: thirtyDaysAgo,
-      },
+      OR: [
+        { openedAt: { gte: thirtyDaysAgo } },
+        { status: "OPEN" },
+      ],
     },
     include: {
       cashRegister: {

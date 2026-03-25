@@ -12,8 +12,11 @@ import {
   closeCashRegisterSession,
 } from "@/actions/CashRegister";
 import { ReopenSessionDialog } from "./reopen-session-dialog";
-import { SessionMovementDetailDialog } from "./session-movement-detail-dialog";
-import { PAYMENT_METHOD_LABELS } from "@/types/cash-register";
+import { MovementDetailsSidebar } from "./movement-details-sidebar";
+import {
+  PAYMENT_METHOD_LABELS,
+  CashRegisterWithStatus,
+} from "@/types/cash-register";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +72,9 @@ interface SessionDetailsSidebarProps {
   onClose: () => void;
   onSessionClosed: (session: SerializedSession) => void;
   onSessionReopened: (session: SerializedSession) => void;
-  userRole: string | null;
+  userRole: string;
+  cashRegisters: CashRegisterWithStatus[];
+  onMovementUpdated?: () => void;
 }
 
 export function SessionDetailsSidebar({
@@ -79,6 +84,8 @@ export function SessionDetailsSidebar({
   onSessionClosed,
   onSessionReopened,
   userRole,
+  cashRegisters,
+  onMovementUpdated,
 }: SessionDetailsSidebarProps) {
   const [movements, setMovements] = useState<SerializedMovement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,7 +104,9 @@ export function SessionDetailsSidebar({
   const [isClosing, setIsClosing] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
-  const [selectedMovementId, setSelectedMovementId] = useState<string | null>(null);
+  const [selectedMovementId, setSelectedMovementId] = useState<string | null>(
+    null,
+  );
   const [movementDetailOpen, setMovementDetailOpen] = useState(false);
 
   const canReopen = userRole === "ADMIN" || userRole === "SUPERADMIN";
@@ -324,7 +333,7 @@ export function SessionDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={loadMovements}
               disabled={isLoading}
             >
@@ -335,7 +344,7 @@ export function SessionDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -381,9 +390,7 @@ export function SessionDetailsSidebar({
           {/* Opening Amount */}
           <div className="flex justify-between px-4 py-3 border-b">
             <span className="font-medium text-sm">MONTO INICIAL</span>
-            <span className="font-medium">
-              {formatCurrency(openingAmount)}
-            </span>
+            <span className="font-medium">{formatCurrency(openingAmount)}</span>
           </div>
 
           {/* Income Section */}
@@ -411,7 +418,7 @@ export function SessionDetailsSidebar({
                   {Object.entries(incomeByMethod).map(([method, data]) => (
                     <div key={method} className="ml-4">
                       <div className="flex justify-between py-1">
-                        <span className="text-orange-500 text-sm flex items-center gap-1">
+                        <span className="text-red-500 text-sm flex items-center gap-1">
                           <ChevronDown className="h-3 w-3" />
                           {
                             PAYMENT_METHOD_LABELS[
@@ -471,7 +478,7 @@ export function SessionDetailsSidebar({
                   {Object.entries(expenseByMethod).map(([method, data]) => (
                     <div key={method} className="ml-4">
                       <div className="flex justify-between py-1">
-                        <span className="text-orange-500 text-sm flex items-center gap-1">
+                        <span className="text-red-500 text-sm flex items-center gap-1">
                           <ChevronDown className="h-3 w-3" />
                           {
                             PAYMENT_METHOD_LABELS[
@@ -534,8 +541,7 @@ export function SessionDetailsSidebar({
                       *
                     </Label>
                     <span className="text-xs text-gray-500">
-                      Esperado:{" "}
-                      {formatCurrency(expectedByMethod[method] || 0)}
+                      Esperado: {formatCurrency(expectedByMethod[method] || 0)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -694,12 +700,18 @@ export function SessionDetailsSidebar({
         />
       )}
 
-      <SessionMovementDetailDialog
+      <MovementDetailsSidebar
         movementId={selectedMovementId}
         open={movementDetailOpen}
-        onOpenChange={(open) => {
-          setMovementDetailOpen(open);
-          if (!open) setSelectedMovementId(null);
+        onClose={() => {
+          setMovementDetailOpen(false);
+          setSelectedMovementId(null);
+        }}
+        cashRegisters={cashRegisters}
+        userRole={userRole}
+        onMovementUpdated={() => {
+          onMovementUpdated?.();
+          loadMovements();
         }}
       />
     </>

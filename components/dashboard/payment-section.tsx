@@ -16,11 +16,7 @@ interface PaymentSectionProps {
   disabled?: boolean;
   onAdd: () => void;
   onRemove: (id: string) => void;
-  onUpdate: (
-    id: string,
-    field: "method" | "amount",
-    value: string,
-  ) => void;
+  onUpdate: (id: string, field: "method" | "amount", value: string) => void;
 }
 
 export function PaymentSection({
@@ -44,12 +40,7 @@ export function PaymentSection({
           <CreditCard className="h-5 w-5 text-muted-foreground" />
           <h3 className="font-semibold text-lg">Pago</h3>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onAdd}
-          disabled={disabled}
-        >
+        <Button variant="outline" size="sm" onClick={onAdd} disabled={disabled}>
           <Plus className="h-4 w-4 mr-1" />
           Dividir pago
         </Button>
@@ -84,9 +75,7 @@ export function PaymentSection({
               </span>
               <CurrencyInput
                 value={payment.amount}
-                onChange={(e) =>
-                  onUpdate(payment.id, "amount", e.target.value)
-                }
+                onChange={(e) => onUpdate(payment.id, "amount", e.target.value)}
                 placeholder="0,00"
                 className={`pl-7 ${isSplit && isLastLine(payment.id) ? "text-muted-foreground" : ""}`}
                 disabled={disabled}
@@ -113,12 +102,12 @@ export function PaymentSection({
       {isSplit && (
         <div>
           {remainder > 0.01 ? (
-            <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-orange-800 font-medium text-sm">
+                <span className="text-red-800 font-medium text-sm">
                   Restante:
                 </span>
-                <span className="text-lg font-bold text-orange-700">
+                <span className="text-lg font-bold text-red-700">
                   {formatCurrency(remainder)}
                 </span>
               </div>
