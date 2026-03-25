@@ -70,6 +70,7 @@ export type Order = {
 
   // Payment breakdown (for divided/split payments)
   cashMovements?: Array<{
+    type: string;
     paymentMethod: string;
     amount: number;
   }>;
