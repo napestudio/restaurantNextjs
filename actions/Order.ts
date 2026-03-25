@@ -2483,15 +2483,6 @@ export async function reopenOrder(data: {
         throw new Error("La orden no está completada");
       }
 
-      if (
-        order.type !== OrderType.TAKE_AWAY &&
-        order.type !== OrderType.DELIVERY
-      ) {
-        throw new Error(
-          "Solo se pueden reabrir órdenes de take-away o delivery",
-        );
-      }
-
       const hasEmittedInvoice = order.invoices.some(
         (inv) => inv.status === InvoiceStatus.EMITTED,
       );
@@ -2538,6 +2529,16 @@ export async function reopenOrder(data: {
           updatedBy: userId,
         },
       });
+
+      // For DINE_IN: restore the table to OCCUPIED only if currently EMPTY.
+      // If already OCCUPIED (new party seated), leave it — the reopened order
+      // will coexist as a shared order on the same table.
+      if (order.type === OrderType.DINE_IN && order.tableId) {
+        await tx.table.updateMany({
+          where: { id: order.tableId, status: "EMPTY" },
+          data: { status: "OCCUPIED" },
+        });
+      }
     });
 
     return { success: true };

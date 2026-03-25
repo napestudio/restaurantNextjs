@@ -869,14 +869,6 @@ export async function updateManualMovement(
         throw new Error("Movimiento no encontrado");
       }
 
-      if (
-        movement.type !== "INCOME" &&
-        movement.type !== "EXPENSE" &&
-        movement.type !== "CORRECTION"
-      ) {
-        throw new Error("Solo se pueden editar movimientos manuales");
-      }
-
       const session = await tx.cashRegisterSession.findFirst({
         where: {
           cashRegisterId: validatedData.cashRegisterId,
@@ -1357,6 +1349,16 @@ export async function getMovementWithOrderDetails(movementId: string) {
       return { success: false, error: "Movimiento no encontrado" };
     }
 
+    // Resolve createdBy user ID to display name
+    let createdByName = movement.createdBy ?? "Sistema";
+    if (movement.createdBy) {
+      const user = await prisma.user.findUnique({
+        where: { id: movement.createdBy },
+        select: { name: true, username: true },
+      });
+      if (user) createdByName = user.name || user.username || movement.createdBy;
+    }
+
     const serializedMovement = {
       id: movement.id,
       type: movement.type,
@@ -1364,9 +1366,10 @@ export async function getMovementWithOrderDetails(movementId: string) {
       amount: Number(movement.amount),
       description: movement.description,
       createdAt: movement.createdAt.toISOString(),
-      createdBy: movement.createdBy,
+      createdBy: createdByName,
       sessionId: movement.sessionId,
       orderId: movement.orderId,
+      cashRegisterId: movement.session.cashRegister.id,
       cashRegisterName: movement.session.cashRegister.name,
     };
 
@@ -1380,6 +1383,7 @@ export async function getMovementWithOrderDetails(movementId: string) {
           customerEmail: movement.order.customerEmail,
           partySize: movement.order.partySize,
           discountPercentage: Number(movement.order.discountPercentage),
+          discountType: movement.order.discountType,
           deliveryFee: Number(movement.order.deliveryFee),
           description: movement.order.description,
           courierName: movement.order.courierName,

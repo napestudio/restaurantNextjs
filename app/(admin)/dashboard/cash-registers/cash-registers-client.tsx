@@ -464,6 +464,7 @@ export function CashRegistersClient({
         onSessionClosed={handleSidebarSessionClosed}
         onSessionReopened={handleSessionReopened}
         userRole={userRole}
+        cashRegisters={cashRegisters}
       />
     </div>
   );

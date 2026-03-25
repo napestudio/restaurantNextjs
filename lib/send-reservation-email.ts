@@ -33,7 +33,7 @@ export async function sendReservationNotificationEmail(
   }
 
   const [dYear, dMonth, dDay] = params.date.toISOString().slice(0, 10).split("-").map(Number);
-  const formattedDate = new Intl.DateTimeFormat("es-ES", {
+  const formattedDate = new Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

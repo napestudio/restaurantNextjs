@@ -616,8 +616,7 @@ export function OrderDetailsSidebar({
     order.status !== OrderStatus.COMPLETED &&
     order.status !== OrderStatus.CANCELED;
 
-  const canReopenOrder =
-    order.status === OrderStatus.COMPLETED && order.type !== OrderType.DINE_IN;
+  const canReopenOrder = order.status === OrderStatus.COMPLETED;
 
   return (
     <>

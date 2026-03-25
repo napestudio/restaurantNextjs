@@ -1,6 +1,7 @@
 /**
  * Utility functions and types for the Reservation Wizard
  */
+import { formatDateLongAR } from "@/lib/date-utils";
 
 export interface WizardData {
   // Step 1
@@ -90,12 +91,7 @@ export function validateStep(step: number, data: WizardData): boolean {
  * Format date for display in success screen
  */
 export function formatReservationDate(date: string): string {
-  return new Date(date).toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
+  return formatDateLongAR(date);
 }
 
 /**
