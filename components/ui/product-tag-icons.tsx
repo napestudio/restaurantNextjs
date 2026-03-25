@@ -56,7 +56,7 @@ const TAG_CONFIG: Record<
   NUT_FREE: {
     label: "Sin Frutos Secos",
     icon: NutFreeIcon,
-    color: "text-orange-500",
+    color: "text-red-500",
   },
   NEW: {
     label: "Nuevo",
@@ -66,7 +66,7 @@ const TAG_CONFIG: Record<
   POPULAR: {
     label: "Popular",
     icon: PopularIcon,
-    color: "text-orange-400",
+    color: "text-red-400",
   },
 };
 

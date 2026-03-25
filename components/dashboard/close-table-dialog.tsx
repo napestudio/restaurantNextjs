@@ -417,14 +417,14 @@ export function CloseTableDialog({
                         <div className="flex items-center border rounded overflow-hidden">
                           <button
                             type="button"
-                            onClick={() => { setDiscountTypeInput("PERCENTAGE"); setDiscountInput("0"); }}
+                            onClick={() => { setDiscountTypeInput("PERCENTAGE"); setDiscountInput(""); }}
                             className={`px-2 py-1 text-xs font-medium transition-colors ${discountTypeInput === "PERCENTAGE" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
                           >
                             <Percent className="h-3 w-3" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => { setDiscountTypeInput("FIXED"); setDiscountInput("0"); }}
+                            onClick={() => { setDiscountTypeInput("FIXED"); setDiscountInput(""); }}
                             className={`px-2 py-1 text-xs font-medium transition-colors ${discountTypeInput === "FIXED" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
                           >
                             <DollarSign className="h-3 w-3" />

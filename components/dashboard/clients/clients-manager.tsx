@@ -171,7 +171,7 @@ export function ClientsManager({
             <Filter className="h-4 w-4 mr-2" />
             Filtros
             {hasActiveFilters && (
-              <span className="ml-2 bg-orange-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
+              <span className="ml-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
                 !
               </span>
             )}
@@ -249,7 +249,7 @@ export function ClientsManager({
               </p>
               <Button
                 onClick={() => setCreateDialogOpen(true)}
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-red-500 hover:bg-red-600"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Crear Primer Cliente
@@ -306,8 +306,8 @@ export function ClientsManager({
                     {/* Name */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                          <User className="h-4 w-4 text-orange-600" />
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                          <User className="h-4 w-4 text-red-600" />
                         </div>
                         <div>
                           <p className="font-medium text-sm">{client.name}</p>

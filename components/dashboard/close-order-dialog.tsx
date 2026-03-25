@@ -25,7 +25,7 @@ import { calculateDiscountAmount } from "@/lib/discount";
 import { PAYMENT_METHODS } from "@/types/cash-register";
 import { PaymentSection } from "@/components/dashboard/payment-section";
 import { usePayments } from "@/hooks/use-payments";
-import { Check, DollarSign, Percent, Receipt, Settings, X } from "lucide-react";
+import { Check, DollarSign, Edit, Percent, Receipt, Settings, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface OrderItem {
@@ -539,8 +539,9 @@ export function CloseOrderDialog({
                                 className="h-6 w-6 p-0"
                                 onClick={handleDiscountEdit}
                                 disabled={isLoadingAction}
+                                title="Editar descuento"
                               >
-                                <Percent className="h-3 w-3" />
+                                <Edit className="h-3 w-3" />
                               </Button>
                             )}
                           </div>

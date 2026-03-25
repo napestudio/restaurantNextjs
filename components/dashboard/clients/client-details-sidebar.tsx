@@ -185,7 +185,7 @@ export function ClientDetailsSidebar({
       <div
         className={cn(
           "fixed inset-0 bg-black/50 z-40 transition-opacity",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
@@ -194,11 +194,11 @@ export function ClientDetailsSidebar({
       <div
         className={cn(
           "fixed top-0 right-0 h-full w-full sm:w-112.5 bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
-        <div className="bg-orange-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-red-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <User className="h-5 w-5" />
             <h2 className="text-lg font-semibold">Detalles del Cliente</h2>
@@ -206,7 +206,7 @@ export function ClientDetailsSidebar({
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-orange-600"
+            className="text-white hover:bg-red-600"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -392,7 +392,11 @@ export function ClientDetailsSidebar({
                 <div className="flex items-center gap-1">
                   <Button
                     type="button"
-                    variant={formData.discountType === "PERCENTAGE" ? "default" : "outline"}
+                    variant={
+                      formData.discountType === "PERCENTAGE"
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
                     className="h-9 px-2"
                     onClick={() =>
@@ -403,7 +407,9 @@ export function ClientDetailsSidebar({
                   </Button>
                   <Button
                     type="button"
-                    variant={formData.discountType === "FIXED" ? "default" : "outline"}
+                    variant={
+                      formData.discountType === "FIXED" ? "default" : "outline"
+                    }
                     size="sm"
                     className="h-9 px-2"
                     onClick={() =>
@@ -415,7 +421,9 @@ export function ClientDetailsSidebar({
                   <NumberInput
                     id="discountPercentage"
                     min="0"
-                    max={formData.discountType === "PERCENTAGE" ? "100" : undefined}
+                    max={
+                      formData.discountType === "PERCENTAGE" ? "100" : undefined
+                    }
                     step="0.01"
                     value={formData.discountPercentage}
                     onChange={(e) =>
@@ -424,7 +432,9 @@ export function ClientDetailsSidebar({
                         discountPercentage: parseFloat(e.target.value) || 0,
                       })
                     }
-                    placeholder={formData.discountType === "PERCENTAGE" ? "%" : "$"}
+                    placeholder={
+                      formData.discountType === "PERCENTAGE" ? "%" : "$"
+                    }
                     className="flex-1"
                   />
                 </div>
@@ -556,7 +566,7 @@ export function ClientDetailsSidebar({
               <Button
                 onClick={handleSave}
                 disabled={!formData.name.trim()}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
+                className="flex-1 bg-red-500 hover:bg-red-600"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Guardar
@@ -565,7 +575,7 @@ export function ClientDetailsSidebar({
           ) : (
             <Button
               onClick={() => setIsEditing(true)}
-              className="w-full bg-orange-500 hover:bg-orange-600"
+              className="w-full bg-red-500 hover:bg-red-600"
             >
               Editar Cliente
             </Button>

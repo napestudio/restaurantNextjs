@@ -171,7 +171,7 @@ export function DashboardHome({
       label: "Delivery",
       count: orderCounts.DELIVERY,
       icon: Truck,
-      color: "text-orange-600",
+      color: "text-red-600",
     },
   ];
 
@@ -355,7 +355,7 @@ export function DashboardHome({
           <Card className="flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <AlertTriangle className="h-4 w-4 text-red-500" />
                 Alertas de Stock
               </CardTitle>
             </CardHeader>
@@ -380,7 +380,7 @@ export function DashboardHome({
                           </div>
                         </div>
                         <span
-                          className={`text-xs font-semibold shrink-0 ${isOut ? "text-red-600" : "text-orange-500"}`}
+                          className={`text-xs font-semibold shrink-0 ${isOut ? "text-red-600" : "text-red-500"}`}
                         >
                           {alert.stock} /{" "}
                           {alert.product?.minStockAlert ??
@@ -396,7 +396,7 @@ export function DashboardHome({
             <div className="px-6 pb-4 pt-0">
               <Link
                 href="/dashboard/stock"
-                className="text-xs text-orange-600 hover:underline font-medium"
+                className="text-xs text-red-600 hover:underline font-medium"
               >
                 Ver stock →
               </Link>

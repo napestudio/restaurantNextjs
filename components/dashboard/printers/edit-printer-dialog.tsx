@@ -287,14 +287,14 @@ export function EditPrinterDialog({
                 disabled={isPending}
                 className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
                   connectionType === "NETWORK"
-                    ? "border-orange-500 bg-orange-50"
+                    ? "border-red-500 bg-red-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <Wifi
                   className={`h-6 w-6 ${
                     connectionType === "NETWORK"
-                      ? "text-orange-500"
+                      ? "text-red-500"
                       : "text-gray-400"
                   }`}
                 />
@@ -312,15 +312,13 @@ export function EditPrinterDialog({
                 disabled={isPending}
                 className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
                   connectionType === "USB"
-                    ? "border-orange-500 bg-orange-50"
+                    ? "border-red-500 bg-red-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <Usb
                   className={`h-6 w-6 ${
-                    connectionType === "USB"
-                      ? "text-orange-500"
-                      : "text-gray-400"
+                    connectionType === "USB" ? "text-red-500" : "text-gray-400"
                   }`}
                 />
                 <div className="text-left">
@@ -617,7 +615,8 @@ export function EditPrinterDialog({
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                Texto que aparece al inicio del ticket. Usa Enter para saltos de línea.
+                Texto que aparece al inicio del ticket. Usa Enter para saltos de
+                línea.
               </p>
             </div>
 
@@ -650,7 +649,8 @@ export function EditPrinterDialog({
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                Texto que aparece al final del ticket. Usa Enter para saltos de línea.
+                Texto que aparece al final del ticket. Usa Enter para saltos de
+                línea.
               </p>
             </div>
 

@@ -113,6 +113,7 @@ type Order = {
     status: string;
   }>;
   cashMovements?: Array<{
+    type: string;
     paymentMethod: string;
     amount: number;
   }>;
@@ -644,7 +645,7 @@ export function OrderDetailsSidebar({
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white hover:bg-orange-600"
+                className="text-white hover:bg-red-600"
                 onClick={handleEditClick}
                 title="Editar cliente y mesero"
               >
@@ -655,7 +656,7 @@ export function OrderDetailsSidebar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-orange-600"
+                  className="text-white hover:bg-red-600"
                   onClick={handleCancelEdit}
                   disabled={isSaving}
                   title="Cancelar"
@@ -677,7 +678,7 @@ export function OrderDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -974,7 +975,7 @@ export function OrderDetailsSidebar({
                     </div>
                     {item.originalPrice &&
                       item.originalPrice !== item.price && (
-                        <div className="text-xs text-orange-600">
+                        <div className="text-xs text-red-600">
                           Precio modificado (Original:{" "}
                           {formatCurrency(item.originalPrice)})
                         </div>
@@ -1004,7 +1005,7 @@ export function OrderDetailsSidebar({
 
           {/* Discount */}
           {isEditing ? (
-            <div className="flex justify-between items-center px-4 py-3 text-orange-600">
+            <div className="flex justify-between items-center px-4 py-3 text-red-600">
               <div className="flex items-center gap-1">
                 <span>Descuento</span>
               </div>
@@ -1016,7 +1017,10 @@ export function OrderDetailsSidebar({
                   }
                   size="sm"
                   className="h-7 px-2"
-                  onClick={() => { setDiscountTypeInput("PERCENTAGE"); setDiscountInput("0"); }}
+                  onClick={() => {
+                    setDiscountTypeInput("PERCENTAGE");
+                    setDiscountInput("0");
+                  }}
                 >
                   <Percent className="h-3 w-3" />
                 </Button>
@@ -1027,7 +1031,10 @@ export function OrderDetailsSidebar({
                   }
                   size="sm"
                   className="h-7 px-2"
-                  onClick={() => { setDiscountTypeInput("FIXED"); setDiscountInput("0"); }}
+                  onClick={() => {
+                    setDiscountTypeInput("FIXED");
+                    setDiscountInput("0");
+                  }}
                 >
                   <DollarSign className="h-3 w-3" />
                 </Button>
@@ -1041,7 +1048,7 @@ export function OrderDetailsSidebar({
                     className="h-8 pr-6 text-right"
                     placeholder="0"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-orange-600">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-red-600">
                     {discountTypeInput === "PERCENTAGE" ? "%" : "$"}
                   </span>
                 </div>
@@ -1049,7 +1056,7 @@ export function OrderDetailsSidebar({
             </div>
           ) : (
             order.discountPercentage > 0 && (
-              <div className="flex justify-between px-4 py-3 text-orange-600">
+              <div className="flex justify-between px-4 py-3 text-red-600">
                 <span>
                   Descuento (
                   {order.discountType === "FIXED"
@@ -1094,33 +1101,58 @@ export function OrderDetailsSidebar({
           {/* Payment breakdown — shown below total for completed orders */}
           {order.status === OrderStatus.COMPLETED && (
             <div className="border-t">
-              {order.cashMovements && order.cashMovements.length > 0 ? (
-                order.cashMovements.map((m, i) => (
+              {(() => {
+                if (!order.cashMovements || order.cashMovements.length === 0) {
+                  return (
+                    <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      <span>
+                        {paymentMethodLabels[order.paymentMethod] ??
+                          order.paymentMethod}
+                      </span>
+                    </div>
+                  );
+                }
+                // Net SALE - REFUND per payment method to handle reopened orders
+                const netByMethod: Record<string, number> = {};
+                order.cashMovements.forEach((m) => {
+                  if (!netByMethod[m.paymentMethod])
+                    netByMethod[m.paymentMethod] = 0;
+                  if (m.type === "SALE") netByMethod[m.paymentMethod] += m.amount;
+                  else if (m.type === "REFUND")
+                    netByMethod[m.paymentMethod] -= m.amount;
+                });
+                const netPayments = Object.entries(netByMethod).filter(
+                  ([, v]) => v > 0,
+                );
+                if (netPayments.length === 0) {
+                  return (
+                    <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      <span>
+                        {paymentMethodLabels[order.paymentMethod] ??
+                          order.paymentMethod}
+                      </span>
+                    </div>
+                  );
+                }
+                return netPayments.map(([method, amount]) => (
                   <div
-                    key={i}
+                    key={method}
                     className="flex justify-between items-center px-4 py-2 text-sm"
                   >
                     <div className="flex items-center gap-2 text-gray-500">
                       <CreditCard className="h-3.5 w-3.5" />
                       <span>
-                        {paymentMethodLabels[m.paymentMethod] ??
-                          m.paymentMethod}
+                        {paymentMethodLabels[method] ?? method}
                       </span>
                     </div>
                     <span className="font-medium text-gray-700">
-                      {formatCurrency(m.amount)}
+                      {formatCurrency(amount)}
                     </span>
                   </div>
-                ))
-              ) : (
-                <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500">
-                  <CreditCard className="h-3.5 w-3.5" />
-                  <span>
-                    {paymentMethodLabels[order.paymentMethod] ??
-                      order.paymentMethod}
-                  </span>
-                </div>
-              )}
+                ));
+              })()}
             </div>
           )}
         </div>
@@ -1136,16 +1168,7 @@ export function OrderDetailsSidebar({
               Finalizar Venta
             </Button>
           )}
-          {canReopenOrder && (
-            <Button
-              onClick={() => setIsReopenOrderDialogOpen(true)}
-              variant="outline"
-              className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reabrir Orden
-            </Button>
-          )}
+
           {order.status === OrderStatus.COMPLETED &&
             !order.invoices?.some(
               (invoice) => invoice.status === "EMITTED",
@@ -1177,6 +1200,16 @@ export function OrderDetailsSidebar({
             <Printer className="h-4 w-4 mr-2" />
             {isPrinting ? "Imprimiendo..." : "Imprimir Comanda"}
           </Button>
+          {canReopenOrder && (
+            <Button
+              onClick={() => setIsReopenOrderDialogOpen(true)}
+              variant="outline"
+              className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reabrir Orden
+            </Button>
+          )}
         </div>
       </div>
 

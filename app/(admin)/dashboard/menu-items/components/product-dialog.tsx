@@ -129,9 +129,9 @@ const TAG_OPTIONS: {
     selectedClass: "bg-amber-50 border-amber-400",
   },
   // { value: "DAIRY_FREE", label: "Sin Lácteos", icon: DairyFreeIcon, color: "text-blue-500", selectedClass: "bg-blue-50 border-blue-400" },
-  // { value: "NUT_FREE", label: "Sin Frutos Secos", icon: NutFreeIcon, color: "text-orange-500", selectedClass: "bg-orange-50 border-orange-400" },
+  // { value: "NUT_FREE", label: "Sin Frutos Secos", icon: NutFreeIcon, color: "text-red-500", selectedClass: "bg-red-50 border-red-400" },
   // { value: "NEW", label: "Nuevo", icon: NewIcon, color: "text-purple-500", selectedClass: "bg-purple-50 border-purple-400" },
-  // { value: "POPULAR", label: "Popular", icon: PopularIcon, color: "text-orange-400", selectedClass: "bg-orange-50 border-orange-300" },
+  // { value: "POPULAR", label: "Popular", icon: PopularIcon, color: "text-red-400", selectedClass: "bg-red-50 border-red-300" },
 ];
 
 type ProductDialogProps = {

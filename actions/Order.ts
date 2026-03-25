@@ -1685,8 +1685,9 @@ export async function getOrders(filters: OrderFilters) {
             // Removed orderBy - reduces query complexity, order list only needs existence/status
           },
           cashMovements: {
-            where: { type: "SALE" },
+            where: { type: { in: ["SALE", "REFUND"] } },
             select: {
+              type: true,
               paymentMethod: true,
               amount: true,
             },
@@ -1713,6 +1714,7 @@ export async function getOrders(filters: OrderFilters) {
       })),
       invoices: order.invoices || [],
       cashMovements: order.cashMovements.map((m) => ({
+        type: m.type,
         paymentMethod: m.paymentMethod,
         amount: Number(m.amount),
       })),
@@ -2082,6 +2084,12 @@ export async function closeTableWithPayment(data: {
           )}) es menor al total de la orden ($${total.toFixed(2)})`,
         );
       }
+
+      // Clean up existing cash movements for this order before re-recording payment.
+      // This handles reopened orders being re-closed: removes the REFUND movements
+      // created by reopenOrder() and any prior SALE movements, so the session total
+      // only reflects the final payment.
+      await tx.cashMovement.deleteMany({ where: { orderId: orderId } });
 
       // Create cash movements for each payment
       if (payments && payments.length > 0) {

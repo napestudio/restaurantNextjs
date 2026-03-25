@@ -333,7 +333,7 @@ export function SessionDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={loadMovements}
               disabled={isLoading}
             >
@@ -344,7 +344,7 @@ export function SessionDetailsSidebar({
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-orange-600"
+              className="text-white hover:bg-red-600"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -418,7 +418,7 @@ export function SessionDetailsSidebar({
                   {Object.entries(incomeByMethod).map(([method, data]) => (
                     <div key={method} className="ml-4">
                       <div className="flex justify-between py-1">
-                        <span className="text-orange-500 text-sm flex items-center gap-1">
+                        <span className="text-red-500 text-sm flex items-center gap-1">
                           <ChevronDown className="h-3 w-3" />
                           {
                             PAYMENT_METHOD_LABELS[
@@ -478,7 +478,7 @@ export function SessionDetailsSidebar({
                   {Object.entries(expenseByMethod).map(([method, data]) => (
                     <div key={method} className="ml-4">
                       <div className="flex justify-between py-1">
-                        <span className="text-orange-500 text-sm flex items-center gap-1">
+                        <span className="text-red-500 text-sm flex items-center gap-1">
                           <ChevronDown className="h-3 w-3" />
                           {
                             PAYMENT_METHOD_LABELS[

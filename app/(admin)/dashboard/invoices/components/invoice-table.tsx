@@ -97,15 +97,15 @@ function InvoiceTypeBadge({ type }: { type: number }) {
     // Credit notes
     3: {
       label: "NC-A",
-      color: "bg-orange-100 text-orange-800 border-orange-200",
+      color: "bg-red-100 text-red-800 border-red-200",
     },
     8: {
       label: "NC-B",
-      color: "bg-orange-100 text-orange-800 border-orange-200",
+      color: "bg-red-100 text-red-800 border-red-200",
     },
     15: {
       label: "NC-C",
-      color: "bg-orange-100 text-orange-800 border-orange-200",
+      color: "bg-red-100 text-red-800 border-red-200",
     },
     // Debit notes
     2: { label: "ND-A", color: "bg-red-100 text-red-800 border-red-200" },
@@ -286,7 +286,7 @@ export function InvoiceTable({
                             onCreditNote(invoice);
                           }}
                           title="Nota de crédito"
-                          className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <FileText className="h-4 w-4" />
                         </Button>

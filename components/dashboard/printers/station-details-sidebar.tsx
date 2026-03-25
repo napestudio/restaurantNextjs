@@ -101,12 +101,12 @@ export function StationDetailsSidebar({
 
             // Initialize selected categories
             setSelectedCategoryIds(
-              detailsResult.data.stationCategories.map((sc) => sc.category.id)
+              detailsResult.data.stationCategories.map((sc) => sc.category.id),
             );
 
             // Fetch all categories for this restaurant
             const categoriesResult = await getCategoriesByRestaurant(
-              detailsResult.data.branch.restaurantId
+              detailsResult.data.branch.restaurantId,
             );
             if (categoriesResult.success && categoriesResult.data) {
               setAllCategories(categoriesResult.data);
@@ -136,7 +136,7 @@ export function StationDetailsSidebar({
     setSelectedCategoryIds((prev) =>
       prev.includes(categoryId)
         ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
+        : [...prev, categoryId],
     );
   };
 
@@ -162,7 +162,7 @@ export function StationDetailsSidebar({
       // Update category assignments
       const categoriesResult = await assignCategoriesToStation(
         station.id,
-        selectedCategoryIds
+        selectedCategoryIds,
       );
 
       if (!categoriesResult.success) {
@@ -203,7 +203,7 @@ export function StationDetailsSidebar({
         description: stationDetails.description || "",
       });
       setSelectedCategoryIds(
-        stationDetails.stationCategories.map((sc) => sc.category.id)
+        stationDetails.stationCategories.map((sc) => sc.category.id),
       );
     }
     setIsEditing(false);
@@ -218,7 +218,7 @@ export function StationDetailsSidebar({
       <div
         className={cn(
           "fixed inset-0 bg-black/50 z-40 transition-opacity",
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
@@ -227,7 +227,7 @@ export function StationDetailsSidebar({
       <div
         className={cn(
           "fixed top-0 right-0 h-full w-full sm:w-112.5 bg-white z-50 shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto",
-          open ? "translate-x-0" : "translate-x-full"
+          open ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Header */}
@@ -403,15 +403,15 @@ export function StationDetailsSidebar({
                             printer.status === "ONLINE"
                               ? "bg-green-50 text-green-700 border-green-200"
                               : printer.status === "ERROR"
-                              ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-gray-50 text-gray-700 border-gray-200"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-gray-50 text-gray-700 border-gray-200",
                           )}
                         >
                           {printer.status === "ONLINE"
                             ? "En línea"
                             : printer.status === "ERROR"
-                            ? "Error"
-                            : "Fuera de línea"}
+                              ? "Error"
+                              : "Fuera de línea"}
                         </Badge>
                         {!printer.isActive && (
                           <Badge variant="outline" className="text-xs">
@@ -454,7 +454,7 @@ export function StationDetailsSidebar({
               <Button
                 onClick={handleSave}
                 disabled={isSaving || !formData.name.trim()}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
+                className="flex-1 bg-red-500 hover:bg-red-600"
               >
                 {isSaving ? (
                   <>
