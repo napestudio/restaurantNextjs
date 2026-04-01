@@ -4,6 +4,7 @@ import { Clock, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/currency";
 
 interface TimeSlot {
   id: string;
@@ -27,7 +28,7 @@ interface StepTimeSlotProps {
       pricePerPerson: number;
       moreInfoUrl: string | null;
       notes: string | null;
-    }
+    },
   ) => void;
   isLoading: boolean;
 }
@@ -90,7 +91,7 @@ export function StepTimeSlot({
                     "border-2 border-red-600 bg-red-50": isSelected,
                     "border-gray-200 hover:border-red-300": !isSelected,
                     "opacity-50 cursor-not-allowed": !isAvailable,
-                  }
+                  },
                 )}
                 onClick={() => {
                   if (isAvailable) {
@@ -168,10 +169,10 @@ export function StepTimeSlot({
                             "text-green-600": !isSelected,
                           })}
                         >
-                          ${totalPrice}
+                          {formatCurrency(totalPrice)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          ${slot.pricePerPerson}/persona
+                          {formatCurrency(slot.pricePerPerson)}/persona
                         </p>
                       </div>
                     ) : (
