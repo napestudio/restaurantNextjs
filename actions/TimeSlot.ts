@@ -36,6 +36,20 @@ export async function updateTimeSlotCapacity(timeSlotId: string) {
   return capacity;
 }
 
+function parseSlotTimes(
+  startTimeStr: string,
+  endTimeStr: string
+): { startTime: Date; endTime: Date } {
+  const startTime = new Date(`1970-01-01T${startTimeStr}:00.000Z`);
+  const endTimeCandidate = new Date(`1970-01-01T${endTimeStr}:00.000Z`);
+  // If end <= start, the slot crosses midnight — move endTime to the next day
+  const endTime =
+    endTimeCandidate <= startTime
+      ? new Date(`1970-01-02T${endTimeStr}:00.000Z`)
+      : endTimeCandidate;
+  return { startTime, endTime };
+}
+
 /**
  * Create a new time slot for a branch
  */
@@ -53,10 +67,7 @@ export async function createTimeSlot(data: {
   isActive?: boolean;
 }) {
   try {
-    // Convert time strings to Date objects in UTC to avoid timezone issues
-    // PostgreSQL TIME type stores time without timezone
-    const startTime = new Date(`1970-01-01T${data.startTime}:00.000Z`);
-    const endTime = new Date(`1970-01-01T${data.endTime}:00.000Z`);
+    const { startTime, endTime } = parseSlotTimes(data.startTime, data.endTime);
 
     const timeSlot = await prisma.timeSlot.create({
       data: {
@@ -222,11 +233,13 @@ export async function updateTimeSlot(
     if (data.name !== undefined) {
       updateData.name = data.name;
     }
-    if (data.startTime) {
-      updateData.startTime = new Date(`1970-01-01T${data.startTime}:00.000Z`);
-    }
-    if (data.endTime) {
-      updateData.endTime = new Date(`1970-01-01T${data.endTime}:00.000Z`);
+    if (data.startTime || data.endTime) {
+      const { startTime, endTime } = parseSlotTimes(
+        data.startTime ?? "00:00",
+        data.endTime ?? "00:00"
+      );
+      if (data.startTime) updateData.startTime = startTime;
+      if (data.endTime) updateData.endTime = endTime;
     }
     if (data.daysOfWeek !== undefined) {
       updateData.daysOfWeek = data.daysOfWeek;
@@ -510,9 +523,8 @@ export async function getAvailableTablesForTimeSlot(params: {
       ],
     });
 
-    // Convert time strings to Date objects for comparison
-    const requestStartTime = new Date(`1970-01-01T${startTime}:00.000Z`);
-    const requestEndTime = new Date(`1970-01-01T${endTime}:00.000Z`);
+    const { startTime: requestStartTime, endTime: requestEndTime } =
+      parseSlotTimes(startTime, endTime);
 
     // Get all active time slots for this branch that overlap with the requested time/days
     const overlappingTimeSlots = await prisma.timeSlot.findMany({

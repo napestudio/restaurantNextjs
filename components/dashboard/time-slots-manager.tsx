@@ -53,7 +53,10 @@ export function TimeSlotsManager({
       id: tempId,
       name: newSlot.name || "Unnamed Slot",
       startTime: `1970-01-01T${newSlot.timeFrom}:00.000Z`,
-      endTime: `1970-01-01T${newSlot.timeTo}:00.000Z`,
+      endTime:
+        newSlot.timeTo <= newSlot.timeFrom
+          ? `1970-01-02T${newSlot.timeTo}:00.000Z`
+          : `1970-01-01T${newSlot.timeTo}:00.000Z`,
       daysOfWeek: newSlot.days,
       pricePerPerson: newSlot.price ? parseFloat(newSlot.price) : 0,
       notes: newSlot.notes || null,
@@ -130,7 +133,10 @@ export function TimeSlotsManager({
       ...timeSlots.find((s) => s.id === slotId)!,
       name: updatedSlot.name || "Unnamed Slot",
       startTime: `1970-01-01T${updatedSlot.timeFrom}:00.000Z`,
-      endTime: `1970-01-01T${updatedSlot.timeTo}:00.000Z`,
+      endTime:
+        updatedSlot.timeTo <= updatedSlot.timeFrom
+          ? `1970-01-02T${updatedSlot.timeTo}:00.000Z`
+          : `1970-01-01T${updatedSlot.timeTo}:00.000Z`,
       daysOfWeek: updatedSlot.days,
       pricePerPerson: updatedSlot.price ? parseFloat(updatedSlot.price) : 0,
       notes: updatedSlot.notes || null,

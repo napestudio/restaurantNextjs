@@ -37,10 +37,14 @@ function generateFifteenMinuteIntervals(
   // Extract hours and minutes from slot times using UTC (DB stores times as UTC)
   const startHour = startTime.getUTCHours();
   const startMin = startTime.getUTCMinutes();
-  // Treat midnight (0:00) as 24:00 when end is before or equal to start (spans to end of day)
+  // If endTime is on the next day (1970-01-02), add 24 to the hour so the loop works correctly
+  // e.g. 00:30 next day → endHour = 24, so the loop runs from 20 → 24:30
   const rawEndHour = endTime.getUTCHours();
   const endMin = endTime.getUTCMinutes();
-  const endHour = rawEndHour === 0 && endMin === 0 ? 24 : rawEndHour;
+  const endHour =
+    endTime.getUTCDate() > startTime.getUTCDate() || rawEndHour < startHour
+      ? rawEndHour + 24
+      : rawEndHour;
 
   // Generate 15-min intervals
   let currentHour = startHour;
@@ -55,7 +59,7 @@ function generateFifteenMinuteIntervals(
 
     intervals.push({
       value: intervalTime.toISOString(),
-      label: `${currentHour.toString().padStart(2, "0")}:${currentMin
+      label: `${(currentHour % 24).toString().padStart(2, "0")}:${currentMin
         .toString()
         .padStart(2, "0")}`,
       isPast: intervalTime < now,
