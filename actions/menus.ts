@@ -2,6 +2,7 @@
 
 import type { MenuItem, PriceType, ProductTag } from "@/app/generated/prisma";
 import { prisma } from "@/lib/prisma";
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import type { SerializedMenu, SerializedMenuSection, SerializedMenuItemGroup, SerializedMenuItem } from "@/types/menus";
 export type { SerializedMenu, SerializedMenuSection, SerializedMenuItemGroup, SerializedMenuItem };
@@ -239,6 +240,7 @@ export async function createMenu(data: {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true, menu };
   } catch (error) {
     console.error("Error creating menu:", error);
@@ -292,6 +294,7 @@ export async function updateMenu(
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
 
     // Serialize dates for client component consumption
     const serializedMenu: SerializedMenu = {
@@ -319,6 +322,7 @@ export async function deleteMenu(menuId: string) {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error deleting menu:", error);
@@ -346,6 +350,7 @@ export async function createMenuSection(data: {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true, section };
   } catch (error) {
     console.error("Error creating menu section:", error);
@@ -371,6 +376,7 @@ export async function updateMenuSection(
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true, section };
   } catch (error) {
     console.error("Error updating menu section:", error);
@@ -388,6 +394,7 @@ export async function deleteMenuSection(sectionId: string) {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error deleting menu section:", error);
@@ -433,6 +440,7 @@ export async function addMenuItem(data: {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     // Serialize Decimal to number for Client Components
     return {
       success: true,
@@ -479,6 +487,7 @@ export async function updateMenuItem(
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     // Serialize Decimal to number for Client Components
     return {
       success: true,
@@ -503,6 +512,7 @@ export async function removeMenuItem(itemId: string) {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error removing menu item:", error);
@@ -527,6 +537,7 @@ export async function reorderMenuSections(
     );
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error reordering menu sections:", error);
@@ -549,6 +560,7 @@ export async function reorderMenuItems(items: { id: string; order: number }[]) {
     );
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error reordering menu items:", error);
@@ -684,6 +696,13 @@ export async function getMenuBySlug(slug: string): Promise<{
   };
 }
 
+/**
+ * Cached version of getMenuBySlug for use in server components.
+ * React cache() deduplicates calls within a single render pass,
+ * so generateMetadata and the page component share one DB query.
+ */
+export const getMenuBySlugCached = cache(getMenuBySlug);
+
 // ============================================
 // MENU ITEM GROUP CRUD OPERATIONS
 // ============================================
@@ -708,6 +727,7 @@ export async function createMenuItemGroup(data: {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return {
       success: true,
       group: {
@@ -745,6 +765,7 @@ export async function updateMenuItemGroup(
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return {
       success: true,
       group: {
@@ -769,6 +790,7 @@ export async function deleteMenuItemGroup(groupId: string) {
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error deleting menu item group:", error);
@@ -793,6 +815,7 @@ export async function reorderMenuItemGroups(
     );
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error reordering menu item groups:", error);
@@ -814,6 +837,7 @@ export async function moveMenuItemToGroup(
     });
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return {
       success: true,
       menuItem: {
@@ -857,6 +881,7 @@ export async function reorderSectionContent(data: {
     ]);
 
     revalidatePath("/dashboard/menus");
+    revalidatePath("/carta/[slug]", "page");
     return { success: true };
   } catch (error) {
     console.error("Error reordering section content:", error);

@@ -4,6 +4,24 @@ import prisma from "@/lib/prisma";
 import { todayBoundsARDate } from "@/lib/date-utils";
 import { OrderStatus, ReservationStatus, Table } from "@/app/generated/prisma";
 import { TableShapeType } from "@/types/table";
+import { unstable_cache, revalidateTag } from "next/cache";
+
+/**
+ * Returns active tables for a branch, cached for 1 hour.
+ * Busted via revalidateTag("tables-{branchId}") when tables are mutated.
+ */
+export function getActiveTables(branchId: string) {
+  return unstable_cache(
+    async () =>
+      prisma.table.findMany({
+        where: { branchId, isActive: true },
+        select: { id: true, number: true, name: true },
+        orderBy: { number: "asc" },
+      }),
+    [`active-tables-${branchId}`],
+    { revalidate: 3600, tags: [`tables-${branchId}`] }
+  )();
+}
 
 /**
  * Batch calculate remaining capacity for multiple tables
@@ -908,6 +926,7 @@ export async function createTable(data: {
       },
     });
 
+    revalidateTag(`tables-${data.branchId}`);
     return { success: true, data: table };
   } catch (error) {
     console.error("Error creating table:", error);
@@ -979,6 +998,7 @@ export async function updateTable(
       );
     }
 
+    revalidateTag(`tables-${table.branchId}`);
     return { success: true, data: table };
   } catch (error) {
     console.error("Error updating table:", error);
@@ -1002,6 +1022,7 @@ export async function toggleTableActive(id: string) {
       data: { isActive: !table.isActive },
     });
 
+    revalidateTag(`tables-${table.branchId}`);
     return { success: true, data: updated };
   } catch (error) {
     console.error("Error toggling table status:", error);
@@ -1027,8 +1048,14 @@ export async function deleteTable(id: string) {
       };
     }
 
+    const table = await prisma.table.findUnique({
+      where: { id },
+      select: { branchId: true },
+    });
+
     await prisma.table.delete({ where: { id } });
 
+    if (table) revalidateTag(`tables-${table.branchId}`);
     return { success: true, data: null };
   } catch (error) {
     console.error("Error deleting table:", error);

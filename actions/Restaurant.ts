@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isUserAdmin } from "@/lib/permissions";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { z } from "zod";
 
 // URL validation regex
@@ -187,4 +187,16 @@ export async function getRestaurantByBranchId(branchId: string) {
     console.error("Error fetching restaurant by branch:", error);
     return null;
   }
+}
+
+/**
+ * Cached version of getRestaurantByBranchId for use in server components.
+ * Restaurant name/contact rarely changes; 1 hour TTL is appropriate.
+ */
+export function getRestaurantByBranchIdCached(branchId: string) {
+  return unstable_cache(
+    () => getRestaurantByBranchId(branchId),
+    [`restaurant-by-branch-${branchId}`],
+    { revalidate: 3600, tags: [`restaurant-${branchId}`] }
+  )();
 }

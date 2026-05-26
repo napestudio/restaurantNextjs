@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import {
-  getDeliveryConfig,
+  getDeliveryConfigCached,
   isDeliveryAvailable,
 } from "@/actions/DeliveryConfig";
 
@@ -17,15 +17,14 @@ export const metadata: Metadata = {
     ],
   },
 };
-import { getProductsForDeliveryMenu } from "@/actions/Order";
-import { getRestaurantByBranchId } from "@/actions/Restaurant";
+import type { getProductsForDeliveryMenu } from "@/actions/Order";
+import { getProductsForDeliveryMenuCached } from "@/actions/Order";
+import { getRestaurantByBranchIdCached } from "@/actions/Restaurant";
 import { OrderType } from "@/app/generated/prisma";
 import { BRANCH_ID } from "@/lib/constants";
 import { notFound } from "next/navigation";
 import DeliveryPage from "./components/delivery-page-client";
 import DeliveryClosedPage from "./components/delivery-closed-page";
-
-export const dynamic = "force-dynamic";
 
 export default async function PedidosPage() {
   if (!BRANCH_ID) {
@@ -36,8 +35,8 @@ export default async function PedidosPage() {
     );
   }
 
-  // Fetch delivery config
-  const configResult = await getDeliveryConfig(BRANCH_ID);
+  // Fetch delivery config (cached — busted when admin saves delivery settings)
+  const configResult = await getDeliveryConfigCached(BRANCH_ID);
 
   if (!configResult.success || !configResult.data) {
     notFound();
@@ -79,12 +78,12 @@ export default async function PedidosPage() {
     if (allowDelivery && allowTakeAway) {
       // Fetch both price sets in parallel
       const [deliveryResult, takeawayResult] = await Promise.all([
-        getProductsForDeliveryMenu(
+        getProductsForDeliveryMenuCached(
           BRANCH_ID,
           config.menuId,
           OrderType.DELIVERY,
         ),
-        getProductsForDeliveryMenu(
+        getProductsForDeliveryMenuCached(
           BRANCH_ID,
           config.menuId,
           OrderType.TAKE_AWAY,
@@ -95,7 +94,7 @@ export default async function PedidosPage() {
       takeawayProducts = takeawayResult.products;
       takeawaySections = takeawayResult.sections;
     } else if (allowTakeAway) {
-      const result = await getProductsForDeliveryMenu(
+      const result = await getProductsForDeliveryMenuCached(
         BRANCH_ID,
         config.menuId,
         OrderType.TAKE_AWAY,
@@ -104,7 +103,7 @@ export default async function PedidosPage() {
       sections = result.sections;
     } else {
       // Default: delivery only
-      const result = await getProductsForDeliveryMenu(
+      const result = await getProductsForDeliveryMenuCached(
         BRANCH_ID,
         config.menuId,
         OrderType.DELIVERY,
@@ -114,7 +113,7 @@ export default async function PedidosPage() {
     }
   }
 
-  const restaurant = await getRestaurantByBranchId(BRANCH_ID);
+  const restaurant = await getRestaurantByBranchIdCached(BRANCH_ID);
   const phoneNumber = restaurant?.whatsappNumber || restaurant?.phone;
   const whatsappUrl = phoneNumber
     ? `https://api.whatsapp.com/send/?phone=${phoneNumber}&app_absent=0`
