@@ -14,6 +14,7 @@ import { serializeClient } from "@/lib/serializers";
 import { serializeForClient } from "@/lib/serialize";
 import { todayBoundsARDate, dateStringToTimestampBoundsAR } from "@/lib/date-utils";
 import { authorizeAction } from "@/lib/permissions/middleware";
+import { unstable_cache } from "next/cache";
 import type {
   DeliverySection,
   DeliveryElement,
@@ -1328,6 +1329,22 @@ export async function getProductsForDeliveryMenu(
     console.error("Error getting delivery menu products:", error);
     return { sections: [], products: [] };
   }
+}
+
+/**
+ * Cached version of getProductsForDeliveryMenu for use in /pedidos page.
+ * Busted via revalidateTag("delivery-menu-{branchId}") when delivery config is saved.
+ */
+export async function getProductsForDeliveryMenuCached(
+  branchId: string,
+  menuId: string,
+  orderType: OrderType = OrderType.DELIVERY,
+) {
+  return unstable_cache(
+    () => getProductsForDeliveryMenu(branchId, menuId, orderType),
+    [`delivery-menu-${branchId}-${menuId}-${orderType}`],
+    { revalidate: 300, tags: [`delivery-menu-${branchId}`, `menu-${menuId}`] }
+  )();
 }
 
 // Get available tables to move an order to

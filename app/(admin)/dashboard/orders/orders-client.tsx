@@ -43,7 +43,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { CreateOrderSidebar } from "./components/create-order-sidebar";
 import { OrderListView } from "./components/order-list-view";
 
@@ -131,6 +131,9 @@ export function OrdersClient({
   const [totalSortOrder, setTotalSortOrder] = useState<"none" | "asc" | "desc">(
     "none",
   );
+
+  // Debounce ref for date filter changes to avoid one invocation per keystroke
+  const dateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Current tab from URL or initial
   const currentTab = searchParams.get("type") || initialTab;
@@ -246,28 +249,34 @@ export function OrdersClient({
 
   const handleStartDateChange = (value: string) => {
     setStartDate(value);
-    updateUrlAndFetch(
-      currentTab,
-      1,
-      currentSearch,
-      value,
-      endDate,
-      paymentMethod,
-      dateSortOrder,
-    );
+    if (dateTimerRef.current) clearTimeout(dateTimerRef.current);
+    dateTimerRef.current = setTimeout(() => {
+      updateUrlAndFetch(
+        currentTab,
+        1,
+        currentSearch,
+        value,
+        endDate,
+        paymentMethod,
+        dateSortOrder,
+      );
+    }, 600);
   };
 
   const handleEndDateChange = (value: string) => {
     setEndDate(value);
-    updateUrlAndFetch(
-      currentTab,
-      1,
-      currentSearch,
-      startDate,
-      value,
-      paymentMethod,
-      dateSortOrder,
-    );
+    if (dateTimerRef.current) clearTimeout(dateTimerRef.current);
+    dateTimerRef.current = setTimeout(() => {
+      updateUrlAndFetch(
+        currentTab,
+        1,
+        currentSearch,
+        startDate,
+        value,
+        paymentMethod,
+        dateSortOrder,
+      );
+    }, 600);
   };
 
   const handlePaymentMethodChange = (value: string) => {

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Avatar from "@/components/avatar";
-import { getMenuBySlug } from "@/actions/menus";
+import { getMenuBySlugCached } from "@/actions/menus";
 import { MenuSection } from "@/components/carta/menu-section";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+// Revalidate at most once per hour; mutations call revalidatePath to bust immediately
+export const revalidate = 3600;
 
 interface CartaPageProps {
   params: Promise<{
@@ -14,7 +17,7 @@ interface CartaPageProps {
 
 export async function generateMetadata({ params }: CartaPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const data = await getMenuBySlug(slug);
+  const data = await getMenuBySlugCached(slug);
   const title = data ? data.menu.name : "Carta";
   const description = data?.menu.description || "Descubrí nuestra carta";
 
@@ -31,7 +34,7 @@ export async function generateMetadata({ params }: CartaPageProps): Promise<Meta
 
 export default async function CartaPage({ params }: CartaPageProps) {
   const { slug } = await params;
-  const data = await getMenuBySlug(slug);
+  const data = await getMenuBySlugCached(slug);
 
   if (!data) {
     notFound();
