@@ -193,7 +193,7 @@ export async function getRestaurantByBranchId(branchId: string) {
  * Cached version of getRestaurantByBranchId for use in server components.
  * Restaurant name/contact rarely changes; 1 hour TTL is appropriate.
  */
-export function getRestaurantByBranchIdCached(branchId: string) {
+export async function getRestaurantByBranchIdCached(branchId: string) {
   return unstable_cache(
     () => getRestaurantByBranchId(branchId),
     [`restaurant-by-branch-${branchId}`],

@@ -10,7 +10,7 @@ import { unstable_cache, revalidateTag } from "next/cache";
  * Returns active tables for a branch, cached for 1 hour.
  * Busted via revalidateTag("tables-{branchId}") when tables are mutated.
  */
-export function getActiveTables(branchId: string) {
+export async function getActiveTables(branchId: string) {
   return unstable_cache(
     async () =>
       prisma.table.findMany({

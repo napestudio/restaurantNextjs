@@ -115,7 +115,7 @@ export async function getDeliveryConfig(branchId: string): Promise<{
  * Cached version of getDeliveryConfig for use in server components.
  * Busted via revalidateTag when the admin saves delivery settings.
  */
-export function getDeliveryConfigCached(branchId: string) {
+export async function getDeliveryConfigCached(branchId: string) {
   return unstable_cache(
     () => getDeliveryConfig(branchId),
     [`delivery-config-${branchId}`],

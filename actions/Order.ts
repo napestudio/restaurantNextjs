@@ -1335,7 +1335,7 @@ export async function getProductsForDeliveryMenu(
  * Cached version of getProductsForDeliveryMenu for use in /pedidos page.
  * Busted via revalidateTag("delivery-menu-{branchId}") when delivery config is saved.
  */
-export function getProductsForDeliveryMenuCached(
+export async function getProductsForDeliveryMenuCached(
   branchId: string,
   menuId: string,
   orderType: OrderType = OrderType.DELIVERY,
